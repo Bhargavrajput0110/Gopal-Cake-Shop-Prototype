@@ -345,7 +345,7 @@ export default function ProductPage() {
                         </div>
                         <div>
                           <h4 className="font-semibold text-foreground">Make it a Surprise</h4>
-                          <p className="text-xs text-muted-foreground">We won't call the recipient until arrival.</p>
+                          <p className="text-xs text-muted-foreground">We won&apos;t call the recipient until arrival.</p>
                         </div>
                       </div>
                       <button onClick={() => setIsSurprise(!isSurprise)} className={`w-12 h-6 rounded-full transition-colors relative ${isSurprise ? "bg-primary" : "bg-muted"}`}>
@@ -357,7 +357,7 @@ export default function ProductPage() {
                       {isSurprise && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-primary/10">
                           <div className="space-y-2">
-                            <label className="text-sm font-medium text-foreground">Recipient's Name (Person B)</label>
+                            <label className="text-sm font-medium text-foreground">Recipient&apos;s Name (Person B)</label>
                             <input type="text" placeholder="Who is getting the cake?" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} className="w-full px-4 py-3 rounded-lg border border-input bg-card text-base focus:ring-2 focus:ring-primary/50" />
                           </div>
                           <div className="space-y-2">

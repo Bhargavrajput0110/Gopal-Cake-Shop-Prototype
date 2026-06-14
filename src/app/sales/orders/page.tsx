@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Filter, Search, Phone, CheckCircle2, AlertTriangle, Image as ImageIcon, Gift, Flower2, Wand2, Camera, Send, Bell, ChefHat, Clock, Truck } from "lucide-react";
+import { Phone, CheckCircle2, AlertTriangle, Image as ImageIcon, Gift, Flower2, Bell, ChefHat, Clock, Truck } from "lucide-react";
 import { useOrders, Order } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -155,7 +155,7 @@ function OrderDetailsCard({ order }: { order: Order }) {
           
           {order.items.some(i => i.notes) && (
             <div className="mt-2.5 p-2 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-xs font-bold italic inline-block">
-              Note: "{order.items.find(i => i.notes)?.notes}"
+              Note: &quot;{order.items.find(i => i.notes)?.notes}&quot;
             </div>
           )}
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useOrders, Order } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { BoxTick, TickCircle, WalletMoney, Map, Location, Camera, ShieldTick, Danger, TruckFast, Receipt1, Clock } from "iconsax-react";
+import { BoxTick, TickCircle, Location, Camera, ShieldTick, Danger, TruckFast, Receipt1, Clock } from "iconsax-react";
 import { AuroraBackground } from "@/components/aceternity/AuroraBackground";
 import NumberTicker from "@/components/magicui/NumberTicker";
 
@@ -17,12 +17,9 @@ export default function DeliveryAgentPage() {
   const cashToCollect = myJobs.reduce((acc, job) => acc + job.pendingBalance, 0);
   const cashCollected = completedJobs.reduce((acc, job) => acc + job.pendingBalance, 0);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
 
-  const itemVariants: any = {
+
+  const itemVariants: import("framer-motion").Variants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };
@@ -158,7 +155,7 @@ export default function DeliveryAgentPage() {
 }
 
 function JobCard({ order, type }: { order: Order, type: "open" | "active" }) {
-  const { updateOrderStatus, reportIssue } = useOrders();
+  const { updateOrderStatus } = useOrders();
   const [showPOD, setShowPOD] = useState(false);
 
   const handleAccept = () => updateOrderStatus(order.id, "assigned_to_driver");

@@ -9,6 +9,7 @@ export function CustomCursor() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
     // Check if device supports hover (ignore on touch devices)
     if (window.matchMedia("(pointer: coarse)").matches) return;

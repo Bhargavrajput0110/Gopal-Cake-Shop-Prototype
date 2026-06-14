@@ -1,4 +1,4 @@
-import { CreditCard, IndianRupee, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { CreditCard, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 export default function PaymentTrackingPage() {
   return (

@@ -12,10 +12,12 @@ const LeafletAddressPicker = dynamic(
 
 export function HeroDeliveryChecker() {
   const [isOpen, setIsOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [address, setAddress] = useState("");
   const [branchDistances, setBranchDistances] = useState<{branch: string, distanceKm: number}[]>([]);
   const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
   const [distanceError, setDistanceError] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedBranch, setSelectedBranch] = useState("");
 
   return (

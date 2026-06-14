@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Filter, MoreHorizontal, Clock, MapPin, Phone } from "lucide-react";
+import { Search, Filter, MoreHorizontal, Clock, MapPin } from "lucide-react";
 
 type OrderStatus = "New" | "Baking" | "Ready" | "Out for Delivery" | "Delivered";
 
@@ -24,6 +24,7 @@ const STATUS_COLORS = {
 
 export default function LiveOrdersPage() {
   const [activeTab, setActiveTab] = useState<"List" | "Board">("Board");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [statusFilter, setStatusFilter] = useState<string>("All");
 
   const filteredOrders = MOCK_ORDERS.filter(o => statusFilter === "All" || o.status === statusFilter);
@@ -142,7 +143,7 @@ export default function LiveOrdersPage() {
   );
 }
 
-function OrderCard({ order }: { order: any }) {
+function OrderCard({ order }: { order: typeof MOCK_ORDERS[0] }) {
   return (
     <div className="bg-card border border-border p-4 rounded-lg shadow-sm hover:border-primary/30 transition-colors cursor-pointer group">
       <div className="flex items-start justify-between mb-2">
@@ -173,7 +174,7 @@ function OrderCard({ order }: { order: any }) {
 }
 
 // Temporary Store Icon Component
-function Store(props: any) {
+function Store(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/>

@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,9 @@ export const StickyScroll = ({
 }: {
   content: {
     title: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     description: string | React.ReactNode | any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     content?: React.ReactNode | any;
   }[];
   contentClassName?: string;

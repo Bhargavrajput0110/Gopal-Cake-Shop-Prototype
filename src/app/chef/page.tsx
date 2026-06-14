@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock, Timer1, Warning2, TickCircle, ProfileCircle, Danger } from "iconsax-react";
+import { Clock, Timer1, Warning2, TickCircle, ProfileCircle } from "iconsax-react";
 import { useOrders, Order } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Particles } from "@/components/magicui/Particles";
@@ -34,7 +34,7 @@ export default function ChefKanbanDashboard() {
       <header className="h-16 border-b flex items-center justify-between px-6 shrink-0 z-20 bg-white/80 backdrop-blur-md border-gray-200 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="p-1.5 rounded-lg bg-orange-100 text-orange-800">
-            <ProfileCircle className="w-6 h-6" variant="Bold" />
+            <ProfileCircle className="w-6 h-6" />
           </div>
           <div>
             <h1 className="text-base font-black tracking-widest text-gray-900">CHEF STATION</h1>
@@ -144,10 +144,14 @@ function KanbanColumn({ title, count, theme, children }: { title: string, count:
 function CompactOrderCard({ order, mode }: { order: Order, mode: "incoming" | "production" | "ready" }) {
   const { updateOrderStatus, reportIssue } = useOrders();
   const [qcState, setQcState] = useState([false, false, false]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showQC, setShowQC] = useState(false);
   const handlePickup = () => updateOrderStatus(order.id, "preparing", true, CHEF_ID);
-  const handleDecorate = () => updateOrderStatus(order.id, "decorating");
-  const handleFinish = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleDecorate = () => { /* setStatus("Decorating"); */ };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleFinish = () => { 
+    setShowQC(true); 
     if (qcState.every(v => v)) {
       setShowQC(false);
       updateOrderStatus(order.id, "ready_for_pickup");

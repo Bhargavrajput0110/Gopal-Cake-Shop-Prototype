@@ -8,7 +8,7 @@ import {
   useMapsLibrary, 
   useMap 
 } from "@vis.gl/react-google-maps";
-import { Loader2, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 
 // The 4 Branches of Gopal Bakery
 const branchLocations = [
@@ -36,6 +36,7 @@ function MapInner({ onDistancesCalculated, onAddressChange, onCalculating }: Goo
   const inputRef = useRef<HTMLInputElement>(null);
   
   const [selectedLocation, setSelectedLocation] = useState<google.maps.LatLngLiteral | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [formattedAddress, setFormattedAddress] = useState("");
   const [isMapOpen, setIsMapOpen] = useState(false);
 
@@ -92,7 +93,7 @@ function MapInner({ onDistancesCalculated, onAddressChange, onCalculating }: Goo
           const sorted = results.sort((a, b) => a.distanceKm - b.distanceKm);
           onDistancesCalculated(sorted, "");
         }
-      } catch (err) {
+      } catch (_err) {
         onDistancesCalculated([], "Failed to calculate distances. Please try again.");
       } finally {
         onCalculating(false);
@@ -103,6 +104,7 @@ function MapInner({ onDistancesCalculated, onAddressChange, onCalculating }: Goo
   }, [selectedLocation, routesLibrary, onDistancesCalculated, onCalculating]);
 
   // Handle manual map click
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleMapClick = (e: any) => {
     const latLng = e.detail?.latLng || e.latLng;
     if (latLng) {

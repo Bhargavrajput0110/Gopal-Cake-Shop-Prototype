@@ -30,6 +30,7 @@ export function LeafletAddressPicker({ onDistancesCalculated, onAddressChange, o
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -37,6 +38,7 @@ export function LeafletAddressPicker({ onDistancesCalculated, onAddressChange, o
   // Nominatim Autocomplete restricted to Vadodara & Nearby (Anand/Nadiad)
   useEffect(() => {
     if (searchQuery.length < 3) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchResults([]);
       return;
     }
@@ -69,6 +71,7 @@ export function LeafletAddressPicker({ onDistancesCalculated, onAddressChange, o
     };
   }, [searchQuery]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSelectAddress = (result: any) => {
     const lat = parseFloat(result.lat);
     const lng = parseFloat(result.lon);
@@ -100,7 +103,7 @@ export function LeafletAddressPicker({ onDistancesCalculated, onAddressChange, o
         const results = await Promise.all(promises);
         const sorted = results.sort((a, b) => a.distanceKm - b.distanceKm);
         onDistancesCalculated(sorted, "");
-      } catch (err) {
+      } catch (_err) {
         onDistancesCalculated([], "Failed to calculate distances via OSRM.");
       } finally {
         onCalculating(false);

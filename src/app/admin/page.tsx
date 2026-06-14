@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  TrendingUp, Users, ShoppingBag, Wallet, Building2, ChevronRight,
+  TrendingUp, ShoppingBag, Wallet, Building2, ChevronRight,
   ArrowUpRight, ArrowDownRight, Eye, Phone, BadgeIndianRupee,
   UserCheck, Truck, ChefHat, HeadphonesIcon, Star, Clock, AlertCircle
 } from "lucide-react";

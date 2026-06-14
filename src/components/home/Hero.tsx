@@ -7,35 +7,38 @@ import Link from "next/link";
 import { HeroDeliveryChecker } from "./HeroDeliveryChecker";
 import { BorderBeam } from "@/components/magicui/BorderBeam";
 
+function Letter({ letter, i, scrollYProgress }: { letter: string, i: number, scrollYProgress: MotionValue<number> }) {
+  const rotateX = useTransform(scrollYProgress, [0, 1], [0, 45 + (i * 10)]);
+  const rotateY = useTransform(scrollYProgress, [0, 1], [0, (i % 2 === 0 ? 15 : -15)]);
+  const yOffset = useTransform(scrollYProgress, [0, 1], ["0%", `${-20 - (i * 15)}%`]);
+  const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+
+  return (
+    <motion.span
+      style={{ 
+        rotateX, 
+        rotateY, 
+        y: yOffset,
+        opacity,
+        display: "inline-block", 
+        transformStyle: "preserve-3d" 
+      }}
+      initial={{ opacity: 0, rotateX: 90, y: 100 }}
+      animate={{ opacity: 1, rotateX: 0, y: 0 }}
+      transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 + (i * 0.05) }}
+    >
+      {letter === " " ? "\u00A0" : letter}
+    </motion.span>
+  );
+}
+
 function AnimatedLetters({ text, scrollYProgress }: { text: string, scrollYProgress: MotionValue<number> }) {
   const letters = text.split("");
   return (
     <div className="flex justify-center flex-wrap">
-      {letters.map((letter, i) => {
-        const rotateX = useTransform(scrollYProgress, [0, 1], [0, 45 + (i * 10)]);
-        const rotateY = useTransform(scrollYProgress, [0, 1], [0, (i % 2 === 0 ? 15 : -15)]);
-        const yOffset = useTransform(scrollYProgress, [0, 1], ["0%", `${-20 - (i * 15)}%`]);
-        const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
-
-        return (
-          <motion.span
-            key={i}
-            style={{ 
-              rotateX, 
-              rotateY, 
-              y: yOffset,
-              opacity,
-              display: "inline-block", 
-              transformStyle: "preserve-3d" 
-            }}
-            initial={{ opacity: 0, rotateX: 90, y: 100 }}
-            animate={{ opacity: 1, rotateX: 0, y: 0 }}
-            transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 + (i * 0.05) }}
-          >
-            {letter === " " ? "\u00A0" : letter}
-          </motion.span>
-        );
-      })}
+      {letters.map((letter, i) => (
+        <Letter key={i} letter={letter} i={i} scrollYProgress={scrollYProgress} />
+      ))}
     </div>
   );
 }
@@ -106,7 +109,7 @@ export function Hero() {
             The Art of Baking
           </motion.p>
 
-          <h1 className="font-heading text-6xl md:text-7xl lg:text-[7rem] xl:text-[8rem] text-white font-bold tracking-tight leading-[0.9] mb-8 drop-shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+          <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[7rem] xl:text-[8rem] text-white font-bold tracking-tight leading-[0.9] mb-8 drop-shadow-[0_0_40px_rgba(255,255,255,0.2)]">
             <AnimatedLetters text="GOPAL" scrollYProgress={scrollYProgress} />
             <div className="text-[#D4AF37] italic font-light mt-2 drop-shadow-[0_0_30px_rgba(212,175,55,0.4)]">
               <AnimatedLetters text="CAKES" scrollYProgress={scrollYProgress} />

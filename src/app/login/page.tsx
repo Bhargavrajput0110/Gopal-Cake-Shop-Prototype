@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Lock, User, ShieldCheck, ArrowRight, Activity, ChefHat, Truck, HeadphonesIcon, Settings } from "lucide-react";
-import Image from "next/image";
+
 
 export default function LoginPage() {
   const router = useRouter();

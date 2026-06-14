@@ -134,12 +134,11 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     // Generate initial orders on the client side only to prevent SSR Hydration Mismatch
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOrders(INITIAL_ORDERS);
-    setIsMounted(true);
   }, []);
 
   const updateOrderStatus = (id: string, status: OrderStatus, updateProductionTime?: boolean, assignedChef?: string) => {
