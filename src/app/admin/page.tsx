@@ -288,8 +288,8 @@ export default function AdminDashboard() {
               {/* Salary Bill */}
               <div>
                 <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-4">Monthly Salary Bill</h3>
-                <div className="bg-card border border-border rounded-2xl overflow-hidden">
-                  <table className="w-full text-sm">
+                <div className="bg-card border border-border rounded-2xl overflow-hidden overflow-x-auto">
+                  <table className="w-full text-sm min-w-[800px]">
                     <thead className="bg-secondary/50 border-b border-border">
                       <tr>
                         {["Staff ID", "Name", "Role", "Branch", "Status", "Salary"].map(h => (
@@ -415,8 +415,8 @@ function RoleTable({ staff }: { staff: StaffMember[] }) {
         ))}
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden overflow-x-auto">
+        <table className="w-full text-sm min-w-[800px]">
           <thead className="bg-secondary/50 border-b border-border">
             <tr>
               {["Staff ID", "Name", "Role", "Status", "Orders / Deliveries", "Salary", "Actions"].map(h => (

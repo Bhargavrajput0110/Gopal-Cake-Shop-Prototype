@@ -96,7 +96,7 @@ export function Hero() {
         <div className="absolute inset-0 bg-black/30" />
       </motion.div>
 
-      <div className="relative z-10 h-full w-full flex flex-col md:flex-row items-center justify-center px-4 md:px-12 lg:px-24 py-32 md:py-0">
+      <div className="relative z-10 min-h-[100dvh] w-full flex flex-col md:flex-row items-center justify-center px-4 md:px-12 lg:px-24 py-32 md:py-0">
         
         <div className="w-full md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left z-20 perspective-[1000px]">
           <motion.p

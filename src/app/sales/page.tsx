@@ -93,7 +93,7 @@ export default function SalesOverviewPage() {
 
       <motion.div variants={itemVariants}>
         <h3 className="text-sm font-black text-[#3E2723] uppercase tracking-widest border-b-2 border-border/60 pb-2 mb-4">Operational Overview</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
           <KPICard title="Pending Orders" value={pendingOrders} icon={<Clock className="w-6 h-6 text-[#C5A059]" variant="Bold" />} />
           <KPICard title="In Production" value={inProduction} icon={<Reserve className="w-6 h-6 text-[#3E2723]" variant="Bold" />} />
           <KPICard title="Ready Orders" value={readyOrders} icon={<BoxTick className="w-6 h-6 text-[#8D6E63]" variant="Bold" />} />
@@ -104,7 +104,7 @@ export default function SalesOverviewPage() {
 
       <motion.div variants={itemVariants}>
         <h3 className="text-sm font-black text-[#3E2723] uppercase tracking-widest border-b-2 border-border/60 pb-2 mb-4">Logistics, Exceptions & Transfers</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className={`uiverse-card rounded-3xl p-5 flex flex-col justify-between h-32 ${unassignedDeliveries > 0 ? "cyber-brutal-alert" : ""}`}>
             <div className="flex justify-between items-start">
               <h3 className={`text-[11px] font-black uppercase tracking-widest pr-2 leading-tight ${unassignedDeliveries > 0 ? "text-rose-600" : "text-muted-foreground"}`}>Unassigned Deliveries</h3>
@@ -122,7 +122,7 @@ export default function SalesOverviewPage() {
 
       <motion.div variants={itemVariants}>
         <h3 className="text-sm font-black text-[#3E2723] uppercase tracking-widest border-b-2 border-border/60 pb-2 mb-4">Khanderao Branch Financials</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <FinancialCard title="Orders Today" value={ordersToday} icon={<TaskSquare className="w-8 h-8 icon-gradient" variant="Bold" />} />
           <FinancialCard title="Revenue Today" value={revenueToday} icon={<WalletMoney className="w-8 h-8 icon-gradient" variant="Bold" />} color="text-[#C5A059]" />
           <FinancialCard title="Advance Paid" value={advancePaid} icon={<WalletMoney className="w-8 h-8 icon-gradient" variant="Bold" />} />

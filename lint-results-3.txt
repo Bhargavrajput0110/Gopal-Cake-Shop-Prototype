@@ -1,0 +1,247 @@
+
+> gopal-cake-shop-prototype@0.1.0 lint
+> eslint
+
+
+D:\Gopal Cake Shop\src\app\chef\page.tsx
+   4:47  warning  'ProfileCircle' is defined but never used  @typescript-eslint/no-unused-vars
+  37:14  error    'ChefHat' is not defined                   react/jsx-no-undef
+
+D:\Gopal Cake Shop\src\app\delivery\page.tsx
+  20:9  warning  'containerVariants' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+D:\Gopal Cake Shop\src\app\login\page.tsx
+  8:8  warning  'Image' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Gopal Cake Shop\src\app\sales\orders\page.tsx
+    4:10   warning  'Filter' is defined but never used                               @typescript-eslint/no-unused-vars
+    4:18   warning  'Search' is defined but never used                               @typescript-eslint/no-unused-vars
+    4:97   warning  'Wand2' is defined but never used                                @typescript-eslint/no-unused-vars
+    4:104  warning  'Camera' is defined but never used                               @typescript-eslint/no-unused-vars
+    4:112  warning  'Send' is defined but never used                                 @typescript-eslint/no-unused-vars
+  158:21   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  158:61   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+D:\Gopal Cake Shop\src\app\sales\page.tsx
+  38:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Gopal Cake Shop\src\app\sales\payments\page.tsx
+  1:22  warning  'IndianRupee' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Gopal Cake Shop\src\components\aceternity\3d-card.tsx
+  119:5  error    Error: Cannot access variable before it is declared
+
+`handleAnimations` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+D:\Gopal Cake Shop\src\components\aceternity\3d-card.tsx:119:5
+  117 |
+  118 |   useEffect(() => {
+> 119 |     handleAnimations();
+      |     ^^^^^^^^^^^^^^^^ `handleAnimations` accessed before it is declared
+  120 |   }, [isMouseEntered]);
+  121 |
+  122 |   function handleAnimations() {
+
+D:\Gopal Cake Shop\src\components\aceternity\3d-card.tsx:122:3
+  120 |   }, [isMouseEntered]);
+  121 |
+> 122 |   function handleAnimations() {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 123 |     if (!ref.current) return;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 124 |     if (isMouseEntered) {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 125 |       ref.current.style.transform = `translateX(${translateX}px) translateY(${translateY}px) translateZ(${translateZ}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 126 |     } else {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 127 |       ref.current.style.transform = `translateX(0px) translateY(0px) translateZ(0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg)`;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 128 |     }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 129 |   }
+      | ^^^^ `handleAnimations` is declared here
+  130 |
+  131 |   return (
+  132 |     <Tag  react-hooks/immutability
+  120:6  warning  React Hook useEffect has a missing dependency: 'handleAnimations'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/exhaustive-deps
+
+D:\Gopal Cake Shop\src\components\home\GoogleAddressPicker.tsx
+   11:10  warning  'Loader2' is defined but never used                    @typescript-eslint/no-unused-vars
+   39:10  warning  'formattedAddress' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   95:16  warning  'err' is defined but never used                        @typescript-eslint/no-unused-vars
+  106:30  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+
+D:\Gopal Cake Shop\src\components\home\HeroDeliveryChecker.tsx
+  15:10  warning  'address' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  19:10  warning  'selectedBranch' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+D:\Gopal Cake Shop\src\components\home\LeafletAddressPicker.tsx
+   33:54  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-explicit-any
+   40:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Gopal Cake Shop\src\components\home\LeafletAddressPicker.tsx:40:7
+  38 |   useEffect(() => {
+  39 |     if (searchQuery.length < 3) {
+> 40 |       setSearchResults([]);
+     |       ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  41 |       return;
+  42 |     }
+  43 |  react-hooks/set-state-in-effect
+   72:40  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-explicit-any
+  103:16  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+
+D:\Gopal Cake Shop\src\components\home\LeafletMapInner.tsx
+   3:10  warning  'useEffect' is defined but never used                                                                                @typescript-eslint/no-unused-vars
+   7:10  warning  'MapPin' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+  11:3   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+D:\Gopal Cake Shop\src\components\layout\CustomCursor.tsx
+  12:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Gopal Cake Shop\src\components\layout\CustomCursor.tsx:12:5
+  10 |
+  11 |   useEffect(() => {
+> 12 |     setIsMounted(true);
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  13 |     // Check if device supports hover (ignore on touch devices)
+  14 |     if (window.matchMedia("(pointer: coarse)").matches) return;
+  15 |  react-hooks/set-state-in-effect
+
+D:\Gopal Cake Shop\src\components\magicui\Marquee.tsx
+  10:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Gopal Cake Shop\src\components\magicui\NumberTicker.tsx
+  27:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+D:\Gopal Cake Shop\src\components\magicui\Particles.tsx
+   88:5  error    Error: Cannot access variable before it is declared
+
+`initCanvas` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+D:\Gopal Cake Shop\src\components\magicui\Particles.tsx:88:5
+  86 |       context.current = canvasRef.current.getContext("2d");
+  87 |     }
+> 88 |     initCanvas();
+     |     ^^^^^^^^^^ `initCanvas` accessed before it is declared
+  89 |     animate();
+  90 |     window.addEventListener("resize", initCanvas);
+  91 |
+
+D:\Gopal Cake Shop\src\components\magicui\Particles.tsx:105:3
+  103 |   }, [refresh]);
+  104 |
+> 105 |   function initCanvas() {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^
+> 106 |     resizeCanvas();
+      | ^^^^^^^^^^^^^^^^^^^
+> 107 |     drawParticles();
+      | ^^^^^^^^^^^^^^^^^^^
+> 108 |   }
+      | ^^^^ `initCanvas` is declared here
+  109 |
+  110 |   function onMouseMove() {
+  111 |     if (canvasRef.current) {                                                                                                                                    react-hooks/immutability
+   89:5  error    Error: Cannot access variable before it is declared
+
+`animate` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+D:\Gopal Cake Shop\src\components\magicui\Particles.tsx:89:5
+  87 |     }
+  88 |     initCanvas();
+> 89 |     animate();
+     |     ^^^^^^^ `animate` accessed before it is declared
+  90 |     window.addEventListener("resize", initCanvas);
+  91 |
+  92 |     return () => {
+
+D:\Gopal Cake Shop\src\components\magicui\Particles.tsx:212:3
+  210 |   }
+  211 |
+> 212 |   function animate() {
+      |   ^^^^^^^^^^^^^^^^^^^^
+> 213 |     clearContext();
+      | ^^^^^^^^^^^^^^^^^^^
+> 214 |     circles.current.forEach((circle: Circle, i: number) => {
+      …
+      | ^^^^^^^^^^^^^^^^^^^
+> 268 |     window.requestAnimationFrame(animate);
+      | ^^^^^^^^^^^^^^^^^^^
+> 269 |   }
+      | ^^^^ `animate` is declared here
+  270 |
+  271 |   return (
+  272 |     <div className={className} ref={canvasContainerRef} aria-hidden="true">                                              react-hooks/immutability
+   95:6  warning  React Hook useEffect has missing dependencies: 'animate' and 'initCanvas'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/exhaustive-deps
+   98:5  error    Error: Cannot access variable before it is declared
+
+`onMouseMove` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+D:\Gopal Cake Shop\src\components\magicui\Particles.tsx:98:5
+   96 |
+   97 |   useEffect(() => {
+>  98 |     onMouseMove();
+      |     ^^^^^^^^^^^ `onMouseMove` accessed before it is declared
+   99 |   }, [mousePosition.x, mousePosition.y]);
+  100 |
+  101 |   useEffect(() => {
+
+D:\Gopal Cake Shop\src\components\magicui\Particles.tsx:110:3
+  108 |   }
+  109 |
+> 110 |   function onMouseMove() {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^
+> 111 |     if (canvasRef.current) {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 112 |       const rect = canvasRef.current.getBoundingClientRect();
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 121 |     }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 122 |   }
+      | ^^^^ `onMouseMove` is declared here
+  123 |
+  124 |     function resizeCanvas() {
+  125 |     if (canvasContainerRef.current && canvasRef.current && context.current) {  react-hooks/immutability
+   99:6  warning  React Hook useEffect has a missing dependency: 'onMouseMove'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         react-hooks/exhaustive-deps
+  103:6  warning  React Hook useEffect has a missing dependency: 'initCanvas'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/exhaustive-deps
+
+D:\Gopal Cake Shop\src\components\sales\SalesSidebar.tsx
+  6:3  warning  'LayoutDashboard' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Gopal Cake Shop\src\context\OrderContext.tsx
+  137:10  warning  'isMounted' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+  141:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Gopal Cake Shop\src\context\OrderContext.tsx:141:5
+  139 |   useEffect(() => {
+  140 |     // Generate initial orders on the client side only to prevent SSR Hydration Mismatch
+> 141 |     setOrders(INITIAL_ORDERS);
+      |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  142 |     setIsMounted(true);
+  143 |   }, []);
+  144 |  react-hooks/set-state-in-effect
+
+D:\Gopal Cake Shop\src\types\next-auth.d.ts
+  1:8  warning  'NextAuth' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 41 problems (16 errors, 25 warnings)
+

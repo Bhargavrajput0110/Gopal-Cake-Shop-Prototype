@@ -64,7 +64,7 @@ export default function ChefKanbanDashboard() {
 
       {/* KANBAN BOARD */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 hide-scrollbar min-h-0" data-lenis-prevent>
-        <div className="flex flex-col md:flex-row h-full gap-6 md:min-w-[1000px] min-h-0">
+        <div className="flex flex-row h-full gap-6 w-max min-h-0 pb-4 pr-6">
           
           {/* COLUMN 1: INCOMING */}
           <KanbanColumn title="INCOMING" count={incoming.length} theme="blue">

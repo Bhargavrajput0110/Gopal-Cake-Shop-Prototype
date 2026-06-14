@@ -40,7 +40,7 @@ export default function MenuPage() {
       <div className="container mx-auto px-4 py-6 md:py-8">
         <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-6">Our Premium Selection</h1>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
           {products.map((product) => (
             <Link key={product.id} href={`/product/${product.id}`}>
               <Card className="overflow-hidden border border-border/50 shadow-sm hover:shadow-md transition-shadow group">

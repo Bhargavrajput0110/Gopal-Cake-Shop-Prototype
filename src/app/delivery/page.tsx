@@ -45,7 +45,7 @@ export default function DeliveryAgentPage() {
 
       {/* 3-Column Layout */}
       <div className="p-4 lg:p-6 w-full mx-auto h-full pb-20">
-        <div className="flex flex-col xl:grid xl:grid-cols-3 gap-8 h-full items-start overflow-x-auto hide-scrollbar">
+        <div className="flex flex-col xl:grid xl:grid-cols-3 gap-8 h-auto xl:h-full items-start overflow-x-hidden xl:overflow-x-auto hide-scrollbar">
           
           {/* COLUMN 1: OPEN JOBS */}
           <div className="flex flex-col h-full max-h-full min-h-[400px] w-full shrink-0">

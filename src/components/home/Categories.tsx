@@ -94,7 +94,7 @@ export function Categories() {
           </motion.p>
         </div>
         
-        <BentoGrid className="max-w-6xl mx-auto md:auto-rows-[22rem]">
+        <BentoGrid className="max-w-6xl mx-auto auto-rows-[20rem] md:auto-rows-[22rem]">
           {categories.map((category, i) => (
             <motion.div
               key={i}
