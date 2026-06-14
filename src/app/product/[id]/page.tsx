@@ -79,7 +79,7 @@ export default function ProductPage() {
   const advanceAmount = totalPrice * 0.5;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background pb-40 md:pb-12">
+    <div className="flex flex-col min-h-screen bg-background pb-40 md:pb-32">
       <div className="md:container md:mx-auto md:px-4 md:py-8 md:grid md:grid-cols-12 md:gap-12 lg:gap-16">
         
         {/* Sticky Left Column: Product Image & Details */}

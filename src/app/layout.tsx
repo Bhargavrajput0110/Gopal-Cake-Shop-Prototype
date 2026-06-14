@@ -40,9 +40,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${playfair.variable} h-full antialiased`}
+      className={`${inter.variable} ${playfair.variable} antialiased`}
     >
-      <body suppressHydrationWarning className="min-h-full flex flex-col bg-background text-foreground relative selection:bg-[#D4AF37] selection:text-black">
+      <body suppressHydrationWarning className="flex flex-col bg-background text-foreground relative selection:bg-[#D4AF37] selection:text-black min-h-screen">
         <Noise />
         <Preloader />
         <CustomCursor />
