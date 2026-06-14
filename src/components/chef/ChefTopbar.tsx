@@ -4,7 +4,7 @@ import { Bell, ChefHat } from "lucide-react";
 
 export function ChefTopbar() {
   return (
-    <header className="h-14 border-b border-[#C5A059]/20 bg-white/70 backdrop-blur-md sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 shadow-sm">
+    <header className="h-14 border-b border-[#C5A059]/20 bg-white/95 sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 shadow-sm">
       <div className="flex items-center gap-2.5">
         <div className="p-1.5 bg-[#3E2723] rounded-md text-[#C5A059] shadow-sm">
           <ChefHat className="w-5 h-5" />

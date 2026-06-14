@@ -5,7 +5,7 @@ import { ManagerMobileNav } from "./ManagerMobileNav";
 
 export function ManagerTopbar() {
   return (
-    <header className="h-16 border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6">
+    <header className="h-16 border-b border-border bg-card/95 sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6">
       <div className="flex items-center gap-4 flex-1">
         <ManagerMobileNav />
         

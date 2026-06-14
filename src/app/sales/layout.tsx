@@ -13,7 +13,7 @@ export default function SalesLayout({
       <div className="md:pl-64 flex flex-col min-h-screen">
         
         {/* Premium Glassmorphism Header with Global Search */}
-        <header className="sticky top-0 z-30 h-16 border-b border-primary/10 bg-background/70 backdrop-blur-md shadow-sm">
+        <header className="sticky top-0 z-30 h-16 border-b border-primary/10 bg-background/95 shadow-sm">
           <div className="flex h-full items-center justify-between px-4 sm:px-6 lg:px-8">
             
             <SalesMobileNav />
