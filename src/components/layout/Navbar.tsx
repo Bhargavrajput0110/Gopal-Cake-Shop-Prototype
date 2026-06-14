@@ -22,7 +22,7 @@ export function Navbar() {
       {/* Desktop & Top Mobile Header */}
       <header className={`fixed top-0 z-50 w-full transition-all duration-500 ${
         scrolled 
-          ? "bg-background/95 backdrop-blur-md border-b border-border/40 py-2" 
+          ? "bg-background/95 border-b border-border/40 py-2" 
           : "bg-transparent border-transparent py-6"
       }`}>
         <div className="container mx-auto flex h-14 md:h-16 max-w-screen-2xl items-center justify-between px-4 md:px-8">
@@ -61,7 +61,7 @@ export function Navbar() {
       </header>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/40 pb-safe">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 border-t border-border/40 pb-safe">
         <div className="flex justify-around items-center h-16">
           <Link href="/" className="flex flex-col items-center justify-center w-full h-full text-muted-foreground hover:text-primary transition-colors">
             <Home className="h-5 w-5 mb-1" />
