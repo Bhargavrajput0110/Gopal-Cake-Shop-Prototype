@@ -4,8 +4,12 @@ import type { NextRequest } from 'next/server';
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   
-  // Public paths that do not require authentication
-  if (path === '/' || path.startsWith('/track') || path === '/login') {
+  const isProtectedRoute = path.startsWith('/admin') || 
+                           path.startsWith('/sales') || 
+                           path.startsWith('/chef') || 
+                           path.startsWith('/delivery');
+
+  if (!isProtectedRoute) {
     return NextResponse.next();
   }
 
