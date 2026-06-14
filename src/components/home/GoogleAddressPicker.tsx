@@ -103,10 +103,11 @@ function MapInner({ onDistancesCalculated, onAddressChange, onCalculating }: Goo
   }, [selectedLocation, routesLibrary, onDistancesCalculated, onCalculating]);
 
   // Handle manual map click
-  const handleMapClick = (e: google.maps.MapMouseEvent) => {
-    if (e.latLng) {
-      const lat = e.latLng.lat();
-      const lng = e.latLng.lng();
+  const handleMapClick = (e: any) => {
+    const latLng = e.detail?.latLng || e.latLng;
+    if (latLng) {
+      const lat = typeof latLng.lat === 'function' ? latLng.lat() : latLng.lat;
+      const lng = typeof latLng.lng === 'function' ? latLng.lng() : latLng.lng;
       setSelectedLocation({ lat, lng });
       // Optionally reverse geocode here, but for now we just update coordinates
     }

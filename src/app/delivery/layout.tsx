@@ -1,3 +1,5 @@
+"use client";
+
 import { Navigation, Menu, LogOut, Wallet } from "lucide-react";
 
 export default function DeliveryLayout({
