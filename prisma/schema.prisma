@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SALESPERSON
+  CHEF
+  DELIVERY
+  CUSTOMER
+}
+
+enum OrderStatus {
+  PLACED
+  ACCEPTED
+  READY
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELLED
+}
+
+enum DeliveryType {
+  PICKUP
+  DELIVERY
+}
+
+enum VendorType {
+  FLORIST
+  PHOTO
+  ACRYLIC
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String?   @unique
+  username      String?   @unique
+  password      String    // Hashed
+  phone         String?   @unique
+  role          Role      @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  branchId      String?
+  branch        Branch?   @relation("StaffBranch", fields: [branchId], references: [id])
+  
+  orders        Order[]   @relation("CustomerOrders")
+  handledOrders Order[]   @relation("ChefOrders")
+  deliveredOrders Order[] @relation("DeliveryOrders")
+}
+
+model Branch {
+  id            String    @id @default(cuid())
+  name          String    // e.g., "Uma Branch (Branch X)"
+  code          String    @unique // e.g., "UMA", "VAD"
+  address       String
+  phone         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  staff         User[]    @relation("StaffBranch")
+  orders        Order[]   @relation("BranchOrders")
+  transfersFrom OrderTransferLog[] @relation("TransferFrom")
+  transfersTo   OrderTransferLog[] @relation("TransferTo")
+}
+
+model Category {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  image         String?
+  products      Product[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Product {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  description   String?
+  basePrice     Float
+  images        String[]  // Cloudinary URLs
+  categoryId    String
+  category      Category  @relation(fields: [categoryId], references: [id])
+  isActive      Boolean   @default(true)
+  
+  orderItems    OrderItem[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Order {
+  id            String    @id @default(cuid())
+  orderNumber   String    @unique
+  customerId    String
+  customer      User      @relation("CustomerOrders", fields: [customerId], references: [id])
+  
+  branchId      String
+  branch        Branch    @relation("BranchOrders", fields: [branchId], references: [id])
+  
+  chefId        String?
+  chef          User?     @relation("ChefOrders", fields: [chefId], references: [id])
+
+  deliveryBoyId String?
+  deliveryBoy   User?     @relation("DeliveryOrders", fields: [deliveryBoyId], references: [id])
+  
+  status        OrderStatus @default(PLACED)
+  deliveryType  DeliveryType
+  targetDate    DateTime
+  
+  totalAmount   Float
+  advancePaid   Float
+  balanceAmount Float     @default(0)
+  
+  customerNotes String?
+  deliveryAddress String?
+  referenceImages String[] // Cloudinary URLs
+
+  items         OrderItem[]
+  transfers     OrderTransferLog[]
+  vendorTasks   ExternalVendorTask[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model OrderItem {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id])
+  quantity      Int       @default(1)
+  weight        Float     // In kg or lbs
+  flavor        String?
+  messageOnCake String?
+  price         Float
+}
+
+model OrderTransferLog {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromBranchId  String
+  fromBranch    Branch    @relation("TransferFrom", fields: [fromBranchId], references: [id])
+  toBranchId    String
+  toBranch      Branch    @relation("TransferTo", fields: [toBranchId], references: [id])
+  reason        String?
+  transferredAt DateTime  @default(now())
+  transferredBy String    // ID of salesperson
+}
+
+model ExternalVendorTask {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendorType    VendorType
+  details       String    // Instructions sent via WhatsApp
+  sentAt        DateTime  @default(now())
+  sentBy        String    // ID of salesperson
+}
