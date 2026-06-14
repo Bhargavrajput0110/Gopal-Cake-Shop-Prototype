@@ -14,7 +14,7 @@ import {
   UtensilsCrossed
 } from "lucide-react";
 
-const navItems = [
+export const navItems = [
   { name: "Command Centre", href: "/admin", icon: LayoutDashboard },
   { name: "All Orders", href: "/admin/orders", icon: ShoppingBag, badge: 3 },
   { name: "Staff & Roles", href: "/admin/staff", icon: Users },

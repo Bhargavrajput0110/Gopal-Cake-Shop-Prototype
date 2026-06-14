@@ -1,4 +1,5 @@
 import { SalesSidebar } from "@/components/sales/SalesSidebar";
+import { SalesMobileNav } from "@/components/sales/SalesMobileNav";
 import { Search, Bell, UserCircle } from "lucide-react";
 
 export default function SalesLayout({
@@ -15,8 +16,10 @@ export default function SalesLayout({
         <header className="sticky top-0 z-30 h-16 border-b border-primary/10 bg-background/70 backdrop-blur-md shadow-sm">
           <div className="flex h-full items-center justify-between px-4 sm:px-6 lg:px-8">
             
+            <SalesMobileNav />
+
             {/* Global Search */}
-            <div className="flex-1 max-w-lg">
+            <div className="flex-1 max-w-lg ml-2 md:ml-0">
               <div className="relative group">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/60 group-focus-within:text-primary transition-colors" />
                 <input 

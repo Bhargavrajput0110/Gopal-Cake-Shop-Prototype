@@ -10,7 +10,7 @@ import {
   LogOut
 } from "lucide-react";
 
-const navItems = [
+export const navItems = [
   { name: "Branch Dashboard", href: "/manager", icon: LayoutDashboard },
   { name: "Kitchen Queue", href: "/manager/kitchen", icon: ChefHat, badge: 5 },
   { name: "Local Inventory", href: "/manager/inventory", icon: PackageCheck },

@@ -14,7 +14,7 @@ import {
   Activity
 } from "lucide-react";
 
-const navItems = [
+export const navItems = [
   { name: "Command Center", href: "/sales", icon: Activity },
   { name: "Orders", href: "/sales/orders", icon: ClipboardList, badge: 12 },
   { name: "Branch Transfers", href: "/sales/transfers", icon: ArrowLeftRight, badge: 2 },

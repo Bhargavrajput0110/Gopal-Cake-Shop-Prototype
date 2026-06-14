@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { Lock, User, ShieldCheck, ArrowRight, Activity, ChefHat, Truck, HeadphonesIcon, Settings } from "lucide-react";
 import Image from "next/image";
 
@@ -59,7 +60,10 @@ export default function LoginPage() {
             <Lock className="w-8 h-8 text-white -rotate-3" />
           </div>
           <h1 className="text-3xl font-black tracking-tight text-foreground">Gopal Cake Shop</h1>
-          <p className="text-muted-foreground text-sm mt-2 font-medium">Internal Staff Portal</p>
+          <p className="text-muted-foreground text-sm mt-2 font-medium mb-4">Internal Staff Portal</p>
+          <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-primary hover:text-amber-600 transition-colors bg-primary/10 px-3 py-1.5 rounded-full">
+            <ArrowRight className="w-3.5 h-3.5 rotate-180" /> Back to Public Website
+          </Link>
         </div>
 
         {error && (

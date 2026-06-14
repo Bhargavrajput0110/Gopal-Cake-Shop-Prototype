@@ -8,7 +8,12 @@ export function HeaderFooterWrapper({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   
   // Hide global Navbar and Footer on dedicated app screens
-  const isStandaloneApp = pathname?.startsWith("/chef") || pathname?.startsWith("/delivery");
+  const isStandaloneApp = pathname?.startsWith("/chef") || 
+                          pathname?.startsWith("/delivery") || 
+                          pathname?.startsWith("/admin") || 
+                          pathname?.startsWith("/sales") || 
+                          pathname?.startsWith("/manager") || 
+                          pathname?.startsWith("/login");
 
   return (
     <>
