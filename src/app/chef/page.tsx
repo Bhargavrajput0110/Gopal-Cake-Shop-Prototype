@@ -68,11 +68,11 @@ function ChefDashboardContent() {
       </header>
 
       {/* KANBAN BOARD */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-6 hide-scrollbar min-h-0 w-full" data-lenis-prevent>
-        <div className="flex flex-row h-full gap-4 md:gap-6 w-full md:w-max min-h-0 pb-4 md:pr-6">
+      <div className="flex-1 flex flex-col overflow-x-auto overflow-y-hidden p-4 md:p-6 hide-scrollbar min-h-0 w-full" data-lenis-prevent>
+        <div className="flex-1 flex flex-row gap-4 md:gap-6 w-full md:w-max min-h-0 pb-4 md:pr-6">
           
           {/* COLUMN 1: INCOMING */}
-          <div className={`h-full w-full shrink-0 md:w-auto flex-col ${currentTab === "incoming" ? "flex" : "hidden md:flex"}`}>
+          <div className={`flex-1 w-full shrink-0 md:w-auto min-h-0 flex-col ${currentTab === "incoming" ? "flex" : "hidden md:flex"}`}>
             <KanbanColumn title="INCOMING" count={incoming.length} theme="blue">
               {incoming.map(order => (
                 <CompactOrderCard key={order.id} order={order} mode="incoming" />
@@ -81,7 +81,7 @@ function ChefDashboardContent() {
           </div>
 
           {/* COLUMN 2: IN PRODUCTION */}
-          <div className={`h-full w-full shrink-0 md:w-auto flex-col ${currentTab === "production" ? "flex" : "hidden md:flex"}`}>
+          <div className={`flex-1 w-full shrink-0 md:w-auto min-h-0 flex-col ${currentTab === "production" ? "flex" : "hidden md:flex"}`}>
             <KanbanColumn title="MY PRODUCTION" count={inProduction.length} theme="orange">
               {inProduction.map(order => (
                 <CompactOrderCard key={order.id} order={order} mode="production" />
@@ -90,7 +90,7 @@ function ChefDashboardContent() {
           </div>
 
           {/* COLUMN 3: READY */}
-          <div className={`h-full w-full shrink-0 md:w-auto flex-col ${currentTab === "ready" ? "flex" : "hidden md:flex"}`}>
+          <div className={`flex-1 w-full shrink-0 md:w-auto min-h-0 flex-col ${currentTab === "ready" ? "flex" : "hidden md:flex"}`}>
             <KanbanColumn title="READY FOR DISPATCH" count={ready.length} theme="emerald">
               {ready.map(order => (
                 <CompactOrderCard key={order.id} order={order} mode="ready" />
