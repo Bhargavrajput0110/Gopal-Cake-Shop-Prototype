@@ -22,6 +22,15 @@ export const metadata: Metadata = {
   title: "Gopal Bakery ERP",
   description: "Enterprise Dashboard",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Gopal Bakery ERP",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/icon-192x192.png",
+  },
 };
 
 export const viewport: Viewport = {
