@@ -72,7 +72,7 @@ function ChefDashboardContent() {
         <div className="flex flex-row h-full gap-4 md:gap-6 w-full md:w-max min-h-0 pb-4 md:pr-6">
           
           {/* COLUMN 1: INCOMING */}
-          <div className={`h-full w-full shrink-0 md:w-auto ${currentTab === "incoming" ? "block" : "hidden md:block"}`}>
+          <div className={`h-full w-full shrink-0 md:w-auto flex-col ${currentTab === "incoming" ? "flex" : "hidden md:flex"}`}>
             <KanbanColumn title="INCOMING" count={incoming.length} theme="blue">
               {incoming.map(order => (
                 <CompactOrderCard key={order.id} order={order} mode="incoming" />
@@ -81,7 +81,7 @@ function ChefDashboardContent() {
           </div>
 
           {/* COLUMN 2: IN PRODUCTION */}
-          <div className={`h-full w-full shrink-0 md:w-auto ${currentTab === "production" ? "block" : "hidden md:block"}`}>
+          <div className={`h-full w-full shrink-0 md:w-auto flex-col ${currentTab === "production" ? "flex" : "hidden md:flex"}`}>
             <KanbanColumn title="MY PRODUCTION" count={inProduction.length} theme="orange">
               {inProduction.map(order => (
                 <CompactOrderCard key={order.id} order={order} mode="production" />
@@ -90,7 +90,7 @@ function ChefDashboardContent() {
           </div>
 
           {/* COLUMN 3: READY */}
-          <div className={`h-full w-full shrink-0 md:w-auto ${currentTab === "ready" ? "block" : "hidden md:block"}`}>
+          <div className={`h-full w-full shrink-0 md:w-auto flex-col ${currentTab === "ready" ? "flex" : "hidden md:flex"}`}>
             <KanbanColumn title="READY FOR DISPATCH" count={ready.length} theme="emerald">
               {ready.map(order => (
                 <CompactOrderCard key={order.id} order={order} mode="ready" />
