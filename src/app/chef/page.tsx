@@ -8,6 +8,7 @@ import { Particles } from "@/components/magicui/Particles";
 import { BorderBeam } from "@/components/magicui/BorderBeam";
 import { TypewriterEffect } from "@/components/aceternity/TypewriterEffect";
 import { useSearchParams } from "next/navigation";
+import { ChefMobileNav } from "@/components/chef/ChefMobileNav";
 
 const CHEF_ID = "CHEF-101";
 
@@ -36,7 +37,8 @@ function ChefDashboardContent() {
       {/* HEADER */}
       <header className="h-16 border-b flex items-center justify-between px-4 md:px-6 shrink-0 z-20 bg-white/80 border-gray-200 shadow-sm w-full">
         <div className="flex items-center gap-3">
-          <div className="p-1.5 rounded-lg bg-orange-100 text-orange-800">
+          <ChefMobileNav />
+          <div className="p-1.5 rounded-lg bg-orange-100 text-orange-800 hidden sm:block">
             <ProfileCircle className="w-6 h-6" />
           </div>
           <div>
