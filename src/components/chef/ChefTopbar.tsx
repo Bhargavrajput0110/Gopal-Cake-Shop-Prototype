@@ -1,12 +1,14 @@
 "use client";
 
 import { Bell, ChefHat } from "lucide-react";
+import { ChefMobileNav } from "./ChefMobileNav";
 
 export function ChefTopbar() {
   return (
     <header className="h-14 border-b border-[#C5A059]/20 bg-white/95 sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 shadow-sm">
       <div className="flex items-center gap-2.5">
-        <div className="p-1.5 bg-[#3E2723] rounded-md text-[#C5A059] shadow-sm">
+        <ChefMobileNav />
+        <div className="hidden sm:flex p-1.5 bg-[#3E2723] rounded-md text-[#C5A059] shadow-sm">
           <ChefHat className="w-5 h-5" />
         </div>
         <div>

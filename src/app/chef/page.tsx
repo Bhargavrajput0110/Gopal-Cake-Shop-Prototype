@@ -1,17 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Clock, Timer1, Warning2, TickCircle, ProfileCircle } from "iconsax-react";
 import { useOrders, Order } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Particles } from "@/components/magicui/Particles";
 import { BorderBeam } from "@/components/magicui/BorderBeam";
 import { TypewriterEffect } from "@/components/aceternity/TypewriterEffect";
+import { useSearchParams } from "next/navigation";
 
 const CHEF_ID = "CHEF-101";
 
-export default function ChefKanbanDashboard() {
+function ChefDashboardContent() {
   const { orders } = useOrders();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab") || "incoming";
 
   // Sort orders: Priority orders first, then by delivery time (ascending)
   const sortedOrders = [...orders].sort((a, b) => {
@@ -26,19 +29,19 @@ export default function ChefKanbanDashboard() {
   const ready = sortedOrders.filter(o => o.status === "ready_for_pickup");
 
   return (
-    <div className="flex-1 flex flex-col font-sans overflow-hidden min-h-0 bg-[#FAFAF8] relative">
+    <div className="flex-1 flex flex-col font-sans overflow-hidden min-h-0 bg-[#FAFAF8] relative w-full">
       <Particles className="absolute inset-0 pointer-events-none" quantity={150} staticity={30} color="#C5A059" vx={0.2} vy={-0.2} />
       <div className="absolute inset-0 bg-gradient-to-br from-transparent to-[#C5A059]/10 pointer-events-none"></div>
       
       {/* HEADER */}
-      <header className="h-16 border-b flex items-center justify-between px-6 shrink-0 z-20 bg-white/80 backdrop-blur-md border-gray-200 shadow-sm">
+      <header className="h-16 border-b flex items-center justify-between px-4 md:px-6 shrink-0 z-20 bg-white/80 border-gray-200 shadow-sm w-full">
         <div className="flex items-center gap-3">
           <div className="p-1.5 rounded-lg bg-orange-100 text-orange-800">
             <ProfileCircle className="w-6 h-6" />
           </div>
           <div>
             <h1 className="text-base font-black tracking-widest text-gray-900">CHEF STATION</h1>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-0.5">ID: {CHEF_ID} &bull; Khanderao</p>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-0.5 hidden sm:block">ID: {CHEF_ID} &bull; Khanderao</p>
           </div>
         </div>
 
@@ -56,40 +59,54 @@ export default function ChefKanbanDashboard() {
         
         <button 
           onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
-          className="ml-auto flex items-center gap-2 text-xs font-bold text-rose-500 hover:text-rose-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-rose-50"
+          className="ml-auto hidden md:flex items-center gap-2 text-xs font-bold text-rose-500 hover:text-rose-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-rose-50"
         >
           Sign Out
         </button>
       </header>
 
       {/* KANBAN BOARD */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 hide-scrollbar min-h-0" data-lenis-prevent>
-        <div className="flex flex-row h-full gap-6 w-max min-h-0 pb-4 pr-6">
+      <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-6 hide-scrollbar min-h-0 w-full" data-lenis-prevent>
+        <div className="flex flex-row h-full gap-4 md:gap-6 w-full md:w-max min-h-0 pb-4 md:pr-6">
           
           {/* COLUMN 1: INCOMING */}
-          <KanbanColumn title="INCOMING" count={incoming.length} theme="blue">
-            {incoming.map(order => (
-              <CompactOrderCard key={order.id} order={order} mode="incoming" />
-            ))}
-          </KanbanColumn>
+          <div className={`h-full w-full shrink-0 md:w-auto ${currentTab === "incoming" ? "block" : "hidden md:block"}`}>
+            <KanbanColumn title="INCOMING" count={incoming.length} theme="blue">
+              {incoming.map(order => (
+                <CompactOrderCard key={order.id} order={order} mode="incoming" />
+              ))}
+            </KanbanColumn>
+          </div>
 
           {/* COLUMN 2: IN PRODUCTION */}
-          <KanbanColumn title="MY PRODUCTION" count={inProduction.length} theme="orange">
-            {inProduction.map(order => (
-              <CompactOrderCard key={order.id} order={order} mode="production" />
-            ))}
-          </KanbanColumn>
+          <div className={`h-full w-full shrink-0 md:w-auto ${currentTab === "production" ? "block" : "hidden md:block"}`}>
+            <KanbanColumn title="MY PRODUCTION" count={inProduction.length} theme="orange">
+              {inProduction.map(order => (
+                <CompactOrderCard key={order.id} order={order} mode="production" />
+              ))}
+            </KanbanColumn>
+          </div>
 
           {/* COLUMN 3: READY */}
-          <KanbanColumn title="READY FOR DISPATCH" count={ready.length} theme="emerald">
-            {ready.map(order => (
-              <CompactOrderCard key={order.id} order={order} mode="ready" />
-            ))}
-          </KanbanColumn>
+          <div className={`h-full w-full shrink-0 md:w-auto ${currentTab === "ready" ? "block" : "hidden md:block"}`}>
+            <KanbanColumn title="READY FOR DISPATCH" count={ready.length} theme="emerald">
+              {ready.map(order => (
+                <CompactOrderCard key={order.id} order={order} mode="ready" />
+              ))}
+            </KanbanColumn>
+          </div>
 
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ChefKanbanDashboard() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-muted-foreground font-bold">Loading Kitchen Display...</div>}>
+      <ChefDashboardContent />
+    </Suspense>
   );
 }
 
