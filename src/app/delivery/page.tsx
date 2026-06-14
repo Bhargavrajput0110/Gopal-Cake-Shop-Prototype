@@ -10,9 +10,16 @@ import NumberTicker from "@/components/magicui/NumberTicker";
 export default function DeliveryAgentPage() {
   const { orders } = useOrders();
   
-  const openJobs = orders.filter(o => o.status === "pending_assignment");
-  const myJobs = orders.filter(o => ["assigned_to_driver", "picked_up_by_driver", "on_the_way"].includes(o.status));
-  const completedJobs = orders.filter(o => o.status === "delivered");
+  // Sort orders: Priority orders first, then by delivery time (ascending)
+  const sortedOrders = [...orders].sort((a, b) => {
+    if (a.isPriority && !b.isPriority) return -1;
+    if (!a.isPriority && b.isPriority) return 1;
+    return new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime();
+  });
+
+  const openJobs = sortedOrders.filter(o => o.status === "pending_assignment");
+  const myJobs = sortedOrders.filter(o => ["assigned_to_driver", "picked_up_by_driver", "on_the_way"].includes(o.status));
+  const completedJobs = sortedOrders.filter(o => o.status === "delivered");
 
   const cashToCollect = myJobs.reduce((acc, job) => acc + job.pendingBalance, 0);
   const cashCollected = completedJobs.reduce((acc, job) => acc + job.pendingBalance, 0);

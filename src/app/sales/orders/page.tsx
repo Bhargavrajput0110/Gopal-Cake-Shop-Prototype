@@ -11,8 +11,15 @@ export default function OrderManagementPage() {
   const [showPopup, setShowPopup] = useState(true);
   const filters = ["All", "Pending", "Confirm", "In Production", "Ready", "Deliver"];
 
+  // Sort orders: Priority orders first, then by delivery time (ascending)
+  const sortedOrders = [...orders].sort((a, b) => {
+    if (a.isPriority && !b.isPriority) return -1;
+    if (!a.isPriority && b.isPriority) return 1;
+    return new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime();
+  });
+
   // Filter orders based on basic UI logic
-  const visibleOrders = orders.filter(o => {
+  const visibleOrders = sortedOrders.filter(o => {
     if (filter === "Pending") return o.status === "new";
     if (filter === "In Production") return ["accepted_by_chef", "preparing", "decorating"].includes(o.status);
     if (filter === "Ready") return o.status === "ready_for_pickup";
