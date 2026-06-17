@@ -13,6 +13,7 @@ export function HeaderFooterWrapper({ children }: { children: React.ReactNode })
                           pathname?.startsWith("/admin") || 
                           pathname?.startsWith("/sales") || 
                           pathname?.startsWith("/manager") || 
+                          pathname?.startsWith("/vendor") || 
                           pathname?.startsWith("/login");
 
   return (

@@ -87,7 +87,7 @@ export default function OrderManagementPage() {
               </div>
               <div>
                 <h4 className="font-black text-[#3E2723]">NEW ORDER ARRIVED!</h4>
-                <p className="text-sm font-bold text-[#C5A059] mt-0.5">109999</p>
+                <p className="text-sm font-bold text-[#C5A059] mt-0.5">ELR-10999</p>
                 <p className="text-xs text-muted-foreground mt-1">3-Tier Wedding Cake &bull; Delivery</p>
                 <button 
                   onClick={() => setShowPopup(false)}
