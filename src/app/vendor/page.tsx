@@ -9,20 +9,21 @@ export default function VendorDashboard() {
   const { orders, updateVendorTaskStatus } = useOrders();
   const [selectedVendor, setSelectedVendor] = useState<VendorType>("flower");
   const [branchFilter, setBranchFilter] = useState("All");
+  const [taskStatusFilter, setTaskStatusFilter] = useState<"pending" | "ready">("pending");
 
   const branches = ["All", "Khanderao Branch", "Uma Branch", "Varasiya Factory Outlet", "Elora Park Branch"];
 
-  // Filter orders that have pending tasks for the selected vendor
-  const pendingVendorTasks = orders.filter((o) => {
+  // Filter orders that have tasks matching the selected vendor and status
+  const visibleVendorTasks = orders.filter((o) => {
     if (branchFilter !== "All" && o.branch !== branchFilter) return false;
     
-    // Check if there is a pending task for the selected vendor
-    const task = o.vendorTasks?.find(vt => vt.vendorType === selectedVendor && vt.status === "pending");
+    // Check if there is a task for the selected vendor matching the status
+    const task = o.vendorTasks?.find(vt => vt.vendorType === selectedVendor && vt.status === taskStatusFilter);
     return !!task;
   });
 
   // Sort by time (most urgent first)
-  const sortedTasks = [...pendingVendorTasks].sort((a, b) => 
+  const sortedTasks = [...visibleVendorTasks].sort((a, b) => 
     new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime()
   );
 
@@ -66,6 +67,22 @@ export default function VendorDashboard() {
 
       <div className="container mx-auto px-4 py-6 max-w-5xl">
         
+        {/* Status Filter */}
+        <div className="mb-4 flex bg-secondary/50 p-1 rounded-lg w-fit">
+          <button 
+            onClick={() => setTaskStatusFilter("pending")}
+            className={`px-4 py-1.5 rounded-md text-sm font-bold transition-colors ${taskStatusFilter === "pending" ? "bg-white shadow-sm text-[#3E2723]" : "text-muted-foreground hover:bg-white/50"}`}
+          >
+            To Do
+          </button>
+          <button 
+            onClick={() => setTaskStatusFilter("ready")}
+            className={`px-4 py-1.5 rounded-md text-sm font-bold transition-colors ${taskStatusFilter === "ready" ? "bg-white shadow-sm text-[#3E2723]" : "text-muted-foreground hover:bg-white/50"}`}
+          >
+            Completed
+          </button>
+        </div>
+
         {/* Branch Filter */}
         <div className="mb-6 flex overflow-x-auto gap-2 pb-2 hide-scrollbar">
           {branches.map(b => (
@@ -136,12 +153,18 @@ export default function VendorDashboard() {
                   </div>
 
                   <div className="p-4 pt-0">
-                    <button 
-                      onClick={() => updateVendorTaskStatus(order.id, selectedVendor, "ready")}
-                      className="w-full bg-[#3E2723] text-white py-3 rounded-lg font-bold text-sm shadow-[0_4px_14px_0_rgba(62,39,35,0.39)] hover:shadow-[0_6px_20px_rgba(62,39,35,0.23)] hover:bg-[#3E2723]/90 transition-all flex items-center justify-center gap-2"
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> Mark Item as Ready
-                    </button>
+                    {task.status === "pending" ? (
+                      <button 
+                        onClick={() => updateVendorTaskStatus(order.id, selectedVendor, "ready")}
+                        className="w-full bg-[#3E2723] text-white py-3 rounded-lg font-bold text-sm shadow-[0_4px_14px_0_rgba(62,39,35,0.39)] hover:shadow-[0_6px_20px_rgba(62,39,35,0.23)] hover:bg-[#3E2723]/90 transition-all flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle2 className="w-4 h-4" /> Mark Item as Ready
+                      </button>
+                    ) : (
+                      <div className="w-full bg-emerald-50 text-emerald-600 border border-emerald-200 py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" /> Item is Ready
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               );
@@ -152,8 +175,8 @@ export default function VendorDashboard() {
         {sortedTasks.length === 0 && (
           <div className="text-center py-24 opacity-50 bg-white/50 rounded-2xl border border-dashed border-[#C5A059]/30 mt-6">
             <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-emerald-500" />
-            <h3 className="font-serif text-xl font-bold text-[#3E2723]">You are all caught up!</h3>
-            <p className="text-sm font-medium mt-1">No pending tasks for the {selectedVendor} vendor right now.</p>
+            <h3 className="font-serif text-xl font-bold text-[#3E2723]">{taskStatusFilter === "pending" ? "You are all caught up!" : "No completed tasks yet."}</h3>
+            <p className="text-sm font-medium mt-1">No {taskStatusFilter} tasks for the {selectedVendor} vendor right now.</p>
           </div>
         )}
 
