@@ -1,15 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useOrders, VendorType } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Flower2, Camera, PenTool, CheckCircle2, MapPin, Clock, FileImage } from "lucide-react";
+import { Flower2, Camera, PenTool, CheckCircle2, MapPin, Clock, FileImage, LogOut } from "lucide-react";
 
 export default function VendorDashboard() {
+  const router = useRouter();
   const { orders, updateVendorTaskStatus } = useOrders();
   const [selectedVendor, setSelectedVendor] = useState<VendorType>("flower");
+  const [isLocked, setIsLocked] = useState(false);
   const [branchFilter, setBranchFilter] = useState("All");
   const [taskStatusFilter, setTaskStatusFilter] = useState<"pending" | "ready">("pending");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get("type");
+    if (type === "flower" || type === "photo" || type === "acrylic") {
+      setSelectedVendor(type);
+      setIsLocked(true);
+    }
+  }, []);
+
+  const handleSignOut = () => {
+    document.cookie = "gopal_dummy_role=; path=/; max-age=0";
+    router.push("/login");
+  };
 
   const branches = ["All", "Khanderao Branch", "Uma Branch", "Varasiya Factory Outlet", "Elora Park Branch"];
 
@@ -35,30 +52,42 @@ export default function VendorDashboard() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-serif font-black flex items-center gap-2">
-                Central Vendor Hub
+                {selectedVendor === "flower" ? "Florist Dashboard" : selectedVendor === "photo" ? "Photo Print Dashboard" : "Acrylic Dashboard"}
               </h1>
-              <p className="text-xs text-muted-foreground mt-0.5">Manage tasks across all 4 branches.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Manage your tasks across all 4 branches.</p>
             </div>
 
-            {/* Vendor Selector */}
-            <div className="flex bg-secondary/50 p-1 rounded-lg self-start">
+            <div className="flex items-center gap-4 self-start">
+              {/* Vendor Selector (Hidden if locked by login) */}
+              {!isLocked && (
+                <div className="flex bg-secondary/50 p-1 rounded-lg">
+                  <button 
+                    onClick={() => setSelectedVendor("flower")}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-bold transition-colors ${selectedVendor === "flower" ? "bg-white shadow-sm text-rose-600" : "text-muted-foreground hover:bg-white/50"}`}
+                  >
+                    <Flower2 className="w-4 h-4" /> Florist
+                  </button>
+                  <button 
+                    onClick={() => setSelectedVendor("photo")}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-bold transition-colors ${selectedVendor === "photo" ? "bg-white shadow-sm text-blue-600" : "text-muted-foreground hover:bg-white/50"}`}
+                  >
+                    <Camera className="w-4 h-4" /> Photo Print
+                  </button>
+                  <button 
+                    onClick={() => setSelectedVendor("acrylic")}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-bold transition-colors ${selectedVendor === "acrylic" ? "bg-white shadow-sm text-amber-600" : "text-muted-foreground hover:bg-white/50"}`}
+                  >
+                    <PenTool className="w-4 h-4" /> Acrylic
+                  </button>
+                </div>
+              )}
+
+              {/* Sign Out Button */}
               <button 
-                onClick={() => setSelectedVendor("flower")}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-bold transition-colors ${selectedVendor === "flower" ? "bg-white shadow-sm text-rose-600" : "text-muted-foreground hover:bg-white/50"}`}
+                onClick={handleSignOut}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-bold bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 transition-colors shadow-sm"
               >
-                <Flower2 className="w-4 h-4" /> Florist
-              </button>
-              <button 
-                onClick={() => setSelectedVendor("photo")}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-bold transition-colors ${selectedVendor === "photo" ? "bg-white shadow-sm text-blue-600" : "text-muted-foreground hover:bg-white/50"}`}
-              >
-                <Camera className="w-4 h-4" /> Photo Print
-              </button>
-              <button 
-                onClick={() => setSelectedVendor("acrylic")}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-bold transition-colors ${selectedVendor === "acrylic" ? "bg-white shadow-sm text-amber-600" : "text-muted-foreground hover:bg-white/50"}`}
-              >
-                <PenTool className="w-4 h-4" /> Acrylic
+                <LogOut className="w-4 h-4" /> Sign Out
               </button>
             </div>
           </div>

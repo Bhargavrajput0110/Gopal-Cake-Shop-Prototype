@@ -23,14 +23,18 @@ export default function LoginPage() {
     setTimeout(() => {
       // Fake Auth Logic
       let role = "";
-      if (email === "admin@gopal.com" && password === "admin123") role = "admin";
-      else if (email === "sales@gopal.com" && password === "sales123") role = "sales";
-      else if (email === "chef@gopal.com" && password === "chef123") role = "chef";
-      else if (email === "delivery@gopal.com" && password === "delivery123") role = "delivery";
+      let path = "";
+      if (email === "admin@gopal.com" && password === "admin123") { role = "admin"; path = "/admin"; }
+      else if (email === "sales@gopal.com" && password === "sales123") { role = "sales"; path = "/sales"; }
+      else if (email === "chef@gopal.com" && password === "chef123") { role = "chef"; path = "/chef"; }
+      else if (email === "delivery@gopal.com" && password === "delivery123") { role = "delivery"; path = "/delivery"; }
+      else if (email === "florist@gopal.com" && password === "florist123") { role = "florist"; path = "/vendor?type=flower"; }
+      else if (email === "photo@gopal.com" && password === "photo123") { role = "photo"; path = "/vendor?type=photo"; }
+      else if (email === "acrylic@gopal.com" && password === "acrylic123") { role = "acrylic"; path = "/vendor?type=acrylic"; }
 
       if (role) {
         document.cookie = `gopal_dummy_role=${role}; path=/; max-age=86400`; // 1 day expiration
-        router.push(`/${role}`);
+        router.push(path);
       } else {
         setError("Invalid email or password.");
         setIsLoading(false);
@@ -133,6 +137,16 @@ export default function LoginPage() {
             </button>
             <button onClick={() => quickLogin('delivery')} className="p-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors">
               <Truck className="w-3.5 h-3.5" /> Delivery
+            </button>
+            {/* Vendor Logins */}
+            <button onClick={() => quickLogin('florist')} className="p-2 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors">
+              Florist
+            </button>
+            <button onClick={() => quickLogin('photo')} className="p-2 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors">
+              Photo Print
+            </button>
+            <button onClick={() => quickLogin('acrylic')} className="p-2 bg-orange-50 text-orange-700 hover:bg-orange-100 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors col-span-2">
+              Acrylic Maker
             </button>
           </div>
         </div>
