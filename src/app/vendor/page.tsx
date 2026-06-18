@@ -57,10 +57,10 @@ export default function VendorDashboard() {
               <p className="text-xs text-muted-foreground mt-0.5">Manage your tasks across all 4 branches.</p>
             </div>
 
-            <div className="flex items-center gap-4 self-start">
+            <div className="flex flex-wrap items-center gap-3 self-start max-w-full">
               {/* Vendor Selector (Hidden if locked by login) */}
               {!isLocked && (
-                <div className="flex bg-secondary/50 p-1 rounded-lg">
+                <div className="flex bg-secondary/50 p-1 rounded-lg overflow-x-auto hide-scrollbar max-w-[85vw]">
                   <button 
                     onClick={() => setSelectedVendor("flower")}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-bold transition-colors ${selectedVendor === "flower" ? "bg-white shadow-sm text-rose-600" : "text-muted-foreground hover:bg-white/50"}`}
