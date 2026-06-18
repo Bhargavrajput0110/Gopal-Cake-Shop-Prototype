@@ -44,6 +44,7 @@ export type Order = {
   delayLevel?: "none" | "warning" | "delayed";
   assignedChef?: string; // e.g., "CHEF-101"
   vendorTasks?: VendorTask[];
+  cakeImage?: string;
 };
 
 // Generate Fake Orders with new branch ID format
@@ -58,6 +59,7 @@ const INITIAL_ORDERS: Order[] = [
     id: "KHM-10202", status: "accepted_by_chef", customerName: "Priya Shah", customerPhone: "+91 9999922222", deliveryAddress: "12 MG Road", branch: "Khanderao Branch",
     items: [{ name: "Chocolate Truffle Cake (1kg)", qty: 1, notes: "Eggless. Happy Birthday Mom" }], totalAmount: 1200, advancePaid: 500, pendingBalance: 700,
     isPriority: true, isSurprise: true, vip: false, timeTarget: new Date(now + 45 * 60000).toISOString(), createdAt: new Date(now - 60 * 60000).toISOString(), delayLevel: "none",
+    cakeImage: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=300&h=300",
     vendorTasks: [{ vendorType: "flower", status: "pending", instructions: "Requires a bouquet of 12 red roses attached to delivery." }]
   },
   {
@@ -65,6 +67,7 @@ const INITIAL_ORDERS: Order[] = [
     items: [{ name: "Red Velvet Anniversary Cake", qty: 1, notes: "Heart shape. Photo Cake." }], totalAmount: 1800, advancePaid: 1800, pendingBalance: 0,
     isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now + 90 * 60000).toISOString(), createdAt: new Date(now - 120 * 60000).toISOString(), delayLevel: "none",
     assignedChef: "CHEF-101", productionStartTime: new Date(now - 15 * 60000).toISOString(),
+    cakeImage: "https://images.unsplash.com/photo-1557925923-33b251d59245?auto=format&fit=crop&q=80&w=300&h=300",
     vendorTasks: [{ vendorType: "photo", status: "pending", instructions: "Print anniversary photo on A4 sugar sheet. Keep colors vibrant.", referenceImage: "https://images.unsplash.com/photo-1518199266791-5375a8316d4d?auto=format&fit=crop&q=80&w=300&h=300" }]
   },
   {
@@ -76,6 +79,7 @@ const INITIAL_ORDERS: Order[] = [
     id: "ELR-10205", status: "accepted_by_chef", customerName: "VIP Client Demo", customerPhone: "+91 9999955555", deliveryAddress: "123 Premium Villa", branch: "Elora Park Branch",
     items: [{ name: "3-Tier Wedding Cake", qty: 1, notes: "Pure Veg. Requires Acrylic Topper" }], totalAmount: 4500, advancePaid: 2000, pendingBalance: 2500,
     isPriority: true, isSurprise: true, vip: true, timeTarget: new Date(now + 240 * 60000).toISOString(), createdAt: new Date(now - 200 * 60000).toISOString(), delayLevel: "warning",
+    cakeImage: "https://images.unsplash.com/photo-1621303837174-89787a7d4729?auto=format&fit=crop&q=80&w=300&h=300",
     vendorTasks: [
       { vendorType: "acrylic", status: "pending", instructions: "Gold mirror acrylic topper reading 'Mr & Mrs Sharma'." },
       { vendorType: "flower", status: "pending", instructions: "Fresh white lilies for the 3-tier cake arrangement." }
@@ -96,6 +100,7 @@ const INITIAL_ORDERS: Order[] = [
     id: "WAS-10208", status: "ready_for_pickup", customerName: "Vikram Singh", customerPhone: "+91 9999988888", deliveryAddress: "88 Station Road", branch: "Varasiya Factory Outlet",
     items: [{ name: "Custom Fondant Cake", qty: 1 }], totalAmount: 2500, advancePaid: 2500, pendingBalance: 0,
     isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now - 10 * 60000).toISOString(), createdAt: new Date(now - 300 * 60000).toISOString(), delayLevel: "none",
+    cakeImage: "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?auto=format&fit=crop&q=80&w=300&h=300",
     vendorTasks: [{ vendorType: "photo", status: "ready", instructions: "Printed photo sheet for fondant.", referenceImage: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=300&h=300" }]
   },
   {
@@ -127,6 +132,7 @@ const INITIAL_ORDERS: Order[] = [
     id: "KHM-10214", status: "pending_assignment", customerName: "Kavita Singh", customerPhone: "+91 9876543213", deliveryAddress: "Villa 9, Palm Groves", branch: "Khanderao Branch",
     items: [{ name: "Custom Spiderman Theme Cake (2kg)", qty: 1 }], totalAmount: 3200, advancePaid: 1000, pendingBalance: 2200,
     isPriority: false, isSurprise: false, vip: true, timeTarget: new Date(now + 60 * 60000).toISOString(), createdAt: new Date(now - 300 * 60000).toISOString(), delayLevel: "none",
+    cakeImage: "https://images.unsplash.com/photo-1535141192574-5d4897c12636?auto=format&fit=crop&q=80&w=300&h=300",
     vendorTasks: [{ vendorType: "acrylic", status: "pending", instructions: "Spiderman shaped acrylic cutout piece." }]
   },
   {

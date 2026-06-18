@@ -166,10 +166,24 @@ export default function VendorDashboard() {
                       <p className="text-sm font-medium text-[#3E2723]">{task.instructions}</p>
                     </div>
 
-                    {/* Photo Reference Display */}
+                    {/* Ordered Cake Picture (For all vendors) */}
+                    {order.cakeImage && (
+                      <div className="mb-4">
+                         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1"><FileImage className="w-3 h-3" /> Ordered Cake</p>
+                         <div className="relative h-48 rounded-lg overflow-hidden border border-[#C5A059]/20 group cursor-pointer">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={order.cakeImage} alt="Ordered cake picture" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-white font-bold text-sm backdrop-blur-md px-3 py-1.5 rounded-full bg-white/20">Click to Enlarge</span>
+                            </div>
+                         </div>
+                      </div>
+                    )}
+
+                    {/* Photo Reference Display (Only for Photo Vendor) */}
                     {selectedVendor === "photo" && task.referenceImage && (
                       <div className="mb-4">
-                         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1"><FileImage className="w-3 h-3" /> Image to Print</p>
+                         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1"><Camera className="w-3 h-3" /> Image to Print</p>
                          <div className="relative h-48 rounded-lg overflow-hidden border border-[#C5A059]/20 group cursor-pointer">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={task.referenceImage} alt="Reference to print" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
