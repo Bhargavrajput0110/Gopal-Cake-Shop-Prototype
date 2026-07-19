@@ -15,7 +15,7 @@ export default defineConfig({
     }
   },
   test: {
-    threads: false,
+
     server: {
       deps: {
         inline: ['next-auth', 'next']

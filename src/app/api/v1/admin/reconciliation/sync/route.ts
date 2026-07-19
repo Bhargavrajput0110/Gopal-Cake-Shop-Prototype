@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PaymentService } from '@/services/payment/PaymentService';
+import { RazorpayProvider } from '@/services/payment/providers/RazorpayProvider';
+import { PaymentRepository } from '@/services/payment/PaymentRepository';
 import { prisma } from '@/lib/prisma';
 import { Role } from '@prisma/client';
 
@@ -15,7 +17,10 @@ export async function POST(req: Request) {
     const start = performance.now();
 
     // The actual reconciliation job 
-    const result = await PaymentService.reconcilePendingPayments();
+    const provider = new RazorpayProvider();
+    const repo = new PaymentRepository();
+    const paymentService = new PaymentService(provider, repo);
+    const result = await paymentService.reconcilePendingPayments();
 
     const durationMs = Math.round(performance.now() - start);
 

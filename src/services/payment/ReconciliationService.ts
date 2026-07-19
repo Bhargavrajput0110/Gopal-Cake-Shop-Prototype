@@ -38,7 +38,7 @@ export class ReconciliationService {
       where: {
         status: PaymentStatus.SUCCESS,
         order: {
-          ledger: {
+          ledgerEntries: {
             none: {}
           }
         }
@@ -63,16 +63,16 @@ export class ReconciliationService {
       where: {
         status: PaymentStatus.SUCCESS,
         order: {
-          ledger: {
-            some: { type: LedgerEntryType.CREDIT }
+          ledgerEntries: {
+            some: { type: LedgerEntryType.PAYMENT }
           }
         }
       },
       include: { 
         order: {
           include: {
-            ledger: {
-              where: { type: LedgerEntryType.CREDIT }
+            ledgerEntries: {
+              where: { type: LedgerEntryType.PAYMENT }
             }
           }
         }
@@ -80,7 +80,7 @@ export class ReconciliationService {
     });
 
     for (const payment of successfulPaymentsWithLedger) {
-      const ledgerTotal = payment.order.ledger.reduce((sum, entry) => sum + Number(entry.amount), 0);
+      const ledgerTotal = payment.order.ledgerEntries.reduce((sum, entry) => sum + Number(entry.amount), 0);
       if (Math.abs(Number(payment.amount) - ledgerTotal) > 0.01) { // Floating point safety
         issues.push({
           id: `am-${payment.id}`,
@@ -141,10 +141,10 @@ export class ReconciliationService {
     }
 
     // 5. Duplicate Ledger: Multiple Credit entries for the same order (Assuming 1 payment = 1 credit normally, except refunds)
-    // We can group by orderId in ledger where type = CREDIT
+    // We can group by orderId in ledger where type = PAYMENT
     const ledgerCredits = await prisma.ledgerEntry.groupBy({
       by: ['orderId'],
-      where: { type: LedgerEntryType.CREDIT },
+      where: { type: LedgerEntryType.PAYMENT },
       _count: { id: true },
       having: {
         id: { _count: { gt: 1 } }
@@ -157,7 +157,7 @@ export class ReconciliationService {
         type: 'DUPLICATE_LEDGER',
         severity: 'CRITICAL',
         description: `Order ${duplicate.orderId} has ${duplicate._count.id} CREDIT ledger entries. Check for duplicates.`,
-        orderId: duplicate.orderId,
+        orderId: duplicate.orderId ?? undefined,
         createdAt: now
       });
     }
