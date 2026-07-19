@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { SearchNormal1, Bag, User } from "iconsax-react";
+import { SearchNormal1, ShoppingCart, User } from "iconsax-react";
 import { useCart } from "@/context/CartContext";
 import { useCustomerAuth } from "@/context/CustomerAuthContext";
 
@@ -209,15 +209,15 @@ export function Navbar() {
               {/* Cart */}
               <button
                 onClick={() => setIsCartOpen(true)}
-                className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-all duration-250 ${
+                className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-250 ${
                   showScrolledNavbar
-                    ? "text-foreground/70 hover:text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/8"
-                    : "text-white/80 hover:text-white hover:bg-white/10"
+                    ? "bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 shadow-md shadow-[var(--brand-deep-rose)]/15"
+                    : "bg-white/20 text-white hover:bg-white/30"
                 }`}
               >
-                <Bag variant="TwoTone" className="h-[18px] w-[18px]" />
+                <ShoppingCart variant="TwoTone" className="h-[18px] w-[18px]" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-[var(--brand-deep-rose)] text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                  <span className="absolute -top-1 -right-1 h-[18px] w-[18px] rounded-full bg-[var(--brand-champagne)] text-[var(--brand-espresso)] text-[9px] font-bold flex items-center justify-center border border-white shadow-sm">
                     {totalItems}
                   </span>
                 )}
@@ -230,7 +230,7 @@ export function Navbar() {
             </div>
 
             {/* ── Mobile: Cart & Search ── */}
-            <div className="flex md:hidden items-center gap-1">
+            <div className="flex md:hidden items-center gap-2">
               <button
                 onClick={() => setIsSearchOpen(true)}
                 className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-all ${
@@ -241,13 +241,15 @@ export function Navbar() {
               </button>
               <button
                 onClick={() => setIsCartOpen(true)}
-                className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-all ${
-                  showScrolledNavbar ? "text-foreground/70" : "text-white/80"
+                className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-250 ${
+                  showScrolledNavbar
+                    ? "bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 shadow-sm"
+                    : "bg-white/20 text-white hover:bg-white/30"
                 }`}
               >
-                <Bag variant="TwoTone" className="h-5 w-5" />
+                <ShoppingCart variant="TwoTone" className="h-5 w-5" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-[var(--brand-deep-rose)] text-white text-[10px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 h-[18px] w-[18px] rounded-full bg-[var(--brand-champagne)] text-[var(--brand-espresso)] text-[9px] font-bold flex items-center justify-center border border-white shadow-sm">
                     {totalItems}
                   </span>
                 )}
