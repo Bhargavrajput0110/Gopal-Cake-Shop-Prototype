@@ -9,9 +9,9 @@ export const StickyScroll = ({
 }: {
   content: {
     title: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     description: string | React.ReactNode | any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     content?: React.ReactNode | any;
   }[];
   contentClassName?: string;

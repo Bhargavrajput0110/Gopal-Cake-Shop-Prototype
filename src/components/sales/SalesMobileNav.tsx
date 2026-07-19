@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LogOut, Home } from "lucide-react";
+import { HambergerMenu, CloseSquare, Logout, Home2 } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { navItems } from "./SalesSidebar";
 
@@ -33,7 +33,7 @@ export function SalesMobileNav() {
               <p className="text-sm font-bold text-[#FAFAF8] mt-1 tracking-wide">Khanderao Branch</p>
             </div>
             <button onClick={() => setIsOpen(false)} className="p-2 text-[#FAFAF8] hover:text-rose-400">
-              <X className="w-6 h-6" />
+              <CloseSquare className="w-6 h-6" />
             </button>
           </div>
           
@@ -53,9 +53,9 @@ export function SalesMobileNav() {
                 >
                   <item.icon className="w-5 h-5 shrink-0" />
                   <span className="tracking-wide">{item.name}</span>
-                  {item.badge && (
+                  {(item as any).badge && (
                     <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${isActive ? "bg-[#38251E] text-[#C8A97E]" : "bg-[#C8A97E]/20 text-[#C8A97E]"}`}>
-                      {item.badge}
+                      {(item as any).badge}
                     </span>
                   )}
                 </Link>
@@ -68,14 +68,14 @@ export function SalesMobileNav() {
               href="/" 
               className="flex items-center gap-3 p-3.5 rounded-xl font-bold text-[#C8A97E] bg-[#C8A97E]/10 hover:bg-[#C8A97E]/20 transition-colors"
             >
-              <Home className="w-5 h-5 shrink-0" />
+              <Home2 className="w-5 h-5 shrink-0" />
               Back to Website
             </Link>
             <button 
               onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
               className="flex items-center gap-3 p-3.5 rounded-xl font-bold text-rose-500 bg-rose-500/10 w-full hover:bg-rose-500/20 transition-colors"
             >
-              <LogOut className="w-5 h-5 shrink-0" />
+              <Logout className="w-5 h-5 shrink-0" />
               Sign Out
             </button>
           </div>
@@ -87,7 +87,7 @@ export function SalesMobileNav() {
   return (
     <>
       <button onClick={() => setIsOpen(true)} className="md:hidden p-2 -ml-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
-        <Menu className="w-6 h-6" />
+        <HambergerMenu className="w-6 h-6" />
       </button>
       {mounted && createPortal(menu, document.body)}
     </>

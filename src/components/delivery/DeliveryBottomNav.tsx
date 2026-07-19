@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Map, ListOrdered, User } from "lucide-react";
+import { Map, TextalignJustifycenter, User } from "iconsax-react";
 
 export function DeliveryBottomNav() {
   const pathname = usePathname();
@@ -10,7 +10,7 @@ export function DeliveryBottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 w-full bg-card border-t border-border pb-safe flex items-center justify-around z-50">
       <Link href="/delivery" className={`flex flex-col items-center p-3 w-20 transition-colors ${pathname === "/delivery" ? "text-primary" : "text-muted-foreground"}`}>
-        <ListOrdered className="w-6 h-6 mb-1" />
+        <TextalignJustifycenter className="w-6 h-6 mb-1" />
         <span className="text-[10px] font-medium">Orders</span>
       </Link>
       

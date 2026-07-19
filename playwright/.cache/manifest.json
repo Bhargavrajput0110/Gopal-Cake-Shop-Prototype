@@ -1,0 +1,27 @@
+{
+  "name": "Gopal Bakery ERP",
+  "short_name": "GopalBakery",
+  "description": "Enterprise KDS & Logistics Dashboard for Gopal Cake Shop",
+  "start_url": "/sales",
+  "display": "standalone",
+  "background_color": "#38251E",
+  "theme_color": "#38251E",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

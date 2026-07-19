@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Loader2, MapPin } from "lucide-react";
+import { Refresh2, Location } from "iconsax-react";
 import dynamic from "next/dynamic";
 
 // Dynamically import the map to avoid SSR and Hook issues
 const LeafletMapInner = dynamic(() => import("./LeafletMapInner"), { 
   ssr: false,
-  loading: () => <div className="h-full w-full flex items-center justify-center bg-secondary text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin" /></div>
+  loading: () => <div className="h-full w-full flex items-center justify-center bg-secondary text-muted-foreground"><Refresh2 className="w-6 h-6 animate-spin" /></div>
 });
 
 // The 4 Branches of Gopal Bakery [lng, lat] for OSRM
@@ -30,7 +30,7 @@ export function LeafletAddressPicker({ onDistancesCalculated, onAddressChange, o
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -38,7 +38,7 @@ export function LeafletAddressPicker({ onDistancesCalculated, onAddressChange, o
   // Nominatim Autocomplete restricted to Vadodara & Nearby (Anand/Nadiad)
   useEffect(() => {
     if (searchQuery.length < 3) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setSearchResults([]);
       return;
     }
@@ -71,7 +71,7 @@ export function LeafletAddressPicker({ onDistancesCalculated, onAddressChange, o
     };
   }, [searchQuery]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const handleSelectAddress = (result: any) => {
     const lat = parseFloat(result.lat);
     const lng = parseFloat(result.lon);
@@ -111,7 +111,7 @@ export function LeafletAddressPicker({ onDistancesCalculated, onAddressChange, o
     };
 
     calculateDistanceMatrix();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [selectedLocation]);
 
   return (
@@ -129,7 +129,7 @@ export function LeafletAddressPicker({ onDistancesCalculated, onAddressChange, o
         </label>
         
         <div className="relative z-50">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Location className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             value={searchQuery}
@@ -137,7 +137,7 @@ export function LeafletAddressPicker({ onDistancesCalculated, onAddressChange, o
             placeholder="Type your society or building name..."
             className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-card focus:ring-2 focus:ring-primary/50 text-base relative z-50"
           />
-          {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
+          {isSearching && <Refresh2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
         </div>
         
         <p className="text-xs text-muted-foreground italic flex justify-between">

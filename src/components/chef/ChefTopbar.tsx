@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChefHat } from "lucide-react";
+import { Notification, Reserve } from "iconsax-react";
 import { ChefMobileNav } from "./ChefMobileNav";
 
 export function ChefTopbar() {
@@ -9,7 +9,7 @@ export function ChefTopbar() {
       <div className="flex items-center gap-2.5">
         <ChefMobileNav />
         <div className="hidden sm:flex p-1.5 bg-[#3E2723] rounded-md text-[#C5A059] shadow-sm">
-          <ChefHat className="w-5 h-5" />
+          <Reserve className="w-5 h-5" />
         </div>
         <div>
           <h1 className="text-lg font-black text-[#3E2723] tracking-tight font-serif">Kitchen Display System</h1>
@@ -31,7 +31,7 @@ export function ChefTopbar() {
         </div>
 
         <button className="relative p-2 bg-secondary hover:bg-[#C5A059]/10 hover:text-[#C5A059] rounded-lg transition-colors border border-border/50">
-          <Bell className="w-4 h-4 text-[#3E2723]" />
+          <Notification className="w-4 h-4 text-[#3E2723]" />
           <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full border border-white animate-pulse"></span>
         </button>
       </div>

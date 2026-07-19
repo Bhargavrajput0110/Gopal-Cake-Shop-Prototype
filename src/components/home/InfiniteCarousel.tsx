@@ -12,10 +12,10 @@ const items = [
 
 export function InfiniteCarousel() {
   return (
-    <div className="w-full bg-[#D4AF37] py-6 overflow-hidden relative shadow-[0_0_30px_rgba(212,175,55,0.4)] z-20">
+    <div className="w-full bg-background py-6 overflow-hidden relative z-20 border-b border-border/50">
       <Marquee className="[--duration:15s]" pauseOnHover>
         {items.map((item, idx) => (
-          <span key={idx} className={`font-black tracking-tighter uppercase text-[#050505] ${item === "✦" ? "text-white mx-8" : "text-4xl md:text-6xl mx-4"}`}>
+          <span key={idx} className={`font-black tracking-tighter uppercase text-foreground ${item === "✦" ? "opacity-30 mx-8 text-primary" : "text-4xl md:text-6xl mx-4"}`}>
             {item}
           </span>
         ))}

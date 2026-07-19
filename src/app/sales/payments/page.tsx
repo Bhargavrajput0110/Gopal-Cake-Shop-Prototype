@@ -1,12 +1,16 @@
-import { CreditCard, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Card, Warning2, TickCircle } from "iconsax-react";
+import { BackButton } from "@/components/ui/BackButton";
 
 export default function PaymentTrackingPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <div className="mb-2">
+            <BackButton fallback="/sales" label="Back to Sales" variant="outline" size="sm" />
+          </div>
           <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <CreditCard className="w-6 h-6 text-primary" /> Payment Tracking
+            <Card className="w-6 h-6 text-primary" /> Payment Tracking
           </h2>
           <p className="text-muted-foreground text-sm">Monitor advance payments and collect pending balances.</p>
         </div>
@@ -59,7 +63,7 @@ export default function PaymentTrackingPage() {
               <td className="px-6 py-4 font-bold text-amber-500">₹1,450</td>
               <td className="px-6 py-4">
                 <span className="flex items-center gap-1 text-[10px] bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-1 rounded-full font-bold uppercase tracking-wider w-max">
-                  <AlertTriangle className="w-3 h-3" /> Balance Due
+                  <Warning2 className="w-3 h-3" /> Balance Due
                 </span>
               </td>
               <td className="px-6 py-4 text-right">
@@ -75,7 +79,7 @@ export default function PaymentTrackingPage() {
               <td className="px-6 py-4 font-bold text-muted-foreground">₹0</td>
               <td className="px-6 py-4">
                 <span className="flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 px-2 py-1 rounded-full font-bold uppercase tracking-wider w-max">
-                  <CheckCircle2 className="w-3 h-3" /> Fully Paid
+                  <TickCircle className="w-3 h-3" /> Fully Paid
                 </span>
               </td>
               <td className="px-6 py-4 text-right">

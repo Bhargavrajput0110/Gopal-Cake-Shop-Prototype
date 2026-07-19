@@ -1,0 +1,60 @@
+import { Meta, ColorPalette, ColorItem } from '@storybook/blocks';
+
+<Meta title="Foundation/Colors" />
+
+# Design Tokens: Colors
+
+The primary color palette defined in `globals.css` using HSL variables mapped to Tailwind CSS.
+
+<ColorPalette>
+  <ColorItem
+    title="Primary"
+    subtitle="Brand main color"
+    colors={{ 
+      DEFAULT: 'hsl(var(--primary))', 
+      foreground: 'hsl(var(--primary-foreground))' 
+    }}
+  />
+  <ColorItem
+    title="Secondary"
+    subtitle="Secondary brand interactions"
+    colors={{ 
+      DEFAULT: 'hsl(var(--secondary))', 
+      foreground: 'hsl(var(--secondary-foreground))' 
+    }}
+  />
+  <ColorItem
+    title="Background & Foreground"
+    subtitle="Body backgrounds and text"
+    colors={{ 
+      background: 'hsl(var(--background))', 
+      foreground: 'hsl(var(--foreground))' 
+    }}
+  />
+  <ColorItem
+    title="Surface (Card & Popover)"
+    subtitle="Elevated containers"
+    colors={{ 
+      card: 'hsl(var(--card))', 
+      popover: 'hsl(var(--popover))', 
+    }}
+  />
+  <ColorItem
+    title="Semantic: Success & Warning"
+    subtitle="State indicators"
+    colors={{ 
+      success: 'hsl(var(--success))', 
+      warning: 'hsl(var(--warning))',
+      destructive: 'hsl(var(--destructive))' 
+    }}
+  />
+  <ColorItem
+    title="Muted & Border"
+    subtitle="De-emphasized content and dividers"
+    colors={{ 
+      muted: 'hsl(var(--muted))', 
+      border: 'hsl(var(--border))', 
+      input: 'hsl(var(--input))' 
+    }}
+  />
+</ColorPalette>

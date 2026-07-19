@@ -3,18 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LogOut, Home } from "lucide-react";
+import { HambergerMenu, CloseSquare, Logout, Home2 } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { navItems } from "./AdminSidebar";
+import { ADMIN_NAV_CONFIG } from "@/components/navigation/nav-configs";
 
 export function AdminMobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const navItems = ADMIN_NAV_CONFIG.nav[0].items;
 
   return (
     <>
       <button onClick={() => setIsOpen(true)} className="md:hidden p-2 -ml-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
-        <Menu className="w-6 h-6" />
+        <HambergerMenu className="w-6 h-6" />
       </button>
 
       <AnimatePresence>
@@ -32,7 +33,7 @@ export function AdminMobileNav() {
                 <p className="text-sm font-bold text-foreground mt-1 tracking-wide">Owner / Admin</p>
               </div>
               <button onClick={() => setIsOpen(false)} className="p-2 text-foreground hover:text-rose-500">
-                <X className="w-6 h-6" />
+                <CloseSquare className="w-6 h-6" />
               </button>
             </div>
             
@@ -67,14 +68,14 @@ export function AdminMobileNav() {
                 href="/" 
                 className="flex items-center gap-3 p-3.5 rounded-xl font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
               >
-                <Home className="w-5 h-5 shrink-0" />
+                <Home2 className="w-5 h-5 shrink-0" />
                 Back to Website
               </Link>
               <button 
                 onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
                 className="flex items-center gap-3 p-3.5 rounded-xl font-bold text-rose-500 bg-rose-500/10 w-full hover:bg-rose-500/20 transition-colors"
               >
-                <LogOut className="w-5 h-5 shrink-0" />
+                <Logout className="w-5 h-5 shrink-0" />
                 Sign Out
               </button>
             </div>

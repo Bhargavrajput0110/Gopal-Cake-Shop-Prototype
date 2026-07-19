@@ -9,7 +9,7 @@ export function CustomCursor() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setIsMounted(true);
     // Check if device supports hover (ignore on touch devices)
     if (window.matchMedia("(pointer: coarse)").matches) return;
@@ -54,12 +54,14 @@ export function CustomCursor() {
         a, button, [data-cursor="hover"] { cursor: none !important; }
       `}} />
       <motion.div
-        className="fixed top-0 left-0 w-6 h-6 rounded-full border border-white pointer-events-none z-[9999] mix-blend-difference"
+        aria-hidden="true"
+        className="fixed top-0 left-0 w-6 h-6 rounded-full border pointer-events-none z-[9999]"
+        style={{ borderColor: "var(--primary)" }}
         animate={{
           x: mousePosition.x - 12,
           y: mousePosition.y - 12,
           scale: isHovering ? 2.5 : 1,
-          backgroundColor: isHovering ? "rgba(255, 255, 255, 1)" : "rgba(255, 255, 255, 0)",
+          backgroundColor: isHovering ? "rgba(232, 130, 159, 0.1)" : "rgba(232, 130, 159, 0)",
         }}
         transition={{
           type: "spring",
@@ -69,7 +71,9 @@ export function CustomCursor() {
         }}
       />
       <motion.div
-        className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full bg-white pointer-events-none z-[10000] mix-blend-difference"
+        aria-hidden="true"
+        className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full pointer-events-none z-[10000]"
+        style={{ backgroundColor: "var(--primary)" }}
         animate={{
           x: mousePosition.x - 3,
           y: mousePosition.y - 3,

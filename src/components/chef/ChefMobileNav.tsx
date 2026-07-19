@@ -3,13 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams, usePathname } from "next/navigation";
-import { Menu, X, LogOut, Home, Inbox, Play, CheckCircle } from "lucide-react";
+import { HambergerMenu, CloseSquare, Logout, Home2, ArchiveBook, Play, TickCircle, Box } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
-  { name: "Incoming", href: "?tab=incoming", icon: Inbox, value: "incoming" },
+  { name: "Incoming", href: "?tab=incoming", icon: Box, value: "incoming" },
   { name: "My Production", href: "?tab=production", icon: Play, value: "production" },
-  { name: "Ready", href: "?tab=ready", icon: CheckCircle, value: "ready" },
+  { name: "Ready", href: "?tab=ready", icon: TickCircle, value: "ready" },
 ];
 
 export function ChefMobileNav() {
@@ -20,7 +20,7 @@ export function ChefMobileNav() {
   return (
     <>
       <button onClick={() => setIsOpen(true)} className="md:hidden p-2 -ml-2 text-[#3E2723] hover:bg-[#C5A059]/10 rounded-lg transition-colors">
-        <Menu className="w-6 h-6" />
+        <HambergerMenu className="w-6 h-6" />
       </button>
 
       <AnimatePresence>
@@ -38,7 +38,7 @@ export function ChefMobileNav() {
                 <p className="text-sm font-bold text-[#3E2723] mt-1 tracking-wide">Chef Station</p>
               </div>
               <button onClick={() => setIsOpen(false)} className="p-2 text-[#3E2723] hover:text-rose-500">
-                <X className="w-6 h-6" />
+                <CloseSquare className="w-6 h-6" />
               </button>
             </div>
             
@@ -69,14 +69,14 @@ export function ChefMobileNav() {
                 href="/" 
                 className="flex items-center gap-3 p-3.5 rounded-xl font-bold text-[#C5A059] bg-[#C5A059]/10 hover:bg-[#C5A059]/20 transition-colors"
               >
-                <Home className="w-5 h-5 shrink-0" />
+                <Home2 className="w-5 h-5 shrink-0" />
                 Back to Website
               </Link>
               <button 
                 onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
                 className="flex items-center gap-3 p-3.5 rounded-xl font-bold text-rose-500 bg-rose-500/10 w-full hover:bg-rose-500/20 transition-colors"
               >
-                <LogOut className="w-5 h-5 shrink-0" />
+                <Logout className="w-5 h-5 shrink-0" />
                 Sign Out
               </button>
             </div>

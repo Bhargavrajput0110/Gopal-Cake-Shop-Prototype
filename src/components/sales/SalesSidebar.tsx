@@ -2,25 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  ClipboardList,
-  ArrowLeftRight,
-  Store,
-  Bike,
-  CreditCard,
-  PlusCircle,
-  LogOut,
-  Activity
-} from "lucide-react";
+import { ClipboardText, Shop, Car, Card, AddCircle, Logout, Activity } from "iconsax-react";
 
 export const navItems = [
   { name: "Command Center", href: "/sales", icon: Activity },
-  { name: "Orders", href: "/sales/orders", icon: ClipboardList, badge: 12 },
-  { name: "Branch Transfers", href: "/sales/transfers", icon: ArrowLeftRight, badge: 2 },
-  { name: "Vendor Dispatch", href: "/sales/vendors", icon: Store },
-  { name: "Delivery Assignment", href: "/sales/delivery", icon: Bike },
-  { name: "Payments", href: "/sales/payments", icon: CreditCard },
-  { name: "Manual / Priority POS", href: "/sales/manual", icon: PlusCircle },
+  { name: "Orders", href: "/sales/orders", icon: ClipboardText },
+  { name: "Vendor Dispatch", href: "/sales/vendors", icon: Shop },
+  { name: "Delivery Assignment", href: "/sales/delivery", icon: Car },
+  { name: "Payments", href: "/sales/payments", icon: Card },
+  { name: "Manual / Priority POS", href: "/sales/manual", icon: AddCircle },
 ];
 
 export function SalesSidebar() {
@@ -56,9 +46,9 @@ export function SalesSidebar() {
                 <item.icon className={`w-4 h-4 shrink-0 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
                 <span className="tracking-wide">{item.name}</span>
               </div>
-              {item.badge && (
+              {(item as any).badge && (
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 shadow-sm transition-colors duration-300 ${isActive ? "bg-[#38251E] text-[#C8A97E]" : "bg-[#C8A97E]/20 text-[#C8A97E]"}`}>
-                  {item.badge}
+                  {(item as any).badge}
                 </span>
               )}
             </Link>
@@ -71,7 +61,7 @@ export function SalesSidebar() {
           onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
           className="flex items-center gap-3 text-sm font-bold text-[#FAFAF8]/50 hover:text-rose-400 transition-colors w-full px-3 py-2 rounded-lg hover:bg-white/5 uppercase tracking-wider"
         >
-          <LogOut className="w-4 h-4 shrink-0" />
+          <Logout className="w-4 h-4 shrink-0" />
           Sign Out
         </button>
       </div>

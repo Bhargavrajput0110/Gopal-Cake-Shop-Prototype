@@ -1,20 +1,21 @@
-import { ManagerSidebar } from "@/components/manager/ManagerSidebar";
-import { ManagerTopbar } from "@/components/manager/ManagerTopbar";
+"use client"
+
+import { AppSidebar, AppTopbar, MANAGER_NAV_CONFIG } from "@/components/navigation"
 
 export default function ManagerLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <div className="min-h-screen bg-background">
-      <ManagerSidebar />
+      <AppSidebar config={MANAGER_NAV_CONFIG} />
       <div className="md:pl-64 flex flex-col min-h-screen">
-        <ManagerTopbar />
+        <AppTopbar config={MANAGER_NAV_CONFIG} searchPlaceholder="Search..." />
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>
     </div>
-  );
+  )
 }

@@ -1,215 +1,371 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { io, Socket } from "socket.io-client";
 
 export type OrderStatus = 
-  | "new" 
-  | "accepted_by_chef" 
-  | "preparing" 
-  | "decorating" 
-  | "ready_for_pickup" 
-  | "pending_assignment" 
-  | "assigned_to_driver" 
-  | "picked_up_by_driver" 
-  | "on_the_way" 
-  | "delivered" 
-  | "failed"
-  | "cancelled";
+  | "QUOTE_DRAFT"
+  | "QUOTE_SENT"
+  | "QUOTE_APPROVED"
+  | "QUOTE_EXPIRED"
+  | "QUOTE_REJECTED"
+  | "QUOTE_CONVERTED"
+  | "DRAFT"
+  | "NEW" 
+  | "WAITING_FOR_CHEF"
+  | "CHEF_ACCEPTED" 
+  | "MAKING"
+  | "DECORATING" 
+  | "READY_FOR_PICKUP" 
+  | "PENDING_ASSIGNMENT" 
+  | "ASSIGNED_TO_DRIVER" 
+  | "PICKED_UP" 
+  | "ON_THE_WAY" 
+  | "DELIVERED" 
+  | "FAILED_DELIVERY"
+  | "COMPLETED"
+  | "CANCELLED";
 
 export type VendorType = "flower" | "photo" | "acrylic";
 export type VendorTask = {
+  vendorId?: string;
+  vendorName?: string;
   vendorType: VendorType;
-  status: "pending" | "ready";
+  status: "pending" | "accepted" | "in_progress" | "ready";
   instructions: string;
   referenceImage?: string;
+  notes?: { text: string; timestamp: string; read: boolean }[];
+};
+
+export type IngredientRequest = {
+  id: string;
+  itemCode: string;
+  itemName: string;
+  qty?: number, unit?: string;
+  requestedBy: string;
+  status: "pending" | "resolved";
+  timestamp: string;
+};
+
+export type TimelineEvent = {
+  event: string;
+  actor: string;
+  timestamp: string;
+};
+
+export type AuditEntry = {
+  field: string;
+  oldValue: string;
+  newValue: string;
+  changedBy: string;
+  timestamp: string;
 };
 
 export type Order = {
   id: string;
+  orderType: "delivery" | "pickup" | "walk_in" | "phone";
   status: OrderStatus;
   customerName: string;
   customerPhone: string;
-  deliveryAddress: string;
+  delivery?: {
+    address: string;
+    landmark?: string;
+    latitude?: number;
+    longitude?: number;
+  };
   branch: string;
-  items: { name: string; qty: number; notes?: string }[];
-  totalAmount: number;
+  items: { id?: string; name: string; qty: number; weight?: string; notes?: string; productId?: string; referenceImages?: string[]; printImages?: string[] }[];
+  subtotal: number;
+  discount: number;
+  tax: number;
+  deliveryCharge: number;
+  grandTotal: number;
   advancePaid: number;
   pendingBalance: number;
-  isPriority: boolean;
+  priorityLevel: "normal" | "high" | "vip";
   isSurprise: boolean;
   vip: boolean;
-  timeTarget: string; // ISO String for exact time diff calculations
+  timeTarget: string;
   createdAt: string;
-  productionStartTime?: string; // Tracks exactly when the chef clicked "Start Baking"
+  customerInstructions?: string;
+  productionStartTime?: string;
   delayLevel?: "none" | "warning" | "delayed";
-  assignedChef?: string; // e.g., "CHEF-101"
+  assignedChef?: string;
+  assignedDriverId?: string;
+  assignedDriverName?: string;
   vendorTasks?: VendorTask[];
   cakeImage?: string;
+  ingredientRequests?: IngredientRequest[];
+  timeline?: TimelineEvent[];
+  transferHistory?: { from: string; to: string; note: string; timestamp: string }[];
+  auditLog?: AuditEntry[];
+  requestedDiscountOverride?: {
+    amount: number;
+    isPercent: boolean;
+    requestedBy: string;
+    status: 'pending' | 'approved' | 'rejected';
+    approvedBy?: string;
+  };
+  payments?: { paymentType: string; amount: number; method: string; timestamp: string }[];
+  approvedAt?: string;
+  acceptedAt?: string;
+  readyAt?: string;
+  pickedUpAt?: string;
+  deliveredAt?: string;
+  updatedAt?: string;
+  version?: number;
+  deletedAt?: string;
+  deletedBy?: string;
+  createdBy?: string;
+  updatedBy?: string;
 };
-
-// Generate Fake Orders with new branch ID format
-const now = Date.now();
-const INITIAL_ORDERS: Order[] = [
-  {
-    id: "KHM-10201", status: "accepted_by_chef", customerName: "Aarav Patel", customerPhone: "+91 9999911111", deliveryAddress: "Store Pickup", branch: "Khanderao Branch",
-    items: [{ name: "Pineapple Pastry", qty: 4 }], totalAmount: 400, advancePaid: 400, pendingBalance: 0,
-    isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now + 15 * 60000).toISOString(), createdAt: new Date(now - 30 * 60000).toISOString(), delayLevel: "none"
-  },
-  {
-    id: "KHM-10202", status: "accepted_by_chef", customerName: "Priya Shah", customerPhone: "+91 9999922222", deliveryAddress: "12 MG Road", branch: "Khanderao Branch",
-    items: [{ name: "Chocolate Truffle Cake (1kg)", qty: 1, notes: "Eggless. Happy Birthday Mom" }], totalAmount: 1200, advancePaid: 500, pendingBalance: 700,
-    isPriority: true, isSurprise: true, vip: false, timeTarget: new Date(now + 45 * 60000).toISOString(), createdAt: new Date(now - 60 * 60000).toISOString(), delayLevel: "none",
-    cakeImage: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=300&h=300",
-    vendorTasks: [{ vendorType: "flower", status: "pending", instructions: "Requires a bouquet of 12 red roses attached to delivery." }]
-  },
-  {
-    id: "UMA-10203", status: "preparing", customerName: "Rahul Desai", customerPhone: "+91 9999933333", deliveryAddress: "Store Pickup", branch: "Uma Branch",
-    items: [{ name: "Red Velvet Anniversary Cake", qty: 1, notes: "Heart shape. Photo Cake." }], totalAmount: 1800, advancePaid: 1800, pendingBalance: 0,
-    isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now + 90 * 60000).toISOString(), createdAt: new Date(now - 120 * 60000).toISOString(), delayLevel: "none",
-    assignedChef: "CHEF-101", productionStartTime: new Date(now - 15 * 60000).toISOString(),
-    cakeImage: "https://images.unsplash.com/photo-1557925923-33b251d59245?auto=format&fit=crop&q=80&w=300&h=300",
-    vendorTasks: [{ vendorType: "photo", status: "pending", instructions: "Print anniversary photo on A4 sugar sheet. Keep colors vibrant.", referenceImage: "https://images.unsplash.com/photo-1518199266791-5375a8316d4d?auto=format&fit=crop&q=80&w=300&h=300" }]
-  },
-  {
-    id: "WAS-10204", status: "accepted_by_chef", customerName: "Sneha Joshi", customerPhone: "+91 9999944444", deliveryAddress: "44 Ring Road", branch: "Varasiya Factory Outlet",
-    items: [{ name: "Black Forest Cake (500g)", qty: 1 }], totalAmount: 600, advancePaid: 600, pendingBalance: 0,
-    isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now + 120 * 60000).toISOString(), createdAt: new Date(now - 10 * 60000).toISOString(), delayLevel: "none"
-  },
-  {
-    id: "ELR-10205", status: "accepted_by_chef", customerName: "VIP Client Demo", customerPhone: "+91 9999955555", deliveryAddress: "123 Premium Villa", branch: "Elora Park Branch",
-    items: [{ name: "3-Tier Wedding Cake", qty: 1, notes: "Pure Veg. Requires Acrylic Topper" }], totalAmount: 4500, advancePaid: 2000, pendingBalance: 2500,
-    isPriority: true, isSurprise: true, vip: true, timeTarget: new Date(now + 240 * 60000).toISOString(), createdAt: new Date(now - 200 * 60000).toISOString(), delayLevel: "warning",
-    cakeImage: "https://images.unsplash.com/photo-1621303837174-89787a7d4729?auto=format&fit=crop&q=80&w=300&h=300",
-    vendorTasks: [
-      { vendorType: "acrylic", status: "pending", instructions: "Gold mirror acrylic topper reading 'Mr & Mrs Sharma'." },
-      { vendorType: "flower", status: "pending", instructions: "Fresh white lilies for the 3-tier cake arrangement." }
-    ]
-  },
-  {
-    id: "KHM-10206", status: "decorating", customerName: "Amit Kumar", customerPhone: "+91 9999966666", deliveryAddress: "Store Pickup", branch: "Khanderao Branch",
-    items: [{ name: "Mango Cheesecake", qty: 1 }], totalAmount: 1500, advancePaid: 1500, pendingBalance: 0,
-    isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now + 30 * 60000).toISOString(), createdAt: new Date(now - 240 * 60000).toISOString(), delayLevel: "delayed",
-    assignedChef: "CHEF-101", productionStartTime: new Date(now - 60 * 60000).toISOString()
-  },
-  {
-    id: "UMA-10207", status: "accepted_by_chef", customerName: "Neha Gupta", customerPhone: "+91 9999977777", deliveryAddress: "Store Pickup", branch: "Uma Branch",
-    items: [{ name: "Butterscotch Cake", qty: 2 }], totalAmount: 1000, advancePaid: 0, pendingBalance: 1000,
-    isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now + 180 * 60000).toISOString(), createdAt: new Date().toISOString(), delayLevel: "none"
-  },
-  {
-    id: "WAS-10208", status: "ready_for_pickup", customerName: "Vikram Singh", customerPhone: "+91 9999988888", deliveryAddress: "88 Station Road", branch: "Varasiya Factory Outlet",
-    items: [{ name: "Custom Fondant Cake", qty: 1 }], totalAmount: 2500, advancePaid: 2500, pendingBalance: 0,
-    isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now - 10 * 60000).toISOString(), createdAt: new Date(now - 300 * 60000).toISOString(), delayLevel: "none",
-    cakeImage: "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?auto=format&fit=crop&q=80&w=300&h=300",
-    vendorTasks: [{ vendorType: "photo", status: "ready", instructions: "Printed photo sheet for fondant.", referenceImage: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=300&h=300" }]
-  },
-  {
-    id: "ELR-10209", status: "accepted_by_chef", customerName: "Meera Reddy", customerPhone: "+91 9999999999", deliveryAddress: "Store Pickup", branch: "Elora Park Branch",
-    items: [{ name: "Fruit Tart", qty: 6 }], totalAmount: 900, advancePaid: 900, pendingBalance: 0,
-    isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now + 300 * 60000).toISOString(), createdAt: new Date().toISOString(), delayLevel: "none"
-  },
-  {
-    id: "KHM-10210", status: "new", customerName: "Rohan Mehta", customerPhone: "+91 9999900000", deliveryAddress: "55 Park Street", branch: "Khanderao Branch",
-    items: [{ name: "Vanilla Cupcakes", qty: 12 }], totalAmount: 600, advancePaid: 0, pendingBalance: 600,
-    isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now + 360 * 60000).toISOString(), createdAt: new Date().toISOString(), delayLevel: "none"
-  },
-  {
-    id: "UMA-10211", status: "pending_assignment", customerName: "Rajesh Sharma", customerPhone: "+91 9876543210", deliveryAddress: "401 Galaxy Apartments, Ring Road", branch: "Uma Branch",
-    items: [{ name: "Dutch Truffle Cake (1kg)", qty: 1 }], totalAmount: 1100, advancePaid: 0, pendingBalance: 1100,
-    isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now + 10 * 60000).toISOString(), createdAt: new Date(now - 120 * 60000).toISOString(), delayLevel: "none"
-  },
-  {
-    id: "WAS-10212", status: "pending_assignment", customerName: "Ananya Patel", customerPhone: "+91 9876543211", deliveryAddress: "B-12, Green Park Society, VVIP Road", branch: "Varasiya Factory Outlet",
-    items: [{ name: "Red Velvet Heart Cake", qty: 1, notes: "Anniversary Surprise!" }], totalAmount: 1800, advancePaid: 1000, pendingBalance: 800,
-    isPriority: true, isSurprise: true, vip: false, timeTarget: new Date(now + 25 * 60000).toISOString(), createdAt: new Date(now - 90 * 60000).toISOString(), delayLevel: "warning"
-  },
-  {
-    id: "ELR-10213", status: "pending_assignment", customerName: "Sunil Verma", customerPhone: "+91 9876543212", deliveryAddress: "Office 303, Tech Park, IT Road", branch: "Elora Park Branch",
-    items: [{ name: "Assorted Pastries Box", qty: 3 }], totalAmount: 900, advancePaid: 900, pendingBalance: 0,
-    isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now + 45 * 60000).toISOString(), createdAt: new Date(now - 60 * 60000).toISOString(), delayLevel: "none"
-  },
-  {
-    id: "KHM-10214", status: "pending_assignment", customerName: "Kavita Singh", customerPhone: "+91 9876543213", deliveryAddress: "Villa 9, Palm Groves", branch: "Khanderao Branch",
-    items: [{ name: "Custom Spiderman Theme Cake (2kg)", qty: 1 }], totalAmount: 3200, advancePaid: 1000, pendingBalance: 2200,
-    isPriority: false, isSurprise: false, vip: true, timeTarget: new Date(now + 60 * 60000).toISOString(), createdAt: new Date(now - 300 * 60000).toISOString(), delayLevel: "none",
-    cakeImage: "https://images.unsplash.com/photo-1535141192574-5d4897c12636?auto=format&fit=crop&q=80&w=300&h=300",
-    vendorTasks: [{ vendorType: "acrylic", status: "pending", instructions: "Spiderman shaped acrylic cutout piece." }]
-  },
-  {
-    id: "UMA-10215", status: "pending_assignment", customerName: "Deepak Joshi", customerPhone: "+91 9876543214", deliveryAddress: "Hostel Block A, Univ Campus", branch: "Uma Branch",
-    items: [{ name: "Choco Lava Cakes", qty: 6 }], totalAmount: 720, advancePaid: 0, pendingBalance: 720,
-    isPriority: true, isSurprise: false, vip: false, timeTarget: new Date(now + 5 * 60000).toISOString(), createdAt: new Date(now - 45 * 60000).toISOString(), delayLevel: "delayed"
-  },
-  {
-    id: "WAS-10216", status: "pending_assignment", customerName: "Nisha Reddy", customerPhone: "+91 9876543215", deliveryAddress: "77 Sunset Boulevard", branch: "Varasiya Factory Outlet",
-    items: [{ name: "Strawberry Shortcake", qty: 1 }], totalAmount: 850, advancePaid: 850, pendingBalance: 0,
-    isPriority: false, isSurprise: false, vip: false, timeTarget: new Date(now + 90 * 60000).toISOString(), createdAt: new Date(now - 120 * 60000).toISOString(), delayLevel: "none"
-  }
-];
 
 type OrderContextType = {
   orders: Order[];
-  updateOrderStatus: (id: string, status: OrderStatus, updateProductionTime?: boolean, assignedChef?: string) => void;
-  updateVendorTaskStatus: (orderId: string, vendorType: VendorType, status: "pending" | "ready") => void;
+  updateOrderStatus: (id: string, status: OrderStatus, updateProductionTime?: boolean, assignedChef?: string, payload?: any) => Promise<void>;
+  assignDriverToOrder: (orderId: string, driverId: string, driverName: string) => Promise<void>;
+  // Mock implementations for remaining functions to satisfy TypeScript temporarily
+  updateVendorTaskStatus: (orderId: string, vendorType: VendorType, status: VendorTask["status"], vendorId?: string, vendorName?: string, taskId?: string) => void;
+  addVendorNote: (orderId: string, vendorType: VendorType, noteText: string, vendorName?: string, taskId?: string) => void;
   reportIssue: (id: string, issueType: string, severity: "normal" | "urgent", notes: string) => void;
+  addIngredientRequest: (orderId: string, itemName: string, qty: number, unit: string) => Promise<void>;
+  updateIngredientRequestStatus: (orderId: string, requestId: string, status: "pending" | "fulfilled" | "cancelled" | "resolved", supplierName?: string) => Promise<void>;
+  updateOrderFields: (orderId: string, fields: Partial<Order>) => Promise<void>;
+  transitionOrderAction: (id: string, action: string, note?: string) => Promise<void>;
 };
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
+  // Initialize Socket and fetch initial orders
   useEffect(() => {
-    // Generate initial orders on the client side only to prevent SSR Hydration Mismatch
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOrders(INITIAL_ORDERS);
+    // Connect to custom Socket.IO server
+    const newSocket = io(window.location.origin);
+    
+    const refetchOrders = () => {
+      fetch("/api/v1/orders?limit=50").then(res => res.json()).then(data => {
+        if (data && data.success && data.data) {
+          setOrders(data.data);
+        }
+      }).catch(console.error);
+    };
+
+    fetch('/api/auth/session').then(res => res.json()).then(session => {
+      const branchId = session?.user?.branchId;
+      
+      // Re-join rooms and fetch authoritative state on EVERY connection (handles server restart/disconnect recovery)
+      newSocket.on('connect', () => {
+        if (branchId) newSocket.emit("join_branch", branchId);
+        if (session?.user?.role === 'ADMIN') newSocket.emit("join_admin");
+        refetchOrders();
+      });
+
+      // Also join immediately if it's already connected by the time this fetch completes
+      if (newSocket.connected) {
+        if (branchId) newSocket.emit("join_branch", branchId);
+        if (session?.user?.role === 'ADMIN') newSocket.emit("join_admin");
+      }
+    }).catch(console.error);
+    
+    newSocket.on("order_updated", refetchOrders);
+    newSocket.on("order_created", refetchOrders);
+
+
+    setSocket(newSocket);
+
+    // Real-time synchronization handled via Socket.IO events (order_created, order_updated)
+
+    return () => {
+      newSocket.disconnect();
+    };
   }, []);
 
-  const updateOrderStatus = (id: string, status: OrderStatus, updateProductionTime?: boolean, assignedChef?: string) => {
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id === id) {
-          const updates: Partial<Order> = { status };
-          if (updateProductionTime && status === "preparing" && !order.productionStartTime) {
-            updates.productionStartTime = new Date().toISOString();
-          }
-          if (assignedChef) {
-            updates.assignedChef = assignedChef;
-          }
-          return { ...order, ...updates };
-        }
-        return order;
-      })
-    );
-  };
-
-  const updateVendorTaskStatus = (orderId: string, vendorType: VendorType, status: "pending" | "ready") => {
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id === orderId && order.vendorTasks) {
-          const updatedTasks = order.vendorTasks.map(vt => 
-            vt.vendorType === vendorType ? { ...vt, status } : vt
-          );
-          return { ...order, vendorTasks: updatedTasks };
-        }
-        return order;
-      })
-    );
-  };
-
-  const reportIssue = (id: string, issueType: string, severity: "normal" | "urgent", notes: string) => {
-    console.log(`Issue Reported [${severity.toUpperCase()}] for ${id}: ${issueType} - ${notes}`);
-    setOrders(prev => prev.map(o => {
-      if (o.id === id) {
-        if (severity === "urgent") return { ...o, delayLevel: "delayed" };
-        return { ...o, delayLevel: "warning" };
+  const transitionOrderAction = async (id: string, action: string, note?: string) => {
+    try {
+      const response = await fetch(`/api/v1/orders/${id}/actions/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note })
+      });
+      const data = await response.json();
+      
+      if (!data.success) {
+        alert(data.message || data.error?.message || "Failed to transition order.");
       }
-      return o;
-    }));
+      
+      // Always refetch to sync state
+      const refresh = await fetch("/api/v1/orders?limit=50");
+      const refreshData = await refresh.json();
+      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+    } catch (e) {
+      console.error(e);
+      alert("Error transitioning order.");
+    }
+  };
+
+  const updateOrderStatus = async (id: string, status: OrderStatus, updateProductionTime?: boolean, assignedChef?: string, payload?: any) => {
+    try {
+      const response = await fetch(`/api/orders/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status, 
+          actorId: assignedChef, 
+          actorName: assignedChef, 
+          ...(updateProductionTime ? { productionStartTime: new Date().toISOString() } : {}),
+          ...payload 
+        })
+      });
+      const data = await response.json();
+      
+      if (!data.success && data.error?.httpStatus === 409) {
+        alert(data.error.message || "Conflict: This order state was recently changed by someone else.");
+        // Refetch to sync state
+        const refresh = await fetch("/api/orders");
+        const refreshData = await refresh.json();
+        if (refreshData.success) setOrders(refreshData.orders);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const assignDriverToOrder = async (orderId: string, driverId: string, driverName: string) => {
+    // Optimistic update
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "ASSIGNED_TO_DRIVER", assignedDriverId: driverId, assignedDriverName: driverName } : o));
+    try {
+      const response = await fetch(`/api/v1/admin/drivers/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, driverId, driverName })
+      });
+      const data = await response.json();
+
+      if (!data.success) {
+        if (data.error?.httpStatus === 409) {
+          alert("409 Conflict: " + (data.error.message || "Order already assigned."));
+        } else {
+          alert("Assignment failed.");
+        }
+        // Refetch to sync state
+        const refresh = await fetch("/api/orders");
+        const refreshData = await refresh.json();
+        if (refreshData.success) setOrders(refreshData.orders);
+      } else {
+        setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const updateVendorTaskStatus = async (orderId: string, vendorType: VendorType, status: VendorTask["status"], vendorId?: string, vendorName?: string, taskId?: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/vendor-task`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId, status, vendorType, vendorName })
+      });
+      const data = await response.json();
+      if (!data.success) alert("Failed to update vendor task");
+      else setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
+    } catch (e) { console.error(e); }
+  };
+  
+  const addVendorNote = async (orderId: string, vendorType: VendorType, noteText: string, vendorName?: string, taskId?: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/vendor-task`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId, vendorType, vendorName, noteText })
+      });
+      const data = await response.json();
+      if (!data.success) alert("Failed to add vendor note");
+      else setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
+    } catch (e) { console.error(e); }
+  };
+  
+  const reportIssue = (id: string, issueType: string, severity: "normal" | "urgent", notes: string) => {};
+  const addIngredientRequest = async (orderId: string, item: string, qty?: number, unit?: string, ) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/ingredient-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item, qty, unit })
+      });
+      const data = await response.json();
+      if (!data.success) {
+        alert("Failed to add ingredient request: " + (data.error?.message || "Unknown error"));
+      } else {
+        setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error adding ingredient request");
+    }
+  };
+  const updateIngredientRequestStatus = async (orderId: string, requestId: string, status: "pending" | "fulfilled" | "cancelled" | "resolved", supplierName?: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/ingredient-request`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, status, supplierName })
+      });
+      const data = await response.json();
+      if (!data.success) {
+        alert("Failed to update request: " + (data.error?.message || "Unknown error"));
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error updating ingredient request");
+    }
+  };
+
+  const updateOrderFields = async (orderId: string, fields: Partial<Order>) => {
+    // Optimistically update local state
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...fields } as Order : o));
+    
+    try {
+      const response = await fetch(`/api/v1/orders/${orderId}/edit`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields)
+      });
+      const data = await response.json();
+      
+      if (!data.success) {
+        alert(data.error || data.message || "Failed to update order fields");
+        // Revert on failure by refetching
+        const refresh = await fetch("/api/v1/orders?limit=50");
+        const refreshData = await refresh.json();
+        if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to update order fields");
+      // Revert on failure by refetching
+      const refresh = await fetch("/api/v1/orders?limit=50");
+      const refreshData = await refresh.json();
+      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+    }
   };
 
   return (
-    <OrderContext.Provider value={{ orders, updateOrderStatus, updateVendorTaskStatus, reportIssue }}>
+    <OrderContext.Provider value={{ 
+      orders, 
+      updateOrderStatus, 
+      assignDriverToOrder,
+      updateVendorTaskStatus,
+      addVendorNote,
+      reportIssue,
+      addIngredientRequest,
+      updateIngredientRequestStatus,
+      updateOrderFields,
+      transitionOrderAction
+    }}>
       {children}
     </OrderContext.Provider>
   );

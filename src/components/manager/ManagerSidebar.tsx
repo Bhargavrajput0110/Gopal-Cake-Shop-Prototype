@@ -2,19 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  ChefHat, 
-  PackageCheck, 
-  Bike,
-  LogOut
-} from "lucide-react";
+import { Category, Reserve, BoxTick, Car, Logout } from "iconsax-react";
 
 export const navItems = [
-  { name: "Branch Dashboard", href: "/manager", icon: LayoutDashboard },
-  { name: "Kitchen Queue", href: "/manager/kitchen", icon: ChefHat, badge: 5 },
-  { name: "Local Inventory", href: "/manager/inventory", icon: PackageCheck },
-  { name: "Delivery Boys", href: "/manager/riders", icon: Bike },
+  { name: "Branch Dashboard", href: "/manager", icon: Category },
+  { name: "Kitchen Queue", href: "/manager/kitchen", icon: Reserve, badge: 5 },
+  { name: "Local Inventory", href: "/manager/inventory", icon: BoxTick },
+  { name: "Delivery Boys", href: "/manager/riders", icon: Car },
 ];
 
 export function ManagerSidebar() {
@@ -66,7 +60,7 @@ export function ManagerSidebar() {
           onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
           className="flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-destructive transition-colors w-full px-3 py-2 rounded-lg hover:bg-destructive/10"
         >
-          <LogOut className="w-4 h-4" />
+          <Logout className="w-4 h-4" />
           Sign Out
         </button>
       </div>

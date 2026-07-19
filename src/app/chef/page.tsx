@@ -1,394 +1,506 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { Clock, Timer1, Warning2, TickCircle, ProfileCircle } from "iconsax-react";
-import { useOrders, Order } from "@/context/OrderContext";
+import { useState, useEffect } from "react";
+import { useOrders, Order, IngredientRequest } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Particles } from "@/components/magicui/Particles";
-import { BorderBeam } from "@/components/magicui/BorderBeam";
-import { TypewriterEffect } from "@/components/aceternity/TypewriterEffect";
-import { useSearchParams } from "next/navigation";
-import { ChefMobileNav } from "@/components/chef/ChefMobileNav";
+import { BackButton } from "@/components/ui/BackButton";
+import { Reserve, Warning2, TickCircle, Clock, CloseSquare, Danger, Bag, Refresh2 } from "iconsax-react";
+import { toBranchId, BRANCHES, BranchId, toBranchShortName } from "@/lib/branches";
 
-const CHEF_ID = "CHEF-101";
+// Standard bakery ingredients for the missing ingredients modal
+const COMMON_INGREDIENTS = [
+  "Chocolate Sponge", "Vanilla Sponge", "Red Velvet Sponge", 
+  "Fresh Cream", "Buttercream", "Dark Chocolate Ganache", 
+  "White Chocolate", "Fondant (White)", "Fondant (Colors)", 
+  "Fresh Strawberries", "Mixed Fruits", "Edible Prints", "Acrylic Topper",
+];
 
-function ChefDashboardContent() {
-  const { orders } = useOrders();
-  const searchParams = useSearchParams();
-  const currentTab = searchParams.get("tab") || "incoming";
+// Custom Hook for Dynamic SLA Countdown & Progress
+const useSLA = (timeTarget: string | undefined, createdAt: string) => {
+  const [timeLeftStr, setTimeLeftStr] = useState("");
+  const [progress, setProgress] = useState(0); // 0 to 100
+  const [status, setStatus] = useState<"safe" | "warning" | "danger">("safe");
 
-  // Sort orders: Priority orders first, then by delivery time (ascending)
-  const sortedOrders = [...orders].sort((a, b) => {
-    if (a.isPriority && !b.isPriority) return -1;
-    if (!a.isPriority && b.isPriority) return 1;
-    return new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime();
-  });
-
-  // Kanban Columns
-  const incoming = sortedOrders.filter(o => o.status === "accepted_by_chef");
-  const inProduction = sortedOrders.filter(o => ["preparing", "decorating"].includes(o.status) && o.assignedChef === CHEF_ID);
-  const ready = sortedOrders.filter(o => o.status === "ready_for_pickup");
-
-  return (
-    <div className="flex-1 flex flex-col font-sans overflow-hidden min-h-0 bg-[#FAFAF8] relative w-full">
-      <Particles className="absolute inset-0 pointer-events-none" quantity={150} staticity={30} color="#C5A059" vx={0.2} vy={-0.2} />
-      <div className="absolute inset-0 bg-gradient-to-br from-transparent to-[#C5A059]/10 pointer-events-none"></div>
-      
-      {/* HEADER */}
-      <header className="h-16 border-b flex items-center justify-between px-4 md:px-6 shrink-0 z-20 bg-white/80 border-gray-200 shadow-sm w-full">
-        <div className="flex items-center gap-3">
-          <ChefMobileNav />
-          <div className="p-1.5 rounded-lg bg-orange-100 text-orange-800 hidden sm:block">
-            <ProfileCircle className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-base font-black tracking-widest text-gray-900">CHEF STATION</h1>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-0.5 hidden sm:block">ID: {CHEF_ID} &bull; Khanderao</p>
-          </div>
-        </div>
-
-        <div className="hidden md:flex gap-6 text-xs font-bold text-gray-600 mr-4">
-          <span className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
-            Incoming <strong className="text-gray-900 bg-white px-2 py-0.5 rounded-md border border-gray-200 shadow-sm">{incoming.length}</strong>
-          </span>
-          <span className="flex items-center gap-2 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-200">
-            Production <strong className="text-orange-600 bg-white px-2 py-0.5 rounded-md border border-orange-200 shadow-sm">{inProduction.length}</strong>
-          </span>
-          <span className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
-            Ready <strong className="text-emerald-600 bg-white px-2 py-0.5 rounded-md border border-emerald-200 shadow-sm">{ready.length}</strong>
-          </span>
-        </div>
-        
-        <button 
-          onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
-          className="ml-auto hidden md:flex items-center gap-2 text-xs font-bold text-rose-500 hover:text-rose-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-rose-50"
-        >
-          Sign Out
-        </button>
-      </header>
-
-      {/* KANBAN BOARD */}
-      <div className="flex-1 flex flex-col overflow-x-auto overflow-y-hidden p-4 md:p-6 hide-scrollbar min-h-0 w-full" data-lenis-prevent>
-        <div className="flex-1 flex flex-row gap-4 md:gap-6 w-full md:w-max min-h-0 pb-4 md:pr-6">
-          
-          {/* COLUMN 1: INCOMING */}
-          <div className={`flex-1 w-full shrink-0 md:w-auto min-h-0 flex-col ${currentTab === "incoming" ? "flex" : "hidden md:flex"}`}>
-            <KanbanColumn title="INCOMING" count={incoming.length} theme="blue">
-              {incoming.map(order => (
-                <CompactOrderCard key={order.id} order={order} mode="incoming" />
-              ))}
-            </KanbanColumn>
-          </div>
-
-          {/* COLUMN 2: IN PRODUCTION */}
-          <div className={`flex-1 w-full shrink-0 md:w-auto min-h-0 flex-col ${currentTab === "production" ? "flex" : "hidden md:flex"}`}>
-            <KanbanColumn title="MY PRODUCTION" count={inProduction.length} theme="orange">
-              {inProduction.map(order => (
-                <CompactOrderCard key={order.id} order={order} mode="production" />
-              ))}
-            </KanbanColumn>
-          </div>
-
-          {/* COLUMN 3: READY */}
-          <div className={`flex-1 w-full shrink-0 md:w-auto min-h-0 flex-col ${currentTab === "ready" ? "flex" : "hidden md:flex"}`}>
-            <KanbanColumn title="READY FOR DISPATCH" count={ready.length} theme="emerald">
-              {ready.map(order => (
-                <CompactOrderCard key={order.id} order={order} mode="ready" />
-              ))}
-            </KanbanColumn>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function ChefKanbanDashboard() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center text-muted-foreground font-bold">Loading Kitchen Display...</div>}>
-      <ChefDashboardContent />
-    </Suspense>
-  );
-}
-
-function KanbanColumn({ title, count, theme, children }: { title: string, count: number, theme: "blue" | "orange" | "emerald", children: React.ReactNode }) {
-  const themeClasses = {
-    blue: {
-      borderTop: "border-t-blue-500",
-      bg: "bg-blue-50/30",
-      headerBg: "bg-blue-100/50",
-      text: "text-blue-800",
-      badgeBg: "bg-blue-200",
-      badgeText: "text-blue-900"
-    },
-    orange: {
-      borderTop: "border-t-orange-500",
-      bg: "bg-orange-50/30",
-      headerBg: "bg-orange-100/50",
-      text: "text-orange-800",
-      badgeBg: "bg-orange-200",
-      badgeText: "text-orange-900"
-    },
-    emerald: {
-      borderTop: "border-t-emerald-500",
-      bg: "bg-emerald-50/30",
-      headerBg: "bg-emerald-100/50",
-      text: "text-emerald-800",
-      badgeBg: "bg-emerald-200",
-      badgeText: "text-emerald-900"
+  useEffect(() => {
+    if (!timeTarget) {
+      setTimeLeftStr("No Deadline");
+      return;
     }
-  }[theme];
 
-  return (
-    <div className={`uiverse-card flex-1 flex flex-col min-w-[300px] md:min-w-[340px] max-w-[420px] min-h-0 border-t-[4px] ${themeClasses.borderTop} rounded-3xl overflow-hidden group`}>
-      <div className={`p-4 ${themeClasses.headerBg} border-b border-white/50 flex justify-between items-center shrink-0 shadow-sm backdrop-blur-md`}>
-        <h2 className={`text-xs font-black tracking-widest uppercase ${themeClasses.text}`}>{title}</h2>
-        <span className={`px-3 py-1 rounded-full text-[10px] font-bold shadow-sm ${themeClasses.badgeBg} ${themeClasses.badgeText}`}>{count}</span>
-      </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar min-h-0" data-lenis-prevent>
-        <AnimatePresence>
-          {children}
-        </AnimatePresence>
-        {count === 0 && (
-          <div className="text-center py-12 opacity-50">
-            <p className={`text-xs font-bold uppercase tracking-widest ${themeClasses.text}`}>Empty</p>
+    const updateSLA = () => {
+      const now = new Date().getTime();
+      const target = new Date(timeTarget).getTime();
+      const created = new Date(createdAt).getTime();
+      
+      const totalDuration = target - created;
+      const elapsed = now - created;
+      
+      let p = (elapsed / totalDuration) * 100;
+      if (p < 0) p = 0;
+      if (p > 100) p = 100;
+      setProgress(p);
+
+      const msLeft = target - now;
+      if (msLeft <= 0) {
+        setTimeLeftStr("OVERDUE");
+        setStatus("danger");
+      } else {
+        const minLeft = Math.floor(msLeft / 60000);
+        if (minLeft < 60) {
+          setTimeLeftStr(`Due in ${minLeft}m`);
+        } else {
+          const h = Math.floor(minLeft / 60);
+          const m = minLeft % 60;
+          setTimeLeftStr(`Due in ${h}h ${m}m`);
+        }
+
+        if (p > 85) setStatus("danger");
+        else if (p > 60) setStatus("warning");
+        else setStatus("safe");
+      }
+    };
+
+    updateSLA();
+    const interval = setInterval(updateSLA, 30000); // update every 30s
+    return () => clearInterval(interval);
+  }, [timeTarget, createdAt]);
+
+  return { timeLeftStr, progress, status };
+};
+
+export default function ChefDashboardPage() {
+  const { orders, updateOrderFields } = useOrders();
+  
+  // UI Mode: Mock Login for Chef
+  const [activeBranch, setActiveBranch] = useState<BranchId>("khanderao");
+  const [activeTab, setActiveTab] = useState<"queue" | "myTasks" | "ready">("queue");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Filtering orders for the active branch
+  const branchOrders = orders.filter(o => toBranchId(o.branch) === activeBranch);
+
+  // Queue
+  const queueOrders = branchOrders
+    .filter(o => o.status === "WAITING_FOR_CHEF")
+    .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
+  
+  // My Tasks
+  const myTasksOrders = branchOrders
+    .filter(o => ["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(o.status))
+    .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
+    
+  // Ready
+  const readyOrders = branchOrders
+    .filter(o => o.status === "READY_FOR_PICKUP")
+    .sort((a, b) => new Date(b.timeline?.[b.timeline.length - 1]?.timestamp || b.createdAt).getTime() - new Date(a.timeline?.[a.timeline.length - 1]?.timestamp || a.createdAt).getTime());
+
+  // Interactive Checklist State
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+
+  const toggleCheck = (orderId: string, itemIdx: number) => {
+    const key = `${orderId}-${itemIdx}`;
+    setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Modals
+  const [showMissingModal, setShowMissingModal] = useState<Order | null>(null);
+  const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
+  const [missingNote, setMissingNote] = useState("");
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+
+  // Priority Beep
+  useEffect(() => {
+    const hasPriority = queueOrders.some(o => o.priorityLevel === "high" || o.priorityLevel === "vip");
+    if (!hasPriority) return;
+
+    const playBeep = () => {
+      try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15); // short sharp beep
+      } catch (e) {}
+    };
+
+    playBeep();
+    const intervalId = setInterval(playBeep, 4000);
+    return () => clearInterval(intervalId);
+  }, [queueOrders]);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  }
+
+  const handleAcceptOrder = async (order: Order) => {
+    await updateOrderFields(order.id, {
+      status: "MAKING",
+      assignedChef: "CHEF_01",
+      productionStartTime: new Date().toISOString(),
+      timeline: [
+        ...(order.timeline || []),
+        { event: "Chef started production", actor: "Chef", timestamp: new Date().toISOString() }
+      ]
+    });
+    showToast(`Ticket ${order.id.split('-').pop()} moved to My Tasks!`);
+  };
+
+  const handleMarkReady = async (order: Order) => {
+    await updateOrderFields(order.id, {
+      status: "READY_FOR_PICKUP",
+      delayLevel: "none",
+      timeline: [
+        ...(order.timeline || []),
+        { event: "Order ready for pickup/delivery", actor: "Chef", timestamp: new Date().toISOString() }
+      ]
+    });
+    showToast(`Ticket ${order.id.split('-').pop()} complete!`);
+  };
+
+  const handleSubmitMissingIngredients = () => {
+    if (!showMissingModal || selectedIngredients.length === 0) return;
+    
+    const newRequests: IngredientRequest[] = selectedIngredients.map(item => ({
+      id: `ING-${Math.random().toString(36).substr(2, 9)}`,
+      itemCode: item.toUpperCase().replace(/\s+/g, '_'),
+      itemName: item,
+      note: missingNote,
+      requestedBy: "Chef",
+      status: "pending",
+      timestamp: new Date().toISOString(),
+    }));
+
+    updateOrderFields(showMissingModal.id, {
+      ingredientRequests: [...(showMissingModal.ingredientRequests || []), ...newRequests],
+      delayLevel: "warning",
+      timeline: [
+        ...(showMissingModal.timeline || []),
+        { event: `Reported missing ingredients: ${selectedIngredients.join(", ")}`, actor: "Chef", timestamp: new Date().toISOString() }
+      ]
+    });
+
+    setShowMissingModal(null);
+    setSelectedIngredients([]);
+    setMissingNote("");
+  };
+
+  // --- Components ---
+  
+  // Kitchen Order Ticket (KOT) Component
+  const TicketCard = ({ order, isQueue = false, isReady = false }: { order: Order, isQueue?: boolean, isReady?: boolean }) => {
+    const isUrgent = order.priorityLevel === "high" || order.priorityLevel === "vip";
+    const { timeLeftStr, progress, status } = useSLA(order.timeTarget, order.createdAt);
+    
+    // Theme logic based on KDS standard
+    let cardClass = "bg-white border-2 border-gray-200 shadow-md";
+    let headerClass = "bg-gray-100 text-gray-800 border-b-2 border-gray-200";
+    
+    if (isUrgent && isQueue) {
+      cardClass = "bg-white border-2 border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)] animate-pulse-border";
+      headerClass = "bg-rose-500 text-white border-b-2 border-rose-600";
+    } else if (isReady) {
+      cardClass = "bg-emerald-50 border-2 border-emerald-500 shadow-md";
+      headerClass = "bg-emerald-500 text-white border-b-2 border-emerald-600";
+    }
+
+    return (
+      <div className={`rounded-xl flex flex-col overflow-hidden transition-all ${cardClass}`}>
+        
+        {/* Ticket Header */}
+        <div className={`p-4 flex justify-between items-center ${headerClass}`}>
+          <div>
+            <h3 className="font-black text-2xl tracking-tighter">#{order.id.split('-').pop()}</h3>
+            <span className="font-bold text-xs uppercase tracking-widest opacity-80">{order.orderType}</span>
+          </div>
+          <div className="text-right">
+            {!isReady && (
+              <>
+                <div className="flex items-center justify-end gap-1 font-black text-lg">
+                  <Clock className="w-5 h-5" /> {timeLeftStr}
+                </div>
+                {order.priorityLevel === "vip" && <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-widest mt-1 inline-block">VIP</span>}
+                {order.priorityLevel === "high" && <span className="bg-white text-rose-600 text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-widest mt-1 inline-block">RUSH</span>}
+              </>
+            )}
+            {isReady && <span className="font-black text-xl uppercase">READY</span>}
+          </div>
+        </div>
+
+        {/* SLA Progress Bar (Only for active tasks) */}
+        {!isQueue && !isReady && (
+          <div className="w-full h-2 bg-gray-100">
+            <div 
+              className={`h-full transition-all duration-1000 ${status === 'danger' ? 'bg-rose-500' : status === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'}`} 
+              style={{ width: `${progress}%` }}
+            />
           </div>
         )}
-      </div>
-    </div>
-  );
-}
 
-function CompactOrderCard({ order, mode }: { order: Order, mode: "incoming" | "production" | "ready" }) {
-  const { updateOrderStatus, reportIssue } = useOrders();
-  const [qcState, setQcState] = useState([false, false, false]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [showQC, setShowQC] = useState(false);
-  const handlePickup = () => updateOrderStatus(order.id, "preparing", true, CHEF_ID);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleDecorate = () => { /* setStatus("Decorating"); */ };
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleFinish = () => { 
-    setShowQC(true); 
-    if (qcState.every(v => v)) {
-      setShowQC(false);
-      updateOrderStatus(order.id, "ready_for_pickup");
-    }
+        {/* Ticket Body (Items) */}
+        <div className="flex-1 p-4 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-10">
+          
+          {order.cakeImage && (
+            <div className="mb-4 relative group cursor-pointer border-2 border-dashed border-gray-300 p-1 rounded-xl" onClick={() => setFullscreenImage(order.cakeImage!)}>
+              <img src={order.cakeImage} alt="Ref" className="w-full h-32 object-cover rounded-lg group-hover:opacity-80" />
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <span className="bg-black/70 text-white font-bold text-xs px-3 py-1 rounded-full backdrop-blur-sm">ENLARGE</span>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {order.items.map((item, idx) => {
+              const isChecked = checkedItems[`${order.id}-${idx}`] || false;
+              
+              return (
+                <div 
+                  key={idx} 
+                  onClick={() => !isQueue && !isReady && toggleCheck(order.id, idx)}
+                  className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all ${!isQueue && !isReady ? 'cursor-pointer active:scale-95' : ''} ${isChecked ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-white border-gray-100 shadow-sm'}`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-lg shrink-0 ${isChecked ? 'bg-gray-300 text-gray-600' : 'bg-gray-900 text-white'}`}>
+                    {item.qty}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-black text-gray-900 text-lg leading-tight ${isChecked ? 'line-through' : ''}`}>{item.name}</p>
+                    {item.weight && <p className="font-bold text-gray-500 text-xs uppercase mt-0.5">{item.weight}</p>}
+                    {item.notes && <p className={`mt-2 font-bold text-sm p-2 rounded-lg ${isChecked ? 'bg-gray-200 text-gray-600' : 'bg-rose-100 text-rose-800'}`}>* {item.notes}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Pending Ingredients Warning */}
+          {order.ingredientRequests && order.ingredientRequests.filter(r=>r.status==="pending").length > 0 && !isReady && (
+            <div className="mt-4 p-3 bg-amber-50 border-2 border-amber-400 rounded-xl">
+              <p className="font-black text-amber-900 text-xs uppercase tracking-widest flex items-center gap-1 mb-1"><Warning2 className="w-4 h-4"/> WAITING ON INGREDIENTS</p>
+              <p className="font-bold text-amber-800 text-sm">
+                {order.ingredientRequests.filter(r=>r.status==="pending").map(r => r.itemName).join(", ")}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Ticket Footer Actions */}
+        <div className="p-4 bg-gray-50 border-t-2 border-gray-200 flex gap-2">
+          {isQueue ? (
+            <button onClick={() => handleAcceptOrder(order)} className={`flex-1 py-4 font-black uppercase tracking-widest text-sm rounded-xl transition-transform active:scale-95 text-white ${isUrgent ? 'bg-rose-600 shadow-[0_4px_15px_rgba(225,29,72,0.4)]' : 'bg-gray-900 shadow-md'}`}>
+              Accept Order
+            </button>
+          ) : !isReady ? (
+            <>
+              <button onClick={() => setShowMissingModal(order)} className="flex-1 py-4 bg-white border-2 border-rose-200 text-rose-700 font-black uppercase tracking-widest text-xs rounded-xl hover:bg-rose-50 active:scale-95 flex flex-col items-center justify-center gap-1">
+                <Warning2 className="w-5 h-5" /> Issue
+              </button>
+              <button onClick={() => handleMarkReady(order)} className="flex-[2] py-4 bg-emerald-500 text-white font-black uppercase tracking-widest text-sm rounded-xl hover:bg-emerald-600 shadow-md active:scale-95 flex items-center justify-center gap-2">
+                <TickCircle className="w-6 h-6" /> Mark Ready
+              </button>
+            </>
+          ) : (
+            <div className="flex-1 py-3 text-center text-emerald-700 font-black text-sm uppercase tracking-widest">
+              Awaiting Dispatch / Pickup
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
-    <motion.div 
-      layout
-      initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-      className={`relative uiverse-card ${order.isPriority ? "priority-alert-border" : ""} rounded-2xl flex flex-col group overflow-hidden ${
-        order.isPriority ? "bg-rose-50 border-2 border-transparent" : "bg-white border border-transparent shadow-[0_0_15px_rgba(0,0,0,0.05)]"
-      }`}
-      style={{ "--card-bg": order.isPriority ? "rgba(255,241,242,0.9)" : "rgba(255,255,255,0.8)" } as React.CSSProperties}
-    >
-      {!order.isPriority && <BorderBeam duration={8} size={250} colorFrom="#C5A059" colorTo="#3E2723" borderWidth={2} className="opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-50" />}
+    <div className="min-h-screen bg-gray-100 pb-20 relative">
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes pulse-border {
+          0%, 100% { border-color: #f43f5e; box-shadow: 0 0 15px rgba(244,63,94,0.3); }
+          50% { border-color: #fda4af; box-shadow: 0 0 25px rgba(244,63,94,0.6); }
+        }
+        .animate-pulse-border { animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      `}} />
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -20, x: "-50%" }}
+            className="fixed top-6 left-1/2 z-[100] bg-gray-900 border border-gray-800 shadow-2xl rounded-2xl px-6 py-4 flex items-center gap-3"
+          >
+            <TickCircle className="w-6 h-6 text-emerald-400" />
+            <span className="font-bold text-sm uppercase tracking-widest text-white">{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
-      {/* HERO IMAGE SECTION */}
-      <div className="relative w-full h-36 bg-gray-100">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img 
-          src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=400&h=300&q=80" 
-          alt="Cake" 
-          className="w-full h-full object-cover"
-          onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=300" }}
-        />
-        {/* Top Gradient Overlay for readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/70"></div>
-
-        {/* Floating Badges over Image */}
-        <div className="absolute top-3 left-3 flex gap-2">
-          <span className="bg-white/90 backdrop-blur-md text-gray-900 px-2 py-1 rounded-lg text-xs font-black tracking-wider shadow-sm">
-            {order.id}
-          </span>
+      {/* Top Navigation Bar */}
+      <div className="bg-gray-900 text-white sticky top-0 z-40 shadow-xl">
+        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-[100]">
+          <BackButton fallback="/login" label="Switch Account" variant="ghost" className="text-white hover:bg-white/10" />
         </div>
-        <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
-          {order.isPriority && <span className="neon-pulse-tag px-2 py-0.5 rounded text-[9px] font-black uppercase shadow-lg">PRIORITY</span>}
-          {order.vip && <span className="bg-amber-400 text-black px-2 py-0.5 rounded text-[9px] font-black uppercase shadow-lg">VIP</span>}
-        </div>
-
-        {/* Floating Timers at Bottom of Image */}
-        <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
-          <CountdownTimer targetISO={order.timeTarget} />
-          {mode === "production" && order.productionStartTime && (
-            <ProductionTimer startTime={order.productionStartTime} />
-          )}
+        <div className="px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight flex items-center gap-3">
+              <Reserve className="w-8 h-8 text-amber-400" /> KDS Terminal
+            </h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Station:</span>
+              <select 
+                value={activeBranch} 
+                onChange={(e) => setActiveBranch(e.target.value as BranchId)}
+                className="bg-gray-800 text-amber-400 font-bold text-xs uppercase tracking-widest px-2 py-1 rounded border border-gray-700 outline-none"
+              >
+                {BRANCHES.map(b => (
+                  <option key={b.id} value={b.id}>{b.shortName} KITCHEN</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="flex bg-gray-800 p-1 rounded-xl w-full md:w-auto">
+            <button onClick={() => setActiveTab("queue")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'queue' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
+              Queue 
+              {queueOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'queue' ? 'bg-rose-500 text-white' : 'bg-gray-700'}`}>{queueOrders.length}</span>}
+            </button>
+            <button onClick={() => setActiveTab("myTasks")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'myTasks' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
+              Active 
+              {myTasksOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'myTasks' ? 'bg-gray-900 text-white' : 'bg-gray-700'}`}>{myTasksOrders.length}</span>}
+            </button>
+            <button onClick={() => setActiveTab("ready")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'ready' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}>
+              Ready
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="p-4 flex flex-col gap-4">
-        
-        {/* EXACT DUE TIME */}
-        <div className="flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-100 p-2.5 rounded-xl shadow-sm">
-          <Clock className="w-4 h-4 text-blue-600" variant="Bold" />
-          <span>Due: <span className="text-gray-900 font-black">{formatTargetTime(order.timeTarget)}</span></span>
-        </div>
-
-        {/* ITEMS ONLY - Crystal Clear Sharp Fonts */}
-        <div className="space-y-3">
-          {order.items.map((item, idx) => (
-            <div key={idx} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
-              <p className="text-[15px] font-bold text-gray-900 tracking-tight leading-snug">
-                <span className="text-orange-600 mr-1.5">{item.qty}x</span> 
-                {item.name}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* DEDICATED NOTES SECTION ABOVE BUTTONS */}
-        {order.items.some(item => item.notes) && (
-          <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 shrink-0 relative overflow-hidden shadow-inner">
-            <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-              <Warning2 className="w-3 h-3 animate-pulse" variant="Bold" /> Critical Instructions
-            </p>
-            <div className="space-y-1">
-              {order.items.filter(i => i.notes).map((item, idx) => (
-                <div key={idx} className="flex gap-1.5 items-start">
-                  <span className="text-xs text-rose-700/80 font-bold shrink-0">{item.name}:</span>
-                  <TypewriterEffect 
-                    text={item.notes || ""} 
-                    className="text-xs text-rose-900 font-black leading-relaxed" 
-                    cursorClassName="bg-rose-600 h-3"
-                  />
-                </div>
-              ))}
-            </div>
+      {/* Main KDS Board */}
+      <div className="p-4 md:p-8">
+        {activeTab === "queue" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {queueOrders.length === 0 ? (
+              <div className="col-span-full py-32 flex flex-col items-center justify-center text-gray-400">
+                <Reserve className="w-20 h-20 mb-4 opacity-20" />
+                <h3 className="text-3xl font-black mb-2 text-gray-300">QUEUE CLEAR</h3>
+                <p className="font-bold text-sm uppercase tracking-widest">Waiting for incoming tickets...</p>
+              </div>
+            ) : (
+              queueOrders.map(order => <TicketCard key={order.id} order={order} isQueue={true} />)
+            )}
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="shrink-0 mt-1">
-          {mode === "incoming" && (
-            <div className="flex flex-col gap-2 mt-4">
-              <button onClick={handlePickup} className="cyber-button w-full text-xs font-black tracking-widest py-3">
-                Accept & Start Baking
-              </button>
-              <button 
-                onClick={() => updateOrderStatus(order.id, "cancelled")} 
-                className="w-full py-2 bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors"
-              >
-                Reject Order
-              </button>
-            </div>
-          )}
+        {activeTab === "myTasks" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {myTasksOrders.length === 0 ? (
+              <div className="col-span-full py-32 flex flex-col items-center justify-center text-gray-400">
+                <Refresh2 className="w-20 h-20 mb-4 opacity-20" />
+                <h3 className="text-3xl font-black mb-2 text-gray-300">NO ACTIVE TICKETS</h3>
+                <p className="font-bold text-sm uppercase tracking-widest">Accept an order from the queue</p>
+              </div>
+            ) : (
+              myTasksOrders.map(order => <TicketCard key={order.id} order={order} />)
+            )}
+          </div>
+        )}
 
-          {mode === "production" && (
-            <div className="flex flex-col gap-3 mt-4">
-              <label className="uiverse-checkbox-wrapper p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors shadow-sm bg-white cursor-pointer select-none">
-                <input 
-                  type="checkbox" 
-                  checked={qcState[0]} 
-                  onChange={() => {
-                    const next = [...qcState];
-                    next[0] = !next[0];
-                    setQcState(next);
-                  }} 
-                  className="uiverse-checkbox" 
-                />
-                <span className={`text-xs font-bold ${qcState[0] ? "text-emerald-700" : "text-gray-700"}`}>All items prepared & packed</span>
-              </label>
-
-              <button 
-                onClick={() => updateOrderStatus(order.id, "ready_for_pickup")} 
-                disabled={!qcState[0]}
-                className="cyber-button w-full text-xs font-black tracking-widest py-3 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
-              >
-                READY FOR DISPATCH
-              </button>
-
-              <button 
-                onClick={() => reportIssue(order.id, "Ingredient Missing", "normal", "Chef reported missing items")}
-                className="w-full mt-1 py-2.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-              >
-                <Warning2 className="w-4 h-4 animate-pulse" variant="Bold" /> Report Missing Ingredient
-              </button>
-            </div>
-          )}
-
-          {mode === "ready" && (
-            <div className="w-full py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-center text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2">
-              <TickCircle className="w-4 h-4" variant="Bold" /> Sitting on counter
-            </div>
-          )}
-        </div>
-
+        {activeTab === "ready" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {readyOrders.length === 0 ? (
+              <div className="col-span-full py-32 flex flex-col items-center justify-center text-gray-400">
+                <Bag className="w-20 h-20 mb-4 opacity-20" />
+                <h3 className="text-3xl font-black mb-2 text-gray-300">NO READY ORDERS</h3>
+              </div>
+            ) : (
+              readyOrders.map(order => <TicketCard key={order.id} order={order} isReady={true} />)
+            )}
+          </div>
+        )}
       </div>
-    </motion.div>
-  );
-}
 
-// Timers
-function CountdownTimer({ targetISO }: { targetISO: string }) {
-  const [minsLeft, setMinsLeft] = useState(0);
-  useEffect(() => {
-    const calc = () => setMinsLeft(Math.floor((new Date(targetISO).getTime() - Date.now()) / 60000));
-    calc();
-    const int = setInterval(calc, 60000);
-    return () => clearInterval(int);
-  }, [targetISO]);
+      {/* Missing Ingredients Modal - KDS Styled */}
+      <AnimatePresence>
+        {showMissingModal && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-gray-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <motion.div initial={{scale:0.95, opacity:0}} animate={{scale:1, opacity:1}} exit={{scale:0.95, opacity:0}} className="bg-white rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border-4 border-rose-500">
+              
+              <div className="flex justify-between items-start mb-6 shrink-0 border-b-2 border-gray-100 pb-4">
+                <div>
+                  <h3 className="text-3xl font-black text-rose-600 flex items-center gap-3 tracking-tight">
+                    <Warning2 className="w-8 h-8" />
+                    REPORT ISSUE
+                  </h3>
+                  <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-2">Ticket #{showMissingModal.id.split('-').pop()}</p>
+                </div>
+                <button onClick={() => setShowMissingModal(null)} className="p-3 bg-gray-100 rounded-full hover:bg-gray-200"><CloseSquare className="w-6 h-6"/></button>
+              </div>
 
-  let color = "text-emerald-400 bg-black/60 border-black/40";
-  let isGlitch = false;
-  if (minsLeft < 0) {
-    color = "text-rose-500 bg-black/80 border-rose-500/50 font-black shadow-[0_0_15px_rgba(244,63,94,0.4)]";
-    isGlitch = true;
-  } else if (minsLeft < 60) {
-    color = "text-rose-400 bg-rose-950/80 border-rose-900/50 font-bold animate-pulse";
-  } else if (minsLeft < 120) {
-    color = "text-amber-400 bg-black/60 border-black/40";
-  }
+              <div className="overflow-y-auto flex-1 pr-2 custom-scrollbar space-y-6">
+                <div>
+                  <p className="text-sm font-black text-gray-900 mb-3 uppercase tracking-widest">Select missing items:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {COMMON_INGREDIENTS.map(ing => {
+                      const isSelected = selectedIngredients.includes(ing);
+                      return (
+                        <button
+                          key={ing}
+                          onClick={() => {
+                            setSelectedIngredients(prev => prev.includes(ing) ? prev.filter(i => i !== ing) : [...prev, ing]);
+                          }}
+                          className={`px-4 py-3 rounded-xl text-sm font-black border-2 transition-all ${
+                            isSelected 
+                              ? 'bg-rose-100 border-rose-500 text-rose-900' 
+                              : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          {ing}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-  const textLabel = minsLeft < 0 ? "OVERDUE" : `${Math.floor(minsLeft/60)}h ${minsLeft%60}m left`;
+                <div>
+                  <p className="text-sm font-black text-gray-900 mb-3 uppercase tracking-widest">Additional Notes:</p>
+                  <textarea 
+                    value={missingNote}
+                    onChange={(e) => setMissingNote(e.target.value)}
+                    placeholder="Type specific details here..."
+                    className="w-full h-24 p-4 rounded-xl border-2 border-gray-200 bg-gray-50 text-sm font-bold focus:outline-none focus:border-rose-400 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
 
-  return (
-    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border backdrop-blur-md ${color}`}>
-      <Clock className={`w-3 h-3 ${isGlitch ? "animate-spin" : ""}`} variant="Bold" />
-      <span 
-        className={`text-[10px] tracking-widest whitespace-nowrap font-bold ${isGlitch ? "glitch-text" : ""}`}
-        data-text={textLabel}
-      >
-        {textLabel}
-      </span>
+              <div className="mt-6 pt-6 border-t-2 border-gray-100 flex gap-3 shrink-0">
+                <button onClick={() => setShowMissingModal(null)} className="flex-1 py-4 bg-gray-100 text-gray-600 font-black uppercase tracking-widest text-sm rounded-xl hover:bg-gray-200 transition-colors">Cancel</button>
+                <button 
+                  onClick={handleSubmitMissingIngredients}
+                  disabled={selectedIngredients.length === 0}
+                  className="flex-[2] py-4 bg-rose-600 text-white font-black uppercase tracking-widest text-sm rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors"
+                >
+                  NOTIFY SALES
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Fullscreen Image Modal */}
+      <AnimatePresence>
+        {fullscreenImage && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+            <button onClick={() => setFullscreenImage(null)} className="absolute top-6 right-6 p-4 bg-white/10 rounded-full hover:bg-white/20 text-white transition-colors"><CloseSquare className="w-8 h-8"/></button>
+            <motion.img 
+              initial={{scale:0.9, opacity:0}} animate={{scale:1, opacity:1}} exit={{scale:0.9, opacity:0}}
+              src={fullscreenImage} 
+              alt="Cake Fullscreen" 
+              className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-}
-
-function ProductionTimer({ startTime }: { startTime: string }) {
-  const [elapsed, setElapsed] = useState(0);
-  useEffect(() => {
-    const calc = () => setElapsed(Math.floor((Date.now() - new Date(startTime).getTime()) / 60000));
-    calc();
-    const int = setInterval(calc, 60000);
-    return () => clearInterval(int);
-  }, [startTime]);
-
-  return (
-    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/60 border border-black/40 backdrop-blur-md text-white/80">
-      <Timer1 className="w-3 h-3" variant="Bold" />
-      <span className="text-[9px] uppercase tracking-widest whitespace-nowrap font-bold">
-        Baking: {Math.floor(elapsed/60)}h {elapsed%60}m
-      </span>
-    </div>
-  );
-}
-
-function formatTargetTime(isoString: string) {
-  const target = new Date(isoString);
-  const now = new Date();
-  const isToday = target.getDate() === now.getDate() && target.getMonth() === now.getMonth() && target.getFullYear() === now.getFullYear();
-  
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const isTomorrow = target.getDate() === tomorrow.getDate() && target.getMonth() === tomorrow.getMonth() && target.getFullYear() === tomorrow.getFullYear();
-
-  const timeStr = target.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-  if (isToday) return `Today, ${timeStr}`;
-  if (isTomorrow) return `Tomorrow, ${timeStr}`;
-  return target.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + `, ${timeStr}`;
 }

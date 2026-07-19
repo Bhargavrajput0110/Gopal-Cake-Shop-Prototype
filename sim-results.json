@@ -1,0 +1,271 @@
+{
+  "runAt": "2026-07-14T04:58:50.066Z",
+  "summary": {
+    "total": 52,
+    "passCount": 32,
+    "failCount": 20,
+    "passRate": "62%"
+  },
+  "results": [
+    {
+      "name": "Dev server is alive",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Branches API accessible",
+      "status": "PASS",
+      "detail": "3 branches found"
+    },
+    {
+      "name": "Vendor seed endpoint available",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Customer created",
+      "status": "PASS",
+      "detail": "cmrk6kx8n004lzgu3shgtml6q"
+    },
+    {
+      "name": "Order created successfully",
+      "status": "FAIL",
+      "detail": "Order #FAIL"
+    },
+    {
+      "name": "VENDOR_FLORIST can only see their tasks",
+      "status": "FAIL",
+      "detail": "0 tasks"
+    },
+    {
+      "name": "VENDOR_ACRYLIC can only see their tasks",
+      "status": "FAIL",
+      "detail": "0 tasks"
+    },
+    {
+      "name": "VENDOR_PHOTO can only see their tasks",
+      "status": "FAIL",
+      "detail": "0 tasks"
+    },
+    {
+      "name": "Florist and Acrylic have no overlapping tasks",
+      "status": "PASS",
+      "detail": "0 overlapping tasks"
+    },
+    {
+      "name": "Vendor cannot access /api/v1/users",
+      "status": "FAIL",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Vendor cannot access Chef production",
+      "status": "PASS",
+      "detail": "HTTP 401"
+    },
+    {
+      "name": "Cross-vendor task isolation (no tasks to test, marking SKIP)",
+      "status": "PASS",
+      "detail": "SKIP — No vendor tasks in DB"
+    },
+    {
+      "name": "Invalid action validation (no tasks to test)",
+      "status": "PASS",
+      "detail": "SKIP"
+    },
+    {
+      "name": "Unauthenticated request rejected",
+      "status": "PASS",
+      "detail": "HTTP 401"
+    },
+    {
+      "name": "Driver role cannot access vendor tasks",
+      "status": "PASS",
+      "detail": "HTTP 401"
+    },
+    {
+      "name": "Driver queue accessible",
+      "status": "FAIL",
+      "detail": "HTTP 500"
+    },
+    {
+      "name": "Driver queue returns taskType field",
+      "status": "PASS",
+      "detail": "0 tasks total"
+    },
+    {
+      "name": "VENDOR_PICKUP tasks have pickupLocation",
+      "status": "PASS",
+      "detail": "0 vendor pickups"
+    },
+    {
+      "name": "CUSTOMER_DELIVERY tasks have customerName",
+      "status": "PASS",
+      "detail": "0 deliveries"
+    },
+    {
+      "name": "Customer deliveries never blocked by vendor pickups",
+      "status": "PASS",
+      "detail": "Architectural: separate task types in unified queue"
+    },
+    {
+      "name": "Vendor tasks GET p95 < 300ms",
+      "status": "PASS",
+      "detail": "p50=33ms p95=45ms max=45ms"
+    },
+    {
+      "name": "Driver queue GET p95 < 400ms",
+      "status": "PASS",
+      "detail": "p50=55ms p95=136ms max=136ms"
+    },
+    {
+      "name": "Chef queue GET p95 < 400ms",
+      "status": "PASS",
+      "detail": "p50=36ms p95=44ms max=44ms"
+    },
+    {
+      "name": "Sales reports accessible",
+      "status": "FAIL",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "Notifications inbox accessible",
+      "status": "PASS",
+      "detail": "HTTP 200, 0 notifications"
+    },
+    {
+      "name": "Products API still functional",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Categories API still functional",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Design Library API still functional",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Auth: Health endpoint public",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Products: List",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Categories: List",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Customers: List",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Orders: List",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Designs: List",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Branches: List",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Settings: List",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Sales: Checkout API accessible",
+      "status": "FAIL",
+      "detail": "HTTP 401"
+    },
+    {
+      "name": "Notifications: Inbox",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Reports: Sales",
+      "status": "FAIL",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "Driver: Queue",
+      "status": "FAIL",
+      "detail": "HTTP 500"
+    },
+    {
+      "name": "Vendor: Task list",
+      "status": "FAIL",
+      "detail": "HTTP 401"
+    },
+    {
+      "name": "Coupons: List",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Users: List (admin only)",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Business day: 0 orders created",
+      "status": "FAIL",
+      "detail": "0 ok, 7 failed"
+    },
+    {
+      "name": "Business day: failure rate < 20%",
+      "status": "FAIL",
+      "detail": "7 failures"
+    },
+    {
+      "name": "Chef dashboard responsive after load",
+      "status": "FAIL",
+      "detail": "74ms"
+    },
+    {
+      "name": "Driver dashboard responsive after load",
+      "status": "FAIL",
+      "detail": "56ms"
+    },
+    {
+      "name": "Vendor dashboard responsive after load",
+      "status": "FAIL",
+      "detail": "70ms"
+    },
+    {
+      "name": "Branch Khanderao Market: Order created",
+      "status": "FAIL",
+      "detail": "#undefined"
+    },
+    {
+      "name": "Branch Main Branch: Order created",
+      "status": "FAIL",
+      "detail": "#undefined"
+    },
+    {
+      "name": "Chef queue responds for Branch A",
+      "status": "FAIL",
+      "detail": "HTTP 401"
+    },
+    {
+      "name": "Chef queue responds for Branch B",
+      "status": "FAIL",
+      "detail": "HTTP 401"
+    }
+  ]
+}

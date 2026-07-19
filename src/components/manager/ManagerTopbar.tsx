@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search } from "lucide-react";
+import { Notification, SearchNormal1 } from "iconsax-react";
 import { ManagerMobileNav } from "./ManagerMobileNav";
 
 export function ManagerTopbar() {
@@ -10,7 +10,7 @@ export function ManagerTopbar() {
         <ManagerMobileNav />
         
         <div className="relative w-full max-w-md hidden sm:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <SearchNormal1 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input 
             type="text" 
             placeholder="Search orders, products, or customers..." 
@@ -21,7 +21,7 @@ export function ManagerTopbar() {
 
       <div className="flex items-center gap-3 sm:gap-5">
         <button className="relative p-2 text-muted-foreground hover:bg-secondary rounded-full transition-colors">
-          <Bell className="w-5 h-5" />
+          <Notification className="w-5 h-5" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full border-2 border-card"></span>
         </button>
         

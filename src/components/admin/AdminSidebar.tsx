@@ -2,31 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  ShoppingBag, 
-  Users, 
-  Store, 
-  Settings,
-  LogOut,
-  BadgeIndianRupee,
-  FileBarChart2,
-  UtensilsCrossed
-} from "lucide-react";
-
-export const navItems = [
-  { name: "Command Centre", href: "/admin", icon: LayoutDashboard },
-  { name: "All Orders", href: "/admin/orders", icon: ShoppingBag, badge: 3 },
-  { name: "Staff & Roles", href: "/admin/staff", icon: Users },
-  { name: "Branches", href: "/admin/branches", icon: Store },
-  { name: "Menu / Products", href: "/admin/menu", icon: UtensilsCrossed },
-  { name: "Reports", href: "/admin/reports", icon: FileBarChart2 },
-  { name: "Finances", href: "/admin/finances", icon: BadgeIndianRupee },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
-];
+import { Logout } from "iconsax-react";
+import { ADMIN_NAV_CONFIG } from "@/components/navigation/nav-configs";
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const navItems = ADMIN_NAV_CONFIG.nav[0].items;
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-card border-r border-border flex flex-col hidden md:flex z-30">
@@ -58,7 +39,7 @@ export function AdminSidebar() {
               }`}
             >
               <div className="flex items-center gap-3">
-                <item.icon className="w-4 h-4 shrink-0" />
+                {item.icon && <item.icon className="w-4 h-4 shrink-0" />}
                 {item.name}
               </div>
               {item.badge && (
@@ -86,7 +67,7 @@ export function AdminSidebar() {
           onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
           className="flex items-center gap-3 text-sm font-semibold text-muted-foreground hover:text-destructive transition-colors w-full px-3 py-2 rounded-xl hover:bg-destructive/10"
         >
-          <LogOut className="w-4 h-4" />
+          <Logout className="w-4 h-4" />
           Sign Out
         </button>
       </div>

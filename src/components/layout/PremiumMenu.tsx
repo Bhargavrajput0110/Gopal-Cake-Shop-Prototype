@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { HambergerMenu, CloseSquare } from "iconsax-react";
 
 const menuLinks = [
   { title: "Home", href: "/" },
@@ -22,7 +22,7 @@ export function PremiumMenu() {
         onClick={() => setIsOpen(true)}
         className="md:hidden p-2 text-foreground/80 hover:text-foreground transition-colors"
       >
-        <Menu className="h-6 w-6" />
+        <HambergerMenu className="h-6 w-6" />
       </button>
 
       <AnimatePresence>
@@ -37,7 +37,7 @@ export function PremiumMenu() {
               onClick={() => setIsOpen(false)}
               className="absolute top-6 right-6 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 hover:text-[#D4AF37] transition-all"
             >
-              <X className="h-8 w-8" />
+              <CloseSquare className="h-8 w-8" />
             </button>
 
             <motion.div 

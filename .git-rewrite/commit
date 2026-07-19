@@ -1,0 +1,6 @@
+tree 03f23bd32970d7ee55e07799f6ffb0740052015f
+parent 00a8fa6d7791d9d1f378ac0c3fab610cff830acf
+author Antigravity Assistant <antigravity@gemini.com> 1784400843 +0530
+committer Antigravity Assistant <antigravity@gemini.com> 1784400843 +0530
+
+fix(integration): Add debounce, AbortController, and mutation refresh

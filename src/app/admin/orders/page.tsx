@@ -1,183 +1,414 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Search, Filter, MoreHorizontal, Clock, MapPin } from "lucide-react";
+import { useState, useMemo } from "react"
+import { useOrders, type Order, type OrderStatus } from "@/context/OrderContext"
+import { DataTable, type ColumnDef, type RowAction, type ToolbarFilter, type BulkAction } from "@/components/ui/data-table"
+import { PageHeader } from "@/components/ui/page-header"
+import { Badge } from "@/components/ui/badge"
+import { Clock, Car, Shop, Bag, Call, Eye, CloseCircle, TickCircle, Element4, TextalignJustifycenter } from "iconsax-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
+import { OrderDetailsDialog } from "@/components/admin/orders/OrderDetailsDialog"
+import { ReassignDriverDialog } from "@/components/admin/orders/ReassignDriverDialog"
+import Link from "next/link"
 
-type OrderStatus = "New" | "Baking" | "Ready" | "Out for Delivery" | "Delivered";
+// ─── Status Config ────────────────────────────────────────────────────────────
+// Source of truth for label + badge variant.
+// Hex colors from original STATUS_COLOR map have been removed and replaced with
+// semantic Design System variants.
 
-const MOCK_ORDERS = [
-  { id: "108921", customer: "Rahul Sharma", phone: "+91 98765 43210", address: "38, Amrutnagar, Manjalpur", items: "Pineapple Cake (1kg)", amount: "₹450", status: "Baking", time: "10:30 AM", branch: "Khanderao Market" },
-  { id: "108920", customer: "Priya Patel", phone: "+91 91234 56789", address: "A-12, Surya Flats, Gotri", items: "Truffle Cake + Cupcakes", amount: "₹850", status: "Out for Delivery", time: "09:45 AM", branch: "Ellora Park" },
-  { id: "108919", customer: "Amit Shah", phone: "+91 99887 76655", address: "Pickup (Store)", items: "Black Forest (500g)", amount: "₹350", status: "Delivered", time: "09:00 AM", branch: "Uma Char Rasta" },
-  { id: "108918", customer: "Neha Desai", phone: "+91 94567 12345", address: "7, Green Park, Akota", items: "Custom Photo Cake", amount: "₹1200", status: "New", time: "11:15 AM", branch: "Factory Warashiya" },
-  { id: "108917", customer: "Vikram Singh", phone: "+91 93322 11445", address: "402, Shivam Heights", items: "Red Velvet Jar x3", amount: "₹450", status: "New", time: "11:30 AM", branch: "Khanderao Market" },
-  { id: "108916", customer: "Sneha Rao", phone: "+91 97788 55441", address: "Pickup (Store)", items: "Chocolate Truffle (1kg)", amount: "₹750", status: "Ready", time: "11:45 AM", branch: "Ellora Park" },
-];
+const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" | "success" | "warning" | "info" }> = {
+  NEW:                 { label: "NEW",          variant: "info" },
+  DRAFT:               { label: "Draft",        variant: "secondary" },
+  WAITING_FOR_CHEF:    { label: "Waiting",      variant: "warning" },
+  CHEF_ACCEPTED:       { label: "Accepted",     variant: "warning" },
+  MAKING:              { label: "MAKING",    variant: "warning" },
+  DECORATING:          { label: "DECORATING",   variant: "secondary" },
+  READY_FOR_PICKUP:    { label: "Ready",        variant: "success" },
+  PENDING_ASSIGNMENT:  { label: "Dispatch",     variant: "info" },
+  ASSIGNED_TO_DRIVER:  { label: "Assigned",     variant: "info" },
+  PICKED_UP:           { label: "Picked Up",    variant: "info" },
+  ON_THE_WAY:          { label: "On the Way",   variant: "info" },
+  DELIVERED:           { label: "DELIVERED",    variant: "success" },
+  FAILED_DELIVERY:     { label: "FAILED_DELIVERY",       variant: "destructive" },
+  CANCELLED:           { label: "CANCELLED",    variant: "destructive" },
+  COMPLETED:           { label: "Completed",    variant: "success" },
+}
 
-const STATUS_COLORS = {
-  "New": "bg-primary/20 text-primary border-primary/30",
-  "Baking": "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/20 dark:text-amber-500 dark:border-amber-500/30",
-  "Ready": "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-500/20 dark:text-purple-500 dark:border-purple-500/30",
-  "Out for Delivery": "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-500/20 dark:text-blue-500 dark:border-blue-500/30",
-  "Delivered": "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-500 dark:border-emerald-500/30",
-};
+const BOARD_COLUMNS: { label: string; statuses: string[] }[] = [
+  { label: "New & Draft",      statuses: ["NEW", "DRAFT"] },
+  { label: "In Kitchen",       statuses: ["WAITING_FOR_CHEF", "CHEF_ACCEPTED", "MAKING", "DECORATING"] },
+  { label: "Ready",            statuses: ["READY_FOR_PICKUP", "PENDING_ASSIGNMENT"] },
+  { label: "Out for Delivery", statuses: ["ASSIGNED_TO_DRIVER", "PICKED_UP", "ON_THE_WAY"] },
+]
 
-export default function LiveOrdersPage() {
-  const [activeTab, setActiveTab] = useState<"List" | "Board">("Board");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [statusFilter, setStatusFilter] = useState<string>("All");
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-  const filteredOrders = MOCK_ORDERS.filter(o => statusFilter === "All" || o.status === statusFilter);
+function formatTimeAgo(dateStr: string) {
+  if (!dateStr) return ""
+  const diffMin = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
+  if (diffMin < 1) return "just now"
+  if (diffMin < 60) return `${diffMin}m ago`
+  return `${Math.floor(diffMin / 60)}h ${diffMin % 60}m ago`
+}
 
-  return (
-    <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
-      {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Live Orders</h2>
-          <p className="text-muted-foreground text-sm">Manage and track orders across all branches in real-time.</p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input 
-              type="text" 
-              placeholder="Search ID, Name..." 
-              className="pl-9 pr-4 py-2 rounded-lg border border-input bg-card focus:ring-2 focus:ring-primary/50 text-sm"
-            />
-          </div>
-          
-          <button className="flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
-            <Filter className="w-4 h-4" />
-            Filter
-          </button>
+function formatTimeTarget(dateStr: string) {
+  if (!dateStr) return ""
+  return new Date(dateStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+}
 
-          <div className="flex bg-secondary p-1 rounded-lg">
-            <button 
-              onClick={() => setActiveTab("Board")}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "Board" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Board
-            </button>
-            <button 
-              onClick={() => setActiveTab("List")}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "List" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              List
-            </button>
-          </div>
+function OrderTypeIcon({ type }: { type: string }) {
+  if (type === "delivery")  return <Car      className="w-3.5 h-3.5 text-primary/70" />
+  if (type === "pickup")    return <Shop     className="w-3.5 h-3.5 text-amber-600" />
+  if (type === "walk_in")   return <Bag className="w-3.5 h-3.5 text-emerald-600" />
+  if (type === "phone")     return <Call     className="w-3.5 h-3.5 text-blue-600" />
+  return null
+}
+
+// ─── DataTable column definitions ────────────────────────────────────────────
+
+const columns: ColumnDef<Order>[] = [
+  {
+    accessorKey: "id",
+    header: "Order ID",
+    cell: ({ row }) => (
+      <div>
+        <div className="font-bold text-foreground text-xs">{row.original.id}</div>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+          <Clock className="w-3 h-3" />
+          {formatTimeAgo(row.original.createdAt)}
         </div>
       </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden">
-        {activeTab === "Board" ? (
-          <div className="h-full flex gap-4 overflow-x-auto pb-4">
-            {["New", "Baking", "Ready", "Out for Delivery"].map((columnStatus) => (
-              <div key={columnStatus} className="flex-none w-80 bg-secondary/30 rounded-xl border border-border/50 flex flex-col h-full">
-                <div className="p-4 border-b border-border/50 shrink-0 flex items-center justify-between">
-                  <h3 className="font-semibold text-foreground flex items-center gap-2">
-                    {columnStatus}
-                    <span className="bg-background text-muted-foreground text-xs px-2 py-0.5 rounded-full font-bold border border-border">
-                      {MOCK_ORDERS.filter(o => o.status === columnStatus).length}
-                    </span>
-                  </h3>
-                  <button className="text-muted-foreground hover:text-foreground"><MoreHorizontal className="w-4 h-4" /></button>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                  {MOCK_ORDERS.filter(o => o.status === columnStatus).map((order) => (
-                    <OrderCard key={order.id} order={order} />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-card border border-border rounded-xl shadow-sm h-full overflow-hidden flex flex-col">
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-muted-foreground uppercase bg-secondary/50 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-4 font-medium">Order ID & Time</th>
-                    <th className="px-4 py-4 font-medium">Customer Details</th>
-                    <th className="px-4 py-4 font-medium">Items</th>
-                    <th className="px-4 py-4 font-medium">Branch</th>
-                    <th className="px-4 py-4 font-medium">Status</th>
-                    <th className="px-4 py-4 font-medium">Amount</th>
-                    <th className="px-4 py-4 text-right font-medium">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {filteredOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-secondary/30 transition-colors">
-                      <td className="px-4 py-4">
-                        <div className="font-medium text-foreground">{order.id}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1"><Clock className="w-3 h-3" /> {order.time}</div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="font-medium">{order.customer}</div>
-                        <div className="text-xs text-muted-foreground mt-1">{order.phone}</div>
-                      </td>
-                      <td className="px-4 py-4 max-w-[200px] truncate">{order.items}</td>
-                      <td className="px-4 py-4 text-muted-foreground">{order.branch}</td>
-                      <td className="px-4 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${STATUS_COLORS[order.status as OrderStatus]}`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 font-medium">{order.amount}</td>
-                      <td className="px-4 py-4 text-right">
-                        <button className="text-primary hover:underline font-medium text-sm">Manage</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+    ),
+    size: 140,
+  },
+  {
+    accessorKey: "customerName",
+    header: "Customer",
+    cell: ({ row }) => (
+      <div>
+        <div className="font-medium text-sm">{row.original.customerName}</div>
+        <div className="text-xs text-muted-foreground">{row.original.customerPhone}</div>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "items",
+    header: "Items",
+    enableSorting: false,
+    cell: ({ row }) => (
+      <div className="max-w-[200px]">
+        <p className="truncate text-sm">
+          {row.original.items?.map((i: any) => `${i.name}${i.qty > 1 ? ` ×${i.qty}` : ""}`).join(", ")}
+        </p>
+        {row.original.priorityLevel === "high" && (
+          <Badge variant="destructive" className="text-[10px] mt-0.5">URGENT</Badge>
         )}
       </div>
-    </div>
-  );
-}
-
-function OrderCard({ order }: { order: typeof MOCK_ORDERS[0] }) {
-  return (
-    <div className="bg-card border border-border p-4 rounded-lg shadow-sm hover:border-primary/30 transition-colors cursor-pointer group">
-      <div className="flex items-start justify-between mb-2">
-        <span className="font-bold text-foreground text-sm">{order.id}</span>
-        <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          {order.time}
-        </span>
+    ),
+  },
+  {
+    accessorKey: "branch",
+    header: "Branch",
+    cell: ({ row }) => (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <OrderTypeIcon type={row.original.orderType} />
+        <span>{row.original.branch}</span>
       </div>
-      
-      <p className="text-sm font-medium text-foreground truncate">{order.items}</p>
-      
-      <div className="mt-4 pt-3 border-t border-border/50 space-y-2">
-        <div className="flex items-start gap-2 text-xs text-muted-foreground">
-          <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary/70" />
-          <span className="line-clamp-2">{order.address}</span>
-        </div>
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Store className="w-3.5 h-3.5" />
-            <span className="truncate max-w-[120px]">{order.branch}</span>
+    ),
+    size: 120,
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const cfg = STATUS_CONFIG[row.original.status]
+      return <Badge variant={cfg?.variant ?? "secondary"}>{cfg?.label ?? row.original.status}</Badge>
+    },
+    filterFn: "equals",
+    size: 120,
+  },
+  {
+    accessorKey: "grandTotal",
+    header: "Amount",
+    cell: ({ row }) => (
+      <span className="font-bold text-primary text-sm">
+        ₹{row.original.grandTotal?.toFixed(0)}
+      </span>
+    ),
+    size: 90,
+  },
+  {
+    accessorKey: "timeTarget",
+    header: "Deadline",
+    cell: ({ row }) => (
+      <span className="text-xs font-semibold">{formatTimeTarget(row.original.timeTarget)}</span>
+    ),
+    size: 90,
+  },
+]
+
+// ─── Filter options ───────────────────────────────────────────────────────────
+
+const STATUS_FILTER_OPTIONS = Object.entries(STATUS_CONFIG).map(([val, cfg]) => ({
+  value: val,
+  label: cfg.label,
+}))
+
+const tableFilters: ToolbarFilter[] = [
+  { columnId: "status", label: "Status", options: STATUS_FILTER_OPTIONS },
+]
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function LiveOrdersPage() {
+  const { orders, transitionOrderAction } = useOrders()
+  const [view, setView] = useState<"board" | "list">("board")
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const [reassignOrderId, setReassignOrderId] = useState<string | null>(null)
+
+  // Row actions — preserve existing business logic, wrapped in Design System pattern
+  const rowActions: RowAction<Order>[] = [
+    {
+      label: "View Details",
+      icon: Eye,
+      onClick: (order) => {
+        setSelectedOrderId(order.id)
+      },
+    },
+    {
+      label: "Mark Ready",
+      icon: TickCircle,
+      onClick: (order) => transitionOrderAction(order.id, "ready"),
+      hidden: (order) => ["DELIVERED", "CANCELLED", "FAILED_DELIVERY", "READY_FOR_PICKUP", "COMPLETED"].includes(order.status as any),
+    },
+    {
+      label: "Reassign",
+      icon: TickCircle,
+      onClick: (order) => setReassignOrderId(order.id),
+      hidden: (order) => (order.status as any) !== "FAILED_DELIVERY",
+    },
+    {
+      label: "Cancel Order",
+      icon: CloseCircle,
+      variant: "destructive",
+      onClick: (order) => transitionOrderAction(order.id, "cancel", "Cancelled by Admin"),
+      hidden: (order) => ["DELIVERED", "CANCELLED", "FAILED_DELIVERY", "COMPLETED"].includes(order.status as any),
+    },
+  ]
+
+  const bulkActions: BulkAction<Order>[] = [
+    {
+      label: "Cancel Selected",
+      variant: "destructive",
+      icon: CloseCircle,
+      onAction: async (rows) => {
+        await Promise.all(rows.map((o) => transitionOrderAction(o.id, "cancel", "Bulk cancelled by Admin")))
+      },
+    },
+  ]
+
+  const filteredOrders = orders
+  const activeOrders = filteredOrders.filter(
+    (o) => !["DELIVERED", "FAILED_DELIVERY", "CANCELLED", "COMPLETED"].includes(o.status)
+  )
+  const archivedOrders = filteredOrders.filter((o) =>
+    ["DELIVERED", "FAILED_DELIVERY", "CANCELLED", "COMPLETED"].includes(o.status)
+  )
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Live Orders"
+        description={`${orders.length} total orders — real-time from Supabase`}
+        actions={
+          <div className="flex items-center gap-4">
+            <div className="flex bg-secondary p-1 rounded-lg">
+              <button
+                onClick={() => setView("board")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  view === "board" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Element4 className="w-4 h-4" /> Board
+              </button>
+              <button
+                onClick={() => setView("list")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  view === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <TextalignJustifycenter className="w-4 h-4" /> List
+              </button>
+            </div>
           </div>
-          <span className="font-bold text-sm text-foreground">{order.amount}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
+        }
+      />
 
-// Temporary Store Icon Component
-function Store(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/>
-    </svg>
-  );
+      {/* ── Board View (existing, unchanged logic) ──────────────────────── */}
+      {view === "board" && (
+        <div className="flex gap-4 overflow-x-auto pb-4" style={{ maxHeight: "calc(100vh - 12rem)" }}>
+          {BOARD_COLUMNS.map((col) => {
+            const colOrders = filteredOrders.filter((o) =>
+              col.statuses.includes(o.status)
+            )
+            return (
+              <div
+                key={col.label}
+                className="flex-none w-72 bg-secondary/30 rounded-xl border border-border/50 flex flex-col h-full"
+              >
+                <div className="p-4 border-b border-border/50 shrink-0 flex items-center justify-between">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
+                    {col.label}
+                    <span className="bg-background text-muted-foreground text-xs px-2 py-0.5 rounded-full font-bold border border-border">
+                      {colOrders.length}
+                    </span>
+                  </h3>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  <AnimatePresence initial={false}>
+                    {colOrders.map((order) => (
+                      <motion.div
+                        key={order.id}
+                        layout
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="bg-card border border-border p-3.5 rounded-xl shadow-sm hover:border-primary/30 transition-all cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <span className="font-bold text-foreground text-xs">{order.id}</span>
+                            {order.isSurprise && (
+                              <Badge variant="secondary" className="ml-1.5 text-[9px]">Surprise</Badge>
+                            )}
+                            {order.priorityLevel === "high" && (
+                              <Badge variant="destructive" className="ml-1.5 text-[9px]">Urgent</Badge>
+                            )}
+                          </div>
+                          <Badge variant={STATUS_CONFIG[order.status]?.variant ?? "secondary"}>
+                            {STATUS_CONFIG[order.status]?.label ?? order.status}
+                          </Badge>
+                        </div>
+                        <p className="font-semibold text-sm text-foreground truncate">{order.customerName}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {order.items?.map((i: any) => `${i.name}${i.weight ? ` (${i.weight})` : ""}`).join(", ")}
+                        </p>
+                        <div className="mt-3 pt-2.5 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <OrderTypeIcon type={order.orderType} />
+                            <span>{order.branch}</span>
+                          </div>
+                          <div className="flex items-center gap-1 font-bold text-foreground">
+                            <Clock className="w-3 h-3" />
+                            {formatTimeTarget(order.timeTarget)}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-muted-foreground">{formatTimeAgo(order.createdAt)}</span>
+                          <span className="font-black text-sm text-primary">₹{order.grandTotal?.toFixed(0)}</span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  {colOrders.length === 0 && (
+                    <div className="py-8 text-center text-muted-foreground text-sm opacity-50">No orders</div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Delivered column */}
+          <div className="flex-none w-72 bg-secondary/30 rounded-xl border border-border/50 flex flex-col h-full">
+            <div className="p-4 border-b border-border/50 shrink-0 flex items-center justify-between">
+              <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
+                Delivered / Done
+                <span className="bg-background text-muted-foreground text-xs px-2 py-0.5 rounded-full font-bold border border-border">
+                  {archivedOrders.length}
+                </span>
+              </h3>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              {archivedOrders.slice(0, 10).map((order) => (
+                <div key={order.id} className="bg-card border border-border/40 p-3 rounded-xl opacity-70 text-xs">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold">{order.id}</span>
+                    <Badge variant={STATUS_CONFIG[order.status]?.variant ?? "secondary"}>
+                      {STATUS_CONFIG[order.status]?.label}
+                    </Badge>
+                  </div>
+                  <p className="font-medium text-foreground truncate">{order.customerName}</p>
+                  <p className="text-muted-foreground">₹{order.grandTotal?.toFixed(0)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── List View — powered by Design System DataTable ──────────────── */}
+      {view === "list" && (
+        <DataTable<Order>
+          columns={columns}
+          data={filteredOrders}
+          label="orders"
+          searchPlaceholder="Search by ID, customer, phone..."
+          filters={tableFilters}
+          rowActions={rowActions}
+          bulkActions={bulkActions}
+          exportActions={{
+            onExportCSV: () => console.log("Exporting CSV..."),
+            onExportExcel: () => console.log("Exporting Excel..."),
+            onExportPDF: () => console.log("Exporting PDF..."),
+          }}
+          renderMobileCard={(order) => (
+            <div className="p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="font-bold text-sm">{order.id}</span>
+                  <div className="text-xs text-muted-foreground">{formatTimeAgo(order.createdAt)}</div>
+                </div>
+                <Badge variant={STATUS_CONFIG[order.status]?.variant ?? "secondary"}>
+                  {STATUS_CONFIG[order.status]?.label ?? order.status}
+                </Badge>
+              </div>
+              <div>
+                <div className="font-medium">{order.customerName}</div>
+                <div className="text-sm text-muted-foreground">{order.items?.map((i: any) => i.name).join(", ")}</div>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t">
+                <span className="font-bold text-primary">₹{order.grandTotal?.toFixed(0)}</span>
+                <span className="text-sm">{formatTimeTarget(order.timeTarget)}</span>
+              </div>
+            </div>
+          )}
+          defaultHidden={["timeTarget"]}
+          defaultPageSize={20}
+          showColumnVisibility
+          persistState
+          debug
+        />
+      )}
+
+      <OrderDetailsDialog 
+        orderId={selectedOrderId} 
+        isOpen={!!selectedOrderId} 
+        onClose={() => setSelectedOrderId(null)} 
+      />
+
+      {reassignOrderId && (
+        <ReassignDriverDialog
+          orderId={reassignOrderId}
+          isOpen={!!reassignOrderId}
+          onClose={() => setReassignOrderId(null)}
+          onSuccess={() => {
+            window.location.reload()
+          }}
+        />
+      )}
+    </div>
+  )
 }

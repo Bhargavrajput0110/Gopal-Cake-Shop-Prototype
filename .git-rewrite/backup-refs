@@ -1,0 +1,15 @@
+5e284f80e89c29453f7d15bb84e767edc106da7d commit	refs/heads/integration/p0-cleanup
+7abdd14b264f36cd9fc54274c689de1efad82c56 commit	refs/heads/integration/p1-product-browsing
+9d7bd8de7c721b24bc3b2435b1b8c639a34cb27e commit	refs/heads/integration/p10-vendor-sync
+81954628a9007fdaa2a5d1b326153f9eebc47e98 commit	refs/heads/integration/p11-notifications
+8573487a2ff91c6c14e0c42aa7679cece5b7025d commit	refs/heads/integration/p2-pos-checkout
+1f8c0d92c77d50d519f8b6fb828c98d41baa4ca5 commit	refs/heads/integration/p3-customer-order-history
+c18b384b943f2c9180bea747aaa62afbd007a38c commit	refs/heads/integration/p4-order-tracking
+9d7bd8de7c721b24bc3b2435b1b8c639a34cb27e commit	refs/heads/integration/p5-sales-orders-pagination
+9d7bd8de7c721b24bc3b2435b1b8c639a34cb27e commit	refs/heads/integration/p6-order-edit-modal
+9d7bd8de7c721b24bc3b2435b1b8c639a34cb27e commit	refs/heads/integration/p7-vendor-coordination
+9d7bd8de7c721b24bc3b2435b1b8c639a34cb27e commit	refs/heads/integration/p8-delivery-dispatch
+9d7bd8de7c721b24bc3b2435b1b8c639a34cb27e commit	refs/heads/integration/p9-driver-sync
+3b679ab310d68078897dc8a9fbefb37e2952bd62 commit	refs/heads/main
+052f41d75ce6922e98f0153d64dcad280a831d7b commit	refs/remotes/origin/main
+35d7715805177317e129eba95e795aca45bb9866 tag	refs/tags/v1.0.0

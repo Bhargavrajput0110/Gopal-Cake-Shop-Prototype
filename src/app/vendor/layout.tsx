@@ -1,0 +1,1 @@
+"use client"; import { AppTopbar, VENDOR_NAV_CONFIG } from "@/components/navigation"; export default function VendorLayout({ children }: { children: React.ReactNode }) { return (<div className="h-screen flex flex-col bg-background"><AppTopbar config={VENDOR_NAV_CONFIG} showSearch={false} /><main className="flex-1 flex flex-col min-h-0 overflow-y-auto">{children}</main></div>); }

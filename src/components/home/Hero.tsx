@@ -1,170 +1,225 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { motion, useScroll, useTransform, MotionValue } from "framer-motion";
-import Image from "next/image";
+import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
-import { HeroDeliveryChecker } from "./HeroDeliveryChecker";
-import { BorderBeam } from "@/components/magicui/BorderBeam";
+import { useRef } from "react";
 
-function Letter({ letter, i, scrollYProgress }: { letter: string, i: number, scrollYProgress: MotionValue<number> }) {
-  const rotateX = useTransform(scrollYProgress, [0, 1], [0, 45 + (i * 10)]);
-  const rotateY = useTransform(scrollYProgress, [0, 1], [0, (i % 2 === 0 ? 15 : -15)]);
-  const yOffset = useTransform(scrollYProgress, [0, 1], ["0%", `${-20 - (i * 15)}%`]);
-  const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
-
-  return (
-    <motion.span
-      style={{ 
-        rotateX, 
-        rotateY, 
-        y: yOffset,
-        opacity,
-        display: "inline-block", 
-        transformStyle: "preserve-3d" 
-      }}
-      initial={{ opacity: 0, rotateX: 90, y: 100 }}
-      animate={{ opacity: 1, rotateX: 0, y: 0 }}
-      transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 + (i * 0.05) }}
-    >
-      {letter === " " ? "\u00A0" : letter}
-    </motion.span>
-  );
-}
-
-function AnimatedLetters({ text, scrollYProgress }: { text: string, scrollYProgress: MotionValue<number> }) {
-  const letters = text.split("");
-  return (
-    <div className="flex justify-center flex-wrap">
-      {letters.map((letter, i) => (
-        <Letter key={i} letter={letter} i={i} scrollYProgress={scrollYProgress} />
-      ))}
-    </div>
-  );
-}
+const FLOATING_WORDS = ["Artisanal", "Handcrafted", "Eggless", "Premium", "Fresh Daily"];
 
 export function Hero() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isHovered, setIsHovered] = useState(false);
-
+  const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end start"]
+    target: ref,
+    offset: ["start start", "end start"],
   });
 
-  const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-  const bgOpacity = useTransform(scrollYProgress, [0, 0.8], [0.8, 0.1]);
-
-  const cakeY = useTransform(scrollYProgress, [0, 1], ["0%", "-120%"]);
-  const cakeRotateX = useTransform(scrollYProgress, [0, 1], [0, -35]);
-  const cakeRotateY = useTransform(scrollYProgress, [0, 1], [0, 25]);
-  const cakeScale = useTransform(scrollYProgress, [0, 1], [1, 1.2]);
+  const textY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const overlayOpacity = useTransform(scrollYProgress, [0, 0.8], [0.35, 0.7]);
 
   return (
-    <section ref={containerRef} className="relative min-h-screen w-full bg-[#050505] overflow-hidden" style={{ perspective: "1500px" }}>
-      
-      {/* SVG Liquid Filter Definition */}
-      <svg className="hidden">
-        <filter id="liquid">
-          <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="noise" />
-          <feDisplacementMap 
-            in="SourceGraphic" 
-            in2="noise" 
-            scale={isHovered ? 30 : 0} 
-            xChannelSelector="R" 
-            yChannelSelector="G" 
-            style={{ transition: "scale 0.8s cubic-bezier(0.4, 0, 0.2, 1)" }}
-          />
-        </filter>
-      </svg>
-
-      <motion.div 
-        style={{ y: bgY, opacity: bgOpacity }}
-        className="absolute inset-0 w-full h-full will-change-transform z-0"
-      >
+    <section
+      ref={ref}
+      className="relative w-full h-screen min-h-[700px] overflow-hidden flex flex-col justify-end"
+      style={{ paddingTop: "36px" }} /* account for announcement bar */
+    >
+      {/* ── Video BG ── */}
+      <div className="absolute inset-0 z-0">
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="object-cover w-full h-full scale-105"
+          className="absolute inset-0 w-full h-full object-cover scale-105"
+          style={{ willChange: "transform" }}
         >
-          <source src="https://cdn.pixabay.com/video/2016/09/21/5412-183786483_large.mp4" type="video/mp4" />
+          <source
+            src="https://res.cloudinary.com/dfstyia4c/video/upload/v1784262667/making_an_cake_edit_to_put_it_uhmv3c.mp4"
+            type="video/mp4"
+          />
         </video>
-        {/* Extreme dark gradient to make the video moody and text readable */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/70 to-[#050505]/80" />
-        <div className="absolute inset-0 bg-black/30" />
+
+        {/* Layer 1: Dark wash */}
+        <motion.div
+          className="absolute inset-0"
+          style={{ opacity: overlayOpacity, backgroundColor: "#1C0F0A" }}
+        />
+
+        {/* Layer 2: Rose gradient bottom */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1C0F0A] via-[#1C0F0A]/20 to-transparent" />
+
+        {/* Layer 3: Vignette edges */}
+        <div className="absolute inset-0"
+          style={{
+            background: "radial-gradient(ellipse at center, transparent 50%, rgba(28,15,10,0.55) 100%)"
+          }}
+        />
+
+        {/* Layer 4: Champagne warm cast (subtle) */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#C8A97E]/5 to-transparent mix-blend-screen" />
+      </div>
+
+      {/* ── Floating words — decorative background text ── */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        {FLOATING_WORDS.map((word, i) => (
+          <motion.span
+            key={word}
+            className="absolute font-display text-white/[0.025] select-none whitespace-nowrap"
+            style={{
+              fontSize: `${8 + i * 2}vw`,
+              top: `${8 + i * 18}%`,
+              left: i % 2 === 0 ? "-5%" : "auto",
+              right: i % 2 !== 0 ? "-5%" : "auto",
+            }}
+            animate={{ x: i % 2 === 0 ? [0, 20, 0] : [0, -20, 0] }}
+            transition={{ duration: 18 + i * 3, repeat: Infinity, ease: "linear" }}
+          >
+            {word}
+          </motion.span>
+        ))}
+      </div>
+
+      {/* ── Hero Content ── */}
+      <motion.div
+        className="relative z-10 flex flex-col justify-end pb-16 md:pb-24 px-6 md:px-12 lg:px-20 max-w-[1440px] mx-auto w-full"
+        style={{ y: textY }}
+      >
+        {/* Tag line */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="flex items-center gap-3 mb-6 md:mb-8"
+        >
+          <span className="block w-8 h-px bg-[var(--brand-champagne)]" />
+          <span className="font-ui text-[10px] tracking-[0.35em] uppercase text-[var(--brand-champagne)] font-semibold">
+            Est. 1995 · Vadodara, Gujarat
+          </span>
+        </motion.div>
+
+        {/* Main headline */}
+        <div className="overflow-hidden mb-2">
+          <motion.h1
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="font-display font-bold text-white leading-[0.88] tracking-tight"
+            style={{
+              fontSize: "clamp(4rem, 13vw, 14rem)",
+              lineHeight: 0.88,
+            }}
+          >
+            GOPAL
+          </motion.h1>
+        </div>
+
+        <div className="overflow-hidden mb-8 md:mb-12">
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            transition={{ duration: 1, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-baseline gap-4 md:gap-6"
+          >
+            <h2
+              className="font-display italic font-light text-[var(--brand-champagne)] leading-[0.88]"
+              style={{ fontSize: "clamp(2.5rem, 8vw, 9rem)", lineHeight: 0.88 }}
+            >
+              Cakes
+            </h2>
+            <span
+              className="font-ui text-white/30 font-light"
+              style={{ fontSize: "clamp(1.5rem, 4vw, 5rem)" }}
+            >
+              &
+            </span>
+            <h2
+              className="font-display italic font-light text-white/80 leading-[0.88]"
+              style={{ fontSize: "clamp(2.5rem, 8vw, 9rem)", lineHeight: 0.88 }}
+            >
+              Sweets
+            </h2>
+          </motion.div>
+        </div>
+
+        {/* Bottom row: Description + CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1.0 }}
+          className="flex flex-col sm:flex-row items-start sm:items-center gap-8 sm:gap-12"
+        >
+          {/* Description */}
+          <p className="font-editorial text-white/55 text-base md:text-lg max-w-xs leading-relaxed">
+            Handcrafted daily. 100% eggless. For every celebration in Vadodara.
+          </p>
+
+          {/* CTA group */}
+          <div className="flex items-center gap-4">
+            <Link href="/menu">
+              <button className="btn-primary px-8 py-4 text-[11px]">
+                Order Now
+              </button>
+            </Link>
+            <Link href="/custom">
+              <button className="btn-secondary px-8 py-4 text-[11px]">
+                Customize
+              </button>
+            </Link>
+          </div>
+        </motion.div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5, duration: 1 }}
+          className="absolute right-6 md:right-12 bottom-0 flex flex-col items-center gap-2"
+        >
+          <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/30 to-white/60" />
+          <motion.div
+            animate={{ y: [0, 6, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <svg
+              className="w-4 h-4 text-white/50"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M12 5v14M5 12l7 7 7-7" />
+            </svg>
+          </motion.div>
+        </motion.div>
       </motion.div>
 
-      <div className="relative z-10 min-h-[100dvh] w-full flex flex-col md:flex-row items-center justify-center px-4 md:px-12 lg:px-24 py-32 md:py-0">
-        
-        <div className="w-full md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left z-20 perspective-[1000px]">
-          <motion.p
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, delay: 0.1 }}
-            className="text-[#D4AF37] text-sm tracking-[0.4em] uppercase font-bold mb-6 flex items-center gap-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.8)]"
+      {/* ── Right side floating stats chip ── */}
+      <motion.div
+        initial={{ opacity: 0, x: 40 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.9, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        className="absolute top-1/2 right-6 md:right-12 -translate-y-1/2 z-10 hidden lg:flex flex-col gap-3"
+      >
+        {[
+          { num: "50K+", label: "Happy Customers" },
+          { num: "30+", label: "Years of Craft" },
+          { num: "4", label: "City Branches" },
+        ].map((stat) => (
+          <div
+            key={stat.num}
+            className="glass-dark rounded-2xl px-5 py-4 flex flex-col items-center text-center min-w-[100px] border border-white/10"
           >
-            <span className="w-8 md:w-12 h-[1px] bg-[#D4AF37] hidden md:block"></span>
-            The Art of Baking
-          </motion.p>
+            <span className="font-display text-2xl font-bold text-[var(--brand-champagne)]">
+              {stat.num}
+            </span>
+            <span className="font-ui text-[9px] tracking-[0.15em] uppercase text-white/50 mt-1">
+              {stat.label}
+            </span>
+          </div>
+        ))}
+      </motion.div>
 
-          <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[7rem] xl:text-[8rem] text-white font-bold tracking-tight leading-[0.9] mb-8 drop-shadow-[0_0_40px_rgba(255,255,255,0.2)]">
-            <AnimatedLetters text="GOPAL" scrollYProgress={scrollYProgress} />
-            <div className="text-[#D4AF37] italic font-light mt-2 drop-shadow-[0_0_30px_rgba(212,175,55,0.4)]">
-              <AnimatedLetters text="CAKES" scrollYProgress={scrollYProgress} />
-            </div>
-          </h1>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 1 }}
-            className="flex flex-col gap-6 w-full items-center md:items-start mt-4"
-          >
-            <Link href="/menu" className="group relative">
-              <div className="relative h-16 px-14 flex items-center justify-center font-black text-sm tracking-[0.3em] text-white bg-black/40 backdrop-blur-md rounded-full overflow-hidden transition-all duration-500 hover:bg-[#D4AF37]/10 hover:shadow-[0_0_40px_rgba(212,175,55,0.5)]">
-                <BorderBeam size={80} duration={8} colorFrom="#D4AF37" colorTo="#ff0000" />
-                <span className="relative z-10 group-hover:scale-105 transition-transform duration-500">EXPLORE MENU</span>
-              </div>
-            </Link>
-
-            {/* Global Delivery Checker Injection */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1, delay: 1.5 }}
-              className="w-full max-w-lg mt-4"
-            >
-              <HeroDeliveryChecker />
-            </motion.div>
-          </motion.div>
-        </div>
-
-        {/* Liquid Hover Cake Image */}
-        <div className="w-full md:w-1/2 h-full flex items-center justify-center relative mt-24 md:mt-0 z-10 hidden md:flex">
-          <motion.div
-            style={{ y: cakeY, rotateX: cakeRotateX, rotateY: cakeRotateY, scale: cakeScale }}
-            initial={{ opacity: 0, z: -500, rotateY: 90 }}
-            animate={{ opacity: 1, z: 0, rotateY: -10 }}
-            transition={{ duration: 1.5, ease: "easeOut", delay: 0.8 }}
-            className="relative w-[80%] max-w-[450px] aspect-[4/5] shadow-[0_40px_80px_rgba(212,175,55,0.2)] border border-white/5 rounded-2xl will-change-transform cursor-crosshair overflow-hidden"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-            <div className="w-full h-full overflow-hidden" style={{ filter: "url(#liquid)" }}>
-              <Image
-                src="https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?q=80&w=1000&auto=format&fit=crop"
-                alt="Premium Strawberry Chocolate Cake"
-                fill
-                className="object-cover transition-transform duration-1000 hover:scale-[1.15]"
-                priority
-              />
-            </div>
-          </motion.div>
-        </div>
-
-      </div>
+      {/* ── Gold thin line at bottom ── */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 h-px bg-gradient-to-r from-transparent via-[var(--brand-champagne)]/40 to-transparent" />
     </section>
   );
 }

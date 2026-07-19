@@ -8,7 +8,7 @@ import {
   useMapsLibrary, 
   useMap 
 } from "@vis.gl/react-google-maps";
-import { MapPin } from "lucide-react";
+import { Location } from "iconsax-react";
 
 // The 4 Branches of Gopal Bakery
 const branchLocations = [
@@ -36,7 +36,7 @@ function MapInner({ onDistancesCalculated, onAddressChange, onCalculating }: Goo
   const inputRef = useRef<HTMLInputElement>(null);
   
   const [selectedLocation, setSelectedLocation] = useState<google.maps.LatLngLiteral | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const [formattedAddress, setFormattedAddress] = useState("");
   const [isMapOpen, setIsMapOpen] = useState(false);
 
@@ -104,7 +104,7 @@ function MapInner({ onDistancesCalculated, onAddressChange, onCalculating }: Goo
   }, [selectedLocation, routesLibrary, onDistancesCalculated, onCalculating]);
 
   // Handle manual map click
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const handleMapClick = (e: any) => {
     const latLng = e.detail?.latLng || e.latLng;
     if (latLng) {
@@ -130,7 +130,7 @@ function MapInner({ onDistancesCalculated, onAddressChange, onCalculating }: Goo
         </label>
         
         <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Location className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             ref={inputRef}
             type="text"
@@ -154,7 +154,7 @@ function MapInner({ onDistancesCalculated, onAddressChange, onCalculating }: Goo
             {selectedLocation && (
               <AdvancedMarker position={selectedLocation}>
                 <div className="w-8 h-8 flex items-center justify-center bg-primary text-white rounded-full shadow-xl transform -translate-y-4">
-                  <MapPin className="w-5 h-5" />
+                  <Location className="w-5 h-5" />
                 </div>
               </AdvancedMarker>
             )}

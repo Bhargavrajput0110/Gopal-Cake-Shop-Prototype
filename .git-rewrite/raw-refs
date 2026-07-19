@@ -1,0 +1,15 @@
+refs/heads/integration/p0-cleanup
+refs/heads/integration/p1-product-browsing
+refs/heads/integration/p10-vendor-sync
+refs/heads/integration/p11-notifications
+refs/heads/integration/p2-pos-checkout
+refs/heads/integration/p3-customer-order-history
+refs/heads/integration/p4-order-tracking
+refs/heads/integration/p5-sales-orders-pagination
+refs/heads/integration/p6-order-edit-modal
+refs/heads/integration/p7-vendor-coordination
+refs/heads/integration/p8-delivery-dispatch
+refs/heads/integration/p9-driver-sync
+refs/heads/main
+refs/remotes/origin/main
+refs/tags/v1.0.0

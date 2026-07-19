@@ -2,22 +2,22 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Loader2, Navigation, Map as MapIcon, X } from "lucide-react";
+import { Refresh2, Location, Map, CloseSquare } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const LeafletAddressPicker = dynamic(
   () => import("@/components/home/LeafletAddressPicker").then((mod) => mod.LeafletAddressPicker),
-  { ssr: false, loading: () => <div className="p-4 text-center text-sm text-[#D4AF37]"><Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" /> Initializing GPS...</div> }
+  { ssr: false, loading: () => <div className="p-4 text-center text-sm text-[#D4AF37]"><Refresh2 className="w-5 h-5 animate-spin mx-auto mb-2" /> Initializing GPS...</div> }
 );
 
 export function HeroDeliveryChecker() {
   const [isOpen, setIsOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const [address, setAddress] = useState("");
   const [branchDistances, setBranchDistances] = useState<{branch: string, distanceKm: number}[]>([]);
   const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
   const [distanceError, setDistanceError] = useState("");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const [selectedBranch, setSelectedBranch] = useState("");
 
   return (
@@ -31,7 +31,7 @@ export function HeroDeliveryChecker() {
           <div className="flex items-center justify-between relative z-10">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
-                <MapIcon className="w-5 h-5 text-[#D4AF37]" />
+                <Map className="w-5 h-5 text-[#D4AF37]" />
               </div>
               <div className="text-left">
                 <h3 className="text-white font-bold tracking-wide">Check Delivery Availability</h3>
@@ -39,7 +39,7 @@ export function HeroDeliveryChecker() {
               </div>
             </div>
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors">
-              <Navigation className="w-4 h-4 text-white" />
+              <Location className="w-4 h-4 text-white" />
             </div>
           </div>
         </button>
@@ -50,11 +50,11 @@ export function HeroDeliveryChecker() {
           className="w-full bg-[#0a0a0a]/80 backdrop-blur-3xl border border-[#D4AF37]/30 rounded-3xl p-5 shadow-[0_0_50px_rgba(212,175,55,0.15)] relative"
         >
           <button onClick={() => setIsOpen(false)} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
+            <CloseSquare className="w-5 h-5" />
           </button>
           
           <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-            <Navigation className="w-4 h-4 text-[#D4AF37]" />
+            <Location className="w-4 h-4 text-[#D4AF37]" />
             Where are we delivering?
           </h3>
 
@@ -73,7 +73,7 @@ export function HeroDeliveryChecker() {
           <AnimatePresence mode="wait">
             {isCalculatingDistance ? (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center justify-center gap-3 text-[#D4AF37] font-medium text-sm mt-6 mb-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Refresh2 className="w-4 h-4 animate-spin" />
                 Calculating exact routes via OSRM...
               </motion.div>
             ) : distanceError ? (

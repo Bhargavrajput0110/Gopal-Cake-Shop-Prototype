@@ -1,27 +1,562 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String              @id @default(cuid())
+  name               String
+  email              String?             @unique
+  username           String?             @unique
+  passwordHash       String
+  phone              String?             @unique
+  role               Role
+  branchId           String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  activatedAt        DateTime?
+  deactivatedAt      DateTime?
+  invitedAt          DateTime?
+  lastActivityAt     DateTime?
+  lastLoginAt        DateTime?
+  status             AccountStatus       @default(INVITED)
+  suspendedAt        DateTime?
+  auditLogs          AuditLog[]
+  inAppNotifs        InAppNotification[]
+  uploadedMedia      MediaAsset[]        @relation("MediaUploader")
+  handledOrders      Order[]             @relation("ChefOrders")
+  createdOrders      Order[]             @relation("CreatedOrders")
+  deliveredOrders    Order[]             @relation("DeliveryOrders")
+  assignedItems      OrderItem[]         @relation("AssignedChefItems")
+  vendorItems        OrderItem[]         @relation("AssignedVendorItems")
+  qcRecords          QCRecord[]          @relation("QCChecker")
+  updatedSettings    Settings[]          @relation("SettingsUpdater")
+  timelineEvents     Timeline[]
+  ledgerEntries      LedgerEntry[]       @relation("ActorLedgerEntries")
+  requestedTransfers BranchTransfer[]    @relation("TransferRequestedBy")
+  respondedTransfers BranchTransfer[]    @relation("TransferRespondedBy")
+
+  branch                 Branch?                 @relation("StaffBranch", fields: [branchId], references: [id])
+  pushSubscriptions      PushSubscription[]
+  notificationPreference NotificationPreference?
+}
+
+model Customer {
+  id              String    @id @default(cuid())
+  name            String
+  phone           String    @unique
+  email           String?
+  address         String?
+  totalOrders     Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  isActive        Boolean   @default(true)
+  anniversaryDate DateTime?
+  dateOfBirth     DateTime?
+  preferences     Json?
+  isVip           Boolean   @default(false)
+  orders          Order[]
+
+  @@index([email])
+}
+
+model Branch {
+  id                String           @id @default(cuid())
+  name              String
+  code              String           @unique
+  address           String
+  phone             String?
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  deliveryEnabled   Boolean          @default(true)
+  orders            Order[]          @relation("BranchOrders")
+  settings          Settings[]       @relation("BranchSettings")
+  staff             User[]           @relation("StaffBranch")
+  ledgerEntries     LedgerEntry[]    @relation("BranchLedgerEntries")
+  outgoingTransfers BranchTransfer[] @relation("OutgoingTransfers")
+  incomingTransfers BranchTransfer[] @relation("IncomingTransfers")
+}
+
+model Order {
+  id                    String                 @id @default(cuid())
+  orderNumber           String                 @unique
+  customerId            String
+  branchId              String
+  chefId                String?
+  driverId              String?
+  status                OrderStatus            @default(DRAFT)
+  deliveryType          DeliveryType
+  targetDate            DateTime
+  subtotal              Decimal
+  deliveryCharge        Decimal                @default(0)
+  discount              Decimal                @default(0)
+  totalAmount           Decimal
+  couponId              String?
+  customerNotes         String?
+  deliveryAddress       String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  idempotencyKey        String?                @unique
+  trackingId            String?                @unique
+  createdById           String?
+  internalNotes         String?
+  isPriority            Boolean                @default(false)
+  source                OrderSource            @default(WEBSITE)
+  type                  OrderType              @default(ORDER)
+  cashCollectedAmount   Decimal?
+  deliveryFailureReason DeliveryFailureReason?
+  notifications         NotificationLog[]
+  branch                Branch                 @relation("BranchOrders", fields: [branchId], references: [id])
+  chef                  User?                  @relation("ChefOrders", fields: [chefId], references: [id])
+  coupon                Coupon?                @relation(fields: [couponId], references: [id])
+  createdBy             User?                  @relation("CreatedOrders", fields: [createdById], references: [id])
+  customer              Customer               @relation(fields: [customerId], references: [id])
+  driver                User?                  @relation("DeliveryOrders", fields: [driverId], references: [id])
+  items                 OrderItem[]
+  payments              Payment[]
+  timeline              Timeline[]
+  ledgerEntries         LedgerEntry[]
+  transfers             BranchTransfer[]       @relation("OrderTransfers")
+
+  @@index([branchId, status])
+  @@index([branchId, createdAt])
+  @@index([branchId, status, targetDate])
+}
+
+model OrderItem {
+  id                   String          @id @default(cuid())
+  orderId              String
+  quantity             Int             @default(1)
+  weight               Float
+  flavor               String?
+  messageOnCake        String?
+  price                Decimal
+  createdAt            DateTime        @default(now())
+  image                String?
+  productId            String?
+  productName          String
+  tax                  Decimal         @default(0)
+  variant              String?
+  assignedChefId       String?
+  boxCount             Int             @default(1)
+  completedAt          DateTime?
+  designCode           String?
+  designId             String?
+  designImageUrl       String?
+  designName           String?
+  estimatedPrepMinutes Int             @default(0)
+  notes                String?
+  packedAt             DateTime?
+  readyAt              DateTime?
+  sequenceNumber       Int             @default(1)
+  shape                String?
+  status               OrderItemStatus @default(PENDING)
+  isBlocked            Boolean         @default(false)
+  startedAt            DateTime?
+  qcAt                 DateTime?
+  pauseReason          String?
+  pausedAt             DateTime?
+  updatedAt            DateTime        @updatedAt
+  parentItemId         String?
+  assignedVendorId     String?
+
+  parentItem     OrderItem?       @relation("OrderItemDependencies", fields: [parentItemId], references: [id])
+  childItems     OrderItem[]      @relation("OrderItemDependencies")
+  assignedVendor User?            @relation("AssignedVendorItems", fields: [assignedVendorId], references: [id])
+  assignedChef   User?            @relation("AssignedChefItems", fields: [assignedChefId], references: [id])
+  order          Order            @relation(fields: [orderId], references: [id])
+  product        Product?         @relation(fields: [productId], references: [id])
+  media          OrderItemMedia[]
+  qcLog          QCRecord[]
+  timeline       Timeline[]
+  kitchenNotes   KitchenNote[]
+
+  @@index([orderId])
+}
+
+model OrderItemMedia {
+  id          String    @id @default(cuid())
+  orderItemId String
+  type        MediaType
+  url         String
+  createdAt   DateTime  @default(now())
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+}
+
+model KitchenNote {
+  id          String    @id @default(cuid())
+  orderItemId String
+  createdBy   String
+  role        String
+  type        String
+  message     String
+  isResolved  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  resolvedAt  DateTime?
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+}
+
+model QCRecord {
+  id          String    @id @default(cuid())
+  orderItemId String
+  checkedById String?
+  result      String
+  notes       String?
+  checkedAt   DateTime  @default(now())
+  checkedBy   User?     @relation("QCChecker", fields: [checkedById], references: [id])
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+}
+
+model Product {
+  id               String           @id @default(cuid())
+  name             String
+  sku              String?          @unique
+  description      String?
+  basePrice        Decimal
+  availableForSale Boolean          @default(true)
+  isCustomizable   Boolean          @default(false)
+  thumbnail        String?
+  mediumImage      String?
+  largeImage       String?
+  webpImage        String?
+  avifImage        String?
+  categoryId       String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  isArchived       Boolean          @default(false)
+  weightVariants   Json?
+  requiredVendors  Role[]
+  orderItems       OrderItem[]
+  category         Category?        @relation(fields: [categoryId], references: [id])
+  history          ProductHistory[]
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  orderId          String
+  amount           Decimal
+  method           PaymentMethod
+  type             PaymentType
+  status           PaymentStatus @default(PENDING)
+  transactionId    String?
+  provider         String        @default("MANUAL")
+  gatewayOrderId   String?       @unique
+  gatewayPaymentId String?       @unique
+  gatewayRefundId  String?
+  metadata         Json?
+  verifiedAt       DateTime?
+  refundedAt       DateTime?
+  failureReason    String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  order            Order         @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+}
+
+model WebhookEvent {
+  id          String    @id
+  provider    String
+  event       String
+  payload     Json
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  retryCount  Int       @default(0)
+  createdAt   DateTime  @default(now())
+}
+
+model Timeline {
+  id              String            @id @default(cuid())
+  orderId         String
+  orderItemId     String?
+  status          OrderStatus
+  note            String?
+  actorId         String?
+  isCorrection    Boolean           @default(false)
+  originalEventId String?
+  createdAt       DateTime          @default(now())
+  action          String
+  branchId        String?
+  eventType       TimelineEventType @default(STATE_TRANSITION)
+  nextState       OrderStatus
+  previousState   OrderStatus?
+  reasonCode      String?
+  role            String?
+  systemGenerated Boolean           @default(false)
+  actor           User?             @relation(fields: [actorId], references: [id])
+  order           Order             @relation(fields: [orderId], references: [id])
+  orderItem       OrderItem?        @relation(fields: [orderItemId], references: [id])
+
+  @@index([orderId, createdAt])
+  @@index([orderItemId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  tableName String
+  recordId  String
+  oldValue  Json?
+  newValue  Json?
+  reason    String?
+  createdAt DateTime @default(now())
+  actor     User?    @relation(fields: [actorId], references: [id])
+}
+
+model NotificationLog {
+  id           String             @id @default(cuid())
+  orderId      String?
+  recipient    String
+  channel      String
+  templateName String
+  status       NotificationStatus @default(PENDING)
+  retryCount   Int                @default(0)
+  errorMessage String?
+  sentAt       DateTime?
+  createdAt    DateTime           @default(now())
+  eventId      String?            @unique
+  order        Order?             @relation(fields: [orderId], references: [id], onDelete: Restrict)
+}
+
+model Design {
+  id                String           @id @default(cuid())
+  code              String           @unique
+  name              String
+  description       String?
+  imageUrl          String
+  version           Int              @default(1)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  characters        String[]
+  colours           String[]
+  occasions         String[]
+  recommendedWeight String?
+  shapes            String[]
+  styles            String[]
+  tags              String[]
+  themes            String[]
+  age               String?
+  difficulty        String?
+  imageHash         String?
+  isEggless         Boolean          @default(false)
+  labels            String[]
+  recommendedTier   Int?
+  status            String           @default("ACTIVE")
+  categories        DesignCategory[]
+}
+
+model Category {
+  id           String           @id @default(cuid())
+  slug         String           @unique
+  name         String
+  description  String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  displayOrder Int              @default(0)
+  isActive     Boolean          @default(true)
+  parentId     String?
+  parent       Category?        @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     Category[]       @relation("CategoryHierarchy")
+  designs      DesignCategory[]
+  products     Product[]
+}
+
+model DesignCategory {
+  designId   String
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  design     Design   @relation(fields: [designId], references: [id], onDelete: Cascade)
+
+  @@id([designId, categoryId])
+}
+
+model ProductHistory {
+  id         String   @id @default(cuid())
+  productId  String
+  changedBy  String?
+  changeType String
+  oldData    Json
+  newData    Json
+  createdAt  DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Coupon {
+  id                   String    @id @default(cuid())
+  code                 String    @unique
+  discountType         String
+  discountValue        Decimal
+  minOrderValue        Decimal?
+  maxDiscount          Decimal?
+  usageLimit           Int?
+  usedCount            Int       @default(0)
+  validFrom            DateTime?
+  validUntil           DateTime?
+  isActive             Boolean   @default(true)
+  applicableBranchId   String?
+  applicableCategoryId String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  orders               Order[]
+}
+
+model Settings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  branchId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  description String?
+  updatedById String?
+  branch      Branch?  @relation("BranchSettings", fields: [branchId], references: [id], onDelete: Cascade)
+  updatedBy   User?    @relation("SettingsUpdater", fields: [updatedById], references: [id])
+}
+
+model Outbox {
+  id            String    @id @default(cuid())
+  eventId       String    @unique
+  eventType     String
+  eventVersion  String    @default("1.0")
+  aggregateId   String?
+  correlationId String?
+  causationId   String?
+  actorId       String?
+  payload       Json
+  occurredAt    DateTime  @default(now())
+  status        String    @default("PENDING")
+  processedAt   DateTime?
+  error         String?
+  retryCount    Int       @default(0)
+}
+
+model InAppNotification {
+  id          String    @id @default(cuid())
+  eventId     String?   @unique
+  userId      String
+  title       String
+  message     String
+  priority    String    @default("NORMAL")
+  isRead      Boolean   @default(false)
+  isDismissed Boolean   @default(false)
+  expiresAt   DateTime?
+  linkUrl     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushSubscription {
+  id         String    @id @default(cuid())
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  userId     String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  lastUsedAt DateTime?
+  deviceName String?
+  userAgent  String?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model NotificationPreference {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  inAppEnabled    Boolean @default(true)
+  pushEnabled     Boolean @default(true)
+  whatsappEnabled Boolean @default(true)
+  emailEnabled    Boolean @default(true)
+  quietHoursStart String?
+  quietHoursEnd   String?
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MediaAsset {
+  id           String   @id
+  url          String
+  format       String
+  width        Int
+  height       Int
+  bytes        Int
+  provider     String   @default("cloudinary")
+  folder       String?
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  uploadedBy   User?    @relation("MediaUploader", fields: [uploadedById], references: [id])
 }
 
 enum Role {
   ADMIN
+  MANAGER
   SALESPERSON
   CHEF
   DELIVERY
-  CUSTOMER
+  VENDOR_FLORIST
+  VENDOR_PHOTO
+  VENDOR_ACRYLIC
 }
 
 enum OrderStatus {
-  PLACED
-  ACCEPTED
+  DRAFT
+  NEW
+  CONFIRMED
   READY
   OUT_FOR_DELIVERY
-  COMPLETED
+  DELIVERED
   CANCELLED
+  REFUNDED
+  WAITING_FOR_CHEF
+  CHEF_ACCEPTED
+  MAKING
+  DECORATING
+  READY_FOR_PICKUP
+  PENDING_ASSIGNMENT
+  ASSIGNED_TO_DRIVER
+  PICKED_UP
+  ON_THE_WAY
+  FAILED_DELIVERY
+  COMPLETED
+  QUOTE_DRAFT
+  QUOTE_SENT
+  QUOTE_APPROVED
+  QUOTE_EXPIRED
+  QUOTE_REJECTED
+  QUOTE_CONVERTED
+}
+
+enum OrderType {
+  ORDER
+  QUOTE
+}
+
+enum OrderItemStatus {
+  PENDING
+  WAITING_FOR_CHEF
+  CHEF_ACCEPTED
+  MAKING
+  DECORATING
+  QC_PENDING
+  QC_PASSED
+  PACKED
+  READY_FOR_PICKUP
+  DELIVERED
+  CANCELLED
+}
+
+enum MediaType {
+  REFERENCE
+  PRODUCTION
+  QC
+  DELIVERY
 }
 
 enum DeliveryType {
@@ -29,139 +564,150 @@ enum DeliveryType {
   DELIVERY
 }
 
-enum VendorType {
-  FLORIST
-  PHOTO
-  ACRYLIC
+enum PaymentMethod {
+  CASH
+  UPI
+  CARD
+  RAZORPAY
+  PHONEPE
+  MANUAL
 }
 
-model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String?   @unique
-  username      String?   @unique
-  password      String    // Hashed
-  phone         String?   @unique
-  role          Role      @default(CUSTOMER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  branchId      String?
-  branch        Branch?   @relation("StaffBranch", fields: [branchId], references: [id])
-  
-  orders        Order[]   @relation("CustomerOrders")
-  handledOrders Order[]   @relation("ChefOrders")
-  deliveredOrders Order[] @relation("DeliveryOrders")
+enum OrderSource {
+  WEBSITE
+  SALES
+  ADMIN
+  POS
+  WHATSAPP
+  INSTAGRAM
+  PHONE
 }
 
-model Branch {
-  id            String    @id @default(cuid())
-  name          String    // e.g., "Uma Branch (Branch X)"
-  code          String    @unique // e.g., "UMA", "VAD"
-  address       String
-  phone         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  staff         User[]    @relation("StaffBranch")
-  orders        Order[]   @relation("BranchOrders")
-  transfersFrom OrderTransferLog[] @relation("TransferFrom")
-  transfersTo   OrderTransferLog[] @relation("TransferTo")
+enum PaymentType {
+  ADVANCE
+  BALANCE
+  FULL
 }
 
-model Category {
-  id            String    @id @default(cuid())
-  name          String
-  slug          String    @unique
-  image         String?
-  products      Product[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
 }
 
-model Product {
-  id            String    @id @default(cuid())
-  name          String
-  slug          String    @unique
-  description   String?
-  basePrice     Float
-  images        String[]  // Cloudinary URLs
-  categoryId    String
-  category      Category  @relation(fields: [categoryId], references: [id])
-  isActive      Boolean   @default(true)
-  
-  orderItems    OrderItem[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  RETRIED
 }
 
-model Order {
-  id            String    @id @default(cuid())
-  orderNumber   String    @unique
-  customerId    String
-  customer      User      @relation("CustomerOrders", fields: [customerId], references: [id])
-  
-  branchId      String
-  branch        Branch    @relation("BranchOrders", fields: [branchId], references: [id])
-  
-  chefId        String?
-  chef          User?     @relation("ChefOrders", fields: [chefId], references: [id])
-
-  deliveryBoyId String?
-  deliveryBoy   User?     @relation("DeliveryOrders", fields: [deliveryBoyId], references: [id])
-  
-  status        OrderStatus @default(PLACED)
-  deliveryType  DeliveryType
-  targetDate    DateTime
-  
-  totalAmount   Float
-  advancePaid   Float
-  balanceAmount Float     @default(0)
-  
-  customerNotes String?
-  deliveryAddress String?
-  referenceImages String[] // Cloudinary URLs
-
-  items         OrderItem[]
-  transfers     OrderTransferLog[]
-  vendorTasks   ExternalVendorTask[]
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+enum NotificationType {
+  WHATSAPP
+  EMAIL
+  PUSH
 }
 
-model OrderItem {
-  id            String    @id @default(cuid())
-  orderId       String
-  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId     String
-  product       Product   @relation(fields: [productId], references: [id])
-  quantity      Int       @default(1)
-  weight        Float     // In kg or lbs
-  flavor        String?
-  messageOnCake String?
-  price         Float
+enum TimelineEventType {
+  STATE_TRANSITION
+  TRANSFER_REQUESTED
+  TRANSFER_ACCEPTED
+  TRANSFER_REJECTED
+  TRANSFER_DISPATCHED
+  TRANSFER_RECEIVED
+
+  ORDER_CREATED
+  ADMIN_OVERRIDE
+  SYSTEM_ACTION
+  CANCELLATION
+  FAILED_DELIVERY
+
+  PAYMENT_PENDING
+  PAYMENT_CAPTURED
+  PAYMENT_FAILED
+  PAYMENT_REFUNDED
 }
 
-model OrderTransferLog {
-  id            String    @id @default(cuid())
-  orderId       String
-  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  fromBranchId  String
-  fromBranch    Branch    @relation("TransferFrom", fields: [fromBranchId], references: [id])
-  toBranchId    String
-  toBranch      Branch    @relation("TransferTo", fields: [toBranchId], references: [id])
-  reason        String?
-  transferredAt DateTime  @default(now())
-  transferredBy String    // ID of salesperson
+enum AccountStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+  LOCKED
 }
 
-model ExternalVendorTask {
-  id            String    @id @default(cuid())
-  orderId       String
-  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  vendorType    VendorType
-  details       String    // Instructions sent via WhatsApp
-  sentAt        DateTime  @default(now())
-  sentBy        String    // ID of salesperson
+enum DeliveryFailureReason {
+  CUSTOMER_UNAVAILABLE
+  WRONG_ADDRESS
+  CUSTOMER_REFUSED
+  VEHICLE_ISSUE
+  OTHER
+}
+
+enum TransferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  IN_TRANSIT
+  RECEIVED
+}
+
+model BranchTransfer {
+  id             String         @id @default(cuid())
+  orderId        String
+  fromBranchId   String
+  toBranchId     String
+  status         TransferStatus @default(PENDING)
+  requestedBy    String
+  respondedBy    String?
+  transportedBy  String?
+  notes          String?
+  transferReason String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  receivedAt     DateTime?
+
+  order      Order  @relation("OrderTransfers", fields: [orderId], references: [id])
+  fromBranch Branch @relation("OutgoingTransfers", fields: [fromBranchId], references: [id])
+  toBranch   Branch @relation("IncomingTransfers", fields: [toBranchId], references: [id])
+  actor      User   @relation("TransferRequestedBy", fields: [requestedBy], references: [id])
+  responder  User?  @relation("TransferRespondedBy", fields: [respondedBy], references: [id])
+
+  @@index([fromBranchId, status])
+  @@index([toBranchId, status])
+  @@index([orderId])
+  @@index([fromBranchId])
+  @@index([toBranchId])
+}
+
+enum LedgerEntryType {
+  PAYMENT
+  REFUND
+  ADJUSTMENT
+  WAIVER
+  WRITE_OFF
+}
+
+model LedgerEntry {
+  id          String          @id @default(cuid())
+  orderId     String?
+  type        LedgerEntryType
+  amount      Decimal
+  currency    String          @default("INR")
+  method      PaymentMethod?
+  status      PaymentStatus
+  referenceId String?         @unique
+  actorId     String?
+  branchId    String?
+  metadata    Json?
+  notes       String?
+  createdAt   DateTime        @default(now())
+
+  order  Order?  @relation(fields: [orderId], references: [id])
+  actor  User?   @relation("ActorLedgerEntries", fields: [actorId], references: [id])
+  branch Branch? @relation("BranchLedgerEntries", fields: [branchId], references: [id])
+
+  @@index([orderId])
+  @@index([type])
+  @@index([branchId])
 }
