@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SearchNormal1, Bag, User } from "iconsax-react";
 import { useCart } from "@/context/CartContext";
@@ -30,6 +31,9 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [announcementIndex, setAnnouncementIndex] = useState(0);
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+  const showScrolledNavbar = scrolled || !isHome;
 
   const allNavLinks = [
     ...NAV_LINKS,
@@ -77,7 +81,7 @@ export function Navbar() {
       {/* ── Main Header ── */}
       <header
         className={`fixed top-9 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
+          showScrolledNavbar
             ? "glass border-b border-[var(--border)]/40 shadow-[0_8px_32px_rgba(28,15,10,0.08)] py-0"
             : "bg-transparent py-0 border-b border-transparent"
         }`}
@@ -92,7 +96,7 @@ export function Navbar() {
                   key={link.name}
                   href={link.href}
                   className={`font-ui text-[11px] font-semibold uppercase tracking-[0.15em] px-4 py-2 rounded-full transition-all duration-250
-                    ${scrolled
+                    ${showScrolledNavbar
                       ? "text-[var(--foreground)]/70 hover:text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/8"
                       : "text-white/80 hover:text-white hover:bg-white/10"
                     }`}
@@ -111,15 +115,15 @@ export function Navbar() {
               <span className={`block w-[22px] h-[1.5px] transition-all duration-300 origin-center ${
                 mobileMenuOpen
                   ? "bg-[var(--brand-deep-rose)] rotate-45 translate-y-[6.5px]"
-                  : scrolled ? "bg-foreground" : "bg-white"
+                  : showScrolledNavbar ? "bg-foreground" : "bg-white"
               }`} />
               <span className={`block w-[22px] h-[1.5px] transition-all duration-300 ${
-                mobileMenuOpen ? "opacity-0" : scrolled ? "bg-foreground" : "bg-white"
+                mobileMenuOpen ? "opacity-0" : showScrolledNavbar ? "bg-foreground" : "bg-white"
               }`} />
               <span className={`block w-[22px] h-[1.5px] transition-all duration-300 origin-center ${
                 mobileMenuOpen
                   ? "bg-[var(--brand-deep-rose)] -rotate-45 -translate-y-[6.5px]"
-                  : scrolled ? "bg-foreground" : "bg-white"
+                  : showScrolledNavbar ? "bg-foreground" : "bg-white"
               }`} />
             </button>
 
@@ -131,19 +135,19 @@ export function Navbar() {
               <div className="flex flex-col items-center">
                 {/* Wordmark */}
                 <span className={`font-display italic font-bold tracking-wide leading-none transition-colors duration-300 ${
-                  scrolled ? "text-[var(--foreground)]" : "text-white"
+                  showScrolledNavbar ? "text-[var(--foreground)]" : "text-white"
                 } text-xl md:text-2xl`}>
                   Gopal
                 </span>
                 <span className={`font-ui font-bold text-[7px] tracking-[0.35em] uppercase leading-none mt-0.5 transition-colors duration-300 ${
-                  scrolled ? "text-[var(--brand-deep-rose)]" : "text-[var(--brand-champagne)]"
+                  showScrolledNavbar ? "text-[var(--brand-deep-rose)]" : "text-[var(--brand-champagne)]"
                 }`}>
                   Cakes & Sweets
                 </span>
               </div>
               {/* Gold underline on hover */}
               <span className={`block h-px w-0 group-hover:w-full transition-all duration-500 mt-1 ${
-                scrolled ? "bg-[var(--brand-champagne)]" : "bg-white/60"
+                showScrolledNavbar ? "bg-[var(--brand-champagne)]" : "bg-white/60"
               }`} />
             </Link>
 
@@ -154,7 +158,7 @@ export function Navbar() {
                   key={link.name}
                   href={link.href}
                   className={`font-ui text-[11px] font-semibold uppercase tracking-[0.15em] px-4 py-2 rounded-full transition-all duration-250
-                    ${scrolled
+                    ${showScrolledNavbar
                       ? "text-[var(--foreground)]/70 hover:text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/8"
                       : "text-white/80 hover:text-white hover:bg-white/10"
                     }`}
@@ -164,13 +168,13 @@ export function Navbar() {
               ))}
 
               {/* Divider */}
-              <span className={`w-px h-4 mx-2 ${scrolled ? "bg-border" : "bg-white/20"}`} />
+              <span className={`w-px h-4 mx-2 ${showScrolledNavbar ? "bg-border" : "bg-white/20"}`} />
 
               {/* Search */}
               <button 
                 onClick={() => setIsSearchOpen(true)}
                 className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-250 ${
-                scrolled
+                showScrolledNavbar
                   ? "text-foreground/60 hover:text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/8"
                   : "text-white/70 hover:text-white hover:bg-white/10"
               }`}>
@@ -182,7 +186,7 @@ export function Navbar() {
                 <button
                   onClick={() => logout()}
                   className={`font-ui text-[10px] font-bold uppercase tracking-[0.15em] px-4 py-2 rounded-full transition-all duration-250 ${
-                    scrolled
+                    showScrolledNavbar
                       ? "text-foreground/60 hover:text-[var(--brand-deep-rose)]"
                       : "text-white/70 hover:text-white"
                   }`}
@@ -193,7 +197,7 @@ export function Navbar() {
                 <Link
                   href="/customer/login"
                   className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-250 ${
-                    scrolled
+                    showScrolledNavbar
                       ? "text-foreground/60 hover:text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/8"
                       : "text-white/70 hover:text-white hover:bg-white/10"
                   }`}
@@ -206,7 +210,7 @@ export function Navbar() {
               <button
                 onClick={() => setIsCartOpen(true)}
                 className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-all duration-250 ${
-                  scrolled
+                  showScrolledNavbar
                     ? "text-foreground/70 hover:text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/8"
                     : "text-white/80 hover:text-white hover:bg-white/10"
                 }`}
@@ -232,7 +236,7 @@ export function Navbar() {
               <button
                 onClick={() => setIsSearchOpen(true)}
                 className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-all ${
-                  scrolled ? "text-foreground/70" : "text-white/80"
+                  showScrolledNavbar ? "text-foreground/70" : "text-white/80"
                 }`}
               >
                 <SearchNormal1 variant="TwoTone" className="h-5 w-5" />
@@ -240,7 +244,7 @@ export function Navbar() {
               <button
                 onClick={() => setIsCartOpen(true)}
                 className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-all ${
-                  scrolled ? "text-foreground/70" : "text-white/80"
+                  showScrolledNavbar ? "text-foreground/70" : "text-white/80"
                 }`}
               >
                 <Bag variant="TwoTone" className="h-5 w-5" />
@@ -255,7 +259,7 @@ export function Navbar() {
         </div>
 
         {/* ── Gold rule visible when scrolled ── */}
-        {scrolled && (
+        {showScrolledNavbar && (
           <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, var(--brand-champagne)/30, transparent)" }} />
         )}
       </header>
