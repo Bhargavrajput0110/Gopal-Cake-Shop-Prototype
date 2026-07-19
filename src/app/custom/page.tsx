@@ -33,13 +33,13 @@ const MOCK_PRICES: Record<string, number> = {
   "9kg": 8300, "9.5kg": 8750, "10kg": 9200,
 };
 
-export function CustomDesignForm() {
+export function CustomDesignForm({ asModal = false, initialImage = "" }: { asModal?: boolean, initialImage?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const weightParam = searchParams.get("weight");
   const flavourParam = searchParams.get("flavour");
   const quantityParam = searchParams.get("quantity");
-  const imageParam = searchParams.get("image");
+  const imageParam = searchParams.get("image") || initialImage;
 
   // Multi-step Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -211,9 +211,9 @@ export function CustomDesignForm() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground pb-40 pt-24 md:pt-32">
-      <div className="container max-w-3xl mx-auto px-4">
-        <BackButton fallback="/menu" label="Back to Menu" variant="link" className="px-0 mb-6 text-foreground/60 hover:text-primary uppercase tracking-widest text-xs font-bold" />
+    <div className={asModal ? "flex flex-col text-foreground pb-10" : "flex flex-col min-h-screen bg-background text-foreground pb-40 pt-24 md:pt-32"}>
+      <div className={asModal ? "w-full" : "container max-w-3xl mx-auto px-4"}>
+        {!asModal && <BackButton fallback="/menu" label="Back to Menu" variant="link" className="px-0 mb-6 text-foreground/60 hover:text-primary uppercase tracking-widest text-xs font-bold" />}
         
         {/* Header */}
         <div className="text-center mb-10">
@@ -234,7 +234,7 @@ export function CustomDesignForm() {
         </div>
 
         {/* Wizard Content */}
-        <div className="bg-card border border-border/40 shadow-xl shadow-black/5 rounded-[2rem] p-6 md:p-10 min-h-[500px]">
+        <div className={asModal ? "bg-card rounded-2xl min-h-[400px]" : "bg-card border border-border/40 shadow-xl shadow-black/5 rounded-[2rem] p-6 md:p-10 min-h-[500px]"}>
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
               <motion.div key="step1" variants={variants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.3 }} className="space-y-10">

@@ -9,6 +9,8 @@ import { motion } from 'framer-motion';
 import { BackButton } from "@/components/ui/BackButton";
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { CustomDesignForm } from "@/app/custom/page";
 
 // Hardcoded frontend taxonomy until backend is updated
 const CATEGORY_GROUPS = [
@@ -87,9 +89,9 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
         </div>
 
         {/* Hover text overlay */}
-        <div className="absolute inset-x-0 bottom-0 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] p-5 pb-6">
+        <div className="absolute inset-x-0 bottom-0 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] p-5 pb-6 bg-gradient-to-t from-black/60 to-transparent">
            <span className="font-ui text-[11px] font-bold tracking-[0.1em] uppercase text-white/90">
-             View Details
+             Customize
            </span>
         </div>
 
@@ -98,21 +100,36 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
       </Link>
 
       {/* Info */}
-      <Link href={`/custom?slug=${product.slug || product.id}&image=${encodeURIComponent(product.thumbnail || "")}`} className="flex flex-col px-1">
-        <h3 className="font-display font-bold text-base md:text-lg text-[var(--foreground)] group-hover:text-[var(--brand-deep-rose)] transition-colors duration-300 leading-snug line-clamp-1">
-          {product.name}
-        </h3>
-        <div className="flex items-center justify-between mt-1.5">
-          <p className="font-ui text-[12px] font-semibold text-[var(--brand-champagne)] tracking-wide">
-            From ₹{product.basePrice}
-          </p>
+      <div className="flex flex-col px-1 mt-3">
+        <Link href={`/custom?slug=${product.slug || product.id}&image=${encodeURIComponent(product.thumbnail || "")}`} className="flex flex-col mb-2">
+          <h3 className="font-display font-bold text-base md:text-lg text-[var(--foreground)] group-hover:text-[var(--brand-deep-rose)] transition-colors duration-300 leading-snug line-clamp-1">
+            {product.name}
+          </h3>
           {product.category?.name && (
-            <p className="font-editorial italic text-[var(--muted-foreground)] text-xs line-clamp-1 max-w-[50%] text-right">
+            <p className="font-editorial italic text-[var(--muted-foreground)] text-xs line-clamp-1">
               {product.category.name}
             </p>
           )}
+        </Link>
+        <div className="flex items-center justify-between mt-auto pt-1">
+          <div className="flex flex-col">
+            <p className="font-ui text-xs text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">Starts at</p>
+            <p className="font-ui text-sm font-bold text-[var(--foreground)]">
+              ₹{product.basePrice}
+            </p>
+          </div>
+          <Sheet>
+            <SheetTrigger className="px-5 py-2 bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 transition-all rounded-full font-ui text-[10px] font-bold uppercase tracking-[0.1em] shadow-sm hover:shadow-md hover:-translate-y-0.5">
+              Buy Now
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-2xl p-0 overflow-y-auto bg-background z-[150]">
+              <div className="p-4 md:p-8 pt-12 min-h-screen">
+                <CustomDesignForm asModal={true} initialImage={product.thumbnail || ""} />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
-      </Link>
+      </div>
     </motion.div>
   );
 }
