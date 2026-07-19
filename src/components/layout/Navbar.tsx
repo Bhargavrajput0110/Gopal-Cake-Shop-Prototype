@@ -207,17 +207,14 @@ export function Navbar() {
               )}
 
               {/* Cart */}
+              {/* Cart */}
               <button
                 onClick={() => setIsCartOpen(true)}
-                className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-250 ${
-                  showScrolledNavbar
-                    ? "bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 shadow-md shadow-[var(--brand-deep-rose)]/15"
-                    : "bg-white/20 text-white hover:bg-white/30"
-                }`}
+                className="relative flex items-center justify-center w-10 h-10 transition-all duration-200 hover:opacity-80"
               >
-                <ShoppingCart variant="TwoTone" className="h-[18px] w-[18px]" />
+                <ShoppingCart size="30" color={showScrolledNavbar ? "#8b3a52" : "#ffffff"} variant="Bold" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 h-[18px] w-[18px] rounded-full bg-[var(--brand-champagne)] text-[var(--brand-espresso)] text-[9px] font-bold flex items-center justify-center border border-white shadow-sm">
+                  <span className="absolute -top-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-[var(--brand-deep-rose)] text-white text-[9px] font-bold flex items-center justify-center border border-white shadow-sm">
                     {totalItems}
                   </span>
                 )}
@@ -241,15 +238,11 @@ export function Navbar() {
               </button>
               <button
                 onClick={() => setIsCartOpen(true)}
-                className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-250 ${
-                  showScrolledNavbar
-                    ? "bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 shadow-sm"
-                    : "bg-white/20 text-white hover:bg-white/30"
-                }`}
+                className="relative flex items-center justify-center w-10 h-10 transition-all duration-200 hover:opacity-80"
               >
-                <ShoppingCart variant="TwoTone" className="h-5 w-5" />
+                <ShoppingCart size="30" color={showScrolledNavbar ? "#8b3a52" : "#ffffff"} variant="Bold" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 h-[18px] w-[18px] rounded-full bg-[var(--brand-champagne)] text-[var(--brand-espresso)] text-[9px] font-bold flex items-center justify-center border border-white shadow-sm">
+                  <span className="absolute -top-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-[var(--brand-deep-rose)] text-white text-[9px] font-bold flex items-center justify-center border border-white shadow-sm">
                     {totalItems}
                   </span>
                 )}
