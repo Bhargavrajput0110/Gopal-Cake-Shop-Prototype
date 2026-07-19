@@ -3,9 +3,10 @@
 import React, { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import { WEIGHT_OPTIONS, getActiveFlavours } from '@/lib/flavours';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
+import { ArrowDown2 } from "iconsax-react";
 
 export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () => void }) {
   const { addItem } = useCart();
@@ -70,20 +71,25 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
           <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
             Select Weight
           </label>
-          <Select value={selectedWeight} onValueChange={setSelectedWeight}>
-            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 focus:border-primary">
-              <SelectValue placeholder="Choose weight" />
-            </SelectTrigger>
-            <SelectContent side="bottom" position="popper" className="max-h-[300px] overflow-y-auto z-[200]">
-              <SelectGroup>
-                {WEIGHT_OPTIONS.map((w) => (
-                  <SelectItem key={w.value} value={w.value} className="text-base py-3">
-                    {w.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 justify-between font-normal hover:bg-background focus:border-primary">
+                {selectedWeight ? WEIGHT_OPTIONS.find(w => w.value === selectedWeight)?.label || selectedWeight : "Choose weight"}
+                <ArrowDown2 size={20} className="text-muted-foreground ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto z-[200]">
+              {WEIGHT_OPTIONS.map((w) => (
+                <DropdownMenuItem 
+                  key={w.value} 
+                  className="text-base py-3 cursor-pointer"
+                  onClick={() => setSelectedWeight(w.value)}
+                >
+                  {w.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Flavour Selection */}
@@ -91,23 +97,31 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
           <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
             Select Flavour <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
           </label>
-          <Select value={selectedFlavour} onValueChange={setSelectedFlavour}>
-            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 focus:border-primary">
-              <SelectValue placeholder="Original Flavour" />
-            </SelectTrigger>
-            <SelectContent side="bottom" position="popper" className="max-h-[300px] overflow-y-auto z-[200]">
-              <SelectGroup>
-                <SelectItem value="original" className="text-base py-3 font-semibold text-primary">
-                  Original Flavour (Recommended)
-                </SelectItem>
-                {flavours.map((f) => (
-                  <SelectItem key={f.id} value={f.name} className="text-base py-3">
-                    {f.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 justify-between font-normal hover:bg-background focus:border-primary">
+                {selectedFlavour ? (selectedFlavour === 'original' ? 'Original Flavour (Recommended)' : selectedFlavour) : "Original Flavour (Recommended)"}
+                <ArrowDown2 size={20} className="text-muted-foreground ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto z-[200]">
+              <DropdownMenuItem 
+                className="text-base py-3 font-semibold text-primary cursor-pointer"
+                onClick={() => setSelectedFlavour("original")}
+              >
+                Original Flavour (Recommended)
+              </DropdownMenuItem>
+              {flavours.map((f) => (
+                <DropdownMenuItem 
+                  key={f.id} 
+                  className="text-base py-3 cursor-pointer"
+                  onClick={() => setSelectedFlavour(f.name)}
+                >
+                  {f.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
       </div>
