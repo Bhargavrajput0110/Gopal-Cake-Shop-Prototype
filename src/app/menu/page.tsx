@@ -40,8 +40,11 @@ const CATEGORY_GROUPS = [
   }
 ];
 
+import { QuickBuyForm } from "@/components/menu/QuickBuyForm";
+
 function ProductCard({ product, idx }: { product: any, idx: number }) {
   const { addItem } = useCart();
+  const [isOpen, setIsOpen] = useState(false);
   
   // Vary aspect ratios for true masonry look
   const ratios = ["aspect-[3/4]", "aspect-[4/5]", "aspect-[2/3]", "aspect-square"];
@@ -113,19 +116,17 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
         </Link>
         <div className="flex items-center justify-between mt-auto pt-1">
           <div className="flex flex-col">
-            <p className="font-ui text-xs text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">Starts at</p>
+            <p className="font-ui text-xs text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">Min Weight</p>
             <p className="font-ui text-sm font-bold text-[var(--foreground)]">
-              ₹{product.basePrice}
+              500g
             </p>
           </div>
-          <Sheet>
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger className="px-5 py-2 bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 transition-all rounded-full font-ui text-[10px] font-bold uppercase tracking-[0.1em] shadow-sm hover:shadow-md hover:-translate-y-0.5">
-              Buy Now
+              ADD ₹{product.basePrice}
             </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:max-w-2xl p-0 overflow-y-auto bg-background z-[150]">
-              <div className="p-4 md:p-8 pt-12 min-h-screen">
-                <CustomDesignForm asModal={true} initialImage={product.thumbnail || ""} />
-              </div>
+            <SheetContent side="right" className="w-full sm:max-w-md p-0 bg-background z-[150] border-l-0 shadow-2xl">
+              <QuickBuyForm product={product} onClose={() => setIsOpen(false)} />
             </SheetContent>
           </Sheet>
         </div>
