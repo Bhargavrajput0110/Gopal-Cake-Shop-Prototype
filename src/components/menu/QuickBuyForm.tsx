@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import { WEIGHT_OPTIONS, getActiveFlavours } from '@/lib/flavours';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
 
@@ -70,25 +70,20 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
           <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
             Select Weight
           </label>
-          <Popover>
-            <PopoverTrigger className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 flex items-center justify-between font-normal hover:bg-background focus:border-primary">
-                {selectedWeight ? WEIGHT_OPTIONS.find(w => w.value === selectedWeight)?.label : "Choose weight"}
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 opacity-50"><path d="M3.13523 6.15803C3.3241 5.95657 3.64052 5.94637 3.84197 6.13523L7.5 9.56464L11.158 6.13523C11.3595 5.94637 11.6759 5.95657 11.8648 6.15803C12.0536 6.35949 12.0434 6.67591 11.842 6.86477L7.84197 10.6148C7.64964 10.7951 7.35036 10.7951 7.15803 10.6148L3.15803 6.86477C2.95657 6.67591 2.94637 6.35949 3.13523 6.15803Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path></svg>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" className="w-[var(--radix-popover-trigger-width)] min-w-[200px] p-0 z-[200]">
-              <div className="max-h-[300px] overflow-y-auto w-full flex flex-col py-1">
+          <Select value={selectedWeight} onValueChange={setSelectedWeight}>
+            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 focus:border-primary">
+              <SelectValue placeholder="Choose weight" />
+            </SelectTrigger>
+            <SelectContent side="bottom" position="popper" className="z-[200]">
+              <SelectGroup>
                 {WEIGHT_OPTIONS.map((w) => (
-                  <button 
-                    key={w.value} 
-                    onClick={() => setSelectedWeight(w.value)}
-                    className="w-full text-left px-4 py-3 text-base hover:bg-accent focus:bg-accent outline-none"
-                  >
+                  <SelectItem key={w.value} value={w.value} className="text-base py-3">
                     {w.label}
-                  </button>
+                  </SelectItem>
                 ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Flavour Selection */}
@@ -96,31 +91,23 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
           <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
             Select Flavour <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
           </label>
-          <Popover>
-            <PopoverTrigger className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 flex items-center justify-between font-normal hover:bg-background focus:border-primary">
-                {selectedFlavour ? (selectedFlavour === 'original' ? 'Original Flavour (Recommended)' : selectedFlavour) : "Original Flavour"}
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 opacity-50"><path d="M3.13523 6.15803C3.3241 5.95657 3.64052 5.94637 3.84197 6.13523L7.5 9.56464L11.158 6.13523C11.3595 5.94637 11.6759 5.95657 11.8648 6.15803C12.0536 6.35949 12.0434 6.67591 11.842 6.86477L7.84197 10.6148C7.64964 10.7951 7.35036 10.7951 7.15803 10.6148L3.15803 6.86477C2.95657 6.67591 2.94637 6.35949 3.13523 6.15803Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path></svg>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" className="w-[var(--radix-popover-trigger-width)] min-w-[200px] p-0 z-[200]">
-              <div className="max-h-[300px] overflow-y-auto w-full flex flex-col py-1">
-                <button 
-                  onClick={() => setSelectedFlavour("original")}
-                  className="w-full text-left px-4 py-3 text-base font-semibold text-primary hover:bg-accent focus:bg-accent outline-none"
-                >
+          <Select value={selectedFlavour} onValueChange={setSelectedFlavour}>
+            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 focus:border-primary">
+              <SelectValue placeholder="Original Flavour" />
+            </SelectTrigger>
+            <SelectContent side="bottom" position="popper" className="z-[200]" avoidCollisions={false}>
+              <SelectGroup>
+                <SelectItem value="original" className="text-base py-3 font-semibold text-primary">
                   Original Flavour (Recommended)
-                </button>
+                </SelectItem>
                 {flavours.map((f) => (
-                  <button 
-                    key={f.id} 
-                    onClick={() => setSelectedFlavour(f.name)}
-                    className="w-full text-left px-4 py-3 text-base hover:bg-accent focus:bg-accent outline-none"
-                  >
+                  <SelectItem key={f.id} value={f.name} className="text-base py-3">
                     {f.name}
-                  </button>
+                  </SelectItem>
                 ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
       </div>
