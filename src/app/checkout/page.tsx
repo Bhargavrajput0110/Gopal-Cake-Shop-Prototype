@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { TickCircle, ArrowRight2, Location, Card, Bag, Refresh2, Calendar, Clock, Shop } from "iconsax-react";
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { WEIGHT_OPTIONS, getActiveFlavours } from '@/lib/flavours';
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
@@ -46,9 +47,15 @@ export default function CheckoutPage() {
   // Payment Options
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD'>('CASH');
   
-  // Branches fetching
   const [branches, setBranches] = useState<any[]>([]);
   const [branchId, setBranchId] = useState<string>('');
+
+  // Per-item state overrides for size/weight, flavor, and notes
+  const [itemVariants, setItemVariants] = useState<Record<string, string>>({});
+  const [itemFlavors, setItemFlavors] = useState<Record<string, string>>({});
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+
+  const flavours = getActiveFlavours();
 
   useEffect(() => {
     fetch('/api/v1/branches')
@@ -119,9 +126,10 @@ export default function CheckoutPage() {
         items: items.map(i => ({ 
           productId: i.productId, 
           quantity: i.quantity, 
-          weight: parseWeightToNumber(i.variant || ''), 
-          flavor: i.flavor || 'Classic',
-          messageOnCake: messages[i.cartItemId] || ''
+          weight: parseWeightToNumber(itemVariants[i.cartItemId] || i.variant || ''), 
+          flavor: itemFlavors[i.cartItemId] || i.flavor || 'Classic',
+          messageOnCake: messages[i.cartItemId] || '',
+          notes: itemNotes[i.cartItemId] || i.notes || ''
         })),
         paymentMethod,
         deliveryType,
@@ -394,20 +402,57 @@ export default function CheckoutPage() {
                           <Bag className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20" />
                         )}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <h4 className="font-serif font-bold text-sm line-clamp-1">{item.name}</h4>
-                        <p className="text-[10px] font-sans text-muted-foreground uppercase font-bold tracking-wider">{item.variant || 'Standard'} • {item.flavor || 'Classic'}</p>
+                        <div className="flex flex-wrap gap-2 mt-1.5">
+                          {/* Weight selector */}
+                          <select
+                            value={itemVariants[item.cartItemId] || item.variant || "500g"}
+                            onChange={e => setItemVariants({ ...itemVariants, [item.cartItemId]: e.target.value })}
+                            className="text-[10px] font-sans font-bold bg-background border border-primary/20 rounded px-2 py-0.5 focus:outline-none focus:border-primary text-muted-foreground uppercase tracking-wider cursor-pointer"
+                          >
+                            {WEIGHT_OPTIONS.map(w => (
+                              <option key={w.value} value={w.value}>{w.label}</option>
+                            ))}
+                          </select>
+
+                          {/* Flavor selector */}
+                          <select
+                            value={itemFlavors[item.cartItemId] || item.flavor || "Classic"}
+                            onChange={e => setItemFlavors({ ...itemFlavors, [item.cartItemId]: e.target.value })}
+                            className="text-[10px] font-sans font-bold bg-background border border-primary/20 rounded px-2 py-0.5 focus:outline-none focus:border-primary text-muted-foreground uppercase tracking-wider cursor-pointer"
+                          >
+                            <option value="Classic">Classic Flavour</option>
+                            {flavours.map(f => (
+                              <option key={f.id} value={f.name}>{f.name}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Message on Cake (Optional)</label>
-                      <input
-                        type="text"
-                        value={messages[item.cartItemId] || ""}
-                        onChange={e => setMessages({...messages, [item.cartItemId]: e.target.value})}
-                        placeholder="e.g. Happy Birthday Raj! (Keep under 30 letters)"
-                        className="w-full bg-transparent border-0 border-b-2 border-primary/30 focus:border-[var(--brand-deep-rose)] focus:ring-0 px-0 py-2 text-sm font-serif text-foreground transition-colors placeholder:text-foreground/30 focus:outline-none"
-                      />
+                    
+                    <div className="space-y-3 pt-1">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Message on Cake (Optional)</label>
+                        <input
+                          type="text"
+                          value={messages[item.cartItemId] || ""}
+                          onChange={e => setMessages({...messages, [item.cartItemId]: e.target.value})}
+                          placeholder="e.g. Happy Birthday Raj! (Keep under 30 letters)"
+                          className="w-full bg-transparent border-0 border-b-2 border-primary/30 focus:border-[var(--brand-deep-rose)] focus:ring-0 px-0 py-2 text-sm font-serif text-foreground transition-colors placeholder:text-foreground/30 focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Special Instructions / Notes (Optional)</label>
+                        <textarea
+                          rows={2}
+                          value={itemNotes[item.cartItemId] || item.notes || ""}
+                          onChange={e => setItemNotes({...itemNotes, [item.cartItemId]: e.target.value})}
+                          placeholder="e.g. Less sweet, eggless, deliver after 5pm..."
+                          className="w-full resize-none bg-transparent border-0 border-b-2 border-primary/30 focus:border-[var(--brand-deep-rose)] focus:ring-0 px-0 py-2 text-sm font-serif text-foreground transition-colors placeholder:text-foreground/30 focus:outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
                 ))}
