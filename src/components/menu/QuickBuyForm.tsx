@@ -13,6 +13,7 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
   
   const [selectedWeight, setSelectedWeight] = useState("500g");
   const [selectedFlavour, setSelectedFlavour] = useState("");
+  const [messageOnCake, setMessageOnCake] = useState("");
   const [notes, setNotes] = useState("");
 
   // Calculate dynamic price based on weight (mocking the basePrices logic)
@@ -42,6 +43,7 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
       image: product.thumbnail,
       variant: selectedWeight,
       flavor: selectedFlavour || "Classic",
+      messageOnCake: messageOnCake.trim() || undefined,
       notes: notes.trim() || undefined,
     });
     if (onClose) onClose();
@@ -112,21 +114,37 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
           </Select>
         </div>
 
-        {/* Special Instructions */}
+        {/* Message on Cake */}
+        <div className="space-y-3">
+          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+            🎂 Message on Cake
+            <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
+          </label>
+          <input
+            type="text"
+            value={messageOnCake}
+            onChange={(e) => setMessageOnCake(e.target.value)}
+            placeholder='e.g. Happy Birthday Rahul 🎉'
+            maxLength={60}
+            className="w-full rounded-xl border-2 border-primary/30 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+          />
+          <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
+        </div>
+
+        {/* Special Instructions / Notes */}
         <div className="space-y-3">
           <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
             <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black">✎</span>
             Special Instructions
-            <span className="text-muted-foreground font-normal normal-case">&#40;Optional&#41;</span>
+            <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
           </label>
-          {/* Helpful hints */}
           <p className="text-xs text-muted-foreground leading-relaxed bg-primary/5 border border-primary/10 rounded-xl px-4 py-3">
-            🎂 <strong>Add a message on cake</strong>, mention allergies, delivery timing preferences, or any other special requests for this item.
+            Mention <strong>allergies</strong>, delivery timing preferences, box type, or any other special requests for this order.
           </p>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Write &quot;Happy Birthday Rahul&quot; on cake, no nuts please…"
+            placeholder="e.g. No nuts please, deliver before 6 PM…"
             rows={3}
             maxLength={300}
             className="w-full resize-none rounded-xl border-2 border-primary/30 bg-background px-4 py-3 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
