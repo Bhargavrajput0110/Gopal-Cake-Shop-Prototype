@@ -14,10 +14,10 @@ export function CartDrawer() {
     <>
       <div 
         aria-hidden="true"
-        className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40 z-[100] backdrop-blur-sm"
         onClick={() => setIsCartOpen(false)}
       />
-      <aside aria-label="Shopping Cart" className="fixed inset-y-0 right-0 w-full max-w-md bg-background z-50 shadow-2xl flex flex-col theme-public border-l">
+      <aside aria-label="Shopping Cart" className="fixed inset-y-0 right-0 w-full max-w-md bg-background z-[110] shadow-2xl flex flex-col theme-public border-l">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-xl font-black flex items-center gap-2">
             <Bag className="w-5 h-5" />

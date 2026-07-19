@@ -224,10 +224,8 @@ export function Navbar() {
               </button>
 
               {/* Order CTA */}
-              <Link href="/custom" className="ml-2">
-                <button className="btn-primary px-5 py-2.5 text-[10px]">
-                  Customize
-                </button>
+              <Link href="/custom" className="btn-primary px-5 py-2.5 text-[10px] ml-2">
+                Customize
               </Link>
             </div>
 
@@ -383,10 +381,8 @@ export function Navbar() {
 
               {/* Bottom CTA */}
               <div className="px-6 pb-10 pt-6 border-t border-[var(--border)]">
-                <Link href="/custom" onClick={closeMobile} className="block">
-                  <button className="btn-primary w-full justify-center py-4 text-[11px]">
-                    Customize Your Cake
-                  </button>
+                <Link href="/custom" onClick={closeMobile} className="btn-primary w-full justify-center py-4 text-[11px]">
+                  Customize Your Cake
                 </Link>
                 {!user ? (
                   <Link href="/customer/login" onClick={closeMobile} className="block mt-3">
