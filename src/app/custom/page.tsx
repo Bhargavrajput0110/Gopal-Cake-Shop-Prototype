@@ -217,7 +217,7 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
                 <div className="space-y-2">
                   <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Weight *</label>
                   <Select value={selectedWeight || ""} onValueChange={setSelectedWeight}>
-                    <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 focus:border-primary shadow-sm hover:bg-muted/10 transition-colors">
+                    <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary shadow-sm hover:bg-muted/10 transition-colors">
                       <SelectValue placeholder="Choose weight..." />
                     </SelectTrigger>
                     <SelectContent side="bottom" position="popper" className="z-[100]">
@@ -238,7 +238,7 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
                 <div className="space-y-2">
                   <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Flavour *</label>
                   <Select value={selectedFlavour || ""} onValueChange={setSelectedFlavour}>
-                    <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 focus:border-primary shadow-sm hover:bg-muted/10 transition-colors">
+                    <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary shadow-sm hover:bg-muted/10 transition-colors">
                       <SelectValue placeholder="Choose flavour..." />
                     </SelectTrigger>
                     <SelectContent side="bottom" position="popper" className="z-[100]" avoidCollisions={false}>
@@ -278,12 +278,12 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
                 <div className="space-y-2">
                   <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Name / Message on Cake</label>
-                  <input type="text" placeholder='e.g. "Happy Birthday Kabir!"' value={nameOnCake} onChange={(e) => setNameOnCake(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif text-foreground placeholder:text-foreground/30 transition-colors" />
+                  <input type="text" placeholder='e.g. "Happy Birthday Kabir!"' value={nameOnCake} onChange={(e) => setNameOnCake(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-primary/30 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif text-foreground placeholder:text-foreground/30 transition-colors" />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Quantity</label>
-                  <div className="flex items-center justify-between h-[45px] border-b-2 border-border/40">
+                  <div className="flex items-center justify-between h-[45px] border-b-2 border-primary/30">
                     <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-4 text-foreground/50 hover:text-primary transition-colors text-xl font-serif">-</button>
                     <div className="flex-1 text-center font-serif text-xl font-bold text-foreground">{quantity}</div>
                     <button type="button" onClick={() => setQuantity(quantity + 1)} className="px-4 text-foreground/50 hover:text-primary transition-colors text-xl font-serif">+</button>
@@ -356,8 +356,8 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
               </h2>
 
               <div className="flex gap-4">
-                <button type="button" onClick={() => setDeliveryType("pickup")} className={`flex-1 py-3 px-4 rounded-xl border transition-all font-serif font-bold text-lg ${deliveryType === "pickup" ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-border hover:border-primary/30 text-foreground/50 hover:text-foreground bg-background"}`}>Store Pickup</button>
-                <button type="button" onClick={() => setDeliveryType("delivery")} className={`flex-1 py-3 px-4 rounded-xl border transition-all font-serif font-bold text-lg ${deliveryType === "delivery" ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-border hover:border-primary/30 text-foreground/50 hover:text-foreground bg-background"}`}>Home Delivery</button>
+                <button type="button" onClick={() => setDeliveryType("pickup")} className={`flex-1 py-3 px-4 rounded-xl border transition-all font-serif font-bold text-lg ${deliveryType === "pickup" ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-primary/30 hover:border-primary/60 text-foreground/50 hover:text-foreground bg-background"}`}>Store Pickup</button>
+                <button type="button" onClick={() => setDeliveryType("delivery")} className={`flex-1 py-3 px-4 rounded-xl border transition-all font-serif font-bold text-lg ${deliveryType === "delivery" ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-primary/30 hover:border-primary/60 text-foreground/50 hover:text-foreground bg-background"}`}>Home Delivery</button>
               </div>
 
               {deliveryType === "delivery" && (
@@ -366,9 +366,9 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
                     <LeafletAddressPicker onAddressChange={setAddress} onCalculating={setIsCalculatingDistance} onDistancesCalculated={(distances, err) => { setBranchDistances(distances); setDistanceError(err); if (distances.length > 0) setSelectedBranch(toBranchId(distances[0].branch)); }} />
                   </div>
                   <div className="space-y-4 bg-background p-5 rounded-2xl border border-border/50">
-                    <input type="text" value={houseNo} onChange={(e) => setHouseNo(e.target.value)} placeholder="House / Flat / Block No. *" className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-base font-serif text-foreground transition-colors placeholder:text-foreground/40" />
-                    <input type="text" value={address} readOnly placeholder="Area / Road (automatic from map)" className="w-full bg-transparent border-0 border-b-2 border-border/40 px-0 py-2 text-base font-serif text-foreground/50 cursor-not-allowed" />
-                    <input type="text" value={landmark} onChange={(e) => setLandmark(e.target.value)} placeholder="Landmark (Optional)" className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-base font-serif text-foreground transition-colors placeholder:text-foreground/40" />
+                    <input type="text" value={houseNo} onChange={(e) => setHouseNo(e.target.value)} placeholder="House / Flat / Block No. *" className="w-full bg-transparent border-0 border-b-2 border-primary/30 focus:border-primary focus:ring-0 px-0 py-2 text-base font-serif text-foreground transition-colors placeholder:text-foreground/40" />
+                    <input type="text" value={address} readOnly placeholder="Area / Road (automatic from map)" className="w-full bg-transparent border-0 border-b-2 border-primary/20 px-0 py-2 text-base font-serif text-foreground/50 cursor-not-allowed" />
+                    <input type="text" value={landmark} onChange={(e) => setLandmark(e.target.value)} placeholder="Landmark (Optional)" className="w-full bg-transparent border-0 border-b-2 border-primary/30 focus:border-primary focus:ring-0 px-0 py-2 text-base font-serif text-foreground transition-colors placeholder:text-foreground/40" />
                   </div>
                 </div>
               )}
@@ -376,20 +376,20 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Date Required *</label>
-                  <input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif text-foreground transition-colors" />
+                  <input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} className="w-full bg-transparent border-0 border-b-2 border-primary/30 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif text-foreground transition-colors" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Preferred Time</label>
                   <div className="relative">
                     <Clock className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
-                    <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 pr-10 text-lg font-serif text-foreground transition-colors" />
+                    <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-primary/30 focus:border-primary focus:ring-0 px-0 py-2 pr-10 text-lg font-serif text-foreground transition-colors" />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2 pt-2">
                 <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Special Instructions / Notes</label>
-                <textarea placeholder="Describe design details, colours, decorations, or custom messages here..." value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif italic text-foreground transition-colors placeholder:text-foreground/30 min-h-[90px] resize-none" />
+                <textarea placeholder="Describe design details, colours, decorations, or custom messages here..." value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-primary/30 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif italic text-foreground transition-colors placeholder:text-foreground/30 min-h-[90px] resize-none" />
               </div>
             </section>
 
@@ -419,17 +419,17 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
                     <>
                       <div className="space-y-1">
                         <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Recipient's Name *</label>
-                        <input type="text" placeholder="Who receives the cake?" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-primary/20 focus:border-primary focus:ring-0 px-0 py-2 text-base font-serif text-foreground transition-colors placeholder:text-foreground/40" />
+                        <input type="text" placeholder="Who receives the cake?" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-primary/30 focus:border-primary focus:ring-0 px-0 py-2 text-base font-serif text-foreground transition-colors placeholder:text-foreground/40" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Your Phone Number *</label>
-                        <input type="tel" placeholder="For updates / verification" value={contact} onChange={(e) => setContact(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-primary/20 focus:border-primary focus:ring-0 px-0 py-2 text-base font-serif text-foreground transition-colors placeholder:text-foreground/40" />
+                        <input type="tel" placeholder="For updates / verification" value={contact} onChange={(e) => setContact(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-primary/30 focus:border-primary focus:ring-0 px-0 py-2 text-base font-serif text-foreground transition-colors placeholder:text-foreground/40" />
                       </div>
                     </>
                   ) : (
                     <div className="space-y-1 md:col-span-2">
                       <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Your Contact Number *</label>
-                      <input type="tel" placeholder="e.g. 9876543210" value={contact} onChange={(e) => setContact(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-primary/20 focus:border-primary focus:ring-0 px-0 py-2 text-base font-serif text-foreground transition-colors placeholder:text-foreground/40" />
+                      <input type="tel" placeholder="e.g. 9876543210" value={contact} onChange={(e) => setContact(e.target.value)} className="w-full bg-transparent border-0 border-b-2 border-primary/30 focus:border-primary focus:ring-0 px-0 py-2 text-base font-serif text-foreground transition-colors placeholder:text-foreground/40" />
                     </div>
                   )}
                 </div>
@@ -487,7 +487,7 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
               <div className="border-t border-border/40 pt-4 space-y-2">
                 <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50 block">Promo Coupon</label>
                 <div className="flex gap-2">
-                  <input type="text" placeholder="e.g. GOPAL10" value={coupon} onChange={(e) => setCoupon(e.target.value)} className="flex-1 px-3 py-2 border rounded-lg bg-card text-xs uppercase font-bold focus:ring-1 focus:ring-primary/50 focus:outline-none" />
+                  <input type="text" placeholder="e.g. GOPAL10" value={coupon} onChange={(e) => setCoupon(e.target.value)} className="flex-1 px-3 py-2 border border-primary/30 rounded-lg bg-card text-xs uppercase font-bold focus:ring-1 focus:ring-primary/50 focus:outline-none" />
                   <button type="button" onClick={handleApplyCoupon} className="px-4 py-2 bg-[#3E2723] hover:bg-[#3E2723]/90 text-white rounded-lg text-xs font-bold transition-colors">Apply</button>
                 </div>
                 {appliedDiscount > 0 && <p className="text-xs font-bold text-emerald-600">✓ Applied: -₹{appliedDiscount}</p>}

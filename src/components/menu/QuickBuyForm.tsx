@@ -71,7 +71,7 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
             Select Weight
           </label>
           <Select value={selectedWeight} onValueChange={setSelectedWeight}>
-            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 focus:border-primary">
+            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary">
               <SelectValue placeholder="Choose weight" />
             </SelectTrigger>
             <SelectContent side="bottom" position="popper" className="z-[200]">
@@ -92,7 +92,7 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
             Select Flavour <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
           </label>
           <Select value={selectedFlavour} onValueChange={setSelectedFlavour}>
-            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-border/40 rounded-xl px-4 focus:border-primary">
+            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary">
               <SelectValue placeholder="Original Flavour" />
             </SelectTrigger>
             <SelectContent side="bottom" position="popper" className="z-[200]" avoidCollisions={false}>
