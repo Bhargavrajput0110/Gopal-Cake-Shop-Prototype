@@ -245,7 +245,7 @@ export function CustomDesignForm() {
                       <SelectTrigger className="w-full h-16 text-xl bg-background border-2 border-border/40 rounded-2xl px-6 focus:border-primary shadow-sm transition-all hover:bg-muted/30">
                         <SelectValue placeholder="Choose weight..." />
                       </SelectTrigger>
-                      <SelectContent className="max-h-[300px]">
+                      <SelectContent side="bottom" position="popper" className="max-h-[300px] overflow-y-auto z-[100]">
                         <SelectGroup>
                           <SelectLabel>Available Weights</SelectLabel>
                           {WEIGHT_OPTIONS.map((w) => {
@@ -267,7 +267,7 @@ export function CustomDesignForm() {
                       <SelectTrigger className="w-full h-16 text-xl bg-background border-2 border-border/40 rounded-2xl px-6 focus:border-primary shadow-sm transition-all hover:bg-muted/30">
                         <SelectValue placeholder="Choose flavour..." />
                       </SelectTrigger>
-                      <SelectContent className="max-h-[350px]">
+                      <SelectContent side="bottom" position="popper" className="max-h-[350px] overflow-y-auto z-[100]">
                         <SelectGroup>
                           <SelectLabel className="text-emerald-700">Regular Flavours</SelectLabel>
                           {REGULAR_FLAVOURS.map((f) => (
