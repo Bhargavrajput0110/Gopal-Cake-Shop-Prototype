@@ -69,6 +69,44 @@ export default function CheckoutPage() {
       .catch(console.error);
   }, []);
 
+  // Price calculation lookup tables & helper
+  const basePrices: Record<string, number> = {
+    "250g": 350, "500g": 600, "750g": 850, "1kg": 1100,
+    "1.5kg": 1600, "2kg": 2100, "2.5kg": 2600, "3kg": 3100,
+    "3.5kg": 3500, "4kg": 4000, "4.5kg": 4400, "5kg": 4900,
+    "5.5kg": 5300, "6kg": 5800, "6.5kg": 6300, "7kg": 6800,
+    "7.5kg": 7300, "8kg": 7800, "8.5kg": 8300, "9kg": 8300, "9.5kg": 8750, "10kg": 9200,
+  };
+
+  const getItemPrice = (item: any): number => {
+    const selectedWeight = itemVariants[item.cartItemId] || item.variant || "500g";
+    const selectedFlavour = itemFlavors[item.cartItemId] || item.flavor || "Classic";
+
+    // Start with original item base price or fallback
+    let itemBasePrice = item.price || 600;
+    
+    // Scale base price by weight
+    if (selectedWeight && basePrices[selectedWeight]) {
+      const scale = basePrices[selectedWeight] / basePrices["500g"];
+      itemBasePrice = Math.round(itemBasePrice * scale);
+    }
+
+    // Add flavour premium (e.g. +50 for any custom/fusion flavour other than Classic/original/empty)
+    const isSpecialFlavour = selectedFlavour && 
+      selectedFlavour.toLowerCase() !== 'classic' && 
+      selectedFlavour.toLowerCase() !== 'original' &&
+      selectedFlavour.toLowerCase() !== '';
+      
+    if (isSpecialFlavour) {
+      itemBasePrice += 50;
+    }
+
+    return itemBasePrice;
+  };
+
+  // Dynamically calculate checkout subtotal based on current selections
+  const dynamicSubtotal = items.reduce((acc, item) => acc + (getItemPrice(item) * item.quantity), 0);
+
   const parseWeightToNumber = (weightStr: string): number => {
     if (!weightStr) return 0.5;
     const num = parseFloat(weightStr);
@@ -123,14 +161,18 @@ export default function CheckoutPage() {
           pin: formData.pin,
           landmark: formData.landmark
         },
-        items: items.map(i => ({ 
-          productId: i.productId, 
-          quantity: i.quantity, 
-          weight: parseWeightToNumber(itemVariants[i.cartItemId] || i.variant || ''), 
-          flavor: itemFlavors[i.cartItemId] || i.flavor || 'Classic',
-          messageOnCake: messages[i.cartItemId] || '',
-          notes: itemNotes[i.cartItemId] || i.notes || ''
-        })),
+        items: items.map(i => {
+          const itemPrice = getItemPrice(i);
+          return { 
+            productId: i.productId, 
+            quantity: i.quantity, 
+            weight: parseWeightToNumber(itemVariants[i.cartItemId] || i.variant || ''), 
+            flavor: itemFlavors[i.cartItemId] || i.flavor || 'Classic',
+            messageOnCake: messages[i.cartItemId] || '',
+            notes: itemNotes[i.cartItemId] || i.notes || '',
+            price: itemPrice // Override with current calculated price
+          };
+        }),
         paymentMethod,
         deliveryType,
         branchId: branchId || 'dummy-branch-id', 
@@ -513,22 +555,19 @@ export default function CheckoutPage() {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-serif font-bold text-sm text-foreground line-clamp-1 leading-snug">{item.name}</h4>
                       <p className="text-[10px] font-sans text-muted-foreground uppercase font-bold tracking-wider mt-1">{item.variant || 'Standard'} • Qty: {item.quantity}</p>
-                      {messages[item.cartItemId] && (
-                        <p className="text-[10px] font-serif text-[var(--brand-deep-rose)] italic mt-0.5 line-clamp-1">&quot;{messages[item.cartItemId]}&quot;</p>
-                      )}
                     </div>
                     <div className="font-serif font-bold text-sm text-foreground shrink-0">
-                      ₹{item.price * item.quantity}
+                      ₹{getItemPrice(item) * item.quantity}
                     </div>
                   </div>
                 ))}
               </div>
-
+ 
               {/* Price summary */}
               <div className="space-y-3 text-base">
                 <div className="flex justify-between font-serif text-foreground/70">
                   <span>Subtotal</span>
-                  <span>₹{subtotal}</span>
+                  <span>₹{dynamicSubtotal}</span>
                 </div>
                 <div className="flex justify-between font-serif text-foreground/70">
                   <span>Fulfillment</span>
@@ -541,7 +580,7 @@ export default function CheckoutPage() {
                 )}
                 <div className="flex justify-between items-center pt-4 border-t border-border/40">
                   <span className="font-serif font-bold text-xl text-foreground">Grand Total</span>
-                  <span className="font-serif font-bold text-2xl text-[var(--brand-deep-rose)]">₹{subtotal}</span>
+                  <span className="font-serif font-bold text-2xl text-[var(--brand-deep-rose)]">₹{dynamicSubtotal}</span>
                 </div>
               </div>
 
