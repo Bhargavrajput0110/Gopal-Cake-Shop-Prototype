@@ -1,6 +1,7 @@
 "use client";
 
 import { BackButton } from "@/components/ui/BackButton";
+import { NotificationToast } from "@/components/ui/NotificationToast";
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
@@ -16,6 +17,7 @@ export default function CheckoutPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [idempotencyKey] = useState(() => uuidv4());
+  const [toast, setToast] = useState<{ id: string; title: string; message: string; variant: 'info' | 'success' | 'warning' } | null>(null);
   
   // Fulfillment Type
   const [deliveryType, setDeliveryType] = useState<"DELIVERY" | "PICKUP">("DELIVERY");
@@ -239,7 +241,15 @@ export default function CheckoutPage() {
               <div className="flex gap-4">
                 <button
                   type="button"
-                  onClick={() => setDeliveryType("DELIVERY")}
+                  onClick={() => {
+                    setDeliveryType("DELIVERY");
+                    setToast({
+                      id: Date.now().toString(),
+                      title: 'Home Delivery Selected',
+                      message: 'A delivery charge will apply depending on your location and distance from the branch.',
+                      variant: 'info'
+                    });
+                  }}
                   className={`flex-1 py-4 px-6 rounded-2xl border-2 transition-all font-serif font-bold text-base flex flex-col items-center justify-center gap-2 ${
                     deliveryType === "DELIVERY" 
                       ? "border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/5 text-[var(--brand-deep-rose)] shadow-sm" 
@@ -610,6 +620,20 @@ export default function CheckoutPage() {
 
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[500] w-max max-w-[90vw]">
+          <NotificationToast
+            id={toast.id}
+            title={toast.title}
+            message={toast.message}
+            variant={toast.variant}
+            duration={4000}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }

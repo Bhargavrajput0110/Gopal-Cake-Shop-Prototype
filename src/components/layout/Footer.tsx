@@ -171,7 +171,7 @@ export function Footer() {
         {/* ── Bottom: Copyright + Brand statement ── */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8">
           <p className="font-ui text-[11px] text-white/25 tracking-wide">
-            © {new Date().getFullYear()} Gopal Cakes & Sweets. All rights reserved.
+            © {new Date().getFullYear()} Gopal Cakes. All rights reserved.
           </p>
 
           <p className="font-display italic text-white/15 text-sm">

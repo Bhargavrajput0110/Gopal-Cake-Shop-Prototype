@@ -6,6 +6,7 @@ import { WEIGHT_OPTIONS, getActiveFlavours } from '@/lib/flavours';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
+import { NotificationToast } from '@/components/ui/NotificationToast';
 
 export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () => void }) {
   const { addItem } = useCart();
@@ -15,6 +16,19 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
   const [selectedFlavour, setSelectedFlavour] = useState("");
   const [messageOnCake, setMessageOnCake] = useState("");
   const [notes, setNotes] = useState("");
+  const [toast, setToast] = useState<{ id: string; title: string; message: string; variant: 'info' | 'success' | 'warning' } | null>(null);
+
+  const handleFlavourChange = (val: string) => {
+    setSelectedFlavour(val);
+    if (val !== 'original' && val !== 'Classic' && val !== '') {
+      setToast({
+        id: Date.now().toString(),
+        title: 'Premium Flavour Selected',
+        message: `${val} is a premium flavour and will cost extra depending on the size of the cake.`,
+        variant: 'info'
+      });
+    }
+  };
 
   // Calculate dynamic price based on weight (mocking the basePrices logic)
   const basePrices: Record<string, number> = {
@@ -95,7 +109,7 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
           <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
             Select Flavour <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
           </label>
-          <Select value={selectedFlavour} onValueChange={setSelectedFlavour}>
+          <Select value={selectedFlavour} onValueChange={handleFlavourChange}>
             <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary">
               <SelectValue placeholder="Original Flavour" />
             </SelectTrigger>
@@ -163,6 +177,20 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
           Add to Cart - ₹{currentPrice}
         </Button>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-[300] w-max max-w-[90vw]">
+          <NotificationToast
+            id={toast.id}
+            title={toast.title}
+            message={toast.message}
+            variant={toast.variant}
+            duration={4000}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }

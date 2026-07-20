@@ -13,6 +13,7 @@ import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
 import { WEIGHT_OPTIONS, REGULAR_FLAVOURS, MANGO_FUSION_FLAVOURS, STRAWBERRY_FUSION_FLAVOURS } from "@/lib/flavours";
 import { toBranchId } from "@/lib/branches";
 import { BackButton } from "@/components/ui/BackButton";
+import { NotificationToast } from "@/components/ui/NotificationToast";
 
 const LeafletAddressPicker = dynamic(
   () => import("@/components/home/LeafletAddressPicker").then((mod) => mod.LeafletAddressPicker),
@@ -44,6 +45,19 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
   // Step 1 — Weight & Flavour
   const [selectedWeight, setSelectedWeight]   = useState<string | null>(weightParam || "500g");
   const [selectedFlavour, setSelectedFlavour] = useState<string | null>(flavourParam || "White Forest");
+  const [toast, setToast] = useState<{ id: string; title: string; message: string; variant: 'info' | 'success' | 'warning' } | null>(null);
+
+  const handleFlavourChange = (val: string) => {
+    setSelectedFlavour(val);
+    if (val !== 'Classic' && val !== 'White Forest' && val !== 'Pineapple') {
+      setToast({
+        id: Date.now().toString(),
+        title: 'Premium Flavour Selected',
+        message: `${val} is a premium flavour and will cost extra depending on the size of the cake.`,
+        variant: 'info'
+      });
+    }
+  };
 
   // Step 2 — Images
   const [referenceImages, setReferenceImages] = useState<string[]>(imageParam ? [imageParam] : []);
@@ -235,9 +249,11 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Flavour *</label>
-                  <Select value={selectedFlavour || ""} onValueChange={setSelectedFlavour}>
+                <div className="space-y-3 relative z-40">
+                  <label className="text-sm font-ui font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                    Flavour <span className="text-primary normal-case text-xs">Required</span>
+                  </label>
+                  <Select value={selectedFlavour || ""} onValueChange={handleFlavourChange}>
                     <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary shadow-sm hover:bg-muted/10 transition-colors">
                       <SelectValue placeholder="Choose flavour..." />
                     </SelectTrigger>
@@ -357,7 +373,21 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
 
               <div className="flex gap-4">
                 <button type="button" onClick={() => setDeliveryType("pickup")} className={`flex-1 py-3 px-4 rounded-xl border transition-all font-serif font-bold text-lg ${deliveryType === "pickup" ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-primary/30 hover:border-primary/60 text-foreground/50 hover:text-foreground bg-background"}`}>Store Pickup</button>
-                <button type="button" onClick={() => setDeliveryType("delivery")} className={`flex-1 py-3 px-4 rounded-xl border transition-all font-serif font-bold text-lg ${deliveryType === "delivery" ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-primary/30 hover:border-primary/60 text-foreground/50 hover:text-foreground bg-background"}`}>Home Delivery</button>
+                <button
+                    type="button"
+                    onClick={() => {
+                      setDeliveryType("delivery");
+                      setToast({
+                        id: Date.now().toString(),
+                        title: 'Home Delivery Selected',
+                        message: 'A delivery charge will apply depending on your location and distance from the branch.',
+                        variant: 'info'
+                      });
+                    }}
+                    className={`flex-1 py-3 px-4 rounded-xl border transition-all font-serif font-bold text-lg ${
+                      deliveryType === "delivery" ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-primary/30 hover:border-primary/60 text-foreground/50 hover:text-foreground bg-background"
+                    }`}
+                  >Home Delivery</button>
               </div>
 
               {deliveryType === "delivery" && (
@@ -556,6 +586,20 @@ export function CustomDesignForm({ asModal = false, initialImage = "" }: { asMod
 
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[500] w-max max-w-[90vw]">
+          <NotificationToast
+            id={toast.id}
+            title={toast.title}
+            message={toast.message}
+            variant={toast.variant}
+            duration={4000}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }
