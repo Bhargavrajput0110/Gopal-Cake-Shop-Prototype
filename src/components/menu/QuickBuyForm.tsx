@@ -17,6 +17,7 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
   const [messageOnCake, setMessageOnCake] = useState("");
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<{ id: string; title: string; message: string; variant: 'info' | 'success' | 'warning' } | null>(null);
+  const [showOptions, setShowOptions] = useState(false);
 
   const handleFlavourChange = (val: string) => {
     setSelectedFlavour(val);
@@ -104,67 +105,79 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
           </Select>
         </div>
 
-        {/* Flavour Selection */}
-        <div className="space-y-3">
-          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
-            Select Flavour <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
-          </label>
-          <Select value={selectedFlavour} onValueChange={handleFlavourChange}>
-            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary">
-              <SelectValue placeholder="Original Flavour" />
-            </SelectTrigger>
-            <SelectContent side="bottom" position="popper" className="z-[200]" avoidCollisions={false}>
-              <SelectGroup>
-                <SelectItem value="original" className="text-base py-3 font-semibold text-primary">
-                  Original Flavour (Recommended)
-                </SelectItem>
-                {flavours.map((f) => (
-                  <SelectItem key={f.id} value={f.name} className="text-base py-3">
-                    {f.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Advanced Options Toggle */}
+        <button 
+          onClick={() => setShowOptions(!showOptions)}
+          className="w-full flex items-center justify-between bg-primary/5 hover:bg-primary/10 border border-primary/20 p-4 rounded-xl transition-colors text-primary font-ui text-sm font-bold tracking-wide"
+        >
+          <span>{showOptions ? "− Hide Options" : "+ Add Options (Flavour, Message, Notes)"}</span>
+        </button>
 
-        {/* Message on Cake */}
-        <div className="space-y-3">
-          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-            🎂 Message on Cake
-            <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
-          </label>
-          <input
-            type="text"
-            value={messageOnCake}
-            onChange={(e) => setMessageOnCake(e.target.value)}
-            placeholder='e.g. Happy Birthday Rahul 🎉'
-            maxLength={60}
-            className="w-full rounded-xl border-2 border-primary/30 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
-          />
-          <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
-        </div>
+        {showOptions && (
+          <div className="space-y-6 animate-in slide-in-from-top-4 fade-in duration-300 pt-2">
+            {/* Flavour Selection */}
+            <div className="space-y-3">
+              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
+                Select Flavour <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
+              </label>
+              <Select value={selectedFlavour} onValueChange={handleFlavourChange}>
+                <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary">
+                  <SelectValue placeholder="Original Flavour" />
+                </SelectTrigger>
+                <SelectContent side="bottom" position="popper" className="z-[200]" avoidCollisions={false}>
+                  <SelectGroup>
+                    <SelectItem value="original" className="text-base py-3 font-semibold text-primary">
+                      Original Flavour (Recommended)
+                    </SelectItem>
+                    {flavours.map((f) => (
+                      <SelectItem key={f.id} value={f.name} className="text-base py-3">
+                        {f.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* Special Instructions / Notes */}
-        <div className="space-y-3">
-          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black">✎</span>
-            Special Instructions
-            <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
-          </label>
-          <p className="text-xs text-muted-foreground leading-relaxed bg-primary/5 border border-primary/10 rounded-xl px-4 py-3">
-            Mention <strong>allergies</strong>, delivery timing preferences, box type, or any other special requests for this order.
-          </p>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. No nuts please, deliver before 6 PM…"
-            rows={3}
-            maxLength={300}
-            className="w-full resize-none rounded-xl border-2 border-primary/30 bg-background px-4 py-3 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
-          />
-          <p className="text-right text-[11px] text-muted-foreground">{notes.length}/300</p>
-        </div>
+            {/* Message on Cake */}
+            <div className="space-y-3">
+              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                🎂 Message on Cake
+                <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
+              </label>
+              <input
+                type="text"
+                value={messageOnCake}
+                onChange={(e) => setMessageOnCake(e.target.value)}
+                placeholder='e.g. Happy Birthday Rahul 🎉'
+                maxLength={60}
+                className="w-full rounded-xl border-2 border-primary/30 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+              />
+              <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
+            </div>
+
+            {/* Special Instructions / Notes */}
+            <div className="space-y-3">
+              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black">✎</span>
+                Special Instructions
+                <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
+              </label>
+              <p className="text-xs text-muted-foreground leading-relaxed bg-primary/5 border border-primary/10 rounded-xl px-4 py-3">
+                Mention <strong>allergies</strong>, delivery timing preferences, box type, or any other special requests for this order.
+              </p>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="e.g. No nuts please, deliver before 6 PM…"
+                rows={3}
+                maxLength={300}
+                className="w-full resize-none rounded-xl border-2 border-primary/30 bg-background px-4 py-3 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+              />
+              <p className="text-right text-[11px] text-muted-foreground">{notes.length}/300</p>
+            </div>
+          </div>
+        )}
 
       </div>
 
