@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
 import { NotificationToast } from '@/components/ui/NotificationToast';
+import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
+import { GalleryAdd } from "iconsax-react";
 
-export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () => void }) {
+export function QuickBuyForm({ product, onClose, isCustom = false }: { product: any, onClose?: () => void, isCustom?: boolean }) {
   const { addItem } = useCart();
   const flavours = getActiveFlavours();
   
@@ -17,7 +19,8 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
   const [messageOnCake, setMessageOnCake] = useState("");
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<{ id: string; title: string; message: string; variant: 'info' | 'success' | 'warning' } | null>(null);
-  const [showOptions, setShowOptions] = useState(false);
+  const [showOptions, setShowOptions] = useState(isCustom);
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
 
   const handleFlavourChange = (val: string) => {
     setSelectedFlavour(val);
@@ -60,6 +63,7 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
       flavor: selectedFlavour || "Classic",
       messageOnCake: messageOnCake.trim() || undefined,
       notes: notes.trim() || undefined,
+      referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
     });
     if (onClose) onClose();
   };
@@ -106,15 +110,35 @@ export function QuickBuyForm({ product, onClose }: { product: any, onClose?: () 
         </div>
 
         {/* Advanced Options Toggle */}
-        <button 
-          onClick={() => setShowOptions(!showOptions)}
-          className="w-full flex items-center justify-between bg-primary/5 hover:bg-primary/10 border border-primary/20 p-4 rounded-xl transition-colors text-primary font-ui text-sm font-bold tracking-wide"
-        >
-          <span>{showOptions ? "− Hide Options" : "+ Add Options (Flavour, Message, Notes)"}</span>
-        </button>
+        {!isCustom && (
+          <button 
+            onClick={() => setShowOptions(!showOptions)}
+            className="w-full flex items-center justify-between bg-primary/5 hover:bg-primary/10 border border-primary/20 p-4 rounded-xl transition-colors text-primary font-ui text-sm font-bold tracking-wide"
+          >
+            <span>{showOptions ? "− Hide Options" : "+ Add Options (Flavour, Message, Notes)"}</span>
+          </button>
+        )}
 
         {showOptions && (
           <div className="space-y-6 animate-in slide-in-from-top-4 fade-in duration-300 pt-2">
+            
+            {/* Custom Image Upload */}
+            {isCustom && (
+              <div className="space-y-3">
+                <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                  <GalleryAdd className="w-4 h-4" />
+                  Reference Image <span className="text-primary normal-case text-[10px]">Required</span>
+                </label>
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                  <CloudinaryUploader
+                    maxFiles={1}
+                    folder="custom_cakes"
+                    onUploadSuccess={(urls) => setReferenceImages(urls)}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Flavour Selection */}
             <div className="space-y-3">
               <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">

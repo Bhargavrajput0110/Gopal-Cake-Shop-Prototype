@@ -447,8 +447,10 @@ export default function CheckoutPage() {
                 {items.map((item, idx) => (
                   <div key={item.cartItemId} className="p-4 bg-muted/20 border border-border/50 rounded-2xl space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted relative shrink-0">
-                        {item.image ? (
+                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted relative shrink-0 border border-primary/10">
+                        {item.referenceImages && item.referenceImages.length > 0 ? (
+                          <img src={item.referenceImages[0]} alt="Custom Design" className="w-full h-full object-cover" />
+                        ) : item.image ? (
                           <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                         ) : (
                           <Bag className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20" />
