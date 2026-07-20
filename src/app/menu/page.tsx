@@ -126,7 +126,7 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
               ADD ₹{product.basePrice}
             </SheetTrigger>
             <SheetContent side="right" className="w-full sm:max-w-md p-0 bg-background z-[150] border-l-0 shadow-2xl">
-              <QuickBuyForm product={product} onClose={() => setIsOpen(false)} />
+              <QuickBuyForm product={product} isCustom={product.isCustom || product.name.toLowerCase().includes('custom')} onClose={() => setIsOpen(false)} />
             </SheetContent>
           </Sheet>
         </div>
