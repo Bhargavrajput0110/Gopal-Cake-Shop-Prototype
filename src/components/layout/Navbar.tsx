@@ -142,7 +142,7 @@ export function Navbar() {
                 <span className={`font-ui font-bold text-[7px] tracking-[0.35em] uppercase leading-none mt-0.5 transition-colors duration-300 ${
                   showScrolledNavbar ? "text-[var(--brand-deep-rose)]" : "text-[var(--brand-champagne)]"
                 }`}>
-                  Cakes & Sweets
+                  Cakes
                 </span>
               </div>
               {/* Gold underline on hover */}
@@ -334,7 +334,7 @@ export function Navbar() {
                 <div className="flex flex-col">
                   <span className="font-display italic font-bold text-2xl text-[var(--foreground)]">Gopal</span>
                   <span className="font-ui text-[9px] tracking-[0.35em] uppercase text-[var(--brand-deep-rose)] font-bold mt-0.5">
-                    Cakes & Sweets
+                    Cakes
                   </span>
                 </div>
                 <button

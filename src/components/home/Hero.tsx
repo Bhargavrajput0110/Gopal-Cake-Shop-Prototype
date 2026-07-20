@@ -125,18 +125,6 @@ export function Hero() {
             >
               Cakes
             </h2>
-            <span
-              className="font-ui text-white/30 font-light"
-              style={{ fontSize: "clamp(1.5rem, 4vw, 5rem)" }}
-            >
-              &
-            </span>
-            <h2
-              className="font-display italic font-light text-white/80 leading-[0.88]"
-              style={{ fontSize: "clamp(2.5rem, 8vw, 9rem)", lineHeight: 0.88 }}
-            >
-              Sweets
-            </h2>
           </motion.div>
         </div>
 

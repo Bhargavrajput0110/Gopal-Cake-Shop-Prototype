@@ -88,7 +88,7 @@ export function Preloader() {
               </motion.span>
             </div>
 
-            {/* Sub: CAKES & SWEETS */}
+            {/* Sub: CAKES */}
             <motion.div
               initial={{ opacity: 0, letterSpacing: "0.5em" }}
               animate={{ opacity: 1, letterSpacing: "0.4em" }}
@@ -99,7 +99,7 @@ export function Preloader() {
                 className="block font-ui font-semibold text-[11px] uppercase tracking-[0.4em] text-center"
                 style={{ color: "#C8A97E", fontFamily: "'Inter', system-ui, sans-serif" }}
               >
-                Cakes & Sweets
+                Cakes
               </span>
             </motion.div>
 
