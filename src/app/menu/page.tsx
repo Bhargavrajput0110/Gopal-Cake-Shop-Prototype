@@ -32,7 +32,7 @@ const CATEGORY_GROUPS = [
   },
   {
     title: "Styles & Themes",
-    items: ["Fresh Flower Cake", "Rice Paper Cake", "Isomalt Cake", "King Cake", "Rainbow Cake", "Pinata Cake", "Bow Cake", "Top Forward Cake", "Levitating Cake", "Vintage Photo Cake", "Alcohol Bottle Theme Cake", "Evil Eye Cake"]
+    items: ["Photo Cake", "Fresh Flower Cake", "Rice Paper Cake", "Isomalt Cake", "King Cake", "Rainbow Cake", "Pinata Cake", "Bow Cake", "Top Forward Cake", "Levitating Cake", "Vintage Photo Cake", "Alcohol Bottle Theme Cake", "Evil Eye Cake"]
   },
   {
     title: "Hobbies & Professions",
@@ -126,7 +126,16 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
               ADD ₹{product.basePrice}
             </SheetTrigger>
             <SheetContent side="right" className="w-full sm:max-w-md p-0 bg-background z-[150] border-l-0 shadow-2xl">
-              <QuickBuyForm product={product} isCustom={product.isCustom || product.name.toLowerCase().includes('custom')} onClose={() => setIsOpen(false)} />
+              <QuickBuyForm 
+                product={product} 
+                isCustom={
+                  product.isCustom || 
+                  product.name.toLowerCase().includes('custom') || 
+                  product.name.toLowerCase().includes('photo') || 
+                  (product.category?.name || "").toLowerCase().includes('photo')
+                } 
+                onClose={() => setIsOpen(false)} 
+              />
             </SheetContent>
           </Sheet>
         </div>
