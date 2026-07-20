@@ -20,7 +20,7 @@ function checkRateLimit(ip: string, limit: number, windowMs: number): boolean {
   return true;
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const response = NextResponse.next();
   const url = request.nextUrl.pathname;
 
