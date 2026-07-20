@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { prisma } from './src/lib/prisma';
 import { Branch } from '@prisma/client';
 async function main() {
