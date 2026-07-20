@@ -47,7 +47,7 @@ export default function CheckoutPage() {
   const [messages, setMessages] = useState<Record<string, string>>({});
 
   // Payment Options
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD'>('CASH');
+  const [paymentMethod, setPaymentMethod] = useState<'ADVANCE_50' | 'ONLINE_100'>('ADVANCE_50');
   
   const [branches, setBranches] = useState<any[]>([]);
   const [branchId, setBranchId] = useState<string>('');
@@ -520,9 +520,8 @@ export default function CheckoutPage() {
               
               <div className="space-y-4">
                 {[
-                  { id: 'CASH', label: 'Cash on Delivery', desc: 'Pay when your cake is delivered or picked up' },
-                  { id: 'UPI', label: 'UPI', desc: 'Google Pay, PhonePe, Paytm (Pay at pickup/delivery)' },
-                  { id: 'CARD', label: 'Credit / Debit Card', desc: 'Secure online checkout powered by Razorpay' }
+                  { id: 'ADVANCE_50', label: '50% Advance Payment', desc: 'Pay 50% now via UPI/Card to confirm your order, pay the rest on delivery/pickup.' },
+                  { id: 'ONLINE_100', label: '100% Online Payment', desc: 'Pay the full amount securely now via UPI or Card.' }
                 ].map(method => (
                   <label 
                     key={method.id} 
