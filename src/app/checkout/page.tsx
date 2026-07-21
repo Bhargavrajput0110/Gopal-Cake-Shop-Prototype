@@ -215,7 +215,7 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-background pb-32 pt-24 md:pt-32">
       <div className="max-w-[1200px] mx-auto px-4 md:px-8">
         
-        <BackButton fallback="/menu" label="Back to Catalogue" variant="link" className="px-0 mb-6 text-foreground/60 hover:text-primary uppercase tracking-widest text-xs font-bold" />
+        <BackButton fallback="/menu" label="Back to Catalogue" variant="link" className="mb-6 text-foreground/80 hover:text-primary uppercase tracking-widest text-xs font-bold w-fit" />
 
         {/* Editorial Header */}
         <div className="mb-12 border-b border-border/40 pb-6 flex items-end justify-between">

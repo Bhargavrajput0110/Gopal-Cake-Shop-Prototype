@@ -34,10 +34,15 @@ export function BackButton({
 
   return (
     <Button 
-      variant={variant} 
+      variant={variant === "ghost" ? "secondary" : variant} 
       size={size}
       onClick={handleBack} 
-      className={cn("flex items-center gap-2", className)}
+      className={cn(
+        "flex items-center gap-2 rounded-full font-bold tracking-wide transition-all shadow-sm hover:shadow-md", 
+        variant === "ghost" && "bg-secondary/10 hover:bg-secondary/20 text-secondary-foreground border border-secondary/20",
+        variant === "link" && "bg-background/80 backdrop-blur-sm border border-border shadow-sm px-4 py-2 hover:bg-background/100 text-foreground",
+        className
+      )}
     >
       <ArrowLeft className="w-4 h-4" />
       {label && <span>{label}</span>}
