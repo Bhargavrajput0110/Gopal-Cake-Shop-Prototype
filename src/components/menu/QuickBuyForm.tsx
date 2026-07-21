@@ -73,9 +73,9 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Header Image */}
-      <div className="relative w-full h-[250px] bg-muted shrink-0">
+      <div className="relative w-full h-[140px] bg-muted shrink-0">
         {product.thumbnail ? (
           <Image src={product.thumbnail} alt={product.name} fill className="object-cover" />
         ) : (
@@ -83,9 +83,9 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4">
-          <h2 className="text-2xl font-display font-bold text-white leading-tight">{product.name}</h2>
+          <h2 className="text-xl font-display font-bold text-white leading-tight drop-shadow-md">{product.name}</h2>
           {product.category?.name && (
-            <p className="text-white/80 font-editorial italic text-sm">{product.category.name}</p>
+            <p className="text-white/90 font-editorial italic text-xs drop-shadow-md">{product.category.name}</p>
           )}
         </div>
       </div>

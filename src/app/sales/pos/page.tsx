@@ -74,28 +74,25 @@ export default function POSPage() {
   // Success Screen
   if (successOrder) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] animate-in fade-in zoom-in duration-500 p-4 bg-gray-950">
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] animate-in fade-in zoom-in duration-500 p-4 bg-background">
         <div className="relative w-full max-w-md z-10">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl -z-10 mix-blend-screen" />
-          
-          <div className="bg-gray-900/60 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] rounded-[2.5rem] p-10 text-center relative overflow-hidden flex flex-col items-center">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
+          <div className="bg-white border border-border shadow-xl rounded-[2.5rem] p-10 text-center relative overflow-hidden flex flex-col items-center">
             
-            <div className="w-24 h-24 bg-gradient-to-tr from-emerald-500 to-emerald-400 rounded-3xl rotate-3 flex items-center justify-center mb-8 border border-white/20 shadow-xl shadow-emerald-500/20">
-              <TickCircle className="w-12 h-12 text-white -rotate-3" variant="Bold" />
+            <div className="w-24 h-24 bg-emerald-100 rounded-3xl flex items-center justify-center mb-8 border border-emerald-200 shadow-sm">
+              <TickCircle className="w-12 h-12 text-emerald-600" variant="Bold" />
             </div>
             
-            <h1 className="font-display text-4xl font-black text-white mb-2">Payment Secured</h1>
-            <p className="font-editorial italic text-gray-400 mb-8 text-xl">
-              Order #<span className="font-ui font-black text-emerald-400 tracking-widest">{successOrder.split('-')[0].toUpperCase()}</span>
+            <h1 className="font-display text-4xl font-black text-foreground mb-2">Payment Secured</h1>
+            <p className="font-editorial italic text-muted-foreground mb-8 text-xl">
+              Order #<span className="font-ui font-black text-[var(--brand-deep-rose)] tracking-widest">{successOrder.split('-')[0].toUpperCase()}</span>
             </p>
             
             <div className="flex flex-col gap-4 w-full">
-              <div className="flex-1 text-left bg-black/40 border border-white/5 rounded-2xl overflow-hidden p-1">
+              <div className="flex-1 text-left bg-muted/50 border border-border rounded-2xl overflow-hidden p-1">
                 <ReceiptStub orderId={successOrder} />
               </div>
               <button 
-                className="w-full py-5 bg-white text-gray-950 rounded-2xl font-ui text-[11px] uppercase font-black tracking-[0.2em] hover:bg-gray-200 transition-all active:scale-[0.98] shadow-lg flex items-center justify-center gap-2"
+                className="w-full py-5 bg-[var(--brand-deep-rose)] text-white rounded-2xl font-ui text-[11px] uppercase font-black tracking-[0.2em] hover:opacity-90 transition-all active:scale-[0.98] shadow-lg flex items-center justify-center gap-2"
                 onClick={() => setSuccessOrder(null)}
               >
                 <Reserve className="w-5 h-5" /> Start New Order
@@ -108,21 +105,17 @@ export default function POSPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-950 text-white relative">
+    <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground relative">
       
-      {/* Immersive Background Blur / Lighting */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
-
       {/* POS Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5 backdrop-blur-3xl shrink-0 z-20">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border bg-white shrink-0 z-20 shadow-sm">
         <div className="flex items-center gap-6">
-          <Link href="/sales" className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white transition-colors shadow-sm">
+          <Link href="/sales" className="p-3 bg-muted hover:bg-muted/80 border border-border rounded-full text-foreground transition-colors shadow-sm">
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <div>
-            <h1 className="font-display text-3xl font-black text-white tracking-tight leading-none">Point of Sale</h1>
-            <p className="font-ui text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+            <h1 className="font-display text-3xl font-black text-foreground tracking-tight leading-none">Point of Sale</h1>
+            <p className="font-ui text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Terminal 01
             </p>
           </div>
@@ -133,8 +126,8 @@ export default function POSPage() {
       </header>
 
       {/* POS Body */}
-      <main className="flex-1 flex overflow-hidden p-6 gap-6 z-10 relative">
-        {/* Left Side: Product Grid */}
+      <main className="flex-1 flex overflow-hidden p-6 gap-6 z-10 relative max-w-[1440px] mx-auto w-full">
+        {/* Left Side: Product Grid / Form */}
         <div className="flex-1 h-full min-w-[500px]">
           <ProductGrid products={products} categories={categories} isLoading={isLoadingProducts || isLoadingCategories} />
         </div>

@@ -235,7 +235,7 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
                     <span className="text-xs font-bold uppercase tracking-widest text-foreground/60">Advance Amt:</span>
                     <div className="relative w-40">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-serif text-2xl">₹</span>
-                      <input type="number" autoFocus value={advanceAmount} onChange={e => setAdvanceAmount(e.target.value)} className="w-full pl-8 pr-3 py-2 bg-secondary/5 border-0 border-b-2 border-primary focus:ring-0 text-right font-serif text-3xl font-black rounded-t-lg" placeholder="0" />
+                      <input type="number" autoFocus min="0" max={total} value={advanceAmount} onChange={e => setAdvanceAmount(e.target.value)} className="w-full pl-8 pr-3 py-2 bg-secondary/5 border-0 border-b-2 border-primary focus:ring-0 text-right font-serif text-3xl font-black rounded-t-lg" placeholder="0" />
                     </div>
                   </div>
                 )}

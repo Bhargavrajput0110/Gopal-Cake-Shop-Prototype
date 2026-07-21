@@ -57,9 +57,9 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
       className="group flex flex-col"
     >
       {/* Image Container */}
-      <Link 
-        href={`/custom?slug=${product.slug || product.id}&image=${encodeURIComponent(product.thumbnail || "")}`}
-        className={`relative w-full ${aspectClass} rounded-[2rem] overflow-hidden bg-[var(--muted)] mb-4 block`}
+      <div 
+        onClick={() => setIsOpen(true)}
+        className={`relative w-full ${aspectClass} rounded-[2rem] overflow-hidden bg-[var(--muted)] mb-4 cursor-pointer block`}
         style={{ willChange: "transform" }}
       >
         {product.thumbnail ? (
@@ -93,17 +93,17 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
         {/* Hover text overlay */}
         <div className="absolute inset-x-0 bottom-0 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] p-5 pb-6 bg-gradient-to-t from-black/60 to-transparent">
            <span className="font-ui text-[11px] font-bold tracking-[0.1em] uppercase text-white/90">
-             Customize
+             Quick Order
            </span>
         </div>
 
         {/* Inner shadow to soften edges */}
         <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-[2rem] pointer-events-none" />
-      </Link>
+      </div>
 
       {/* Info */}
       <div className="flex flex-col px-1 mt-3">
-        <Link href={`/custom?slug=${product.slug || product.id}&image=${encodeURIComponent(product.thumbnail || "")}`} className="flex flex-col mb-2">
+        <div onClick={() => setIsOpen(true)} className="flex flex-col mb-2 cursor-pointer">
           <h3 className="font-display font-bold text-base md:text-lg text-[var(--foreground)] group-hover:text-[var(--brand-deep-rose)] transition-colors duration-300 leading-snug line-clamp-1">
             {product.name}
           </h3>
@@ -112,7 +112,7 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
               {product.category.name}
             </p>
           )}
-        </Link>
+        </div>
         <div className="flex items-center justify-between mt-auto pt-1">
           <div className="flex flex-col">
             <p className="font-ui text-xs text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">Min Weight</p>

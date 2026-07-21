@@ -374,10 +374,9 @@ export function Navbar() {
                 ))}
               </nav>
 
-              {/* Bottom CTA */}
               <div className="px-6 pb-10 pt-6 border-t border-[var(--border)]">
-                <Link href="/custom" onClick={closeMobile} className="btn-primary w-full justify-center py-4 text-[11px]">
-                  Customize Your Cake
+                <Link href="/menu" onClick={closeMobile} className="btn-primary w-full justify-center py-4 text-[11px]">
+                  Order a Cake
                 </Link>
                 {!user ? (
                   <Link href="/customer/login" onClick={closeMobile} className="block mt-3">
