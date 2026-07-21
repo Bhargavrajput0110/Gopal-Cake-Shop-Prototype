@@ -130,10 +130,12 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
                 product={product} 
                 isCustom={
                   product.isCustom || 
-                  product.name.toLowerCase().includes('custom') || 
+                  product.name.toLowerCase().includes('custom')
+                }
+                isPhotoCake={
                   product.name.toLowerCase().includes('photo') || 
                   (product.category?.name || "").toLowerCase().includes('photo')
-                } 
+                }
                 onClose={() => setIsOpen(false)} 
               />
             </SheetContent>

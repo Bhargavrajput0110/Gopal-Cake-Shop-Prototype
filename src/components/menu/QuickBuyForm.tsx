@@ -10,7 +10,7 @@ import { NotificationToast } from '@/components/ui/NotificationToast';
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
 import { GalleryAdd } from "iconsax-react";
 
-export function QuickBuyForm({ product, onClose, isCustom = false }: { product: any, onClose?: () => void, isCustom?: boolean }) {
+export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake = false }: { product: any, onClose?: () => void, isCustom?: boolean, isPhotoCake?: boolean }) {
   const { addItem } = useCart();
   const flavours = getActiveFlavours();
   
@@ -19,7 +19,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false }: { product: 
   const [messageOnCake, setMessageOnCake] = useState("");
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<{ id: string; title: string; message: string; variant: 'info' | 'success' | 'warning' } | null>(null);
-  const [showOptions, setShowOptions] = useState(isCustom);
+  const [showOptions, setShowOptions] = useState(isCustom || isPhotoCake);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
 
   const handleFlavourChange = (val: string) => {
@@ -110,7 +110,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false }: { product: 
         </div>
 
         {/* Advanced Options Toggle */}
-        {!isCustom && (
+        {!(isCustom || isPhotoCake) && (
           <button 
             onClick={() => setShowOptions(!showOptions)}
             className="w-full flex items-center justify-between bg-primary/5 hover:bg-primary/10 border border-primary/20 p-4 rounded-xl transition-colors text-primary font-ui text-sm font-bold tracking-wide"
@@ -122,12 +122,13 @@ export function QuickBuyForm({ product, onClose, isCustom = false }: { product: 
         {showOptions && (
           <div className="space-y-6 animate-in slide-in-from-top-4 fade-in duration-300 pt-2">
             
-            {/* Custom Image Upload */}
-            {isCustom && (
+            {/* Custom/Photo Image Upload */}
+            {(isCustom || isPhotoCake) && (
               <div className="space-y-3">
                 <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
                   <GalleryAdd className="w-4 h-4" />
-                  Reference Image <span className="text-primary normal-case text-[10px]">Required</span>
+                  {isPhotoCake ? "Photo for Edible Print" : "Reference Image"} 
+                  <span className="text-primary normal-case text-[10px]">Required</span>
                 </label>
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
                   <CloudinaryUploader
