@@ -238,7 +238,7 @@ export default function CheckoutPage() {
                 Fulfillment Mode
               </h2>
               
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   type="button"
                   onClick={() => {

@@ -122,7 +122,7 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
             </p>
           </div>
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger className="px-5 py-2 bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 transition-all rounded-full font-ui text-[10px] font-bold uppercase tracking-[0.1em] shadow-sm hover:shadow-md hover:-translate-y-0.5">
+            <SheetTrigger className="px-3 md:px-5 py-2 bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 transition-all rounded-full font-ui text-[9px] md:text-[10px] font-bold uppercase tracking-[0.1em] shadow-sm hover:shadow-md hover:-translate-y-0.5">
               ADD ₹{product.basePrice}
             </SheetTrigger>
             <SheetContent side="right" className="w-full sm:max-w-md p-0 bg-background z-[150] border-l-0 shadow-2xl">
