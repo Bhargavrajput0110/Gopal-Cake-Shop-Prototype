@@ -21,6 +21,8 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   const [toast, setToast] = useState<{ id: string; title: string; message: string; variant: 'info' | 'success' | 'warning' } | null>(null);
   const [showOptions, setShowOptions] = useState(isCustom || isPhotoCake);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
+  const [printImage, setPrintImage] = useState<string>("");
+  const [includeEdiblePrint, setIncludeEdiblePrint] = useState(false);
 
   const handleFlavourChange = (val: string) => {
     setSelectedFlavour(val);
@@ -64,6 +66,8 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       messageOnCake: messageOnCake.trim() || undefined,
       notes: notes.trim() || undefined,
       referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+      printImage: printImage || undefined,
+      isPhotoCake: isPhotoCake || includeEdiblePrint,
     });
     if (onClose) onClose();
   };
@@ -124,19 +128,60 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
             
             {/* Custom/Photo Image Upload */}
             {(isCustom || isPhotoCake) && (
-              <div className="space-y-3">
-                <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                  <GalleryAdd className="w-4 h-4" />
-                  {isPhotoCake ? "Photo for Edible Print" : "Reference Image"} 
-                  <span className="text-primary normal-case text-[10px]">Required</span>
-                </label>
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-                  <CloudinaryUploader
-                    maxFiles={1}
-                    folder="custom_cakes"
-                    onUploadSuccess={(urls) => setReferenceImages(urls)}
-                  />
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                    <GalleryAdd className="w-4 h-4" />
+                    {isPhotoCake ? "Photo for Edible Print" : "Reference Image"} 
+                    <span className="text-primary normal-case text-[10px]">Required</span>
+                  </label>
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                    <CloudinaryUploader
+                      maxFiles={1}
+                      folder="custom_cakes"
+                      onUploadSuccess={(urls) => {
+                        if (isPhotoCake) setPrintImage(urls[0]);
+                        else setReferenceImages(urls);
+                      }}
+                    />
+                  </div>
                 </div>
+
+                {/* Optional Edible Print for Custom Cakes */}
+                {isCustom && !isPhotoCake && (
+                  <div className="pt-2">
+                    <button 
+                      type="button"
+                      onClick={() => setIncludeEdiblePrint(!includeEdiblePrint)}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
+                        includeEdiblePrint 
+                          ? 'border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/5' 
+                          : 'border-border/60 hover:border-primary/30'
+                      }`}
+                    >
+                      <span className="font-ui text-sm font-bold">Include Edible Photo Print?</span>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${includeEdiblePrint ? 'border-[var(--brand-deep-rose)]' : 'border-foreground/30'}`}>
+                        {includeEdiblePrint && <div className="w-2.5 h-2.5 rounded-full bg-[var(--brand-deep-rose)]" />}
+                      </div>
+                    </button>
+
+                    {includeEdiblePrint && (
+                      <div className="mt-3 space-y-2 animate-in slide-in-from-top-2 fade-in duration-300">
+                        <label className="font-ui text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                          <GalleryAdd className="w-3 h-3" />
+                          Photo to Print
+                        </label>
+                        <div className="bg-background border border-primary/20 rounded-xl p-3">
+                          <CloudinaryUploader
+                            maxFiles={1}
+                            folder="edible_prints"
+                            onUploadSuccess={(urls) => setPrintImage(urls[0])}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

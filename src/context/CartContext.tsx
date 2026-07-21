@@ -25,6 +25,8 @@ export type CartItem = {
   designName?: string;
   designImageUrl?: string;
   referenceImages?: string[];
+  printImage?: string;
+  isPhotoCake?: boolean;
   isCustomizable?: boolean;
 };
 
@@ -84,7 +86,7 @@ export function CartProvider({ children, storageKey = 'customer-cart' }: { child
     setItems(prev => {
       // For POS and custom products, we always treat them as independent cart items to support custom config.
       // We will match on productId and variant only if it's a simple exact match without custom config.
-      const hasCustomConfig = item.flavor || item.messageOnCake || item.designId || item.referenceImages?.length || item.notes;
+      const hasCustomConfig = item.flavor || item.messageOnCake || item.designId || item.referenceImages?.length || item.printImage || item.notes;
       
       if (!hasCustomConfig) {
         const existing = prev.find(i => i.productId === item.productId && i.variant === item.variant && !i.flavor && !i.messageOnCake && !i.designId && !i.notes);
