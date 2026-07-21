@@ -21,10 +21,10 @@ export default function SalesOverviewPage() {
   const readyOrders = branchOrders.filter(o => o.status === "READY_FOR_PICKUP").length;
   const deliveryPool = branchOrders.filter(o => o.status === "PENDING_ASSIGNMENT").length;
   const activeDeliveries = branchOrders.filter(o => ["PICKED_UP","ON_THE_WAY"].includes(o.status)).length;
-  const completedOrders = branchOrders.filter(o => o.status === "DELIVERED").length;
+  const completedOrders = branchOrders.filter(o => o.status === "DELIVERED" || o.status === "COMPLETED").length;
   const ingredientRequests = branchOrders.reduce((acc,o) => acc + (o.ingredientRequests?.filter(r=>r.status==="pending").length || 0), 0);
   const ordersToday = branchOrders.length;
-  const unassignedDeliveries = branchOrders.filter(o => o.status === "PENDING_ASSIGNMENT").length;
+  const pendingSwap = branchOrders.filter(o => o.transferHistory?.length).length; // Approximated
   const unreadVendorNotes = branchOrders.reduce((acc, order) => {
     return acc + (order.vendorTasks?.reduce((taskAcc, task) => {
       return taskAcc + (task.notes?.filter(n => !n.read).length || 0);
@@ -151,10 +151,28 @@ export default function SalesOverviewPage() {
       <motion.div variants={itemVariants} className="mt-12">
         <h3 className="font-display text-2xl font-bold text-[var(--foreground)] border-b border-[var(--border)] pb-4 mb-6">Kitchen Pipeline</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          <KPICard title="Waiting for Chef" value={waitingForChef} icon={<Reserve className="w-6 h-6 text-[var(--brand-champagne)]" />} highlight={waitingForChef>0} />
-          <KPICard title="In Production" value={inProduction} icon={<Flash className="w-6 h-6 text-orange-500" />} />
-          <KPICard title="Ready for Pickup" value={readyOrders} icon={<TickCircle className="w-6 h-6 text-emerald-600" />} />
-          <KPICard title="Orders Today" value={ordersToday} icon={<TaskSquare className="w-6 h-6 text-[var(--muted-foreground)]" />} />
+          <div className={`rounded-[2.5rem] p-6 border flex flex-col justify-between h-44 transition-all duration-300 ${waitingForChef > 0 ? "bg-rose-50/80 border-[var(--brand-deep-rose)]/20 shadow-[0_8px_32px_0_rgba(139,58,82,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
+            <div className="flex justify-between items-start">
+              <h3 className={`font-ui text-[10px] font-bold uppercase tracking-[0.2em] pr-2 leading-tight ${waitingForChef > 0 ? "text-[var(--brand-deep-rose)]" : "text-[var(--muted-foreground)]"}`}>Pending Orders</h3>
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                <Reserve className={`w-5 h-5 ${waitingForChef > 0 ? "text-[var(--brand-deep-rose)]" : "text-[var(--muted-foreground)]"}`} variant="Bold" />
+              </div>
+            </div>
+            <p className={`text-5xl font-display font-black drop-shadow-sm ${waitingForChef > 0 ? "text-[var(--brand-deep-rose)]" : "text-[var(--foreground)]"}`}>{waitingForChef}</p>
+          </div>
+          <KPICard title="Active Orders" value={inProduction} icon={<Flash className="w-6 h-6 text-orange-500" />} />
+          
+          <div className={`rounded-[2.5rem] p-6 border flex flex-col justify-between h-44 transition-all duration-300 ${readyOrders > 0 ? "bg-emerald-50 border-emerald-200 shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
+            <div className="flex justify-between items-start">
+              <h3 className={`font-ui text-[10px] font-bold uppercase tracking-[0.2em] pr-2 leading-tight ${readyOrders > 0 ? "text-emerald-700" : "text-[var(--muted-foreground)]"}`}>Ready Orders</h3>
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                <TickCircle className={`w-5 h-5 ${readyOrders > 0 ? "text-emerald-600" : "text-[var(--muted-foreground)]"}`} variant="Bold" />
+              </div>
+            </div>
+            <p className={`text-5xl font-display font-black drop-shadow-sm ${readyOrders > 0 ? "text-emerald-600" : "text-[var(--foreground)]"}`}>{readyOrders}</p>
+          </div>
+
+          <KPICard title="Total Orders" value={ordersToday} icon={<TaskSquare className="w-6 h-6 text-[var(--muted-foreground)]" />} />
         </div>
       </motion.div>
 
@@ -162,18 +180,18 @@ export default function SalesOverviewPage() {
       <motion.div variants={itemVariants} className="mt-12">
         <h3 className="font-display text-2xl font-bold text-[var(--foreground)] border-b border-[var(--border)] pb-4 mb-6">Logistics & Delivery</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className={`rounded-[2.5rem] p-6 border flex flex-col justify-between h-44 transition-all duration-300 ${unassignedDeliveries > 0 ? "bg-rose-50/80 border-[var(--brand-deep-rose)]/20 shadow-[0_8px_32px_0_rgba(139,58,82,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
+          <div className={`rounded-[2.5rem] p-6 border flex flex-col justify-between h-44 transition-all duration-300 ${deliveryPool > 0 ? "bg-amber-50/80 border-amber-200 shadow-[0_8px_32px_0_rgba(245,158,11,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
             <div className="flex justify-between items-start">
-              <h3 className={`font-ui text-[10px] font-bold uppercase tracking-[0.2em] ${unassignedDeliveries > 0 ? "text-[var(--brand-deep-rose)]" : "text-[var(--muted-foreground)]"}`}>Delivery Pool</h3>
+              <h3 className={`font-ui text-[10px] font-bold uppercase tracking-[0.2em] ${deliveryPool > 0 ? "text-amber-700" : "text-[var(--muted-foreground)]"}`}>Pending Delivery</h3>
               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                <Danger className={`w-5 h-5 ${unassignedDeliveries > 0 ? "text-[var(--brand-deep-rose)]" : "text-[var(--muted-foreground)]"}`} variant="Bold" />
+                <TruckFast className={`w-5 h-5 ${deliveryPool > 0 ? "text-amber-700" : "text-[var(--muted-foreground)]"}`} variant="Bold" />
               </div>
             </div>
-            <p className={`text-5xl font-display font-black drop-shadow-sm ${unassignedDeliveries > 0 ? "text-[var(--brand-deep-rose)]" : "text-[var(--foreground)]"}`}>{deliveryPool}</p>
+            <p className={`text-5xl font-display font-black drop-shadow-sm ${deliveryPool > 0 ? "text-amber-700" : "text-[var(--foreground)]"}`}>{deliveryPool}</p>
           </div>
           <KPICard title="Active Deliveries" value={activeDeliveries} icon={<TruckFast className="w-6 h-6 text-[var(--muted-foreground)]" />} />
-          <KPICard title="Unread Notes" value={unreadVendorNotes} icon={<Message className="w-6 h-6 text-[var(--brand-champagne)]" />} />
-          <KPICard title="Completed Today" value={completedOrders} icon={<TickCircle className="w-6 h-6 text-[var(--muted-foreground)]" />} />
+          <KPICard title="Pending Swap" value={pendingSwap} icon={<Box className="w-6 h-6 text-[var(--brand-champagne)]" />} />
+          <KPICard title="Completed Orders" value={completedOrders} icon={<TickCircle className="w-6 h-6 text-[var(--muted-foreground)]" />} />
         </div>
       </motion.div>
 
