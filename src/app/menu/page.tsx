@@ -10,7 +10,6 @@ import { BackButton } from "@/components/ui/BackButton";
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { CustomDesignForm } from "@/app/custom/page";
 
 // Hardcoded frontend taxonomy until backend is updated
 const CATEGORY_GROUPS = [
