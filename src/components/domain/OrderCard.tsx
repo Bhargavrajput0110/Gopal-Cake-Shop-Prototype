@@ -11,15 +11,17 @@ export type OrderCardProps = {
   createdAt: string
   grandTotal: number
   isSurprise?: boolean
+  isFarDistance?: boolean
   priorityLevel?: 'normal' | 'high'
   onAccept?: () => void
   onReady?: () => void
+  onAssign?: () => void
   isLoading?: boolean
 }
 
 export function OrderCard({
   orderId, status, customerName, items, timeTarget, createdAt, grandTotal,
-  isSurprise, priorityLevel, onAccept, onReady, isLoading
+  isSurprise, isFarDistance, priorityLevel, onAccept, onReady, onAssign, isLoading
 }: OrderCardProps) {
   
   if (isLoading) {
@@ -37,6 +39,7 @@ export function OrderCard({
           <span className="font-bold text-foreground text-xs">{orderId}</span>
           {isSurprise && <Badge variant="secondary" className="ml-1.5 text-[9px]">Surprise</Badge>}
           {priorityLevel === 'high' && <Badge variant="destructive" className="ml-1.5 text-[9px]">Urgent</Badge>}
+          {isFarDistance && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded font-bold uppercase tracking-wider inline-flex items-center gap-1"><span className="text-[10px]">⚠️</span> {'>20KM'}</span>}
         </div>
         <Badge variant={status === 'NEW' ? 'info' : 'secondary'}>{status}</Badge>
       </div>
@@ -70,6 +73,15 @@ export function OrderCard({
             aria-label="Mark Ready"
           >
             Ready
+          </button>
+        )}
+        {onAssign && (
+          <button 
+            onClick={onAssign}
+            className="flex-1 bg-[var(--foreground)] text-[var(--background)] text-xs font-bold py-1.5 rounded hover:bg-black/80 transition-colors"
+            aria-label="Assign Driver"
+          >
+            Assign Driver
           </button>
         )}
       </div>

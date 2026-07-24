@@ -7,11 +7,13 @@ import { BackButton } from "@/components/ui/BackButton";
 import NumberTicker from "@/components/magicui/NumberTicker";
 import { toBranchId, BRANCHES, BranchId, toBranchShortName } from "@/lib/branches";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 export default function SalesOverviewPage() {
   const { orders, updateIngredientRequestStatus } = useOrders();
+  const { data: session } = useSession();
 
-  const [activeBranch, setActiveBranch] = useState<BranchId>("khanderao");
+  const activeBranch = (session?.user?.branchId || "khanderao") as BranchId;
   const branchOrders = orders.filter(o => toBranchId(o.branch) === activeBranch);
 
   const pendingVerification = branchOrders.filter(o => o.status === "NEW").length;
@@ -46,16 +48,7 @@ export default function SalesOverviewPage() {
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-[var(--border)] pb-8 pt-8">
         <div>
           <div className="flex items-center gap-1 bg-[#4A3B35] text-white px-3 py-1.5 rounded-[1rem] w-fit mb-4">
-            <span className="font-ui text-[9px] font-black uppercase tracking-[0.2em] text-[var(--brand-champagne)] border-r border-[var(--brand-champagne)]/30 pr-2">MOCK LOGIN</span>
-            <select 
-              value={activeBranch} 
-              onChange={(e) => setActiveBranch(e.target.value as BranchId)}
-              className="bg-transparent font-ui text-[9px] font-black uppercase tracking-[0.2em] focus:outline-none cursor-pointer pl-2 text-white"
-            >
-              {BRANCHES.map(b => (
-                <option key={b.id} value={b.id} className="text-[#4A3B35]">{b.shortName} Branch</option>
-              ))}
-            </select>
+            <span className="font-ui text-[9px] font-black uppercase tracking-[0.2em] text-[var(--brand-champagne)] pr-2">{toBranchShortName(activeBranch)} Branch</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-black tracking-tight font-display text-[var(--foreground)] leading-[1.1]">Sales Overview</h2>
           <p className="font-editorial italic text-[var(--muted-foreground)] text-lg mt-2">Real-time operational status of your artisan branch.</p>

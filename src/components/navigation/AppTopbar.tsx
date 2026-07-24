@@ -1,9 +1,10 @@
 "use client"
 
-import { Notification, SearchNormal1 } from "iconsax-react"
+import { SearchNormal1 } from "iconsax-react"
 import { cn } from "@/lib/utils"
 import { MobileNav } from "./MobileNav"
 import type { AppConfig } from "./navigation.types"
+import { NotificationBell } from "@/components/layout/NotificationBell"
 
 interface AppTopbarProps {
   config: AppConfig
@@ -48,15 +49,8 @@ export function AppTopbar({
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-        {/* Notification bell */}
-        <button
-          className="relative p-2 text-muted-foreground hover:bg-secondary rounded-lg transition-colors"
-          aria-label="Notifications"
-        >
-          <Notification className="w-5 h-5" />
-          {/* Unread dot */}
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full border-2 border-card" />
-        </button>
+        {/* Live Notification Bell */}
+        <NotificationBell />
 
         {/* User avatar and Auth Mock */}
         <div className="flex items-center gap-3 border-l border-border pl-4">

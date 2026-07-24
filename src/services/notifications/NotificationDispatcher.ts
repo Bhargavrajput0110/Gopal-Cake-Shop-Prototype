@@ -114,10 +114,21 @@ export class NotificationDispatcher {
           }
         }
       } else {
-        // PUSH, WHATSAPP, SMS -> Log into NotificationLog
+        // WHATSAPP / SMS → check if the integration is configured before attempting
         let targetRecipient = recipientId || recipientRole;
         if (channel === 'WHATSAPP' && recipientPhone) {
           targetRecipient = recipientPhone;
+        }
+
+        // WhatsApp: only attempt live Meta API call if token is configured
+        if (channel === 'WHATSAPP') {
+          if (process.env.WHATSAPP_API_TOKEN) {
+            // TODO: Replace with actual Meta Cloud API call when credentials are provided
+            // await fetch(`https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, { ... })
+            LoggerService.info(`[WhatsApp] Would send template '${templateName}' to ${targetRecipient} (Meta API call placeholder)`);
+          } else {
+            LoggerService.info(`[WhatsApp] Skipped — WHATSAPP_API_TOKEN not configured. Template: ${templateName}, Recipient: ${targetRecipient}`);
+          }
         }
 
         try {
@@ -128,10 +139,10 @@ export class NotificationDispatcher {
               recipient: targetRecipient,
               channel: channel,
               templateName: templateName,
-              status: 'SENT'
+              status: (process.env.WHATSAPP_API_TOKEN || channel !== 'WHATSAPP') ? 'SENT' : 'PENDING'
             }
           });
-          LoggerService.info(`[NotificationDispatcher] Dispatched ${channel} to ${targetRecipient}: ${templateName}`);
+          LoggerService.info(`[NotificationDispatcher] Logged ${channel} to ${targetRecipient}: ${templateName}`);
         } catch (err: any) {
           if (err.code !== 'P2002') throw err; // Ignore unique constraint violations (idempotency)
           LoggerService.info(`[NotificationDispatcher] Idempotent skip for ${channel} to ${targetRecipient}: ${templateName}`);

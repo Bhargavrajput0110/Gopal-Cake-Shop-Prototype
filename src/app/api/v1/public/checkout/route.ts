@@ -31,6 +31,8 @@ const CheckoutSchema = z.object({
   deliveryType: z.nativeEnum(DeliveryType),
   branchId: z.string(),
   deliveryDate: z.string(),
+  isFarDistance: z.boolean().optional(),
+  deliveryDistanceKm: z.number().optional(),
 })
 
 const handler = async (ctx: HandlerContext) => {
@@ -62,7 +64,9 @@ const handler = async (ctx: HandlerContext) => {
     deliveryAddress: formattedAddress,
     paymentMethod: data.paymentMethod,
     paymentType: PaymentType.FULL, // Assuming FULL for website for now
-    idempotencyKey: data.idempotencyKey
+    idempotencyKey: data.idempotencyKey,
+    isFarDistance: data.isFarDistance,
+    deliveryDistanceKm: data.deliveryDistanceKm
   }
 
   // 3. Define Context (Website)

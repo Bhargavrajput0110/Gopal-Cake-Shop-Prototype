@@ -21,7 +21,7 @@ export const GET = withApiHandler(async (ctx) => {
     where: {
       deliveryType: 'DELIVERY',
       OR: [
-        { status: { in: ['READY_FOR_PICKUP', 'PENDING_ASSIGNMENT'] }, driverId: null },
+        { status: { in: ['NEW', 'WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'READY_FOR_PICKUP', 'PENDING_ASSIGNMENT'] }, driverId: null },
         { driverId: driverId ? driverId : { not: null } },
         { items: { some: { status: { in: ['READY_FOR_PICKUP', 'DELIVERED'] }, assignedVendorId: { not: null } } }, driverId: null }
       ]
@@ -46,10 +46,11 @@ export const GET = withApiHandler(async (ctx) => {
 
   const payload: any[] = [];
 
-  orders.forEach(order => {
+  orders.forEach((rawOrder) => {
+    const order = rawOrder as any;
     // 1. Process Vendor Pickups (from child items)
-    order.items.forEach(parentItem => {
-      parentItem.childItems.forEach(childItem => {
+    order.items.forEach((parentItem: any) => {
+      parentItem.childItems.forEach((childItem: any) => {
         if (childItem.assignedVendorId && (childItem.status === 'READY_FOR_PICKUP' || childItem.status === 'DELIVERED')) {
           // If a specific driver is requested but this order is not assigned to them and is not in pool, skip
           if (driverId && order.driverId && order.driverId !== driverId) return;
@@ -89,13 +90,13 @@ export const GET = withApiHandler(async (ctx) => {
     });
 
     // 2. Process Customer Delivery
-    if (order.status === 'READY_FOR_PICKUP' || order.status === 'ASSIGNED_TO_DRIVER' || order.status === 'PICKED_UP' || order.status === 'ON_THE_WAY' || order.status === 'DELIVERED' || order.status === 'FAILED_DELIVERY') {
+    if (['NEW', 'WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'PENDING_ASSIGNMENT', 'READY_FOR_PICKUP', 'ASSIGNED_TO_DRIVER', 'PICKED_UP', 'ON_THE_WAY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED_DELIVERY'].includes(order.status)) {
       if (driverId && order.driverId && order.driverId !== driverId) return;
 
       const totalAmount = Number(order.totalAmount)
       const paidAmount = order.payments
-        .filter(p => p.status === 'SUCCESS')
-        .reduce((sum, p) => sum + Number(p.amount), 0)
+        .filter((p: any) => p.status === 'SUCCESS')
+        .reduce((sum: number, p: any) => sum + Number(p.amount), 0)
 
       payload.push({
         id: `delivery-${order.id}`,
@@ -115,14 +116,14 @@ export const GET = withApiHandler(async (ctx) => {
         formattedAddress: order.deliveryAddress || null,
         customerName: order.customer.name,
         customerPhone: order.customer.phone,
-        items: order.items.filter(i => !i.parentItemId).map(item => ({
+        items: order.items.filter((i: any) => !i.parentItemId).map((item: any) => ({
           id: item.id,
           productName: item.productName,
           quantity: item.quantity,
           flavor: item.flavor || null,
           boxCount: item.boxCount,
           status: item.status,
-          childItems: item.childItems.map(c => ({
+          childItems: item.childItems.map((c: any) => ({
             id: c.id,
             productName: c.productName,
             status: c.status,

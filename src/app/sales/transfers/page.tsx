@@ -122,13 +122,19 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
   const [showModal, setShowModal] = useState(false);
   const [transferTarget, setTransferTarget] = useState<string>("B_VAR");
   const [loading, setLoading] = useState(false);
+  
+  // Timeline adjustment logic
+  const originalDate = new Date(order.targetDate || new Date().toISOString());
+  const formattedOriginalDate = new Date(originalDate.getTime() - (originalDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+  const [newTargetDate, setNewTargetDate] = useState<string>(formattedOriginalDate);
+  const isTimeDelayed = new Date(newTargetDate).getTime() > originalDate.getTime();
 
   const handleInitiate = async () => {
     setLoading(true);
     await fetch('/api/v1/transfers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-branch-id': activeBranch },
-      body: JSON.stringify({ orderId: order.id, toBranchId: transferTarget, reason: 'Manual route' })
+      body: JSON.stringify({ orderId: order.id, toBranchId: transferTarget, reason: 'Manual route', newTargetDate })
     });
     setLoading(false);
     setShowModal(false);
@@ -159,10 +165,26 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
               <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><CloseSquare className="w-5 h-5" /></button>
               <h3 className="font-serif text-xl font-black text-[#3E2723] mb-4">Transfer {order.id}</h3>
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Destination Branch</p>
-              <select value={transferTarget} onChange={e=>setTransferTarget(e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold mb-6">
+              <select value={transferTarget} onChange={e=>setTransferTarget(e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold mb-4">
                 {BRANCHES.filter(b=>b.id !== activeBranch).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
-              <button disabled={loading} onClick={handleInitiate} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50">
+
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Adjust Timeline</p>
+              <input 
+                type="datetime-local" 
+                value={newTargetDate}
+                onChange={e => setNewTargetDate(e.target.value)}
+                className={`w-full bg-white border rounded-lg px-3 py-2 text-sm font-bold mb-1 ${isTimeDelayed ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-emerald-500'}`}
+              />
+              <div className="h-6 mb-4">
+                {isTimeDelayed ? (
+                  <span className="text-[10px] text-red-500 font-bold flex items-center gap-1"><Warning2 className="w-3 h-3"/> Cannot delay past original customer time.</span>
+                ) : (
+                  <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">Timeline can be pre-poned if needed.</span>
+                )}
+              </div>
+
+              <button disabled={loading || isTimeDelayed} onClick={handleInitiate} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50">
                 {loading ? 'Sending...' : 'Confirm Transfer'}
               </button>
             </div>

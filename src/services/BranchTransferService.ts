@@ -14,12 +14,13 @@ export class BranchTransferService {
     requestedBy: string;
     reason?: string;
     notes?: string;
+    newTargetDate?: Date | string;
   }) {
     return prisma.$transaction(async (tx) => {
       // Validate order ownership
       const order = await tx.order.findUnique({
         where: { id: params.orderId },
-        select: { branchId: true, status: true, orderNumber: true }
+        select: { branchId: true, status: true, orderNumber: true, targetDate: true }
       });
       if (!order) throw new Error('Order not found');
       if (order.branchId !== params.fromBranchId) {
@@ -48,6 +49,30 @@ export class BranchTransferService {
           notes: params.notes,
         }
       });
+
+      // Update Order Target Date if requested and valid
+      if (params.newTargetDate) {
+        const newDate = new Date(params.newTargetDate);
+        if (newDate > order.targetDate) {
+          throw new Error('New target date cannot be later than the original target date given by the customer.');
+        }
+        
+        await tx.order.update({
+          where: { id: params.orderId },
+          data: { targetDate: newDate }
+        });
+        
+        await tx.auditLog.create({
+          data: {
+            actorId: params.requestedBy,
+            action: 'ORDER_TARGET_DATE_UPDATED',
+            tableName: 'Order',
+            recordId: params.orderId,
+            oldValue: { targetDate: order.targetDate },
+            newValue: { targetDate: newDate }
+          }
+        });
+      }
 
       await TimelineService.create({
         orderId: params.orderId,
@@ -166,6 +191,7 @@ export class BranchTransferService {
     dispatchedBy: string;
     transportedBy?: string;
     notes?: string;
+    newTargetDate?: Date | string;
   }) {
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.branchTransfer.findUnique({ where: { id: params.transferId }, include: { order: true } });

@@ -10,8 +10,10 @@ import { ProofOfDeliveryModal } from './components/ProofOfDeliveryModal'
 import { FailureReasonModal } from './components/FailureReasonModal'
 import { WifiSquare, Wifi, Refresh, BoxTick, User, Shop, ArrowRight, TickCircle, Car } from "iconsax-react"
 import { motion, AnimatePresence } from 'framer-motion'
+import { useSession } from 'next-auth/react'
 
 export default function DriverDashboard() {
+  const { data: session } = useSession()
   const { 
     tasks, 
     setTasks, 
@@ -24,6 +26,12 @@ export default function DriverDashboard() {
     activeDriver,
     setActiveDriver
   } = useDriverStore()
+
+  React.useEffect(() => {
+    if (session?.user && (!activeDriver || activeDriver.id !== session.user.id)) {
+      setActiveDriver({ id: session.user.id, name: session.user.name || 'Driver' })
+    }
+  }, [session, activeDriver, setActiveDriver])
 
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = React.useState<'AVAILABLE' | 'PENDING' | 'COMPLETED'>('PENDING')
@@ -153,37 +161,12 @@ export default function DriverDashboard() {
   const vendorCount = pendingTasks.filter(t => t.taskType === 'VENDOR_PICKUP').length
   const branchCount = pendingTasks.filter(t => t.taskType === 'BRANCH_TRANSFER').length
 
-  // Driver Login Screen
+  // Driver Login Screen is removed since auth is handled at the layout level or middleware.
   if (!activeDriver) {
     return (
       <div className="h-full bg-background flex flex-col items-center justify-center p-6">
-        <BoxTick className="w-16 h-16 text-primary mb-6" />
-        <h1 className="font-serif text-3xl font-bold mb-2">Driver Login</h1>
-        <p className="text-muted-foreground font-bold mb-8 text-center">Select your profile to view your assigned tasks.</p>
-        
-        <div className="space-y-4 w-full max-w-sm">
-          <button 
-            onClick={() => setActiveDriver({ id: 'DRIVER_RAJ', name: 'Raj Patel' })}
-            className="w-full bg-white border border-border/40 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-primary/30 transition-all font-bold text-left flex items-center justify-between group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center">RP</div>
-              <span className="text-lg">Raj Patel</span>
-            </div>
-            <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-          </button>
-          
-          <button 
-            onClick={() => setActiveDriver({ id: 'DRIVER_AMIT', name: 'Amit Shah' })}
-            className="w-full bg-white border border-border/40 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-primary/30 transition-all font-bold text-left flex items-center justify-between group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center">AS</div>
-              <span className="text-lg">Amit Shah</span>
-            </div>
-            <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-          </button>
-        </div>
+        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-muted-foreground font-bold">Loading profile...</p>
       </div>
     )
   }
@@ -212,12 +195,12 @@ export default function DriverDashboard() {
           <p className="text-[10px] font-sans font-bold text-primary uppercase tracking-[0.2em] mt-1">Driving as {activeDriver.name}</p>
         </div>
         <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setActiveDriver(null)}
+          <a 
+            href="/login"
             className="text-[10px] font-bold uppercase tracking-widest text-foreground/50 hover:text-rose-600 transition-colors bg-white/50 px-3 py-1.5 rounded-full border border-border/40"
           >
             Sign Out
-          </button>
+          </a>
           
           {offlineQueue.length > 0 && (
             <span className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm border border-amber-200">

@@ -60,49 +60,12 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
     setError("");
   };
 
-  const bypassLogin = () => {
-    if (!selectedStaff) return;
-    document.cookie = `e2e-bypass-auth=true; path=/; max-age=86400`;
-    if (selectedStaff.role === 'admin') window.location.href = '/admin';
-    else if (selectedStaff.role === 'manager') window.location.href = '/manager';
-    else if (selectedStaff.role === 'sales') window.location.href = '/sales';
-    else if (selectedStaff.role === 'chef') window.location.href = '/chef';
-    else if (selectedStaff.role === 'driver') window.location.href = '/delivery';
-    else if (selectedStaff.role === 'vendor') {
-      if (selectedStaff.id === '6') window.location.href = '/vendor?vendorId=VENDOR_ACRYLIC';
-      else if (selectedStaff.id === '7') window.location.href = '/vendor?vendorId=VENDOR_FLORIST';
-      else if (selectedStaff.id === '8') window.location.href = '/vendor?vendorId=VENDOR_PHOTO';
-      else window.location.href = '/vendor';
-    }
-  };
 
   const submitLogin = async (finalPin: string) => {
     if (!selectedStaff) return;
     setIsLoading(true);
     
     try {
-      // Bypassing Next-Auth for E2E Mock Staff IDs
-      if (['1', '2', '3', '4', '5', '6', '7', '8'].includes(selectedStaff.id)) {
-        if (!["0000", "1111", "2222", "3333", "4444", "5555", "6666", "7777", "8888"].includes(finalPin)) {
-           setError("Invalid PIN.");
-           setPin("");
-           setIsLoading(false);
-           return;
-        }
-        document.cookie = `e2e-bypass-auth=true; path=/; max-age=86400`;
-        if (selectedStaff.role === 'admin') window.location.href = '/admin';
-        else if (selectedStaff.role === 'manager') window.location.href = '/manager';
-        else if (selectedStaff.role === 'sales') window.location.href = '/sales';
-        else if (selectedStaff.role === 'chef') window.location.href = '/chef';
-        else if (selectedStaff.role === 'driver') window.location.href = '/delivery';
-        else if (selectedStaff.role === 'vendor') {
-          if (selectedStaff.id === '6') window.location.href = '/vendor?vendorId=VENDOR_ACRYLIC';
-          else if (selectedStaff.id === '7') window.location.href = '/vendor?vendorId=VENDOR_FLORIST';
-          else if (selectedStaff.id === '8') window.location.href = '/vendor?vendorId=VENDOR_PHOTO';
-          else window.location.href = '/vendor';
-        }
-        return;
-      }
 
       const res = await signIn("credentials", {
         redirect: false,
@@ -164,22 +127,24 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
         {(selectedRole || selectedBranch || selectedStaff) ? (
           <button 
             onClick={goBack}
-            className="absolute top-8 left-8 p-3 bg-white border border-[var(--border)] rounded-full hover:bg-[var(--brand-champagne)]/10 hover:border-[var(--brand-champagne)]/40 transition-all z-20 hover:scale-105 active:scale-95"
+            className="absolute top-6 left-4 md:top-8 md:left-8 px-4 py-2 bg-white border border-[var(--border)] rounded-full hover:bg-[var(--brand-champagne)]/10 hover:border-[var(--brand-champagne)]/40 transition-all z-20 hover:scale-105 active:scale-95 flex items-center gap-2 shadow-sm"
           >
-            <ArrowRight className="w-5 h-5 rotate-180 text-[var(--foreground)]" />
+            <ArrowRight className="w-4 h-4 rotate-180 text-[var(--foreground)]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--foreground)]">Back</span>
           </button>
         ) : (
           <a 
             href="/"
-            className="absolute top-8 left-8 p-3 bg-white border border-[var(--border)] rounded-full hover:bg-[var(--brand-champagne)]/10 hover:border-[var(--brand-champagne)]/40 transition-all z-20 hover:scale-105 active:scale-95 flex items-center justify-center group"
+            className="absolute top-6 left-4 md:top-8 md:left-8 px-4 py-2 bg-white border border-[var(--border)] rounded-full hover:bg-[var(--brand-champagne)]/10 hover:border-[var(--brand-champagne)]/40 transition-all z-20 hover:scale-105 active:scale-95 flex items-center gap-2 group shadow-sm"
             title="Return to Home"
           >
-            <ArrowRight className="w-5 h-5 rotate-180 text-[var(--foreground)] group-hover:text-[var(--brand-champagne)] transition-colors" />
+            <ArrowRight className="w-4 h-4 rotate-180 text-[var(--foreground)] group-hover:text-[var(--brand-champagne)] transition-colors" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--foreground)] group-hover:text-[var(--brand-champagne)] transition-colors">Home</span>
           </a>
         )}
 
         {/* Header */}
-        <div className="text-center mb-10 mt-2">
+        <div className="text-center mb-10 mt-12 md:mt-2">
           <div className="w-16 h-16 bg-[var(--brand-champagne)]/10 border border-[var(--brand-champagne)]/20 rounded-full mx-auto flex items-center justify-center shadow-lg shadow-[var(--brand-champagne)]/20 mb-5">
             <Lock1 className="w-7 h-7 text-[var(--brand-champagne)]" />
           </div>
@@ -218,6 +183,12 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
                       </button>
                     )
                   })}
+                </div>
+                
+                {/* PWA Tip */}
+                <div className="mt-10 text-center bg-[var(--brand-champagne)]/5 border border-[var(--brand-champagne)]/20 p-4 rounded-2xl">
+                  <p className="font-ui text-[10px] uppercase tracking-widest text-[var(--brand-champagne)] font-bold mb-1">📱 PWA Access</p>
+                  <p className="text-[11px] text-[var(--muted-foreground)]">Tap <strong>Share &gt; Add to Home Screen</strong> (iOS) or <strong>Install App</strong> (Android) to use the staff portal directly from your device's home screen.</p>
                 </div>
               </motion.div>
             )}
@@ -342,13 +313,7 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
                       {num}
                     </button>
                   ))}
-                  <button
-                    onClick={bypassLogin}
-                    disabled={isLoading}
-                    className="h-16 rounded-2xl bg-white border border-[var(--border)] text-[9px] font-ui font-bold uppercase tracking-[0.1em] text-[var(--muted-foreground)] hover:bg-[var(--foreground)] hover:text-white hover:border-[var(--foreground)] hover:shadow-xl active:scale-95 transition-all duration-300"
-                  >
-                    Bypass
-                  </button>
+                  <div className="h-16"></div>
                   <button
                     onClick={() => handleKeyPress("0")}
                     disabled={isLoading}

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react"
 import { Moneys, Bag, Clock, Warning2, DocumentDownload, Shop } from "iconsax-react"
 import { BackButton } from "@/components/ui/BackButton"
+import { useSession } from "next-auth/react"
+import { toBranchId, toBranchShortName } from "@/lib/branches"
 import { 
   AreaChart, 
   Area, 
@@ -39,7 +41,11 @@ const MetricCard = ({ title, value, icon: Icon, trend, trendLabel, destructive }
 )
 
 export default function ManagerDashboard() {
-  const [selectedBranch, setSelectedBranch] = useState<string>("Khanderao Market") // Managers usually have one assigned branch
+  const { data: session } = useSession()
+  
+  const selectedBranchId = session?.user?.branchId || "khanderao"
+  const selectedBranchName = toBranchShortName(selectedBranchId)
+
   const [kpis, setKpis] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -48,7 +54,7 @@ export default function ManagerDashboard() {
     const fetchKPIs = async () => {
       setLoading(true)
       try {
-        const url = `/api/v1/reporting/dashboard?branchId=${selectedBranch}`
+        const url = `/api/v1/reporting/dashboard?branchId=${selectedBranchId}`
         const res = await fetch(url)
         const data = await res.json()
         if (data.success) {
@@ -64,7 +70,7 @@ export default function ManagerDashboard() {
       }
     }
     fetchKPIs()
-  }, [selectedBranch])
+  }, [selectedBranchId])
 
   if (loading && !kpis) {
     return (
@@ -119,15 +125,9 @@ export default function ManagerDashboard() {
               <div className="w-10 h-10 bg-gradient-to-tr from-amber-200 to-[var(--brand-champagne)] rounded-full flex items-center justify-center shadow-sm">
                 <Shop className="w-5 h-5 text-amber-900" variant="Bold" />
               </div>
-              <select 
-                value={selectedBranch}
-                onChange={(e) => setSelectedBranch(e.target.value)}
-                className="text-3xl md:text-4xl font-black font-display tracking-tight text-gray-900 leading-none bg-transparent outline-none cursor-pointer hover:text-[var(--brand-champagne)] transition-colors appearance-none"
-              >
-                {["Khanderao Market", "Surat", "Mumbai"].map(branch => (
-                  <option key={branch} value={branch}>{branch} Branch</option>
-                ))}
-              </select>
+              <span className="text-3xl md:text-4xl font-black font-display tracking-tight text-gray-900 leading-none">
+                {selectedBranchName} Branch
+              </span>
             </div>
             <p className="font-editorial italic text-[var(--muted-foreground)] text-lg mt-2 px-2">Local Branch Command Center</p>
           </div>

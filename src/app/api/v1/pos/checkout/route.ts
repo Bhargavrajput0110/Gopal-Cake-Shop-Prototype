@@ -32,7 +32,9 @@ const handler = async (ctx: HandlerContext) => {
     type: 'ORDER',
     couponCode: data.discountCode,
     overrideDiscount: data.overrideDiscount,
-    isPriority: data.isPriority
+    isPriority: data.isPriority,
+    isFarDistance: body.isFarDistance,
+    deliveryDistanceKm: body.deliveryDistanceKm
   }
 
   // 3. Define Context (POS)

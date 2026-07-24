@@ -110,6 +110,8 @@ model Order {
   type                  OrderType              @default(ORDER)
   cashCollectedAmount   Decimal?
   deliveryFailureReason DeliveryFailureReason?
+  isFarDistance         Boolean                @default(false)
+  deliveryDistanceKm    Float?
   notifications         NotificationLog[]
   branch                Branch                 @relation("BranchOrders", fields: [branchId], references: [id])
   chef                  User?                  @relation("ChefOrders", fields: [chefId], references: [id])

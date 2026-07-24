@@ -9,6 +9,7 @@ const RequestTransferSchema = z.object({
   toBranchId: z.string().min(1),
   reason: z.string().optional(),
   notes: z.string().optional(),
+  newTargetDate: z.string().optional(),
 });
 
 // GET: List all incoming and outgoing transfers for the authenticated user's active branch
@@ -48,7 +49,8 @@ export const POST = withApiHandler(async ({ req, user, branchId }) => {
     toBranchId: parsed.toBranchId,
     requestedBy: user.id,
     reason: parsed.reason,
-    notes: parsed.notes
+    notes: parsed.notes,
+    newTargetDate: parsed.newTargetDate
   });
 
   return NextResponse.json(transfer, { status: 201 });

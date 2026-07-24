@@ -9,6 +9,7 @@ class MockProvider implements PaymentProvider {
   capture = vi.fn();
   refund = vi.fn();
   fetchPayment = vi.fn();
+  fetchOrderPayments = vi.fn();
 }
 
 describe('Payment Signature Verification', () => {

@@ -43,18 +43,29 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
   const renderActionButtons = () => {
     if (!isPending) return null;
 
-    if (item.status === 'ASSIGNED') {
+    if (!item.assignedDriverId) {
       return (
         <Button 
-          className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-[var(--foreground)] hover:bg-black/90 text-[var(--background)]"
           onClick={() => onAction('ACCEPTED')}
         >
           Accept Task
         </Button>
       )
     }
+
+    if (item.status === 'NEW' || item.status === 'ACCEPTED') {
+      return (
+        <Button 
+          disabled
+          className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md bg-secondary/10 text-secondary/50 cursor-not-allowed"
+        >
+          Still Preparing...
+        </Button>
+      )
+    }
     
-    if (item.status === 'ACCEPTED') {
+    if (item.status === 'READY_FOR_PICKUP' || item.status === 'ASSIGNED_TO_DRIVER') {
       return (
         <Button 
           className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-blue-600 hover:bg-blue-700 text-white"

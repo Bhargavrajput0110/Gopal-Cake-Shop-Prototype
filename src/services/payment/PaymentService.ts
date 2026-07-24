@@ -201,12 +201,21 @@ export class PaymentService {
               failureReason: 'Reconciliation timeout expired with no successful payments'
             });
 
+            // Also cancel the order since the online payment failed and timed out
+            await prisma.order.update({
+              where: { id: payment.orderId },
+              data: {
+                status: 'CANCELLED',
+                internalNotes: 'Auto-cancelled due to payment timeout'
+              }
+            });
+
             await TimelineAdapter.recordEvent(
               payment.orderId,
               'PAYMENT_FAILED',
               payment.order.status,
-              payment.order.status,
-              `Payment failed after retry window expired`
+              'CANCELLED',
+              `Payment failed after retry window expired. Order auto-cancelled.`
             );
             
             summary.failed++;

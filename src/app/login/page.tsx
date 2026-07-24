@@ -32,47 +32,5 @@ export default async function LoginPage() {
     };
   });
 
-  staffList.push({
-    id: "3", // E2E Mock ID
-    name: "Raju Bhai (Sales)",
-    role: "sales",
-    branchId: branchList.length > 0 ? branchList[0].id : undefined
-  });
-
-  staffList.push({
-    id: "4",
-    name: "Super Admin",
-    role: "admin",
-    branchId: undefined
-  });
-
-  staffList.push({
-    id: "5",
-    name: "Head Chef",
-    role: "chef",
-    branchId: branchList.length > 0 ? branchList[0].id : undefined
-  });
-
-  staffList.push({
-    id: "6",
-    name: "Creative Acrylics",
-    role: "vendor",
-    branchId: undefined
-  });
-
-  staffList.push({
-    id: "7",
-    name: "Sayaji Florists",
-    role: "vendor",
-    branchId: undefined
-  });
-
-  staffList.push({
-    id: "8",
-    name: "Gopal Photography Studio",
-    role: "vendor",
-    branchId: undefined
-  });
-
   return <LoginClient staffList={staffList} branchList={branchList} />;
 }

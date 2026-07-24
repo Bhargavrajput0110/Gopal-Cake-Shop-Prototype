@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { OrderStateMachine, TransitionAction, AppRole, OrderStatus } from '@/lib/OrderStateMachine'
 import { TimelineService } from '@/services/TimelineService'
+import { OrderNotificationService } from '@/services/notifications/OrderNotificationService'
 
 export class OrderTransitionService {
   static async transitionState(params: {
@@ -138,5 +139,15 @@ export class OrderTransitionService {
       io.to(`branch_${order.branchId}`).emit('order_updated');
       io.to('admin_global').emit('order_updated');
     }
+
+    // Fire-and-forget: dispatch in-app notifications to relevant staff roles.
+    // Never awaited so a notification failure can never block the order state machine.
+    OrderNotificationService.notify({
+      action,
+      orderId,
+      orderNumber: order.orderNumber,
+      branchId: order.branchId,
+      driverId: (order as any).driverId ?? null,
+    }).catch(() => {/* already logged inside OrderNotificationService */})
   }
 }

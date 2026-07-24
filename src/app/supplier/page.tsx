@@ -6,30 +6,39 @@ import { useOrders } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Box, TruckFast, TickCircle, Warning2, Logout, BoxSearch, Clock, BoxTick } from "iconsax-react";
 import NumberTicker from "@/components/magicui/NumberTicker";
+import { useSession } from "next-auth/react";
 
 type SupplierType = { id: string; name: string; categories: string[] };
 
 const SUPPLIER_DB: Record<string, SupplierType> = {
   "SUP-001": { id: "SUP-001", name: "Amul Dairy Distributors", categories: ["Dairy", "Milk", "Butter", "Cream"] },
   "SUP-002": { id: "SUP-002", name: "Ashok Flour Mills", categories: ["Flour", "Wheat", "Maida"] },
-  "SUP-003": { id: "SUP-003", name: "Callebaut Premium Chocolate", categories: ["Chocolate", "Cocoa", "Couverture"] }
+  "SUP-003": { id: "SUP-003", name: "Callebaut Premium Chocolate", categories: ["Chocolate", "Cocoa", "Couverture"] },
+  "6": { id: "6", name: "Acrylic Vendor", categories: ["Acrylic", "Topper", "Base"] },
+  "7": { id: "7", name: "Florist Vendor", categories: ["Flower", "Rose", "Bouquet"] },
+  "8": { id: "8", name: "Photo Cake Vendor", categories: ["Print", "Photo", "Edible"] }
 };
 
 export default function SupplierDashboard() {
+  const { data: session } = useSession();
   const router = useRouter();
   const { orders, updateIngredientRequestStatus } = useOrders();
   const [supplierId, setSupplierId] = useState<string>("SUP-001");
-  const [supplierInfo, setSupplierInfo] = useState<SupplierType>(SUPPLIER_DB["SUP-001"]);
+  const [supplierInfo, setSupplierInfo] = useState<SupplierType | null>(null);
   const [activeTab, setActiveTab] = useState<"pending" | "resolved">("pending");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sid = params.get("supplierId");
-    if (sid && SUPPLIER_DB[sid]) {
+    if (session?.user?.id) {
+      const sid = session.user.id;
       setSupplierId(sid);
-      setSupplierInfo(SUPPLIER_DB[sid]);
+      if (SUPPLIER_DB[sid]) {
+        setSupplierInfo(SUPPLIER_DB[sid]);
+      } else {
+        // Fallback or generic vendor
+        setSupplierInfo({ id: sid, name: session.user.name || "Vendor Partner", categories: [] });
+      }
     }
-  }, []);
+  }, [session]);
 
   const handleSignOut = () => {
     document.cookie = "gopal_dummy_role=; path=/; max-age=0";
@@ -58,6 +67,7 @@ export default function SupplierDashboard() {
 
   // Filter requests intended for this supplier (Mock logic: if itemName contains category)
   const myRequests = useMemo(() => {
+    if (!supplierInfo) return [];
     return allRequests.filter(req => {
       // In a real app, the request would have a mapped supplierId.
       // For the mock, we check if the requested item name matches the supplier's categories loosely.
@@ -84,6 +94,7 @@ export default function SupplierDashboard() {
   const resolvedCount = myRequests.filter(r => r.status === "resolved").length;
 
   const handleFulfill = async (orderId: string, reqId: string) => {
+    if (!supplierInfo) return;
     await updateIngredientRequestStatus(orderId, reqId, "resolved", supplierInfo.name);
   };
 
@@ -100,7 +111,7 @@ export default function SupplierDashboard() {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-serif font-black tracking-tight text-foreground flex items-center gap-2">
-                  {supplierInfo.name}
+                  {supplierInfo?.name || "Supplier Partner"}
                 </h1>
                 <p className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1 flex gap-2">
                   <span>ID: {supplierId}</span>

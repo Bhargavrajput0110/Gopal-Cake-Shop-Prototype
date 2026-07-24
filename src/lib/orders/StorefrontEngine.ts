@@ -13,6 +13,7 @@ import {
 import { OutboxService } from '@/lib/events/OutboxService'
 import { SettingsService } from '@/services/SettingsService'
 import { toBranchId } from '@/lib/branches'
+import { DistanceFactory } from '@/services/distance/DistanceFactory'
 
 export interface CheckoutContext {
   source: OrderSource
@@ -60,6 +61,8 @@ export interface CheckoutPayload {
   payments?: { method: PaymentMethod, amount: number }[]
   idempotencyKey?: string
   type?: 'ORDER' | 'QUOTE'
+  isFarDistance?: boolean
+  deliveryDistanceKm?: number
 }
 
 export class StorefrontEngine {
@@ -166,12 +169,27 @@ export class StorefrontEngine {
       }
     })
 
-    // 3. Delivery Calculation
+    // 3. Delivery & Distance Calculation
     let deliveryCharge = 0
+    let calculatedDistanceKm: number | undefined = payload.deliveryDistanceKm;
+    let calculatedIsFarDistance: boolean = payload.isFarDistance || false;
+
     if (payload.deliveryType === DeliveryType.DELIVERY) {
       deliveryCharge = defaultDeliveryCharge // Applied from settings
       if (context.canOverrideDelivery && payload.overrideDeliveryCharge !== undefined) {
         deliveryCharge = payload.overrideDeliveryCharge
+      }
+
+      if (payload.deliveryAddress && branch.address) {
+        try {
+          const distanceProvider = DistanceFactory.getProvider();
+          const distanceResult = await distanceProvider.calculateDistance(branch.address, payload.deliveryAddress);
+          calculatedDistanceKm = distanceResult.distanceKm;
+          calculatedIsFarDistance = distanceResult.isFarDistance;
+        } catch (error) {
+          console.error('[DistanceProvider] Failed to calculate distance:', error);
+          // Fallback to client provided values if distance calculation fails
+        }
       }
     }
 
@@ -240,6 +258,8 @@ export class StorefrontEngine {
           totalAmount,
           couponId,
           idempotencyKey: payload.idempotencyKey,
+          isFarDistance: calculatedIsFarDistance,
+          deliveryDistanceKm: calculatedDistanceKm,
           items: {
             create: orderItemsData
           },
@@ -309,6 +329,19 @@ export class StorefrontEngine {
     if (io) {
       io.to(`branch_${order.branchId}`).emit('order_created');
       io.to('admin_global').emit('order_created');
+
+      if (order.isFarDistance) {
+        const alertPayload = { 
+          orderId: order.id, 
+          orderNumber: order.orderNumber, 
+          distanceKm: order.deliveryDistanceKm, 
+          branchId: order.branchId 
+        };
+        // Emit to kitchen and delivery of that branch, plus global admins
+        io.to(`branch_${order.branchId}_kitchen`).emit('far_distance_alert', alertPayload);
+        io.to(`branch_${order.branchId}_delivery`).emit('far_distance_alert', alertPayload);
+        io.to('admin_global').emit('far_distance_alert', alertPayload);
+      }
     }
 
     return order

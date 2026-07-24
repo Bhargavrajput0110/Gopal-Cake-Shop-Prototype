@@ -90,7 +90,10 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
         </div>
       </div>
 
-      <div className="p-6 flex-1 overflow-y-auto space-y-6">
+      <div 
+        className="p-6 flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-6 custom-scrollbar touch-pan-y" 
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
         
         {/* Weight Selection */}
         <div className="space-y-3">

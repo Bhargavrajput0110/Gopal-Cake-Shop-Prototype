@@ -9,14 +9,14 @@ describe('ReconciliationService Health Check', () => {
 
   beforeEach(async () => {
     // Setup test branch and customer
-    await prisma.branch.create({ data: { id: branchId, name: 'Test Branch' } });
-    await prisma.customer.create({ data: { id: customerId, name: 'Test Customer', phone: '1234567890' } });
+    await prisma.branch.create({ data: { id: branchId, name: 'Test Branch', code: `TB-${Date.now()}`, address: '123 Test St' } });
+    await prisma.customer.create({ data: { id: customerId, name: 'Test Customer', phone: `+9199999${Math.floor(Math.random() * 10000)}` } });
   });
 
   afterEach(async () => {
     // Cleanup
     await prisma.ledgerEntry.deleteMany({ where: { order: { branchId } } });
-    await prisma.timelineEvent.deleteMany({ where: { order: { branchId } } });
+    await prisma.timeline.deleteMany({ where: { order: { branchId } } });
     await prisma.payment.deleteMany({ where: { order: { branchId } } });
     await prisma.order.deleteMany({ where: { branchId } });
     await prisma.customer.deleteMany({ where: { id: customerId } });
@@ -26,10 +26,14 @@ describe('ReconciliationService Health Check', () => {
   const createOrderWithPayment = async (status: PaymentStatus, amount: number) => {
     const order = await prisma.order.create({
       data: {
+        orderNumber: `ORD-${Math.floor(Math.random() * 100000)}`,
         branchId,
         customerId,
-        total: new Prisma.Decimal(amount),
-        status: 'PAYMENT_PENDING'
+        subtotal: new Prisma.Decimal(amount),
+        totalAmount: new Prisma.Decimal(amount),
+        deliveryType: 'PICKUP',
+        targetDate: new Date(),
+        status: 'NEW'
       }
     });
 
@@ -39,6 +43,8 @@ describe('ReconciliationService Health Check', () => {
         amount: new Prisma.Decimal(amount),
         provider: 'RAZORPAY',
         status,
+        method: 'RAZORPAY',
+        type: 'FULL',
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -66,10 +72,11 @@ describe('ReconciliationService Health Check', () => {
     await prisma.ledgerEntry.create({
       data: {
         orderId: order.id,
-        type: 'CREDIT',
+        type: 'PAYMENT',
         amount: new Prisma.Decimal(300), // Mismatch!
-        description: 'Payment',
-        reference: payment.id
+        status: 'SUCCESS',
+        notes: 'Payment',
+        referenceId: payment.id
       }
     });
 
@@ -87,10 +94,11 @@ describe('ReconciliationService Health Check', () => {
     await prisma.ledgerEntry.create({
       data: {
         orderId: order.id,
-        type: 'CREDIT',
+        type: 'PAYMENT',
         amount: new Prisma.Decimal(500),
-        description: 'Payment',
-        reference: payment.id
+        status: 'SUCCESS',
+        notes: 'Payment',
+        referenceId: payment.id
       }
     });
     // Missing TimelineEvent
@@ -108,8 +116,8 @@ describe('ReconciliationService Health Check', () => {
     // Create duplicate matching ledger
     await prisma.ledgerEntry.createMany({
       data: [
-        { orderId: order.id, type: 'CREDIT', amount: new Prisma.Decimal(500), description: 'P1', reference: payment.id },
-        { orderId: order.id, type: 'CREDIT', amount: new Prisma.Decimal(500), description: 'P2', reference: payment.id }
+        { orderId: order.id, type: 'PAYMENT', status: 'SUCCESS', amount: new Prisma.Decimal(500), notes: 'P1', referenceId: payment.id },
+        { orderId: order.id, type: 'PAYMENT', status: 'SUCCESS', amount: new Prisma.Decimal(500), notes: 'P2', referenceId: payment.id }
       ]
     });
 
@@ -127,19 +135,23 @@ describe('ReconciliationService Health Check', () => {
     await prisma.ledgerEntry.create({
       data: {
         orderId: order.id,
-        type: 'CREDIT',
+        type: 'PAYMENT',
         amount: new Prisma.Decimal(500),
-        description: 'Payment',
-        reference: payment.id
+        status: 'SUCCESS',
+        notes: 'Payment',
+        referenceId: payment.id
       }
     });
 
-    await prisma.timelineEvent.create({
+    await prisma.timeline.create({
       data: {
         orderId: order.id,
         eventType: 'PAYMENT_CAPTURED',
-        notes: 'Payment captured',
-        userId: 'system'
+        note: 'Payment captured',
+        actorId: 'system',
+        status: 'NEW',
+        nextState: 'NEW',
+        action: 'PAYMENT'
       }
     });
 
