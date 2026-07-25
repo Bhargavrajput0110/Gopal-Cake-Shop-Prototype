@@ -58,6 +58,7 @@ export class OrderService {
     }
     orderBy.push({ id: 'desc' });
 
+    console.log(`[OrderService.listOrders] role=${role} canonicalBranchId=${canonicalBranchId} whereClause=${JSON.stringify(whereClause)}`)
     const [orders, total] = await Promise.all([
       db.order.findMany({
         where: whereClause,
@@ -71,6 +72,7 @@ export class OrderService {
       }),
       db.order.count({ where: whereClause }),
     ])
+    console.log(`[OrderService.listOrders] total=${total} ordersCount=${orders.length}`)
 
     // Fetch product details from Supabase to merge with items
     const productIds = Array.from(new Set(orders.flatMap(o => o.items.map(i => (i as any).productId)).filter(Boolean)))
