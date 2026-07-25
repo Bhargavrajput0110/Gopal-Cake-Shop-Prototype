@@ -7,35 +7,30 @@ export function withBranchIsolation(branchId: string | null, role: string) {
       query: {
         $allModels: {
           async $allOperations({ model, operation, args, query }) {
-            // Only apply isolation for SALESPERSON, CHEF, DELIVERY, MANAGER
-            // ADMIN and VENDORS are typically not isolated to a single branch in the same way,
-            // or Admin sees all.
-            const isolatedRoles = ['SALESPERSON', 'CHEF', 'DELIVERY', 'MANAGER']
+            const isolatedRoles = ['SALESPERSON', 'CHEF', 'DELIVERY', 'MANAGER'];
+            const normalizedRole = role ? role.toUpperCase() : '';
             
-            if (isolatedRoles.includes(role) && branchId) {
-              // Check if the model has a branchId field.
-              // In Prisma, we can't easily introspect model fields at runtime in the extension,
-              // but we know Order, User, Settings have it. We'll try to inject it if applicable.
-              // A safer way is to specifically target isolated models:
-              const isolatedModels = ['Order', 'User', 'Settings']
+            if (isolatedRoles.includes(normalizedRole) && branchId) {
+              const modelName = model ? model.toLowerCase() : '';
+              const isolatedModels = ['order', 'user', 'settings'];
               
-              if (isolatedModels.includes(model)) {
-                const readOperations = ['findMany', 'findFirst', 'findUnique', 'count', 'update', 'updateMany', 'delete', 'deleteMany']
+              if (isolatedModels.includes(modelName)) {
+                const readOperations = ['findMany', 'findFirst', 'findUnique', 'count', 'update', 'updateMany', 'delete', 'deleteMany'];
                 if (readOperations.includes(operation)) {
                   const currentWhere = (args as any)?.where || {};
                   if (currentWhere.branchId === undefined) {
                     (args as any).where = {
                       ...currentWhere,
                       branchId: branchId,
-                    }
+                    };
                   }
                 }
               }
             }
-            return query(args)
+            return query(args);
           },
         },
       },
-    })
-  })
+    });
+  });
 }
