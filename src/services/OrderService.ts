@@ -13,10 +13,16 @@ export class OrderService {
     filters?: { status?: string, branch?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string }
   ): Promise<{ data: OrderResponseDTO[], total: number }> {
     const canonicalBranchId = branchId ? toBranchId(branchId) : null;
-    const db = getIsolatedPrisma(canonicalBranchId, role)
+    const db = prisma
     const skip = (page - 1) * limit
     
     const whereClause: Prisma.OrderWhereInput = {}
+    if (role && role.toUpperCase() !== 'ADMIN' && canonicalBranchId) {
+      whereClause.branchId = canonicalBranchId
+    } else if (filters?.branch) {
+      whereClause.branchId = toBranchId(filters.branch)
+    }
+
     if (filters?.status) {
       const statuses = filters.status.split(',');
       if (statuses.length > 1) {
@@ -25,7 +31,6 @@ export class OrderService {
         whereClause.status = statuses[0] as any;
       }
     }
-    if (filters?.branch) whereClause.branchId = toBranchId(filters.branch)
     if (filters?.search) {
       whereClause.OR = [
         { orderNumber: { contains: filters.search, mode: 'insensitive' } },
