@@ -22,7 +22,10 @@ export function AppTopbar({
   searchPlaceholder = "Search...",
   className,
 }: AppTopbarProps) {
-  const user = config.user
+  const { data: session } = useSession()
+  const displayName = session?.user?.name || config.user?.name || 'Staff'
+  const displayRole = (session?.user as any)?.role || config.user?.role || 'Staff'
+  const displayInitials = displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
 
   return (
     <header
@@ -52,22 +55,20 @@ export function AppTopbar({
         {/* Live Notification Bell */}
         <NotificationBell />
 
-        {/* User avatar and Auth Mock */}
+        {/* User avatar and Auth Info */}
         <div className="flex items-center gap-3 border-l border-border pl-4">
           <div
             className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-bold text-sm shrink-0"
-            title={user?.name}
+            title={displayName}
           >
-            {user?.initials ?? "?"}
+            {displayInitials}
           </div>
           <div className="flex flex-col">
             <span className="text-[10px] font-bold uppercase tracking-widest text-foreground flex items-center gap-2">
-              {user?.name || 'Staff'}
-              {user?.mockId && (
-                <span className="bg-[var(--brand-champagne)]/10 text-[var(--brand-champagne)] border border-[var(--brand-champagne)]/20 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm">
-                  {user.mockId}
-                </span>
-              )}
+              {displayName}
+              <span className="bg-[var(--brand-champagne)]/10 text-[var(--brand-champagne)] border border-[var(--brand-champagne)]/20 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                {displayRole}
+              </span>
             </span>
             <button onClick={config.onSignOut || (() => { window.location.href = '/login' })} className="text-[9px] font-bold text-muted-foreground hover:text-rose-600 transition-colors uppercase tracking-[0.2em] cursor-pointer text-left w-max">
               Sign Out

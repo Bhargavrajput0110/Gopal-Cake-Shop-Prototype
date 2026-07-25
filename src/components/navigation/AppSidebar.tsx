@@ -10,8 +10,15 @@ interface AppSidebarProps {
   config: AppConfig
 }
 
+import { useSession } from "next-auth/react"
+
 export function AppSidebar({ config }: AppSidebarProps) {
   const pathname = usePathname()
+  const { data: session } = useSession()
+
+  const displayName = session?.user?.name || config.user?.name || 'Staff'
+  const displayRole = (session?.user as any)?.role || config.user?.role || 'Staff'
+  const displayInitials = displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
 
   const isActive = (href: string) =>
     href === config.rootHref
@@ -91,17 +98,15 @@ export function AppSidebar({ config }: AppSidebarProps) {
 
       {/* User Footer */}
       <div className="p-3 border-t border-border space-y-1 shrink-0">
-        {config.user && (
-          <div className="flex items-center gap-3 px-3 py-2 mb-1">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-primary font-black text-xs">{config.user.initials}</span>
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-black text-foreground truncate">{config.user.name}</p>
-              <p className="text-[10px] text-muted-foreground font-medium">{config.user.role}</p>
-            </div>
+        <div className="flex items-center gap-3 px-3 py-2 mb-1">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="text-primary font-black text-xs">{displayInitials}</span>
           </div>
-        )}
+          <div className="min-w-0">
+            <p className="text-xs font-black text-foreground truncate">{displayName}</p>
+            <p className="text-[10px] text-muted-foreground font-medium">{displayRole}</p>
+          </div>
+        </div>
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 text-sm font-semibold text-muted-foreground hover:text-destructive transition-colors w-full px-3 py-2 rounded-xl hover:bg-destructive/10"

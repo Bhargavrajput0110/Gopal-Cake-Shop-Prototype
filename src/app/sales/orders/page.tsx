@@ -536,9 +536,9 @@ function SalesDashboardContent() {
 
       {/* Real-time internal staff messaging hub */}
       <StaffChatWidget 
-        senderId={employeeId || "SALES-01"} 
-        senderName="Pooja Mehta" 
-        senderRole="sales" 
+        senderId={employeeId || session?.user?.id || "SALES-01"} 
+        senderName={session?.user?.name || "Staff"} 
+        senderRole={(session?.user as any)?.role?.toLowerCase() || "sales"} 
         branch={activeBranch} 
         channel="sales" 
       />
