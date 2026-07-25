@@ -13,6 +13,7 @@ import { BackButton } from "@/components/ui/BackButton";
 
 interface Order {
   id: string;
+  orderNumber?: string;
   orderType: "delivery" | "pickup" | "walk_in" | "phone";
   status: string;
   customerName: string;
@@ -246,7 +247,7 @@ export default function OrderStatusPage() {
         <div className="border-b border-border/40 pb-8 mb-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
           <div>
             <span className="text-[10px] font-sans font-bold text-secondary tracking-[0.3em] uppercase block mb-3">Receipt</span>
-            <h1 className="font-serif text-4xl md:text-5xl font-bold text-foreground break-all">{order.id}</h1>
+            <h1 className="font-serif text-4xl md:text-5xl font-bold text-foreground break-all">{order.orderNumber || order.id}</h1>
           </div>
           <div className="flex flex-row md:flex-col items-center md:items-end gap-3 w-full md:w-auto">
             <span className="bg-secondary/10 px-4 py-2 rounded-full text-[10px] uppercase tracking-widest font-bold text-secondary">

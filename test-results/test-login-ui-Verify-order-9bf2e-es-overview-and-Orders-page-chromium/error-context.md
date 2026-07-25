@@ -1,0 +1,1030 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: test-login-ui.spec.ts >> Verify orders display on Sales overview and Orders page
+- Location: tests\e2e\test-login-ui.spec.ts:3:5
+
+# Error details
+
+```
+Error: expect(received).toContain(expected) // indexOf
+
+Expected substring: "ORD-"
+Received string:    "
+        body { cursor: none; }
+        a, button, [data-cursor=\"hover\"] { cursor: none !important; }
+      GGopal BakerySales DeskCommand CenterOrdersPOS TerminalDelivery AssignmentVendor DispatchPaymentsTransfersMKManager KHMMANAGERSign OutSales DeskGopal BakeryCommand CenterOrdersPOS TerminalDelivery AssignmentVendor DispatchPaymentsTransfersBack to WebsiteSign OutMKManager KHMMANAGERSign OutBack to SalesOrdersKhanderao BranchManage, track, and dispatch your daily queue.AllNEWWaiting for ChefIn KitchenReadyDeliveryAll DatesTodayTomorrowNext 3 DaysNext 15 DaysPick Date:cms04lx0c00062acbsrauz981Pending Verification1x Classic Chocolate Truffle (1kg)CustomerGate 2 Test Customer9998887776PaymentTotal: ₹681 · Pending: ₹681Pending: ₹681Due: 26 Jul, 02:17 pm Approve Assign Vendor Edit Order Timeline Call⋮cms04le7y00012acbtjnd5staPending Verification1x Classic Chocolate Truffle (1kg)CustomerGate 2 Test Customer9998887776PaymentTotal: ₹681 · Pending: ₹681Pending: ₹681Due: 26 Jul, 02:17 pm Approve Assign Vendor Edit Order Timeline Call⋮ord-today-2CANCELLEDCustomerBob1234567890PaymentTotal: ₹500 · Pending: ₹500Pending: ₹500Due: 19 Jul, 03:53 pm Collect ₹500 Assign Vendor Edit Order Timeline Call⋮ord-today-1DELIVEREDLockedCustomerBob1234567890PaymentTotal: ₹1000 · Pending: ₹1000Pending: ₹1000Due: 19 Jul, 03:53 pm Collect ₹1000 Timeline Call⋮ord-yesterdayDELIVEREDLockedCustomerBob1234567890PaymentTotal: ₹500 · Pending: ₹500Pending: ₹500Due: 18 Jul, 03:53 pm Collect ₹500 Timeline Call⋮cmrlsl6ne0000rcu3vow6eaggPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 16 Jul, 01:32 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsk6nq00050ku3t1v2uzrfPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹740 · Pending: ₹740Pending: ₹740Due: 16 Jul, 01:31 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsk6b800000ku3i0uas189CANCELLED1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 16 Jul, 01:31 pm Collect ₹590 Assign Vendor Edit Order Timeline Call⋮cmrlsjr0i0000swu3r66zdsqiPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 16 Jul, 01:31 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsamc7006tagu36qawgldbPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 15 Jul, 01:23 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsam1d006oagu3zq0bg6bmPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 15 Jul, 01:23 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsaloz006jagu3qpxqap2wPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 15 Jul, 01:23 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsaldh006eagu3vrqrip0hPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 15 Jul, 01:23 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsal2t0069agu3dfk6fachPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 15 Jul, 01:23 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsakrr0064agu3en9rf3cdPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 15 Jul, 01:23 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsakgt005zagu3pwjm83pxPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 15 Jul, 01:23 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsak61005uagu3tf64q3jkPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 15 Jul, 01:23 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsajup005pagu3fe9wd6e3Pending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 15 Jul, 01:23 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsajfl005kagu3wtxfje9mPending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 15 Jul, 01:23 pm Approve Assign Vendor Edit Order Timeline Call⋮cmrlsaj4s005fagu3r4zofnq4Pending Verification1x Mock Product (1kg)CustomerVIP Customer5551234567PaymentTotal: ₹590 · Pending: ₹590Pending: ₹590Due: 15 Jul, 01:23 pm Approve Assign Vendor Edit Order Timeline Call⋮🎂 NEW ORDER ARRIVED!cms04lx0c00062acbsrauz981Gate 2 Test Customer₹681View DetailsDismissStaff Chat (Khanderao)OrdersPOSCheckoutDeliveryTransfers(self.__next_f=self.__next_f||[]).push([0])self.__next_f.push([1,\"1:\\\"$Sreact.fragment\\\"\\n2:I[743917,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"PWARegistration\\\"]\\n3:I[437349,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"Preloader\\\"]\\n4:I[2890,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"CustomCursor\\\"]\\n5:I[286599,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"ReactQueryProvider\\\"]\\n6:I[795238,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"CustomerAuthProvider\\\"]\\n7:I[825194,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"CartProvider\\\"]\\n8:I[490419,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"OrderProvider\\\"]\\n9:I[944565,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"SmoothScroller\\\"]\\na:I[235051,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"HeaderFooterWrapper\\\"]\\nb:I[339756,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"default\\\"]\\nc:I[837457,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"default\\\"]\\nd:I[92825,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/stati\"])self.__next_f.push([1,\"c/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"ClientSegmentRoot\\\"]\\ne:I[944826,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\",\\\"/_next/static/chunks/1k2z_pn1dfjgg.js\\\",\\\"/_next/static/chunks/229mv6rp-zdle.js\\\",\\\"/_next/static/chunks/3f9bp8qo4b_wq.js\\\"],\\\"default\\\"]\\n16:I[168027,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"default\\\",1]\\n:HL[\\\"/_next/static/chunks/0ij0xa417l9jc.css\\\",\\\"style\\\"]\\n:HL[\\\"/_next/static/chunks/1qjs20_znpid0.css\\\",\\\"style\\\"]\\n:HL[\\\"/_next/static/media/01e4147cff8141ee-s.p.3huc2loe0ie8a.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/2a65768255d6b625-s.p.3u4lli0-axodc.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/70e3db2de7f94926-s.p.39pl-v7c3qrze.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/83afe278b6a6bb3c-s.p.2bn3s6zvc0dyp.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/8bd76523131fa0fc-s.p.1pvupmngxrt5z.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n\"])self.__next_f.push([1,\"0:{\\\"P\\\":null,\\\"c\\\":[\\\"\\\",\\\"sales\\\",\\\"orders\\\"],\\\"q\\\":\\\"\\\",\\\"i\\\":false,\\\"f\\\":[[[\\\"\\\",{\\\"children\\\":[\\\"sales\\\",{\\\"children\\\":[\\\"orders\\\",{\\\"children\\\":[\\\"__PAGE__\\\",{}]}]}]},\\\"$undefined\\\",\\\"$undefined\\\",16],[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[[[\\\"$\\\",\\\"link\\\",\\\"0\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/chunks/0ij0xa417l9jc.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"link\\\",\\\"1\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/chunks/1qjs20_znpid0.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-0\\\",{\\\"src\\\":\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-1\\\",{\\\"src\\\":\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-2\\\",{\\\"src\\\":\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-3\\\",{\\\"src\\\":\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-4\\\",{\\\"src\\\":\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-5\\\",{\\\"src\\\":\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-6\\\",{\\\"src\\\":\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-7\\\",{\\\"src\\\":\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}]],[\\\"$\\\",\\\"html\\\",null,{\\\"lang\\\":\\\"en\\\",\\\"className\\\":\\\"antialiased inter_fd091ad6-module__giF-bG__variable cormorant_garamond_230afacc-module__Nv7hTa__variable playfair_display_1cd184a-module__cgc9Sa__variable\\\",\\\"children\\\":[\\\"$\\\",\\\"body\\\",null,{\\\"suppressHydrationWarning\\\":true,\\\"className\\\":\\\"flex flex-col bg-background text-foreground relative selection:bg-[#B67A7E] selection:text-white min-h-screen font-sans\\\",\\\"children\\\":[[\\\"$\\\",\\\"$L2\\\",null,{}],[\\\"$\\\",\\\"div\\\",null,{\\\"aria-hidden\\\":\\\"true\\\",\\\"className\\\":\\\"pointer-events-none fixed inset-0 z-50 h-full w-full opacity-[0.03] mix-blend-overlay\\\",\\\"children\\\":[\\\"$\\\",\\\"svg\\\",null,{\\\"className\\\":\\\"absolute inset-0 h-full w-full\\\",\\\"xmlns\\\":\\\"http://www.w3.org/2000/svg\\\",\\\"children\\\":[[\\\"$\\\",\\\"filter\\\",null,{\\\"id\\\":\\\"noiseFilter\\\",\\\"children\\\":[\\\"$\\\",\\\"feTurbulence\\\",null,{\\\"type\\\":\\\"fractalNoise\\\",\\\"baseFrequency\\\":\\\"0.8\\\",\\\"numOctaves\\\":\\\"3\\\",\\\"stitchTiles\\\":\\\"stitch\\\"}]}],[\\\"$\\\",\\\"rect\\\",null,{\\\"width\\\":\\\"100%\\\",\\\"height\\\":\\\"100%\\\",\\\"preserveAspectRatio\\\":\\\"none\\\",\\\"filter\\\":\\\"url(#noiseFilter)\\\"}]]}]}],[\\\"$\\\",\\\"$L3\\\",null,{}],[\\\"$\\\",\\\"$L4\\\",null,{}],[\\\"$\\\",\\\"$L5\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$L6\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$L7\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$L8\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$L9\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$La\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$Lb\\\",null,{\\\"parallelRouterKey\\\":\\\"children\\\",\\\"error\\\":\\\"$undefined\\\",\\\"errorStyles\\\":\\\"$undefined\\\",\\\"errorScripts\\\":\\\"$undefined\\\",\\\"template\\\":[\\\"$\\\",\\\"$Lc\\\",null,{}],\\\"templateStyles\\\":\\\"$undefined\\\",\\\"templateScripts\\\":\\\"$undefined\\\",\\\"notFound\\\":[[[\\\"$\\\",\\\"title\\\",null,{\\\"children\\\":\\\"404: This page could not be found.\\\"}],[\\\"$\\\",\\\"div\\\",null,{\\\"style\\\":{\\\"fontFamily\\\":\\\"system-ui,\\\\\\\"Segoe UI\\\\\\\",Roboto,Helvetica,Arial,sans-serif,\\\\\\\"Apple Color Emoji\\\\\\\",\\\\\\\"Segoe UI Emoji\\\\\\\"\\\",\\\"height\\\":\\\"100vh\\\",\\\"textAlign\\\":\\\"center\\\",\\\"display\\\":\\\"flex\\\",\\\"flexDirection\\\":\\\"column\\\",\\\"alignItems\\\":\\\"center\\\",\\\"justifyContent\\\":\\\"center\\\"},\\\"children\\\":[\\\"$\\\",\\\"div\\\",null,{\\\"children\\\":[[\\\"$\\\",\\\"style\\\",null,{\\\"dangerouslySetInnerHTML\\\":{\\\"__html\\\":\\\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\\\"}}],[\\\"$\\\",\\\"h1\\\",null,{\\\"className\\\":\\\"next-error-h1\\\",\\\"style\\\":{\\\"display\\\":\\\"inline-block\\\",\\\"margin\\\":\\\"0 20px 0 0\\\",\\\"padding\\\":\\\"0 23px 0 0\\\",\\\"fontSize\\\":24,\\\"fontWeight\\\":500,\\\"verticalAlign\\\":\\\"top\\\",\\\"lineHeight\\\":\\\"49px\\\"},\\\"children\\\":404}],[\\\"$\\\",\\\"div\\\",null,{\\\"style\\\":{\\\"display\\\":\\\"inline-block\\\"},\\\"children\\\":[\\\"$\\\",\\\"h2\\\",null,{\\\"style\\\":{\\\"fontSize\\\":14,\\\"fontWeight\\\":400,\\\"lineHeight\\\":\\\"49px\\\",\\\"margin\\\":0},\\\"children\\\":\\\"This page could not be found.\\\"}]}]]}]}]],[]],\\\"forbidden\\\":\\\"$undefined\\\",\\\"unauthorized\\\":\\\"$undefined\\\"}]}]}]}]}]}]}]]}]}]]}],{\\\"children\\\":[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[[[\\\"$\\\",\\\"script\\\",\\\"script-0\\\",{\\\"src\\\":\\\"/_next/static/chunks/1k2z_pn1dfjgg.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-1\\\",{\\\"src\\\":\\\"/_next/static/chunks/229mv6rp-zdle.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-2\\\",{\\\"src\\\":\\\"/_next/static/chunks/3f9bp8qo4b_wq.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}]],[\\\"$\\\",\\\"$Ld\\\",null,{\\\"Component\\\":\\\"$e\\\",\\\"slots\\\":{\\\"children\\\":[\\\"$\\\",\\\"$Lb\\\",null,{\\\"parallelRouterKey\\\":\\\"children\\\",\\\"error\\\":\\\"$undefined\\\",\\\"errorStyles\\\":\\\"$undefined\\\",\\\"errorScripts\\\":\\\"$undefined\\\",\\\"template\\\":[\\\"$\\\",\\\"$Lc\\\",null,{}],\\\"templateStyles\\\":\\\"$undefined\\\",\\\"templateScripts\\\":\\\"$undefined\\\",\\\"notFound\\\":\\\"$undefined\\\",\\\"forbidden\\\":\\\"$undefined\\\",\\\"unauthorized\\\":\\\"$undefined\\\"}]},\\\"serverProvidedParams\\\":{\\\"params\\\":{},\\\"promises\\\":[\\\"$@f\\\"]}}]]}],{\\\"children\\\":[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[null,[\\\"$\\\",\\\"$Lb\\\",null,{\\\"parallelRouterKey\\\":\\\"children\\\",\\\"error\\\":\\\"$undefined\\\",\\\"errorStyles\\\":\\\"$undefined\\\",\\\"errorScripts\\\":\\\"$undefined\\\",\\\"template\\\":[\\\"$\\\",\\\"$Lc\\\",null,{}],\\\"templateStyles\\\":\\\"$undefined\\\",\\\"templateScripts\\\":\\\"$undefined\\\",\\\"notFound\\\":\\\"$undefined\\\",\\\"forbidden\\\":\\\"$undefined\\\",\\\"unauthorized\\\":\\\"$undefined\\\"}]]}],{\\\"children\\\":[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[\\\"$L10\\\",[\\\"$L11\\\",\\\"$L12\\\"],\\\"$L13\\\"]}],{},null,false,null]},null,false,\\\"$@14\\\"]},null,false,null]},null,false,null],\\\"$L15\\\",false]],\\\"m\\\":\\\"$undefined\\\",\\\"G\\\":[\\\"$16\\\",[\\\"$L17\\\",\\\"$L18\\\"]],\\\"S\\\":true,\\\"h\\\":null,\\\"s\\\":\\\"$undefined\\\",\\\"l\\\":\\\"$undefined\\\",\\\"p\\\":\\\"$undefined\\\",\\\"d\\\":\\\"$undefined\\\",\\\"b\\\":\\\"qNJz8vapsSIxUQ4PG-tEp\\\"}\\n\"])self.__next_f.push([1,\"19:I[347257,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"ClientPageRoot\\\"]\\n1a:I[670993,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\",\\\"/_next/static/chunks/1k2z_pn1dfjgg.js\\\",\\\"/_next/static/chunks/229mv6rp-zdle.js\\\",\\\"/_next/static/chunks/3f9bp8qo4b_wq.js\\\",\\\"/_next/static/chunks/0cppjj0u8i4hu.js\\\",\\\"/_next/static/chunks/0ktixd9f__le_.js\\\"],\\\"default\\\"]\\n1d:I[897367,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"OutletBoundary\\\"]\\n1e:\\\"$Sreact.suspense\\\"\\n21:I[897367,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"ViewportBoundary\\\"]\\n23:I[897367,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"MetadataBoundary\\\"]\\n10:[\\\"$\\\",\\\"$L19\\\",null,{\\\"Component\\\":\\\"$1a\\\",\\\"serverProvidedParams\\\":{\\\"searchParams\\\":{},\\\"params\\\":\\\"$0:f:0:1:1:children:0:props:children:1:props:serverProvidedParams:params\\\",\\\"promises\\\":[\\\"$@1b\\\",\\\"$@1c\\\"]}}]\\n11:[\\\"$\\\",\\\"script\\\",\\\"script-0\\\",{\\\"src\\\":\\\"/_next/static/chunks/0cppjj0u8i4hu.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}]\\n12:[\\\"$\\\",\\\"script\\\",\\\"script-1\\\",{\\\"src\\\":\\\"/_next/static/chunks/0ktixd9f__le_.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}]\\n13:[\\\"$\\\",\\\"$L1d\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$1e\\\",null,{\\\"name\\\":\\\"Next.MetadataOutlet\\\",\\\"children\\\":\\\"$@1f\\\"}]}]\\n20:[]\\n14:\\\"$W20\\\"\\n15:[\\\"$\\\",\\\"$1\\\",\\\"h\\\",{\\\"children\\\":[null,[\\\"$\\\",\\\"$L21\\\",null,{\\\"children\\\":\\\"$L22\\\"}],[\\\"$\\\",\\\"div\\\",null,{\\\"hidden\\\":true,\\\"children\\\":[\\\"$\\\",\\\"$L23\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$1e\\\",null,{\\\"name\\\":\\\"Next.Metadata\\\",\\\"children\\\":\\\"$L24\\\"}]}]}],[\\\"$\\\",\\\"meta\\\",null,{\\\"name\\\":\\\"next-size-adjust\\\",\\\"content\\\":\\\"\\\"}]]}]\\n17:[\\\"$\\\",\\\"link\\\",\\\"0\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/chunks/0ij0xa417l9jc.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}]\\n18:[\\\"$\\\",\\\"link\\\",\\\"1\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/chunks/1qjs20_znpid0.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}]\\nf:\\\"$0:f:0:1:1:children:0:props:children:1:props:serverProvidedParams:params\\\"\\n\"])self.__next_f.push([1,\"1b:{}\\n1c:\\\"$0:f:0:1:1:children:0:props:children:1:props:serverProvidedParams:params\\\"\\n\"])self.__next_f.push([1,\"22:[[\\\"$\\\",\\\"meta\\\",\\\"0\\\",{\\\"charSet\\\":\\\"utf-8\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"1\\\",{\\\"name\\\":\\\"viewport\\\",\\\"content\\\":\\\"width=device-width, initial-scale=1\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"2\\\",{\\\"name\\\":\\\"theme-color\\\",\\\"content\\\":\\\"#38251E\\\"}]]\\n\"])self.__next_f.push([1,\"25:I[27201,[\\\"/_next/static/chunks/1mqqcx4qmiln_.js\\\",\\\"/_next/static/chunks/1-pljc2273_qj.js\\\",\\\"/_next/static/chunks/03sb66kf_qlv1.js\\\",\\\"/_next/static/chunks/1dzhmhzdo1uo1.js\\\",\\\"/_next/static/chunks/3ul7k01xk3zc6.js\\\",\\\"/_next/static/chunks/30sk2-q1drt-4.js\\\",\\\"/_next/static/chunks/109-oxmffc6s_.js\\\",\\\"/_next/static/chunks/2-_enx60f_8x_.js\\\"],\\\"IconMark\\\"]\\n1f:null\\n\"])self.__next_f.push([1,\"24:[[\\\"$\\\",\\\"title\\\",\\\"0\\\",{\\\"children\\\":\\\"Gopal Bakery — Premium Custom Cakes in Vadodara\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"1\\\",{\\\"name\\\":\\\"description\\\",\\\"content\\\":\\\"Gopal Bakery crafts premium custom cakes for every celebration in Vadodara. Order birthday cakes, wedding cakes, photo cakes \\u0026 more with same-day delivery.\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"2\\\",{\\\"name\\\":\\\"author\\\",\\\"content\\\":\\\"Gopal Bakery\\\"}],[\\\"$\\\",\\\"link\\\",\\\"3\\\",{\\\"rel\\\":\\\"manifest\\\",\\\"href\\\":\\\"/manifest.json\\\",\\\"crossOrigin\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"4\\\",{\\\"name\\\":\\\"keywords\\\",\\\"content\\\":\\\"custom cakes Vadodara,birthday cakes Vadodara,wedding cakes,photo cakes,Gopal Bakery,cake shop Vadodara,designer cakes,order cake online\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"5\\\",{\\\"name\\\":\\\"creator\\\",\\\"content\\\":\\\"Gopal Bakery\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"6\\\",{\\\"name\\\":\\\"publisher\\\",\\\"content\\\":\\\"Gopal Bakery\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"7\\\",{\\\"name\\\":\\\"mobile-web-app-capable\\\",\\\"content\\\":\\\"yes\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"8\\\",{\\\"name\\\":\\\"apple-mobile-web-app-title\\\",\\\"content\\\":\\\"Gopal Bakery\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"9\\\",{\\\"name\\\":\\\"apple-mobile-web-app-status-bar-style\\\",\\\"content\\\":\\\"default\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"10\\\",{\\\"property\\\":\\\"og:title\\\",\\\"content\\\":\\\"Gopal Bakery — Premium Custom Cakes in Vadodara\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"11\\\",{\\\"property\\\":\\\"og:description\\\",\\\"content\\\":\\\"Order premium custom cakes for birthdays, weddings \\u0026 special occasions. Fresh, handcrafted with love. Delivery across Vadodara.\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"12\\\",{\\\"property\\\":\\\"og:url\\\",\\\"content\\\":\\\"https://gopalbakery.in\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"13\\\",{\\\"property\\\":\\\"og:site_name\\\",\\\"content\\\":\\\"Gopal Bakery\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"14\\\",{\\\"property\\\":\\\"og:locale\\\",\\\"content\\\":\\\"en_IN\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"15\\\",{\\\"property\\\":\\\"og:image\\\",\\\"content\\\":\\\"https://gopalbakery.in/og-image.jpg\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"16\\\",{\\\"property\\\":\\\"og:image:width\\\",\\\"content\\\":\\\"1200\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"17\\\",{\\\"property\\\":\\\"og:image:height\\\",\\\"content\\\":\\\"630\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"18\\\",{\\\"property\\\":\\\"og:image:alt\\\",\\\"content\\\":\\\"Gopal Bakery — Premium Custom Cakes\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"19\\\",{\\\"property\\\":\\\"og:type\\\",\\\"content\\\":\\\"website\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"20\\\",{\\\"name\\\":\\\"twitter:card\\\",\\\"content\\\":\\\"summary_large_image\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"21\\\",{\\\"name\\\":\\\"twitter:title\\\",\\\"content\\\":\\\"Gopal Bakery — Premium Custom Cakes in Vadodara\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"22\\\",{\\\"name\\\":\\\"twitter:description\\\",\\\"content\\\":\\\"Order premium custom cakes for birthdays, weddings \\u0026 special occasions.\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"23\\\",{\\\"name\\\":\\\"twitter:image\\\",\\\"content\\\":\\\"https://gopalbakery.in/og-image.jpg\\\"}],[\\\"$\\\",\\\"link\\\",\\\"24\\\",{\\\"rel\\\":\\\"icon\\\",\\\"href\\\":\\\"/favicon.ico?favicon.2vob68tjqpejf.ico\\\",\\\"sizes\\\":\\\"256x256\\\",\\\"type\\\":\\\"image/x-icon\\\"}],[\\\"$\\\",\\\"link\\\",\\\"25\\\",{\\\"rel\\\":\\\"icon\\\",\\\"href\\\":\\\"/favicon.ico\\\"}],[\\\"$\\\",\\\"link\\\",\\\"26\\\",{\\\"rel\\\":\\\"apple-touch-icon\\\",\\\"href\\\":\\\"/icon-192x192.png\\\"}],[\\\"$\\\",\\\"$L25\\\",\\\"27\\\",{}]]\\n\"])"
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic:
+    - img
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - complementary [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e7]: G
+          - generic [ref=e8]:
+            - heading "Gopal Bakery" [level=1] [ref=e9]
+            - paragraph [ref=e10]: Sales Desk
+        - navigation [ref=e11]:
+          - generic [ref=e12]:
+            - link "Command Center" [ref=e13]:
+              - /url: /sales
+              - generic [ref=e14]:
+                - img [ref=e15]
+                - generic [ref=e18]: Command Center
+            - link "Orders" [ref=e19]:
+              - /url: /sales/orders
+              - generic [ref=e20]:
+                - img [ref=e21]
+                - generic [ref=e24]: Orders
+            - link "POS Terminal" [ref=e25]:
+              - /url: /sales/pos
+              - generic [ref=e26]:
+                - img [ref=e27]
+                - generic [ref=e31]: POS Terminal
+            - link "Delivery Assignment" [ref=e32]:
+              - /url: /sales/delivery
+              - generic [ref=e33]:
+                - img [ref=e34]
+                - generic [ref=e36]: Delivery Assignment
+            - link "Vendor Dispatch" [ref=e37]:
+              - /url: /sales/vendors
+              - generic [ref=e38]:
+                - img [ref=e39]
+                - generic [ref=e43]: Vendor Dispatch
+            - link "Payments" [ref=e44]:
+              - /url: /sales/payments
+              - generic [ref=e45]:
+                - img [ref=e46]
+                - generic [ref=e49]: Payments
+            - link "Transfers" [ref=e50]:
+              - /url: /sales/transfers
+              - generic [ref=e51]:
+                - img [ref=e52]
+                - generic [ref=e54]: Transfers
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - generic [ref=e58]: MK
+            - generic [ref=e59]:
+              - paragraph [ref=e60]: Manager KHM
+              - paragraph [ref=e61]: MANAGER
+          - button "Sign Out" [ref=e62]:
+            - img [ref=e63]
+            - text: Sign Out
+      - generic [ref=e65]:
+        - generic [ref=e66]:
+          - generic [ref=e68]:
+            - img
+            - 'searchbox "Global search... (Try order #108922)" [ref=e69]'
+          - generic [ref=e70]:
+            - button "Notifications" [ref=e72]:
+              - img [ref=e73]
+            - generic [ref=e77]:
+              - generic "Manager KHM" [ref=e78]: MK
+              - generic [ref=e79]:
+                - generic [ref=e80]:
+                  - text: Manager KHM
+                  - generic [ref=e81]: MANAGER
+                - button "Sign Out" [ref=e82]
+        - main [ref=e83]:
+          - generic [ref=e85]:
+            - generic [ref=e87]:
+              - button "Back to Sales" [ref=e89]:
+                - img
+                - generic [ref=e90]: Back to Sales
+              - heading "Orders Khanderao Branch" [level=2] [ref=e91]:
+                - text: Orders
+                - generic [ref=e92]: Khanderao Branch
+              - paragraph [ref=e93]: Manage, track, and dispatch your daily queue.
+            - generic [ref=e94]:
+              - generic [ref=e95]:
+                - img [ref=e96]
+                - textbox "Search by Order ID, Customer Name, Phone, or Cake..." [ref=e98]
+              - generic [ref=e99]:
+                - button "All" [ref=e100]
+                - button "NEW" [ref=e101]
+                - button "Waiting for Chef" [ref=e102]
+                - button "In Kitchen" [ref=e103]
+                - button "Ready" [ref=e104]
+                - button "Delivery" [ref=e105]
+              - generic [ref=e106]:
+                - button "All Dates" [ref=e107]
+                - button "Today" [ref=e108]
+                - button "Tomorrow" [ref=e109]
+                - button "Next 3 Days" [ref=e110]
+                - button "Next 15 Days" [ref=e111]
+                - generic [ref=e112]:
+                  - generic [ref=e113]: "Pick Date:"
+                  - textbox [ref=e114]
+            - generic [ref=e115]:
+              - generic [ref=e116]:
+                - img "Cake" [ref=e118]
+                - generic [ref=e119]:
+                  - generic [ref=e120]:
+                    - generic [ref=e121]:
+                      - heading "cms04lx0c00062acbsrauz981" [level=3] [ref=e122]
+                      - generic [ref=e123]: Pending Verification
+                    - paragraph [ref=e125]:
+                      - text: 1x Classic Chocolate Truffle
+                      - generic [ref=e126]: (1kg)
+                  - generic [ref=e127]:
+                    - generic [ref=e128]:
+                      - generic [ref=e129]:
+                        - generic [ref=e130]:
+                          - paragraph [ref=e131]: Customer
+                          - paragraph [ref=e132]: Gate 2 Test Customer
+                          - paragraph [ref=e133]: "9998887776"
+                        - generic [ref=e134]:
+                          - paragraph [ref=e135]: Payment
+                          - paragraph [ref=e136]:
+                            - text: "Total: ₹681 · Pending:"
+                            - generic [ref=e137]: ₹681
+                          - paragraph [ref=e138]: "Pending: ₹681"
+                      - generic [ref=e139]:
+                        - img [ref=e140]
+                        - generic [ref=e143]: "Due: 26 Jul, 02:17 pm"
+                    - generic [ref=e144]:
+                      - button "Approve" [ref=e145]:
+                        - img [ref=e146]
+                        - text: Approve
+                      - generic [ref=e149]:
+                        - button "Assign Vendor" [ref=e150]:
+                          - img [ref=e151]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e154]:
+                          - img [ref=e155]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e158]:
+                          - img [ref=e159]
+                          - text: Timeline
+                        - button "Call" [ref=e162]:
+                          - img [ref=e163]
+                          - text: Call
+              - generic [ref=e165]:
+                - img "Cake" [ref=e167]
+                - generic [ref=e168]:
+                  - generic [ref=e169]:
+                    - generic [ref=e170]:
+                      - heading "cms04le7y00012acbtjnd5sta" [level=3] [ref=e171]
+                      - generic [ref=e172]: Pending Verification
+                    - paragraph [ref=e174]:
+                      - text: 1x Classic Chocolate Truffle
+                      - generic [ref=e175]: (1kg)
+                  - generic [ref=e176]:
+                    - generic [ref=e177]:
+                      - generic [ref=e178]:
+                        - generic [ref=e179]:
+                          - paragraph [ref=e180]: Customer
+                          - paragraph [ref=e181]: Gate 2 Test Customer
+                          - paragraph [ref=e182]: "9998887776"
+                        - generic [ref=e183]:
+                          - paragraph [ref=e184]: Payment
+                          - paragraph [ref=e185]:
+                            - text: "Total: ₹681 · Pending:"
+                            - generic [ref=e186]: ₹681
+                          - paragraph [ref=e187]: "Pending: ₹681"
+                      - generic [ref=e188]:
+                        - img [ref=e189]
+                        - generic [ref=e192]: "Due: 26 Jul, 02:17 pm"
+                    - generic [ref=e193]:
+                      - button "Approve" [ref=e194]:
+                        - img [ref=e195]
+                        - text: Approve
+                      - generic [ref=e198]:
+                        - button "Assign Vendor" [ref=e199]:
+                          - img [ref=e200]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e203]:
+                          - img [ref=e204]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e207]:
+                          - img [ref=e208]
+                          - text: Timeline
+                        - button "Call" [ref=e211]:
+                          - img [ref=e212]
+                          - text: Call
+              - generic [ref=e214]:
+                - img "Cake" [ref=e216]
+                - generic [ref=e217]:
+                  - generic [ref=e219]:
+                    - heading "ord-today-2" [level=3] [ref=e220]
+                    - generic [ref=e221]: CANCELLED
+                  - generic [ref=e222]:
+                    - generic [ref=e223]:
+                      - generic [ref=e224]:
+                        - generic [ref=e225]:
+                          - paragraph [ref=e226]: Customer
+                          - paragraph [ref=e227]: Bob
+                          - paragraph [ref=e228]: "1234567890"
+                        - generic [ref=e229]:
+                          - paragraph [ref=e230]: Payment
+                          - paragraph [ref=e231]:
+                            - text: "Total: ₹500 · Pending:"
+                            - generic [ref=e232]: ₹500
+                          - paragraph [ref=e233]: "Pending: ₹500"
+                      - generic [ref=e234]:
+                        - img [ref=e235]
+                        - generic [ref=e238]: "Due: 19 Jul, 03:53 pm"
+                    - generic [ref=e239]:
+                      - button "Collect ₹500" [ref=e240]:
+                        - img [ref=e241]
+                        - text: Collect ₹500
+                      - generic [ref=e244]:
+                        - button "Assign Vendor" [ref=e245]:
+                          - img [ref=e246]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e249]:
+                          - img [ref=e250]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e253]:
+                          - img [ref=e254]
+                          - text: Timeline
+                        - button "Call" [ref=e257]:
+                          - img [ref=e258]
+                          - text: Call
+              - generic [ref=e260]:
+                - img "Cake" [ref=e262]
+                - generic [ref=e263]:
+                  - generic [ref=e265]:
+                    - heading "ord-today-1" [level=3] [ref=e266]
+                    - generic [ref=e267]: DELIVERED
+                    - generic [ref=e268]:
+                      - img [ref=e269]
+                      - text: Locked
+                  - generic [ref=e272]:
+                    - generic [ref=e273]:
+                      - generic [ref=e274]:
+                        - generic [ref=e275]:
+                          - paragraph [ref=e276]: Customer
+                          - paragraph [ref=e277]: Bob
+                          - paragraph [ref=e278]: "1234567890"
+                        - generic [ref=e279]:
+                          - paragraph [ref=e280]: Payment
+                          - paragraph [ref=e281]:
+                            - text: "Total: ₹1000 · Pending:"
+                            - generic [ref=e282]: ₹1000
+                          - paragraph [ref=e283]: "Pending: ₹1000"
+                      - generic [ref=e284]:
+                        - img [ref=e285]
+                        - generic [ref=e288]: "Due: 19 Jul, 03:53 pm"
+                    - generic [ref=e289]:
+                      - button "Collect ₹1000" [ref=e290]:
+                        - img [ref=e291]
+                        - text: Collect ₹1000
+                      - generic [ref=e294]:
+                        - button "Timeline" [ref=e295]:
+                          - img [ref=e296]
+                          - text: Timeline
+                        - button "Call" [ref=e299]:
+                          - img [ref=e300]
+                          - text: Call
+              - generic [ref=e302]:
+                - img "Cake" [ref=e304]
+                - generic [ref=e305]:
+                  - generic [ref=e307]:
+                    - heading "ord-yesterday" [level=3] [ref=e308]
+                    - generic [ref=e309]: DELIVERED
+                    - generic [ref=e310]:
+                      - img [ref=e311]
+                      - text: Locked
+                  - generic [ref=e314]:
+                    - generic [ref=e315]:
+                      - generic [ref=e316]:
+                        - generic [ref=e317]:
+                          - paragraph [ref=e318]: Customer
+                          - paragraph [ref=e319]: Bob
+                          - paragraph [ref=e320]: "1234567890"
+                        - generic [ref=e321]:
+                          - paragraph [ref=e322]: Payment
+                          - paragraph [ref=e323]:
+                            - text: "Total: ₹500 · Pending:"
+                            - generic [ref=e324]: ₹500
+                          - paragraph [ref=e325]: "Pending: ₹500"
+                      - generic [ref=e326]:
+                        - img [ref=e327]
+                        - generic [ref=e330]: "Due: 18 Jul, 03:53 pm"
+                    - generic [ref=e331]:
+                      - button "Collect ₹500" [ref=e332]:
+                        - img [ref=e333]
+                        - text: Collect ₹500
+                      - generic [ref=e336]:
+                        - button "Timeline" [ref=e337]:
+                          - img [ref=e338]
+                          - text: Timeline
+                        - button "Call" [ref=e341]:
+                          - img [ref=e342]
+                          - text: Call
+              - generic [ref=e344]:
+                - img "Cake" [ref=e346]
+                - generic [ref=e347]:
+                  - generic [ref=e348]:
+                    - generic [ref=e349]:
+                      - heading "cmrlsl6ne0000rcu3vow6eagg" [level=3] [ref=e350]
+                      - generic [ref=e351]: Pending Verification
+                    - paragraph [ref=e353]:
+                      - text: 1x Mock Product
+                      - generic [ref=e354]: (1kg)
+                  - generic [ref=e355]:
+                    - generic [ref=e356]:
+                      - generic [ref=e357]:
+                        - generic [ref=e358]:
+                          - paragraph [ref=e359]: Customer
+                          - paragraph [ref=e360]: VIP Customer
+                          - paragraph [ref=e361]: "5551234567"
+                        - generic [ref=e362]:
+                          - paragraph [ref=e363]: Payment
+                          - paragraph [ref=e364]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e365]: ₹590
+                          - paragraph [ref=e366]: "Pending: ₹590"
+                      - generic [ref=e367]:
+                        - img [ref=e368]
+                        - generic [ref=e371]: "Due: 16 Jul, 01:32 pm"
+                    - generic [ref=e372]:
+                      - button "Approve" [ref=e373]:
+                        - img [ref=e374]
+                        - text: Approve
+                      - generic [ref=e377]:
+                        - button "Assign Vendor" [ref=e378]:
+                          - img [ref=e379]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e382]:
+                          - img [ref=e383]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e386]:
+                          - img [ref=e387]
+                          - text: Timeline
+                        - button "Call" [ref=e390]:
+                          - img [ref=e391]
+                          - text: Call
+              - generic [ref=e393]:
+                - img "Cake" [ref=e395]
+                - generic [ref=e396]:
+                  - generic [ref=e397]:
+                    - generic [ref=e398]:
+                      - heading "cmrlsk6nq00050ku3t1v2uzrf" [level=3] [ref=e399]
+                      - generic [ref=e400]: Pending Verification
+                    - paragraph [ref=e402]:
+                      - text: 1x Mock Product
+                      - generic [ref=e403]: (1kg)
+                  - generic [ref=e404]:
+                    - generic [ref=e405]:
+                      - generic [ref=e406]:
+                        - generic [ref=e407]:
+                          - paragraph [ref=e408]: Customer
+                          - paragraph [ref=e409]: VIP Customer
+                          - paragraph [ref=e410]: "5551234567"
+                        - generic [ref=e411]:
+                          - paragraph [ref=e412]: Payment
+                          - paragraph [ref=e413]:
+                            - text: "Total: ₹740 · Pending:"
+                            - generic [ref=e414]: ₹740
+                          - paragraph [ref=e415]: "Pending: ₹740"
+                      - generic [ref=e416]:
+                        - img [ref=e417]
+                        - generic [ref=e420]: "Due: 16 Jul, 01:31 pm"
+                    - generic [ref=e421]:
+                      - button "Approve" [ref=e422]:
+                        - img [ref=e423]
+                        - text: Approve
+                      - generic [ref=e426]:
+                        - button "Assign Vendor" [ref=e427]:
+                          - img [ref=e428]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e431]:
+                          - img [ref=e432]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e435]:
+                          - img [ref=e436]
+                          - text: Timeline
+                        - button "Call" [ref=e439]:
+                          - img [ref=e440]
+                          - text: Call
+              - generic [ref=e442]:
+                - img "Cake" [ref=e444]
+                - generic [ref=e445]:
+                  - generic [ref=e446]:
+                    - generic [ref=e447]:
+                      - heading "cmrlsk6b800000ku3i0uas189" [level=3] [ref=e448]
+                      - generic [ref=e449]: CANCELLED
+                    - paragraph [ref=e451]:
+                      - text: 1x Mock Product
+                      - generic [ref=e452]: (1kg)
+                  - generic [ref=e453]:
+                    - generic [ref=e454]:
+                      - generic [ref=e455]:
+                        - generic [ref=e456]:
+                          - paragraph [ref=e457]: Customer
+                          - paragraph [ref=e458]: VIP Customer
+                          - paragraph [ref=e459]: "5551234567"
+                        - generic [ref=e460]:
+                          - paragraph [ref=e461]: Payment
+                          - paragraph [ref=e462]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e463]: ₹590
+                          - paragraph [ref=e464]: "Pending: ₹590"
+                      - generic [ref=e465]:
+                        - img [ref=e466]
+                        - generic [ref=e469]: "Due: 16 Jul, 01:31 pm"
+                    - generic [ref=e470]:
+                      - button "Collect ₹590" [ref=e471]:
+                        - img [ref=e472]
+                        - text: Collect ₹590
+                      - generic [ref=e475]:
+                        - button "Assign Vendor" [ref=e476]:
+                          - img [ref=e477]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e480]:
+                          - img [ref=e481]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e484]:
+                          - img [ref=e485]
+                          - text: Timeline
+                        - button "Call" [ref=e488]:
+                          - img [ref=e489]
+                          - text: Call
+              - generic [ref=e491]:
+                - img "Cake" [ref=e493]
+                - generic [ref=e494]:
+                  - generic [ref=e495]:
+                    - generic [ref=e496]:
+                      - heading "cmrlsjr0i0000swu3r66zdsqi" [level=3] [ref=e497]
+                      - generic [ref=e498]: Pending Verification
+                    - paragraph [ref=e500]:
+                      - text: 1x Mock Product
+                      - generic [ref=e501]: (1kg)
+                  - generic [ref=e502]:
+                    - generic [ref=e503]:
+                      - generic [ref=e504]:
+                        - generic [ref=e505]:
+                          - paragraph [ref=e506]: Customer
+                          - paragraph [ref=e507]: VIP Customer
+                          - paragraph [ref=e508]: "5551234567"
+                        - generic [ref=e509]:
+                          - paragraph [ref=e510]: Payment
+                          - paragraph [ref=e511]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e512]: ₹590
+                          - paragraph [ref=e513]: "Pending: ₹590"
+                      - generic [ref=e514]:
+                        - img [ref=e515]
+                        - generic [ref=e518]: "Due: 16 Jul, 01:31 pm"
+                    - generic [ref=e519]:
+                      - button "Approve" [ref=e520]:
+                        - img [ref=e521]
+                        - text: Approve
+                      - generic [ref=e524]:
+                        - button "Assign Vendor" [ref=e525]:
+                          - img [ref=e526]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e529]:
+                          - img [ref=e530]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e533]:
+                          - img [ref=e534]
+                          - text: Timeline
+                        - button "Call" [ref=e537]:
+                          - img [ref=e538]
+                          - text: Call
+              - generic [ref=e540]:
+                - img "Cake" [ref=e542]
+                - generic [ref=e543]:
+                  - generic [ref=e544]:
+                    - generic [ref=e545]:
+                      - heading "cmrlsamc7006tagu36qawgldb" [level=3] [ref=e546]
+                      - generic [ref=e547]: Pending Verification
+                    - paragraph [ref=e549]:
+                      - text: 1x Mock Product
+                      - generic [ref=e550]: (1kg)
+                  - generic [ref=e551]:
+                    - generic [ref=e552]:
+                      - generic [ref=e553]:
+                        - generic [ref=e554]:
+                          - paragraph [ref=e555]: Customer
+                          - paragraph [ref=e556]: VIP Customer
+                          - paragraph [ref=e557]: "5551234567"
+                        - generic [ref=e558]:
+                          - paragraph [ref=e559]: Payment
+                          - paragraph [ref=e560]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e561]: ₹590
+                          - paragraph [ref=e562]: "Pending: ₹590"
+                      - generic [ref=e563]:
+                        - img [ref=e564]
+                        - generic [ref=e567]: "Due: 15 Jul, 01:23 pm"
+                    - generic [ref=e568]:
+                      - button "Approve" [ref=e569]:
+                        - img [ref=e570]
+                        - text: Approve
+                      - generic [ref=e573]:
+                        - button "Assign Vendor" [ref=e574]:
+                          - img [ref=e575]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e578]:
+                          - img [ref=e579]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e582]:
+                          - img [ref=e583]
+                          - text: Timeline
+                        - button "Call" [ref=e586]:
+                          - img [ref=e587]
+                          - text: Call
+              - generic [ref=e589]:
+                - img "Cake" [ref=e591]
+                - generic [ref=e592]:
+                  - generic [ref=e593]:
+                    - generic [ref=e594]:
+                      - heading "cmrlsam1d006oagu3zq0bg6bm" [level=3] [ref=e595]
+                      - generic [ref=e596]: Pending Verification
+                    - paragraph [ref=e598]:
+                      - text: 1x Mock Product
+                      - generic [ref=e599]: (1kg)
+                  - generic [ref=e600]:
+                    - generic [ref=e601]:
+                      - generic [ref=e602]:
+                        - generic [ref=e603]:
+                          - paragraph [ref=e604]: Customer
+                          - paragraph [ref=e605]: VIP Customer
+                          - paragraph [ref=e606]: "5551234567"
+                        - generic [ref=e607]:
+                          - paragraph [ref=e608]: Payment
+                          - paragraph [ref=e609]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e610]: ₹590
+                          - paragraph [ref=e611]: "Pending: ₹590"
+                      - generic [ref=e612]:
+                        - img [ref=e613]
+                        - generic [ref=e616]: "Due: 15 Jul, 01:23 pm"
+                    - generic [ref=e617]:
+                      - button "Approve" [ref=e618]:
+                        - img [ref=e619]
+                        - text: Approve
+                      - generic [ref=e622]:
+                        - button "Assign Vendor" [ref=e623]:
+                          - img [ref=e624]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e627]:
+                          - img [ref=e628]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e631]:
+                          - img [ref=e632]
+                          - text: Timeline
+                        - button "Call" [ref=e635]:
+                          - img [ref=e636]
+                          - text: Call
+              - generic [ref=e638]:
+                - img "Cake" [ref=e640]
+                - generic [ref=e641]:
+                  - generic [ref=e642]:
+                    - generic [ref=e643]:
+                      - heading "cmrlsaloz006jagu3qpxqap2w" [level=3] [ref=e644]
+                      - generic [ref=e645]: Pending Verification
+                    - paragraph [ref=e647]:
+                      - text: 1x Mock Product
+                      - generic [ref=e648]: (1kg)
+                  - generic [ref=e649]:
+                    - generic [ref=e650]:
+                      - generic [ref=e651]:
+                        - generic [ref=e652]:
+                          - paragraph [ref=e653]: Customer
+                          - paragraph [ref=e654]: VIP Customer
+                          - paragraph [ref=e655]: "5551234567"
+                        - generic [ref=e656]:
+                          - paragraph [ref=e657]: Payment
+                          - paragraph [ref=e658]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e659]: ₹590
+                          - paragraph [ref=e660]: "Pending: ₹590"
+                      - generic [ref=e661]:
+                        - img [ref=e662]
+                        - generic [ref=e665]: "Due: 15 Jul, 01:23 pm"
+                    - generic [ref=e666]:
+                      - button "Approve" [ref=e667]:
+                        - img [ref=e668]
+                        - text: Approve
+                      - generic [ref=e671]:
+                        - button "Assign Vendor" [ref=e672]:
+                          - img [ref=e673]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e676]:
+                          - img [ref=e677]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e680]:
+                          - img [ref=e681]
+                          - text: Timeline
+                        - button "Call" [ref=e684]:
+                          - img [ref=e685]
+                          - text: Call
+              - generic [ref=e687]:
+                - img "Cake" [ref=e689]
+                - generic [ref=e690]:
+                  - generic [ref=e691]:
+                    - generic [ref=e692]:
+                      - heading "cmrlsaldh006eagu3vrqrip0h" [level=3] [ref=e693]
+                      - generic [ref=e694]: Pending Verification
+                    - paragraph [ref=e696]:
+                      - text: 1x Mock Product
+                      - generic [ref=e697]: (1kg)
+                  - generic [ref=e698]:
+                    - generic [ref=e699]:
+                      - generic [ref=e700]:
+                        - generic [ref=e701]:
+                          - paragraph [ref=e702]: Customer
+                          - paragraph [ref=e703]: VIP Customer
+                          - paragraph [ref=e704]: "5551234567"
+                        - generic [ref=e705]:
+                          - paragraph [ref=e706]: Payment
+                          - paragraph [ref=e707]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e708]: ₹590
+                          - paragraph [ref=e709]: "Pending: ₹590"
+                      - generic [ref=e710]:
+                        - img [ref=e711]
+                        - generic [ref=e714]: "Due: 15 Jul, 01:23 pm"
+                    - generic [ref=e715]:
+                      - button "Approve" [ref=e716]:
+                        - img [ref=e717]
+                        - text: Approve
+                      - generic [ref=e720]:
+                        - button "Assign Vendor" [ref=e721]:
+                          - img [ref=e722]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e725]:
+                          - img [ref=e726]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e729]:
+                          - img [ref=e730]
+                          - text: Timeline
+                        - button "Call" [ref=e733]:
+                          - img [ref=e734]
+                          - text: Call
+              - generic [ref=e736]:
+                - img "Cake" [ref=e738]
+                - generic [ref=e739]:
+                  - generic [ref=e740]:
+                    - generic [ref=e741]:
+                      - heading "cmrlsal2t0069agu3dfk6fach" [level=3] [ref=e742]
+                      - generic [ref=e743]: Pending Verification
+                    - paragraph [ref=e745]:
+                      - text: 1x Mock Product
+                      - generic [ref=e746]: (1kg)
+                  - generic [ref=e747]:
+                    - generic [ref=e748]:
+                      - generic [ref=e749]:
+                        - generic [ref=e750]:
+                          - paragraph [ref=e751]: Customer
+                          - paragraph [ref=e752]: VIP Customer
+                          - paragraph [ref=e753]: "5551234567"
+                        - generic [ref=e754]:
+                          - paragraph [ref=e755]: Payment
+                          - paragraph [ref=e756]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e757]: ₹590
+                          - paragraph [ref=e758]: "Pending: ₹590"
+                      - generic [ref=e759]:
+                        - img [ref=e760]
+                        - generic [ref=e763]: "Due: 15 Jul, 01:23 pm"
+                    - generic [ref=e764]:
+                      - button "Approve" [ref=e765]:
+                        - img [ref=e766]
+                        - text: Approve
+                      - generic [ref=e769]:
+                        - button "Assign Vendor" [ref=e770]:
+                          - img [ref=e771]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e774]:
+                          - img [ref=e775]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e778]:
+                          - img [ref=e779]
+                          - text: Timeline
+                        - button "Call" [ref=e782]:
+                          - img [ref=e783]
+                          - text: Call
+              - generic [ref=e785]:
+                - img "Cake" [ref=e787]
+                - generic [ref=e788]:
+                  - generic [ref=e789]:
+                    - generic [ref=e790]:
+                      - heading "cmrlsakrr0064agu3en9rf3cd" [level=3] [ref=e791]
+                      - generic [ref=e792]: Pending Verification
+                    - paragraph [ref=e794]:
+                      - text: 1x Mock Product
+                      - generic [ref=e795]: (1kg)
+                  - generic [ref=e796]:
+                    - generic [ref=e797]:
+                      - generic [ref=e798]:
+                        - generic [ref=e799]:
+                          - paragraph [ref=e800]: Customer
+                          - paragraph [ref=e801]: VIP Customer
+                          - paragraph [ref=e802]: "5551234567"
+                        - generic [ref=e803]:
+                          - paragraph [ref=e804]: Payment
+                          - paragraph [ref=e805]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e806]: ₹590
+                          - paragraph [ref=e807]: "Pending: ₹590"
+                      - generic [ref=e808]:
+                        - img [ref=e809]
+                        - generic [ref=e812]: "Due: 15 Jul, 01:23 pm"
+                    - generic [ref=e813]:
+                      - button "Approve" [ref=e814]:
+                        - img [ref=e815]
+                        - text: Approve
+                      - generic [ref=e818]:
+                        - button "Assign Vendor" [ref=e819]:
+                          - img [ref=e820]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e823]:
+                          - img [ref=e824]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e827]:
+                          - img [ref=e828]
+                          - text: Timeline
+                        - button "Call" [ref=e831]:
+                          - img [ref=e832]
+                          - text: Call
+              - generic [ref=e834]:
+                - img "Cake" [ref=e836]
+                - generic [ref=e837]:
+                  - generic [ref=e838]:
+                    - generic [ref=e839]:
+                      - heading "cmrlsakgt005zagu3pwjm83px" [level=3] [ref=e840]
+                      - generic [ref=e841]: Pending Verification
+                    - paragraph [ref=e843]:
+                      - text: 1x Mock Product
+                      - generic [ref=e844]: (1kg)
+                  - generic [ref=e845]:
+                    - generic [ref=e846]:
+                      - generic [ref=e847]:
+                        - generic [ref=e848]:
+                          - paragraph [ref=e849]: Customer
+                          - paragraph [ref=e850]: VIP Customer
+                          - paragraph [ref=e851]: "5551234567"
+                        - generic [ref=e852]:
+                          - paragraph [ref=e853]: Payment
+                          - paragraph [ref=e854]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e855]: ₹590
+                          - paragraph [ref=e856]: "Pending: ₹590"
+                      - generic [ref=e857]:
+                        - img [ref=e858]
+                        - generic [ref=e861]: "Due: 15 Jul, 01:23 pm"
+                    - generic [ref=e862]:
+                      - button "Approve" [ref=e863]:
+                        - img [ref=e864]
+                        - text: Approve
+                      - generic [ref=e867]:
+                        - button "Assign Vendor" [ref=e868]:
+                          - img [ref=e869]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e872]:
+                          - img [ref=e873]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e876]:
+                          - img [ref=e877]
+                          - text: Timeline
+                        - button "Call" [ref=e880]:
+                          - img [ref=e881]
+                          - text: Call
+              - generic [ref=e883]:
+                - img "Cake" [ref=e885]
+                - generic [ref=e886]:
+                  - generic [ref=e887]:
+                    - generic [ref=e888]:
+                      - heading "cmrlsak61005uagu3tf64q3jk" [level=3] [ref=e889]
+                      - generic [ref=e890]: Pending Verification
+                    - paragraph [ref=e892]:
+                      - text: 1x Mock Product
+                      - generic [ref=e893]: (1kg)
+                  - generic [ref=e894]:
+                    - generic [ref=e895]:
+                      - generic [ref=e896]:
+                        - generic [ref=e897]:
+                          - paragraph [ref=e898]: Customer
+                          - paragraph [ref=e899]: VIP Customer
+                          - paragraph [ref=e900]: "5551234567"
+                        - generic [ref=e901]:
+                          - paragraph [ref=e902]: Payment
+                          - paragraph [ref=e903]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e904]: ₹590
+                          - paragraph [ref=e905]: "Pending: ₹590"
+                      - generic [ref=e906]:
+                        - img [ref=e907]
+                        - generic [ref=e910]: "Due: 15 Jul, 01:23 pm"
+                    - generic [ref=e911]:
+                      - button "Approve" [ref=e912]:
+                        - img [ref=e913]
+                        - text: Approve
+                      - generic [ref=e916]:
+                        - button "Assign Vendor" [ref=e917]:
+                          - img [ref=e918]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e921]:
+                          - img [ref=e922]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e925]:
+                          - img [ref=e926]
+                          - text: Timeline
+                        - button "Call" [ref=e929]:
+                          - img [ref=e930]
+                          - text: Call
+              - generic [ref=e932]:
+                - img "Cake" [ref=e934]
+                - generic [ref=e935]:
+                  - generic [ref=e936]:
+                    - generic [ref=e937]:
+                      - heading "cmrlsajup005pagu3fe9wd6e3" [level=3] [ref=e938]
+                      - generic [ref=e939]: Pending Verification
+                    - paragraph [ref=e941]:
+                      - text: 1x Mock Product
+                      - generic [ref=e942]: (1kg)
+                  - generic [ref=e943]:
+                    - generic [ref=e944]:
+                      - generic [ref=e945]:
+                        - generic [ref=e946]:
+                          - paragraph [ref=e947]: Customer
+                          - paragraph [ref=e948]: VIP Customer
+                          - paragraph [ref=e949]: "5551234567"
+                        - generic [ref=e950]:
+                          - paragraph [ref=e951]: Payment
+                          - paragraph [ref=e952]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e953]: ₹590
+                          - paragraph [ref=e954]: "Pending: ₹590"
+                      - generic [ref=e955]:
+                        - img [ref=e956]
+                        - generic [ref=e959]: "Due: 15 Jul, 01:23 pm"
+                    - generic [ref=e960]:
+                      - button "Approve" [ref=e961]:
+                        - img [ref=e962]
+                        - text: Approve
+                      - generic [ref=e965]:
+                        - button "Assign Vendor" [ref=e966]:
+                          - img [ref=e967]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e970]:
+                          - img [ref=e971]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e974]:
+                          - img [ref=e975]
+                          - text: Timeline
+                        - button "Call" [ref=e978]:
+                          - img [ref=e979]
+                          - text: Call
+              - generic [ref=e981]:
+                - img "Cake" [ref=e983]
+                - generic [ref=e984]:
+                  - generic [ref=e985]:
+                    - generic [ref=e986]:
+                      - heading "cmrlsajfl005kagu3wtxfje9m" [level=3] [ref=e987]
+                      - generic [ref=e988]: Pending Verification
+                    - paragraph [ref=e990]:
+                      - text: 1x Mock Product
+                      - generic [ref=e991]: (1kg)
+                  - generic [ref=e992]:
+                    - generic [ref=e993]:
+                      - generic [ref=e994]:
+                        - generic [ref=e995]:
+                          - paragraph [ref=e996]: Customer
+                          - paragraph [ref=e997]: VIP Customer
+                          - paragraph [ref=e998]: "5551234567"
+                        - generic [ref=e999]:
+                          - paragraph [ref=e1000]: Payment
+                          - paragraph [ref=e1001]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e1002]: ₹590
+                          - paragraph [ref=e1003]: "Pending: ₹590"
+                      - generic [ref=e1004]:
+                        - img [ref=e1005]
+                        - generic [ref=e1008]: "Due: 15 Jul, 01:23 pm"
+                    - generic [ref=e1009]:
+                      - button "Approve" [ref=e1010]:
+                        - img [ref=e1011]
+                        - text: Approve
+                      - generic [ref=e1014]:
+                        - button "Assign Vendor" [ref=e1015]:
+                          - img [ref=e1016]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e1019]:
+                          - img [ref=e1020]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e1023]:
+                          - img [ref=e1024]
+                          - text: Timeline
+                        - button "Call" [ref=e1027]:
+                          - img [ref=e1028]
+                          - text: Call
+              - generic [ref=e1030]:
+                - img "Cake" [ref=e1032]
+                - generic [ref=e1033]:
+                  - generic [ref=e1034]:
+                    - generic [ref=e1035]:
+                      - heading "cmrlsaj4s005fagu3r4zofnq4" [level=3] [ref=e1036]
+                      - generic [ref=e1037]: Pending Verification
+                    - paragraph [ref=e1039]:
+                      - text: 1x Mock Product
+                      - generic [ref=e1040]: (1kg)
+                  - generic [ref=e1041]:
+                    - generic [ref=e1042]:
+                      - generic [ref=e1043]:
+                        - generic [ref=e1044]:
+                          - paragraph [ref=e1045]: Customer
+                          - paragraph [ref=e1046]: VIP Customer
+                          - paragraph [ref=e1047]: "5551234567"
+                        - generic [ref=e1048]:
+                          - paragraph [ref=e1049]: Payment
+                          - paragraph [ref=e1050]:
+                            - text: "Total: ₹590 · Pending:"
+                            - generic [ref=e1051]: ₹590
+                          - paragraph [ref=e1052]: "Pending: ₹590"
+                      - generic [ref=e1053]:
+                        - img [ref=e1054]
+                        - generic [ref=e1057]: "Due: 15 Jul, 01:23 pm"
+                    - generic [ref=e1058]:
+                      - button "Approve" [ref=e1059]:
+                        - img [ref=e1060]
+                        - text: Approve
+                      - generic [ref=e1063]:
+                        - button "Assign Vendor" [ref=e1064]:
+                          - img [ref=e1065]
+                          - text: Assign Vendor
+                        - button "Edit Order" [ref=e1068]:
+                          - img [ref=e1069]
+                          - text: Edit Order
+                        - button "Timeline" [ref=e1072]:
+                          - img [ref=e1073]
+                          - text: Timeline
+                        - button "Call" [ref=e1076]:
+                          - img [ref=e1077]
+                          - text: Call
+            - generic [ref=e1080]:
+              - img [ref=e1082]
+              - generic [ref=e1086]:
+                - heading "🎂 NEW ORDER ARRIVED!" [level=4] [ref=e1087]
+                - paragraph [ref=e1088]: cms04lx0c00062acbsrauz981
+                - paragraph [ref=e1089]: Gate 2 Test Customer
+                - paragraph
+                - paragraph [ref=e1090]: ₹681
+                - generic [ref=e1091]:
+                  - button "View Details" [ref=e1092]
+                  - button "Dismiss" [ref=e1093]
+              - button [ref=e1094]:
+                - img [ref=e1095]
+            - button "Staff Chat (Khanderao)" [ref=e1098]:
+              - img [ref=e1099]
+              - text: Staff Chat (Khanderao)
+  - alert [ref=e1101]
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | 
+  3  | test('Verify orders display on Sales overview and Orders page', async ({ page }) => {
+  4  |   console.log('Navigating to live login page...');
+  5  |   await page.goto('https://gopal-cake-shop-prototype.onrender.com/login');
+  6  | 
+  7  |   // Step 1: Select Manager -> Khanderao Market -> Manager KHM
+  8  |   await page.getByRole('button', { name: 'Manager' }).click();
+  9  |   await page.getByRole('button', { name: 'Khanderao Market' }).click();
+  10 |   await page.getByRole('button', { name: 'Manager KHM' }).click();
+  11 | 
+  12 |   // Enter PIN 1111
+  13 |   await page.getByRole('button', { name: '1', exact: true }).click();
+  14 |   await page.getByRole('button', { name: '1', exact: true }).click();
+  15 |   await page.getByRole('button', { name: '1', exact: true }).click();
+  16 |   await page.getByRole('button', { name: '1', exact: true }).click();
+  17 | 
+  18 |   await page.waitForTimeout(5000);
+  19 |   console.log('Current URL after login:', page.url());
+  20 | 
+  21 |   // Check /sales content
+  22 |   const overviewContent = await page.textContent('body');
+  23 |   console.log('Overview page snippet:', overviewContent?.slice(0, 400));
+  24 | 
+  25 |   // Navigate to /sales/orders
+  26 |   console.log('Navigating to /sales/orders...');
+  27 |   await page.goto('https://gopal-cake-shop-prototype.onrender.com/sales/orders');
+  28 |   await page.waitForTimeout(4000);
+  29 | 
+  30 |   const ordersContent = await page.textContent('body');
+  31 |   console.log('Orders page snippet:', ordersContent?.slice(0, 500));
+  32 | 
+> 33 |   expect(ordersContent).toContain('ORD-');
+     |                         ^ Error: expect(received).toContain(expected) // indexOf
+  34 | });
+  35 | 
+```

@@ -116,7 +116,7 @@ export default function DeliveryCoordinationPage() {
                 <div key={order.id} className={`border rounded-xl p-4 transition-all ${isOverload ? 'border-amber-300 bg-amber-50/10' : 'border-border bg-secondary/10'}`}>
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <span className="font-black text-lg text-foreground">{order.id}</span>
+                      <span className="font-black text-lg text-foreground">{order.orderNumber || order.id}</span>
                       <span className="text-[10px] text-muted-foreground block font-bold">Branch: {order.branch}</span>
                     </div>
                     {isOverload ? (
@@ -177,7 +177,7 @@ export default function DeliveryCoordinationPage() {
               <div key={order.id} className="border border-blue-500/20 rounded-xl p-4 bg-blue-500/5">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <span className="font-black text-lg text-foreground">{order.id}</span>
+                    <span className="font-black text-lg text-foreground">{order.orderNumber || order.id}</span>
                     <span className="text-[10px] text-muted-foreground block font-semibold">From: {order.branch}</span>
                   </div>
                   <span className="text-[10px] bg-blue-500/10 text-blue-600 border border-blue-500/20 px-2 py-0.5 rounded font-bold uppercase tracking-widest flex items-center gap-1">
@@ -200,7 +200,7 @@ export default function DeliveryCoordinationPage() {
               {completedDeliveries.map((order) => (
                 <div key={order.id} className="border border-emerald-500/20 rounded-xl p-3 bg-emerald-500/5 opacity-75 flex justify-between items-center">
                   <div>
-                    <span className="font-bold text-sm text-foreground">{order.id}</span>
+                    <span className="font-bold text-sm text-foreground">{order.orderNumber || order.id}</span>
                     <p className="text-xs text-muted-foreground">Rider: {order.assignedDriverName}</p>
                   </div>
                   <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded font-bold uppercase tracking-widest flex items-center gap-1">

@@ -145,7 +145,7 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
     <motion.div layout initial={{opacity:0,scale:0.98}} animate={{opacity:1,scale:1}} className="bg-white/80 backdrop-blur-md border border-[#C5A059]/20 rounded-xl shadow-sm p-5 flex flex-col md:flex-row justify-between gap-4 group hover:border-[#C5A059]/50 transition-colors">
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-2">
-          <h3 className="text-lg font-serif font-black text-[#3E2723]">{order.id}</h3>
+          <h3 className="text-lg font-serif font-black text-[#3E2723]">{order.orderNumber || order.id}</h3>
           <span className="bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">
             {order.status.replace(/_/g," ")}
           </span>
@@ -163,7 +163,7 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6">
             <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm relative">
               <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><CloseSquare className="w-5 h-5" /></button>
-              <h3 className="font-serif text-xl font-black text-[#3E2723] mb-4">Transfer {order.id}</h3>
+              <h3 className="font-serif text-xl font-black text-[#3E2723] mb-4">Transfer {order.orderNumber || order.id}</h3>
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Destination Branch</p>
               <select value={transferTarget} onChange={e=>setTransferTarget(e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold mb-4">
                 {BRANCHES.filter(b=>b.id !== activeBranch).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}

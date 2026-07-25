@@ -420,7 +420,7 @@ export default function CustomerOrdersPage() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-heading font-black text-base text-[#2C1A14]">{order.id}</span>
+                          <span className="font-heading font-black text-base text-[#2C1A14]">{order.orderNumber || order.id}</span>
                           <span className={`px-2 py-0.5 rounded-full border text-[9px] font-black tracking-wider ${getStatusStyle(order.status)}`}>
                             {getStatusLabel(order.status)}
                           </span>

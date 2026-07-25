@@ -119,7 +119,7 @@ export default function SalesOverviewPage() {
                 <div key={`${order.id}-${idx}`} className="bg-white/80 rounded-[2rem] p-6 shadow-sm border border-amber-100 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-start mb-4">
-                      <span className="font-ui text-[9px] font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full uppercase tracking-[0.2em]">{order.id}</span>
+                      <span className="font-ui text-[9px] font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full uppercase tracking-[0.2em]">{order.orderNumber || order.id}</span>
                       <span className="font-ui text-[10px] text-[var(--muted-foreground)] font-bold uppercase tracking-[0.2em]">{new Date(req.timestamp || Date.now()).toLocaleTimeString()}</span>
                     </div>
                     <p className="font-display font-black text-2xl text-[var(--foreground)] mb-2">{req.itemName}</p>
