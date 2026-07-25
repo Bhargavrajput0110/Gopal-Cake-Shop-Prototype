@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server'
 import { withApiHandler } from '@/lib/withApiHandler'
 import { OrderService } from '@/services/OrderService'
 import { CreateDraftOrderSchema } from '@/dtos/OrderSchemas'
@@ -32,7 +33,10 @@ export const GET = withApiHandler(async ({ req, appRole, branchId, requestId }) 
   const sortOrder = searchParams.get('sortOrder') || undefined
 
   const { data, total } = await OrderService.listOrders(branchId, appRole, page, limit, { status, branch, search, startDate, endDate, sortField, sortOrder })
-  return paginatedResponse(data, page, limit, total, 'Orders fetched successfully', requestId)
+  const response = paginatedResponse(data, page, limit, total, 'Orders fetched successfully', requestId)
+  const json = await response.json()
+  json.debug = { appRole, branchId }
+  return NextResponse.json(json, { status: response.status })
 })
 
 /**
