@@ -29,6 +29,7 @@ type ApiHandler = (ctx: HandlerContext) => Promise<Response>
 
 export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, requiredPermission?: Capability) {
   return async (req: NextRequest, ctx: ApiContext = { params: {} }): Promise<Response> => {
+    try {
     const resolvedParams = await ctx.params
     const requestId = generateRequestId()
     const ip = req.headers.get('x-forwarded-for') || 'unknown'
@@ -206,6 +207,13 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
         [],
         requestId
       )
+    }
+    } catch (outerError: any) {
+      console.error('[withApiHandler] OUTER uncaught error:', outerError);
+      return new Response(JSON.stringify({ success: false, message: outerError?.message || 'Internal Server Error', code: 'INTERNAL_ERROR' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
   }
 }
