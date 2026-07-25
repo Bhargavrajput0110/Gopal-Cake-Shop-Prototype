@@ -1,5 +1,6 @@
 "use client"
 
+import { useSession } from "next-auth/react"
 import { SearchNormal1 } from "iconsax-react"
 import { cn } from "@/lib/utils"
 import { MobileNav } from "./MobileNav"
@@ -22,7 +23,8 @@ export function AppTopbar({
   searchPlaceholder = "Search...",
   className,
 }: AppTopbarProps) {
-  const { data: session } = useSession()
+  const sessionObj = useSession ? useSession() : null
+  const session = sessionObj?.data
   const displayName = session?.user?.name || config.user?.name || 'Staff'
   const displayRole = (session?.user as any)?.role || config.user?.role || 'Staff'
   const displayInitials = displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()

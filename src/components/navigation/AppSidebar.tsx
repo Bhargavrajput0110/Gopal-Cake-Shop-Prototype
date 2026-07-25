@@ -14,7 +14,8 @@ import { useSession } from "next-auth/react"
 
 export function AppSidebar({ config }: AppSidebarProps) {
   const pathname = usePathname()
-  const { data: session } = useSession()
+  const sessionObj = useSession ? useSession() : null
+  const session = sessionObj?.data
 
   const displayName = session?.user?.name || config.user?.name || 'Staff'
   const displayRole = (session?.user as any)?.role || config.user?.role || 'Staff'

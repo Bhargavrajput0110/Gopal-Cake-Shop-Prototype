@@ -139,7 +139,6 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
       } else if (requiredPermission && !appRole) {
         return errorResponse('Permission Denied: No Role Assigned', 'FORBIDDEN', 403, [], requestId)
       }
-    }
 
     const startTime = Date.now()
 
