@@ -8,7 +8,12 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL || ''
-  const pool = new Pool({ connectionString })
+  const isCloud = connectionString.includes('supabase.com') || connectionString.includes('render.com') || process.env.NODE_ENV === 'production'
+  
+  const pool = new Pool({ 
+    connectionString,
+    ssl: isCloud ? { rejectUnauthorized: false } : undefined
+  })
   
   const schemaMatch = connectionString.match(/schema=([^&]+)/)
   const schema = schemaMatch ? schemaMatch[1] : 'public'
