@@ -78,11 +78,15 @@ export class OrderService {
     const productIds = Array.from(new Set(orders.flatMap(o => o.items.map(i => (i as any).productId)).filter(Boolean)))
     
     let productMap = new Map<string, any>()
-    if (productIds.length > 0) {
-      const { data: products } = await supabaseAdmin.from('products').select('*').in('id', productIds)
-      if (products) {
-        productMap = new Map(products.map((p: any) => [p.id, p]))
+    try {
+      if (productIds.length > 0) {
+        const { data: products } = await supabaseAdmin.from('products').select('*').in('id', productIds)
+        if (products) {
+          productMap = new Map(products.map((p: any) => [p.id, p]))
+        }
       }
+    } catch (err) {
+      console.error('[OrderService] Error fetching products from Supabase:', err)
     }
 
     return {
