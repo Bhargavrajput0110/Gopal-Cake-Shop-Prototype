@@ -52,7 +52,7 @@ export function NotificationBell() {
     queryKey: ['notifications-inbox'],
     queryFn: () =>
       fetchClient<{ success: boolean; data: InAppNotification[] }>(
-        '/api/v1/notifications/inbox?unreadOnly=false'
+        '/notifications/inbox?unreadOnly=false'
       ),
     refetchInterval: 60_000, // Polling fallback if SSE drops
   })
@@ -62,7 +62,7 @@ export function NotificationBell() {
 
   const { mutate: markRead } = useMutation({
     mutationFn: (id: string) =>
-      fetchClient(`/api/v1/notifications/inbox/${id}`, {
+      fetchClient(`/notifications/inbox/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ action: 'READ' }),
       }),
@@ -71,7 +71,7 @@ export function NotificationBell() {
 
   const { mutate: dismiss } = useMutation({
     mutationFn: (id: string) =>
-      fetchClient(`/api/v1/notifications/inbox/${id}`, {
+      fetchClient(`/notifications/inbox/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ action: 'DISMISS' }),
       }),
