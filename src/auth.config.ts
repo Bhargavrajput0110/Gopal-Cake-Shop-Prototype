@@ -1,3 +1,7 @@
+if (typeof process !== 'undefined') {
+  process.env.AUTH_TRUST_HOST = 'true';
+}
+
 import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {

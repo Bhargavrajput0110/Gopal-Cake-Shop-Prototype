@@ -1,3 +1,8 @@
+process.env.AUTH_TRUST_HOST = 'true';
+if (!process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = 'https://gopal-cake-shop-prototype.onrender.com';
+}
+
 const express = require('express');
 const next = require('next');
 const { createServer } = require('http');
