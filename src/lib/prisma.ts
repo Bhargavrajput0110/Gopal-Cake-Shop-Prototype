@@ -8,19 +8,26 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL || ''
-  const isCloud = connectionString.includes('supabase.com') || connectionString.includes('render.com') || process.env.NODE_ENV === 'production'
-  
-  const pool = new Pool({ 
-    connectionString,
-    ssl: isCloud ? { rejectUnauthorized: false } : undefined
-  })
-  
-  const schemaMatch = connectionString.match(/schema=([^&]+)/)
-  const schema = schemaMatch ? schemaMatch[1] : 'public'
-  
-  const adapter = new PrismaPg(pool, { schema })
-  
-  return new PrismaClient({ adapter, log: ['query'] })
+  if (!connectionString) return new PrismaClient()
+
+  try {
+    const isCloud = connectionString.includes('supabase.com') || connectionString.includes('render.com') || process.env.NODE_ENV === 'production'
+    
+    const pool = new Pool({ 
+      connectionString,
+      ssl: isCloud ? { rejectUnauthorized: false } : undefined
+    })
+    
+    const schemaMatch = connectionString.match(/schema=([^&]+)/)
+    const schema = schemaMatch ? schemaMatch[1] : 'public'
+    
+    const adapter = new PrismaPg(pool, { schema })
+    
+    return new PrismaClient({ adapter, log: ['query'] })
+  } catch (error) {
+    console.error('[Prisma] Adapter initialization failed, falling back to standard PrismaClient:', error)
+    return new PrismaClient({ log: ['query'] })
+  }
 }
 
 export const prisma = process.env.NODE_ENV === 'test' 
