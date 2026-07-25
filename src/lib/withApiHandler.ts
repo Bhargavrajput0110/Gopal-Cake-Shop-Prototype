@@ -71,32 +71,31 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
       const hasBypassCookie = req.cookies.get('e2e-bypass-auth')?.value === 'true'
       const dummyRole = req.cookies.get('gopal_dummy_role')?.value
 
-      if (isTestBypassEnabled && hasBypassCookie) {
+      // 1. Try NextAuth session (used by UI login)
+      const session = await auth()
+      if (session?.user) {
+        user = { id: session.user.id, email: session.user.email || null }
+        appRole = ((session.user as any).role as string)?.toUpperCase() as Role
+        branchId = (session.user as any).branchId ? toBranchId((session.user as any).branchId) : 'khanderao'
+      } else if (dummyRole) {
+        // Fallback user from prototype login screen
+        user = { id: 'usr_dummy_dev', email: `dummy_${dummyRole.toLowerCase()}@example.com` }
+        appRole = dummyRole.toUpperCase() as Role
+        branchId = 'khanderao' // Map to main branch 'khanderao' instead of invalid 'b-001'
+      } else if (isTestBypassEnabled && hasBypassCookie) {
         // Mock a system admin user for load tests
         user = { id: 'usr_mock_loadtest', email: 'loadtest@example.com' }
         appRole = Role.ADMIN
-        branchId = 'b-001'
-      } else if (dummyRole) {
-        // Mock user from prototype login screen
-        user = { id: 'usr_dummy_dev', email: `dummy_${dummyRole.toLowerCase()}@example.com` }
-        appRole = dummyRole.toUpperCase() as Role
-        branchId = 'b-001'
+        branchId = 'khanderao'
       } else {
-        // 1. Try NextAuth (used by standard UI login)
-        const session = await auth()
-        if (session?.user) {
-          user = { id: session.user.id, email: session.user.email || null }
-          appRole = ((session.user as any).role as string)?.toUpperCase() as Role
-          branchId = (session.user as any).branchId || null
-        } else {
-          // 2. Try Supabase Auth (used by mobile apps / external clients)
-          const { data: authData } = await supabase.auth.getUser()
-          if (authData?.user) {
-            user = authData.user
-            appRole = user.user_metadata?.role || null
-            branchId = user.user_metadata?.branchId || null
-          }
+        // 2. Try Supabase Auth (used by mobile apps / external clients)
+        const { data: authData } = await supabase.auth.getUser()
+        if (authData?.user) {
+          user = authData.user
+          appRole = user.user_metadata?.role || null
+          branchId = user.user_metadata?.branchId ? toBranchId(user.user_metadata.branchId) : 'khanderao'
         }
+      }
 
         if (!user) {
           LoggerService.warn(`Unauthorized Access: ${req.method} ${req.nextUrl.pathname}`, { requestId, ip, userAgent })
