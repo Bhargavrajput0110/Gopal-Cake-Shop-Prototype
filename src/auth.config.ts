@@ -10,6 +10,17 @@ export const authConfig = {
   pages: {
     signIn: "/login",
   },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+      },
+    },
+  },
   callbacks: {
     async redirect({ url, baseUrl }) {
       const publicOrigin = process.env.NEXTAUTH_URL || 'https://gopal-cake-shop-prototype.onrender.com';
