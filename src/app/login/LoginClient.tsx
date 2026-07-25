@@ -80,6 +80,10 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
       } else {
         if (selectedStaff.role === "driver") {
           window.location.href = "/delivery";
+        } else if (selectedStaff.role === "chef") {
+          window.location.href = "/chef";
+        } else if (selectedStaff.role === "sales" || selectedStaff.role === "manager") {
+          window.location.href = "/sales";
         } else {
           window.location.href = "/admin";
         }
