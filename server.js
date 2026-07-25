@@ -16,6 +16,7 @@ const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const server = express();
+  server.set('trust proxy', true);
   const httpServer = createServer(server);
   
   // Attach Socket.IO to the HTTP server
