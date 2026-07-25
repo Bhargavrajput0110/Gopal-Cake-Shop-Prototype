@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function LoginPage() {
   const dbBranches = await prisma.branch.findMany({
+    where: { isActive: true },
     select: { id: true, name: true }
   });
 
