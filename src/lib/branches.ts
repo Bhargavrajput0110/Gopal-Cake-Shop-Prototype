@@ -58,7 +58,10 @@ export const BRANCH_ALIAS_MAP: Record<string, BranchId> = (() => {
 
 /** Resolve any display name or alias to its canonical BranchId */
 export function toBranchId(raw: string): BranchId {
-  return BRANCH_ALIAS_MAP[raw] ?? (raw as BranchId);
+  if (!raw || raw === 'b-001' || raw === 'default-branch' || raw === 'mock-branch-1' || !BRANCH_ALIAS_MAP[raw]) {
+    return 'khanderao';
+  }
+  return BRANCH_ALIAS_MAP[raw];
 }
 
 /** Get display name for a branch ID */
