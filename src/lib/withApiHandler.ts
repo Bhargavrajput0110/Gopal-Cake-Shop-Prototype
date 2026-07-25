@@ -72,7 +72,13 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
       const dummyRole = req.cookies.get('gopal_dummy_role')?.value
 
       // 1. Try NextAuth session (used by UI login)
-      const session = await auth()
+      let session = null
+      try {
+        session = await auth()
+      } catch (e) {
+        // NextAuth auth() session resolution fallback
+      }
+
       if (session?.user) {
         user = { id: session.user.id, email: session.user.email || null }
         appRole = ((session.user as any).role as string)?.toUpperCase() as Role
@@ -103,18 +109,24 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
         }
         // Dev Sync: Fetch from Prisma if email matches
         if (user.email) {
-          const prismaUser = await prisma.user.findUnique({ where: { email: user.email } })
-          if (prismaUser) {
-            appRole = prismaUser.role as Role
-            branchId = prismaUser.branchId
-            
-            if (prismaUser.status !== 'ACTIVE') {
-               LoggerService.warn(`Access Denied: Account Status ${prismaUser.status}`, { requestId, email: user.email })
-               return errorResponse(`Account is ${prismaUser.status}`, 'FORBIDDEN', 403, [], requestId)
-            }
+          try {
+            const prismaUser = await prisma.user.findUnique({ where: { email: user.email } })
+            if (prismaUser) {
+              appRole = prismaUser.role as Role
+              if (prismaUser.branchId) {
+                branchId = prismaUser.branchId
+              }
+              
+              if (prismaUser.status !== 'ACTIVE') {
+                 LoggerService.warn(`Access Denied: Account Status ${prismaUser.status}`, { requestId, email: user.email })
+                 return errorResponse(`Account is ${prismaUser.status}`, 'FORBIDDEN', 403, [], requestId)
+              }
 
-            // OVERRIDE user object with Prisma ID to prevent Foreign Key constraints failing
-            user.id = prismaUser.id
+              // OVERRIDE user object with Prisma ID to prevent Foreign Key constraints failing
+              user.id = prismaUser.id
+            }
+          } catch (e) {
+            console.error('[withApiHandler] Error in Dev Sync prismaUser lookup:', e)
           }
         }
       }
