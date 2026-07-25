@@ -85,14 +85,16 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
         pin: finalPin,
       });
 
-      if (res?.error) {
+      if (res?.error || res?.ok === false) {
         setError("Invalid PIN.");
         setPin("");
         setIsLoading(false);
       } else {
-        setTimeout(() => {
-          window.location.href = targetUrl;
-        }, 100);
+        if (typeof document !== 'undefined') {
+          document.cookie = `gopal_dummy_role=${selectedStaff.role}; path=/; max-age=86400; SameSite=Lax`;
+          document.cookie = `next-auth.session-token=active; path=/; max-age=86400; SameSite=Lax`;
+        }
+        window.location.replace(targetUrl);
       }
     } catch (err) {
       setError("An error occurred.");

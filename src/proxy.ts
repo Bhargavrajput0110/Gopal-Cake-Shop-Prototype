@@ -43,9 +43,13 @@ export function proxy(request: NextRequest) {
   // Check if the request is for a staff-protected route
   const isStaffRoute = STAFF_PROTECTED_ROUTES.some(route => url === route || url.startsWith(route + '/'));
   if (isStaffRoute) {
-    // NextAuth v5 / Auth.js session cookie check (matches any session-token variant)
+    // NextAuth v5 / Auth.js session cookie check (checks raw Cookie header + parsed cookies)
+    const rawCookieHeader = request.headers.get('cookie') || '';
     const allCookies = request.cookies.getAll();
-    const hasSession = allCookies.some(c => c.name.includes('session-token') || c.name === 'gopal_dummy_role');
+    const hasSession = 
+      rawCookieHeader.includes('session-token') || 
+      rawCookieHeader.includes('gopal_dummy_role') ||
+      allCookies.some(c => c.name.includes('session-token') || c.name === 'gopal_dummy_role');
 
     if (!hasSession) {
       const loginUrl = new URL('/login', request.url);
