@@ -34,7 +34,7 @@ const STAFF_PROTECTED_ROUTES = [
 // Customer routes that require Supabase customer auth
 const CUSTOMER_PROTECTED_ROUTES = ['/customer/orders'];
 
-export function proxy(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const response = NextResponse.next();
   const url = request.nextUrl.pathname;
 
