@@ -7,6 +7,17 @@ export const authConfig = {
     signIn: "/login",
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      const publicOrigin = process.env.NEXTAUTH_URL || 'https://gopal-cake-shop-prototype.onrender.com';
+      if (url.startsWith("/")) return `${publicOrigin}${url}`;
+      try {
+        const u = new URL(url);
+        if (u.origin === publicOrigin || u.hostname.includes('onrender.com')) {
+          return url;
+        }
+      } catch (e) {}
+      return publicOrigin;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
