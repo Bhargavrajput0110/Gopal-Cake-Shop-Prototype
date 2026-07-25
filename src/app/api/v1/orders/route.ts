@@ -21,19 +21,23 @@ import { successResponse, createdResponse, paginatedResponse } from '@/lib/apiUt
  *           type: integer
  */
 export const GET = withApiHandler(async ({ req, appRole, branchId, requestId }) => {
-  const searchParams = req.nextUrl.searchParams
-  const page = parseInt(searchParams.get('page') || '1', 10)
-  const limit = parseInt(searchParams.get('limit') || '20', 10)
-  const status = searchParams.get('status') || undefined
-  const branch = searchParams.get('branch') || undefined
-  const search = searchParams.get('search') || undefined
-  const startDate = searchParams.get('startDate') || undefined
-  const endDate = searchParams.get('endDate') || undefined
-  const sortField = searchParams.get('sortField') || undefined
-  const sortOrder = searchParams.get('sortOrder') || undefined
+  try {
+    const searchParams = req.nextUrl.searchParams
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = parseInt(searchParams.get('limit') || '20', 10)
+    const status = searchParams.get('status') || undefined
+    const branch = searchParams.get('branch') || undefined
+    const search = searchParams.get('search') || undefined
+    const startDate = searchParams.get('startDate') || undefined
+    const endDate = searchParams.get('endDate') || undefined
+    const sortField = searchParams.get('sortField') || undefined
+    const sortOrder = searchParams.get('sortOrder') || undefined
 
-  const { data, total } = await OrderService.listOrders(branchId, appRole, page, limit, { status, branch, search, startDate, endDate, sortField, sortOrder })
-  return paginatedResponse(data, page, limit, total, 'Orders fetched successfully', requestId)
+    const { data, total } = await OrderService.listOrders(branchId, appRole, page, limit, { status, branch, search, startDate, endDate, sortField, sortOrder })
+    return paginatedResponse(data, page, limit, total, 'Orders fetched successfully', requestId)
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message || String(err), stack: err.stack }, { status: 500 })
+  }
 })
 
 /**
