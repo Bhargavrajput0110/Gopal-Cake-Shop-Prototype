@@ -43,14 +43,9 @@ export function proxy(request: NextRequest) {
   // Check if the request is for a staff-protected route
   const isStaffRoute = STAFF_PROTECTED_ROUTES.some(route => url === route || url.startsWith(route + '/'));
   if (isStaffRoute) {
-    // NextAuth v5 / Auth.js session cookie names
-    const hasSession =
-      request.cookies.has('authjs.session-token') ||
-      request.cookies.has('__Secure-authjs.session-token') ||
-      request.cookies.has('next-auth.session-token') ||
-      request.cookies.has('__Secure-next-auth.session-token') ||
-      // Allow prototype demo cookie to bypass (for client demos without real DB)
-      request.cookies.has('gopal_dummy_role');
+    // NextAuth v5 / Auth.js session cookie check (matches any session-token variant)
+    const allCookies = request.cookies.getAll();
+    const hasSession = allCookies.some(c => c.name.includes('session-token') || c.name === 'gopal_dummy_role');
 
     if (!hasSession) {
       const loginUrl = new URL('/login', request.url);
