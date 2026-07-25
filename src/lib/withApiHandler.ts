@@ -138,7 +138,7 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
         branchId = 'khanderao'
       }
 
-      console.log(`[withApiHandler] path=${req.nextUrl.pathname} dummyRole=${dummyRole} appRole=${appRole} branchId=${branchId} user=${JSON.stringify(user)}`)
+      console.log(`[withApiHandler] path=${req.nextUrl.pathname} appRole=${appRole} branchId=${branchId} user=${JSON.stringify(user)}`)
 
       // RBAC Enforcement
       if (requiredPermission && appRole) {
