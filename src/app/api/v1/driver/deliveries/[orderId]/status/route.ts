@@ -32,7 +32,7 @@ export const PATCH = withApiHandler(async (ctx) => {
       newStatus = 'ON_THE_WAY'
       break
     case 'PICKED_UP':
-      newStatus = 'OUT_FOR_DELIVERY'
+      newStatus = 'ON_THE_WAY'
       break
     case 'DELIVERED':
       newStatus = 'DELIVERED'

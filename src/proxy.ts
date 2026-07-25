@@ -20,20 +20,64 @@ function checkRateLimit(ip: string, limit: number, windowMs: number): boolean {
   return true;
 }
 
+// Staff routes that require a valid NextAuth session
+const STAFF_PROTECTED_ROUTES = [
+  '/admin',
+  '/sales',
+  '/chef',
+  '/driver',
+  '/vendor',
+  '/manager',
+  '/supplier',
+];
+
+// Customer routes that require Supabase customer auth
+const CUSTOMER_PROTECTED_ROUTES = ['/customer/orders'];
+
 export function proxy(request: NextRequest) {
   const response = NextResponse.next();
   const url = request.nextUrl.pathname;
 
-  // 1. Inject Correlation ID
+  // ── 1. Route Protection ─────────────────────────────────────────────────────
+
+  // Check if the request is for a staff-protected route
+  const isStaffRoute = STAFF_PROTECTED_ROUTES.some(route => url === route || url.startsWith(route + '/'));
+  if (isStaffRoute) {
+    // NextAuth v5 session cookie names
+    const hasSession =
+      request.cookies.has('next-auth.session-token') ||
+      request.cookies.has('__Secure-next-auth.session-token') ||
+      // Allow prototype demo cookie to bypass (for client demos without real DB)
+      request.cookies.has('gopal_dummy_role');
+
+    if (!hasSession) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('callbackUrl', url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // Check if the request is for a customer-protected route
+  const isCustomerRoute = CUSTOMER_PROTECTED_ROUTES.some(route => url === route || url.startsWith(route + '/'));
+  if (isCustomerRoute) {
+    // Supabase auth uses sb-* cookies
+    const hasCustomerSession = [...request.cookies.getAll()].some(c => c.name.startsWith('sb-'));
+    if (!hasCustomerSession) {
+      const loginUrl = new URL('/customer/login', request.url);
+      loginUrl.searchParams.set('callbackUrl', url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // ── 2. Inject Correlation ID ─────────────────────────────────────────────────
   let correlationId = request.headers.get('x-correlation-id');
   if (!correlationId) {
     correlationId = uuidv4();
     request.headers.set('x-correlation-id', correlationId);
-    // Also set it on the response so the client knows it
     response.headers.set('x-correlation-id', correlationId);
   }
 
-  // 2. Security Headers (HSTS, CSP, X-Frame-Options)
+  // ── 3. Security Headers (HSTS, CSP, X-Frame-Options) ────────────────────────
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -50,7 +94,7 @@ export function proxy(request: NextRequest) {
   `.replace(/\s{2,}/g, ' ').trim();
   response.headers.set('Content-Security-Policy', csp);
 
-  // 3. Tiered Rate Limiting
+  // ── 4. Tiered Rate Limiting ──────────────────────────────────────────────────
   if (url.startsWith('/api/')) {
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
     

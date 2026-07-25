@@ -241,6 +241,7 @@ export class StorefrontEngine {
       const newOrder = await tx.order.create({
         data: {
           orderNumber: `ORD-${Date.now()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`,
+          trackingId: `GCS-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
           customerId: payload.customerId,
           branchId: canonicalBranchId,
           source: context.source,
