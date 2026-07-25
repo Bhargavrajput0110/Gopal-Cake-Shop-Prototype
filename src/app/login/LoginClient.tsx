@@ -66,9 +66,14 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
     setIsLoading(true);
     
     try {
+      const targetUrl = selectedStaff.role === "driver" ? "/delivery" 
+        : selectedStaff.role === "chef" ? "/chef"
+        : selectedStaff.role === "sales" || selectedStaff.role === "manager" ? "/sales"
+        : "/admin";
 
       const res = await signIn("credentials", {
         redirect: false,
+        callbackUrl: typeof window !== 'undefined' ? window.location.origin + targetUrl : targetUrl,
         id: selectedStaff.id,
         pin: finalPin,
       });
@@ -78,15 +83,7 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
         setPin("");
         setIsLoading(false);
       } else {
-        if (selectedStaff.role === "driver") {
-          window.location.href = "/delivery";
-        } else if (selectedStaff.role === "chef") {
-          window.location.href = "/chef";
-        } else if (selectedStaff.role === "sales" || selectedStaff.role === "manager") {
-          window.location.href = "/sales";
-        } else {
-          window.location.href = "/admin";
-        }
+        window.location.href = targetUrl;
       }
     } catch (err) {
       setError("An error occurred.");
