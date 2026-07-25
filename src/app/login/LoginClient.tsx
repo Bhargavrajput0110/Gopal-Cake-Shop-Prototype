@@ -83,6 +83,9 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
         setPin("");
         setIsLoading(false);
       } else {
+        if (typeof document !== 'undefined') {
+          document.cookie = `gopal_dummy_role=${selectedStaff.role}; path=/; max-age=86400; SameSite=Lax; Secure`;
+        }
         window.location.href = targetUrl;
       }
     } catch (err) {
