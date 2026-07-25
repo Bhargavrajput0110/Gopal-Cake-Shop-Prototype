@@ -13,7 +13,7 @@ export default function SalesOverviewPage() {
   const { orders, updateIngredientRequestStatus } = useOrders();
   const { data: session } = useSession();
 
-  const activeBranch = (session?.user?.branchId || "khanderao") as BranchId;
+  const activeBranch = toBranchId(session?.user?.branchId || "khanderao");
   const branchOrders = orders.filter(o => toBranchId(o.branch) === activeBranch);
 
   const pendingVerification = branchOrders.filter(o => o.status === "NEW").length;
