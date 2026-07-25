@@ -33,10 +33,7 @@ export const GET = withApiHandler(async ({ req, appRole, branchId, requestId }) 
   const sortOrder = searchParams.get('sortOrder') || undefined
 
   const { data, total } = await OrderService.listOrders(branchId, appRole, page, limit, { status, branch, search, startDate, endDate, sortField, sortOrder })
-  const response = paginatedResponse(data, page, limit, total, 'Orders fetched successfully', requestId)
-  const json = await response.json()
-  json.debug = { appRole, branchId }
-  return NextResponse.json(json, { status: response.status })
+  return paginatedResponse(data, page, limit, total, 'Orders fetched successfully', requestId)
 })
 
 /**
