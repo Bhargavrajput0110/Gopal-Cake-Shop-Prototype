@@ -22,9 +22,12 @@ export function withBranchIsolation(branchId: string | null, role: string) {
               if (isolatedModels.includes(model)) {
                 const readOperations = ['findMany', 'findFirst', 'findUnique', 'count', 'update', 'updateMany', 'delete', 'deleteMany']
                 if (readOperations.includes(operation)) {
-                  (args as any).where = {
-                    ...(args as any).where,
-                    branchId: branchId,
+                  const currentWhere = (args as any)?.where || {};
+                  if (currentWhere.branchId === undefined) {
+                    (args as any).where = {
+                      ...currentWhere,
+                      branchId: branchId,
+                    }
                   }
                 }
               }
