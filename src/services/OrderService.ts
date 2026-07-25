@@ -12,12 +12,12 @@ export class OrderService {
     limit: number = 20,
     filters?: { status?: string, branch?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string }
   ): Promise<{ data: OrderResponseDTO[], total: number }> {
-    const canonicalBranchId = branchId ? toBranchId(branchId) : null;
+    const canonicalBranchId = toBranchId(branchId);
     const db = prisma
     const skip = (page - 1) * limit
     
     const whereClause: Prisma.OrderWhereInput = {}
-    if (role && role.toUpperCase() !== 'ADMIN' && canonicalBranchId) {
+    if (role && role.toUpperCase() !== 'ADMIN') {
       whereClause.branchId = canonicalBranchId
     } else if (filters?.branch) {
       whereClause.branchId = toBranchId(filters.branch)
