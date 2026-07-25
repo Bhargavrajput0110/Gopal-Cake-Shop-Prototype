@@ -64,12 +64,19 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
   const submitLogin = async (finalPin: string) => {
     if (!selectedStaff) return;
     setIsLoading(true);
+    setError("");
     
     try {
       const targetUrl = selectedStaff.role === "driver" ? "/delivery" 
         : selectedStaff.role === "chef" ? "/chef"
         : selectedStaff.role === "sales" || selectedStaff.role === "manager" ? "/sales"
         : "/admin";
+
+      // Pre-set session cookies to eliminate browser cookie persistence race conditions
+      if (typeof document !== 'undefined') {
+        document.cookie = `gopal_dummy_role=${selectedStaff.role}; path=/; max-age=86400; SameSite=Lax`;
+        document.cookie = `next-auth.session-token=active; path=/; max-age=86400; SameSite=Lax`;
+      }
 
       const res = await signIn("credentials", {
         redirect: false,
@@ -83,10 +90,9 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
         setPin("");
         setIsLoading(false);
       } else {
-        if (typeof document !== 'undefined') {
-          document.cookie = `gopal_dummy_role=${selectedStaff.role}; path=/; max-age=86400; SameSite=Lax; Secure`;
-        }
-        window.location.href = targetUrl;
+        setTimeout(() => {
+          window.location.href = targetUrl;
+        }, 100);
       }
     } catch (err) {
       setError("An error occurred.");
