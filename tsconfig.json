@@ -24,11 +24,9 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules", "postgres_bin", "postgres_data", "playwright-report", "scripts", "scratch", "tests", "playwright", "playwright.config.ts", "playwright-ct.config.ts", "vitest.config.ts"]
 }
