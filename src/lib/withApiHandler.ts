@@ -121,6 +121,8 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
       
       if (branchId) {
         branchId = toBranchId(branchId)
+      } else {
+        branchId = 'khanderao'
       }
 
       // RBAC Enforcement
