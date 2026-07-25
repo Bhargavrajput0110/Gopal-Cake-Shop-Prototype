@@ -625,7 +625,7 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
       <div className="p-5 flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <h3 className="text-xl font-serif font-black text-[#3E2723]">{order.id}</h3>
+            <h3 className="text-xl font-serif font-black text-[#3E2723]">{order.orderNumber || order.id}</h3>
             <span className="bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">
               {statusLabel(order.status)}
             </span>
