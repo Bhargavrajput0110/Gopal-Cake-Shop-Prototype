@@ -153,6 +153,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       }).catch(console.error);
     };
 
+    // Fetch orders immediately on component mount
+    refetchOrders();
+
     fetch('/api/auth/session').then(res => res.json()).then(session => {
       const branchId = session?.user?.branchId;
       
