@@ -10,6 +10,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { StaffChatWidget } from "@/components/chat/StaffChatWidget";
 import { toBranchId, toBranchShortName, BRANCHES, type BranchId } from "@/lib/branches";
+import { useSession } from "next-auth/react";
 
 
 import { fetchClient } from "@/lib/api/client";
@@ -73,6 +74,7 @@ function playPriorityBeep() {
 }
 
 function SalesDashboardContent() {
+  const { data: session } = useSession();
   const { updateOrderStatus, updateOrderFields } = useOrders();
   const [serverOrders, setServerOrders] = useState<Order[]>([]);
   const [page, setPage] = useState(1);
@@ -105,7 +107,7 @@ function SalesDashboardContent() {
     if (employeeId.includes("-UMA-")) return "uma";
     if (employeeId.includes("-KHM-")) return "khanderao";
     if (employeeId.includes("-ELR-")) return "elora";
-    if (employeeId.includes("-WAS-")) return "varasiya";
+    if (employeeId.includes("-WAS-")) return "warasiya";
     return "khanderao"; // Default
   });
 
