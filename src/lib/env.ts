@@ -2,13 +2,13 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  NEXTAUTH_SECRET: z.string().min(1, 'NEXTAUTH_SECRET is required'),
-  NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL'),
+  NEXTAUTH_SECRET: z.string().optional(),
+  NEXTAUTH_URL: z.string().optional(),
   
   // Payment
-  RAZORPAY_KEY_ID: z.string().min(1, 'RAZORPAY_KEY_ID is required'),
-  RAZORPAY_KEY_SECRET: z.string().min(1, 'RAZORPAY_KEY_SECRET is required'),
-  RAZORPAY_WEBHOOK_SECRET: z.string().min(1, 'RAZORPAY_WEBHOOK_SECRET is required'),
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
 
   // Map Provider
   DISTANCE_PROVIDER: z.enum(['google', 'manual']).default('manual'),
