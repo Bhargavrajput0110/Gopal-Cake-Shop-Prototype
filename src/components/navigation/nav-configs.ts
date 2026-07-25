@@ -53,7 +53,6 @@ export const SALES_NAV_CONFIG: AppConfig = {
   appName: "Gopal Bakery",
   appSubtitle: "Sales Desk",
   rootHref: "/sales",
-  user: { name: "Pooja Mehta", role: "Sales Rep", initials: "PM", mockId: "SALES-01" },
   onSignOut: SIGN_OUT,
   nav: [
     {
