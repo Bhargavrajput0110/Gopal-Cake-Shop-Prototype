@@ -166,15 +166,15 @@ async function run() {
     assert('Chef Accept (WAITING_FOR_CHEF -> CHEF_ACCEPTED)', chefAccept.status === 200)
 
     // Invalid state transition
-    const invalidTrans = await api('PATCH', `/api/v1/chef/production/${itemId}/status`, testIds.chefUser, { status: 'READY_FOR_PICKUP' })
-    assert('Invalid Transition (CHEF_ACCEPTED -> READY_FOR_PICKUP) rejected', invalidTrans.status >= 400)
+    const invalidTrans = await api('PATCH', `/api/v1/chef/production/${itemId}/status`, testIds.chefUser, { status: 'PACKED' })
+    assert('Invalid Transition (CHEF_ACCEPTED -> PACKED) rejected', invalidTrans.status >= 400)
 
     // Valid MAKE transition
     const chefMake1 = await api('PATCH', `/api/v1/chef/production/${itemId}/status`, testIds.chefUser, { status: 'MAKING' })
     assert('Chef starts making', chefMake1.status === 200)
 
-    const chefReady = await api('PATCH', `/api/v1/chef/production/${itemId}/status`, testIds.chefUser, { status: 'READY_FOR_PICKUP' })
-    assert('Chef Ready (MAKING -> READY_FOR_PICKUP)', chefReady.status === 200)
+    const chefReady = await api('PATCH', `/api/v1/chef/production/${itemId}/status`, testIds.chefUser, { status: 'PACKED' })
+    assert('Chef Ready (MAKING -> PACKED)', chefReady.status === 200)
 
     // ─────────────────────────────────────────────────────────────────────
     console.log('\n▶ Phase 3: Delivery (Admin/Driver)')

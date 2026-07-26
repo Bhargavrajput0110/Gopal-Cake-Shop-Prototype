@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { OrderItemStatus } from '@prisma/client'
 import { OutboxService } from '@/lib/events/OutboxService'
+import { KitchenStateMachine } from '@/services/KitchenStateMachine'
 
 export async function PATCH(req: Request, context: { params: Promise<{ itemId: string }> }) {
   try {
@@ -46,16 +47,22 @@ export async function PATCH(req: Request, context: { params: Promise<{ itemId: s
         timelineAction = 'PRODUCTION_RESUMED'
         timelineNote = `Resumed from pause`
       } else if (status) {
-        if (status === 'READY_FOR_PICKUP' || status === 'COMPLETED') {
+        if (status === 'PACKED') {
           // Verify all vendor child items are ready
           const childItems = await tx.orderItem.findMany({
             where: { parentItemId: itemId, assignedVendorId: { not: null } }
           })
-          const pendingChildren = childItems.filter(c => c.status !== 'READY_FOR_PICKUP' && c.status !== 'DELIVERED')
+          const pendingChildren = childItems.filter(c => c.status !== 'PACKED' && c.status !== 'CANCELLED')
           if (pendingChildren.length > 0) {
             throw new Error(`Cannot complete. Waiting on vendor components: ${pendingChildren.map(c => c.productName).join(', ')}`)
           }
         }
+        
+        // Validate State Transition
+        if (!KitchenStateMachine.validateTransition(item.status, status)) {
+          throw new Error(`CONFLICT: Invalid state transition from ${item.status} to ${status}`)
+        }
+
         updateData.status = status
         timelineAction = `STATUS_CHANGED_TO_${status}`
         if (status === 'MAKING' && item.status !== 'MAKING') {
@@ -100,6 +107,9 @@ export async function PATCH(req: Request, context: { params: Promise<{ itemId: s
     console.error('Update Chef Item Status Error:', error)
     if (error.message?.startsWith('FORBIDDEN')) {
       return NextResponse.json({ error: error.message }, { status: 403 })
+    }
+    if (error.message?.startsWith('CONFLICT')) {
+      return NextResponse.json({ error: error.message }, { status: 409 })
     }
     return NextResponse.json({ error: error.message }, { status: 400 })
   }

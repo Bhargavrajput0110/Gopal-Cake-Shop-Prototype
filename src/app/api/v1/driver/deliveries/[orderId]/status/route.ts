@@ -15,7 +15,7 @@ export const PATCH = withApiHandler(async (ctx) => {
   const order = await db.order.findUnique({ where: { id: orderId } })
   if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   
-  if (appRole === 'DELIVERY' && order.driverId !== user.id) {
+  if (appRole === 'DELIVERY' && order.driverId && order.driverId !== user.id) {
     return NextResponse.json({ error: 'Order assigned to another driver' }, { status: 403 })
   }
 
