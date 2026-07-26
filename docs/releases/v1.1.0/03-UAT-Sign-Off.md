@@ -7,6 +7,7 @@
 
 
 ## UAT Metadata
+- **Status:** Draft
 - **Client:** _____________________
 - **Business Representative:** _____________________
 - **UAT Start Date:** _____________________
@@ -14,6 +15,7 @@
 - **Environment:** Production Staging / Render RC
 - **Build Version:** v1.1.0 RC
 - **Git Commit:** _____________________
+- **Build Number:** _____________________
 - **Tester(s):** _____________________
 
 > [!WARNING]
@@ -210,3 +212,18 @@ Date: _____________________
 ☐ Approved to Deploy  
 ☐ Deployment Deferred  
 *Reason (if deferred):* ____________________________________________________
+
+---
+
+## Production Verification
+After deployment, confirm the production environment is operational:
+
+- [ ] Website loads successfully
+- [ ] Admin login verified
+- [ ] Sales login verified
+- [ ] Kitchen dashboard verified
+- [ ] Delivery dashboard verified
+- [ ] Order creation verified
+- [ ] Production database connected
+- [ ] Production payment gateway verified (if enabled)
+- [ ] Monitoring/Logs verified
