@@ -51,4 +51,5 @@ const handler = async (ctx: HandlerContext) => {
   }
 }
 
-export const POST = withApiHandler(handler, true)
+// Security: isPublic=false — kitchen note creation requires an authenticated session
+export const POST = withApiHandler(handler, false)

@@ -106,6 +106,17 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
 
         if (!user) {
           LoggerService.warn(`Unauthorized Access: ${req.method} ${req.nextUrl.pathname}`, { requestId, ip, userAgent })
+          LoggerService.security('AUTH_FAILURE', {
+            requestId,
+            userId: null,
+            role: null,
+            branchId: null,
+            method: req.method,
+            path: req.nextUrl.pathname,
+            result: '401 Unauthorized',
+            ip,
+            reason: 'No valid session found'
+          })
           return errorResponse('Unauthorized', 'UNAUTHORIZED', 401, [], requestId)
         }
         // Dev Sync: Fetch from Prisma if email matches
@@ -120,6 +131,17 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
               
               if (prismaUser.status !== 'ACTIVE') {
                  LoggerService.warn(`Access Denied: Account Status ${prismaUser.status}`, { requestId, email: user.email })
+                 LoggerService.security('ACCOUNT_SUSPENDED', {
+                   requestId,
+                   userId: prismaUser.id,
+                   role: prismaUser.role,
+                   branchId: prismaUser.branchId,
+                   method: req.method,
+                   path: req.nextUrl.pathname,
+                   result: `403 Forbidden`,
+                   ip,
+                   reason: `Account status: ${prismaUser.status}`
+                 })
                  return errorResponse(`Account is ${prismaUser.status}`, 'FORBIDDEN', 403, [], requestId)
               }
 
@@ -147,9 +169,31 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
         // For branch-scoped operations (like editing a specific order), the Service layer must re-verify context.
         if (!hasPermission(appRole, branchId, requiredPermission)) {
            LoggerService.warn(`RBAC Denied: Missing ${requiredPermission}`, { requestId, role: appRole })
+           LoggerService.security('RBAC_DENIED', {
+             requestId,
+             userId: user?.id ?? null,
+             role: appRole,
+             branchId,
+             method: req.method,
+             path: req.nextUrl.pathname,
+             result: '403 Forbidden',
+             ip,
+             reason: `Missing capability: ${requiredPermission}`
+           })
            return errorResponse('Permission Denied', 'FORBIDDEN', 403, [], requestId)
         }
       } else if (requiredPermission && !appRole) {
+        LoggerService.security('RBAC_DENIED', {
+          requestId,
+          userId: user?.id ?? null,
+          role: null,
+          branchId,
+          method: req.method,
+          path: req.nextUrl.pathname,
+          result: '403 Forbidden',
+          ip,
+          reason: 'No role assigned to authenticated user'
+        })
         return errorResponse('Permission Denied: No Role Assigned', 'FORBIDDEN', 403, [], requestId)
       }
 

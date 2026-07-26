@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  NEXTAUTH_SECRET: z.string().optional(),
+  // Security: NEXTAUTH_SECRET is REQUIRED. Must be a strong random secret (≥32 chars).
+  // Generate one with: openssl rand -base64 32
+  NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRET must be at least 32 characters. Generate one with: openssl rand -base64 32'),
   NEXTAUTH_URL: z.string().optional(),
   
   // Mandatory Tier 1 (Production Blockers)

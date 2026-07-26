@@ -73,4 +73,5 @@ const handler = async (ctx: HandlerContext) => {
   return NextResponse.json(results)
 }
 
-export const POST = withApiHandler(handler, true)
+// Security: isPublic=false — kitchen state mutations require an authenticated session
+export const POST = withApiHandler(handler, false)

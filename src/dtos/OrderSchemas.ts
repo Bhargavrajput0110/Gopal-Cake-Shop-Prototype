@@ -46,6 +46,7 @@ export const PosCheckoutSchema = z.object({
   overrideDiscount: z.number().optional(),
   isPriority: z.boolean().optional(),
   notes: z.string().optional(),
+  idempotencyKey: z.string().optional(),
 })
 
 export type CreateDraftOrderDTO = z.infer<typeof CreateDraftOrderSchema>

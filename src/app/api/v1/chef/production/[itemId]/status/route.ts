@@ -20,6 +20,11 @@ export async function PATCH(req: Request, context: { params: Promise<{ itemId: s
       const item = await tx.orderItem.findUnique({ where: { id: itemId }, include: { order: true } })
       if (!item) throw new Error('Item not found')
 
+      const userBranchId = (session.user as any).branchId || 'khanderao'
+      if (session.user.role === 'CHEF' && item.order.branchId !== userBranchId) {
+        throw new Error('FORBIDDEN: You do not have permission to modify items from another branch')
+      }
+
       const updateData: any = {}
       let timelineAction = action || 'STATUS_UPDATE'
       let timelineNote = note
@@ -93,6 +98,9 @@ export async function PATCH(req: Request, context: { params: Promise<{ itemId: s
     return NextResponse.json({ success: true, item: updatedItem })
   } catch (error: any) {
     console.error('Update Chef Item Status Error:', error)
+    if (error.message?.startsWith('FORBIDDEN')) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
 }

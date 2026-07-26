@@ -28,7 +28,7 @@ const handler = async (ctx: HandlerContext) => {
     paymentMethod: data.payments && data.payments.length > 0 ? (data.payments[0].method as PaymentMethod) : PaymentMethod.CASH,
     paymentType: data.paymentType === 'PARTIAL' ? PaymentType.ADVANCE : PaymentType.FULL,
     payments: data.payments.map(p => ({ method: p.method as PaymentMethod, amount: p.amount })),
-    idempotencyKey: `pos-${Date.now()}`,
+    idempotencyKey: data.idempotencyKey || `pos-${Date.now()}`,
     type: 'ORDER',
     couponCode: data.discountCode,
     overrideDiscount: data.overrideDiscount,

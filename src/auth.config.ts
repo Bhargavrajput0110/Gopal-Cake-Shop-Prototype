@@ -54,5 +54,7 @@ export const authConfig = {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  secret: process.env.NEXTAUTH_SECRET || "gopal-bakery-super-secret-key-12345",
+  // Security: NEXTAUTH_SECRET MUST be set in the environment.
+  // There is no fallback. Missing this variable will cause auth to fail at startup.
+  secret: process.env.NEXTAUTH_SECRET,
 } satisfies NextAuthConfig;
