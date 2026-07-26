@@ -7,6 +7,8 @@
 
 
 ## UAT Metadata
+- **Document ID:** UAT-BOS-v1.1.0
+- **Classification:** Internal / Client Confidential
 - **Status:** Draft
 - **Client:** _____________________
 - **Business Representative:** _____________________
@@ -163,8 +165,8 @@ Date: _____________________
 
 ---
 
-## Production Checklist
-After acceptance:
+## Production Readiness Checklist
+*Complete before initiating the production deployment:*
 
 - [ ] UAT Approved
 - [ ] Critical Issues Closed
