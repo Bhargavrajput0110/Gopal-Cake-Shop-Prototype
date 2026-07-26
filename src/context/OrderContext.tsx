@@ -118,6 +118,7 @@ export type Order = {
   deletedBy?: string;
   createdBy?: string;
   updatedBy?: string;
+  orderNumber?: string;
 };
 
 type OrderContextType = {

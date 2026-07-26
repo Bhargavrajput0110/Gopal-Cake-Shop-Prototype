@@ -49,7 +49,7 @@ export function registerSubscribers() {
     if (!orderId) return
 
     // Only trigger check when an item moves to a "done" state
-    if (newStatus !== 'READY_FOR_PICKUP' && newStatus !== 'COMPLETED') return
+    if (newStatus !== 'READY_FOR_PICKUP') return
 
     LoggerService.info(`[EventSubscribers] OrderItemStatusUpdated: checking if all items ready for order ${orderId}`)
 
@@ -65,7 +65,7 @@ export function registerSubscribers() {
     if (!kitchenStates.includes(order.status)) return
 
     const allItemsDone = order.items.every(
-      item => item.status === 'READY_FOR_PICKUP' || item.status === 'COMPLETED'
+      item => item.status === 'READY_FOR_PICKUP'
     )
 
     if (allItemsDone) {

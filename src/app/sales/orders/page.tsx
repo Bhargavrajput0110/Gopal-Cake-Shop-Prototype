@@ -107,7 +107,7 @@ function SalesDashboardContent() {
     if (employeeId.includes("-UMA-")) return "uma";
     if (employeeId.includes("-KHM-")) return "khanderao";
     if (employeeId.includes("-ELR-")) return "elora";
-    if (employeeId.includes("-WAS-")) return "warasiya";
+    if (employeeId.includes("-WAS-")) return "varasiya";
     return "khanderao"; // Default
   });
 

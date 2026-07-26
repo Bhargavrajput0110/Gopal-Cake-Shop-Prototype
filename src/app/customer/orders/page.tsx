@@ -34,6 +34,7 @@ interface Order {
   deliveryType?: string;
   deliveryAddress?: string;
   createdAt: string;
+  orderNumber?: string;
 }
 
 // Clean phone number helper
