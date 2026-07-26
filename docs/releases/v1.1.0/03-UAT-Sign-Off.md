@@ -111,7 +111,7 @@
 **Section Result:** ☐ PASS / ☐ FAIL  
 *Comments:* _____________________________________
 
-## 7. General Usability
+## 7. User Experience & General Feedback
 *Client feedback regarding navigation, ease of use, missing information, workflow improvements, or performance will be logged here.*
 
 ---
