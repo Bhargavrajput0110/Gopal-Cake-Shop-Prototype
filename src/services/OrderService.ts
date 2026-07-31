@@ -10,7 +10,7 @@ export class OrderService {
     role: string | null,
     page: number = 1,
     limit: number = 20,
-    filters?: { status?: string, branch?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string }
+    filters?: { status?: string, branch?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string, dueSoon?: boolean, hasIssues?: boolean }
   ): Promise<{ data: OrderResponseDTO[], total: number }> {
     const canonicalBranchId = toBranchId(branchId);
     const db = prisma
@@ -48,6 +48,24 @@ export class OrderService {
         end.setHours(23, 59, 59, 999)
         whereClause.targetDate.lte = end
       }
+    }
+    if (filters?.dueSoon) {
+      const now = new Date();
+      const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
+      whereClause.targetDate = {
+        gte: now,
+        lte: nextHour
+      };
+      // only active uncompleted orders
+      whereClause.status = { in: ['NEW', 'WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING'] };
+    }
+    if (filters?.hasIssues) {
+      // For now, let's say "issues" means customerNotes is not null, or some items have notes. 
+      // Also we don't want completed orders.
+      whereClause.status = { notIn: ['READY_FOR_PICKUP', 'PENDING_ASSIGNMENT', 'ASSIGNED_TO_DRIVER', 'PICKED_UP', 'ON_THE_WAY', 'DELIVERED', 'COMPLETED', 'CANCELLED'] };
+      // This is a naive approximation since Prisma doesn't easily let us filter by JSON properties inside a related model array in one query.
+      // So we will just filter by customerNotes initially, and then maybe frontend can further filter.
+      whereClause.customerNotes = { not: null };
     }
     
     const orderBy: Prisma.OrderOrderByWithRelationInput[] = [];
@@ -105,10 +123,12 @@ export class OrderService {
           const product = i.productId ? productMap.get(i.productId) : null;
           return {
             id: i.id,
+            name: i.productName || product?.name || 'Custom Item',
             productName: i.productName || product?.name || 'Custom Item',
             price: Number(i.price),
             qty: i.quantity,
             weight: i.weight ? `${i.weight}kg` : undefined,
+            notes: i.notes || undefined,
           }
         }),
         priorityLevel: (o as any).priorityLevel || "normal",

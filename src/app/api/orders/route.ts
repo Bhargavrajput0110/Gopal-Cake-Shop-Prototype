@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { CustomerSearchService } from '@/lib/customers/CustomerSearchService';
 import { OrderSource, DeliveryType, OrderStatus, OrderItemStatus, OrderType, MediaType } from '@prisma/client';
+import { toBranchId } from '@/lib/branches';
 
 export async function POST(req: Request) {
   try {
@@ -23,22 +24,19 @@ export async function POST(req: Request) {
       else branchCode = body.branch; // fallback
     }
 
-    let resolvedBranchId = body.branch;
+    let resolvedBranchId = toBranchId(body.branch);
     const branchRecord = await prisma.branch.findFirst({
       where: {
         OR: [
           { code: branchCode },
           { id: body.branch },
           { code: body.branch },
-          { name: { contains: 'Khanderao' } } // ultimate fallback if KHD missing
+          { name: { contains: 'Khanderao' } }
         ]
       }
     });
-    
-    if (branchRecord) {
-      resolvedBranchId = branchRecord.id;
-    } else {
-      console.warn(`WARNING: Could not resolve branch for ${body.branch}. Using fallback.`);
+    if (branchRecord && !body.branch) {
+      resolvedBranchId = toBranchId(branchRecord.code || branchRecord.name || branchRecord.id);
     }
 
     const itemsData = body.items.map((item: any) => {
@@ -75,7 +73,7 @@ export async function POST(req: Request) {
         branchId: resolvedBranchId,
         source: OrderSource.WEBSITE,
         type: body.status === 'QUOTE_DRAFT' ? OrderType.QUOTE : OrderType.ORDER,
-        status: body.status === 'QUOTE_DRAFT' ? OrderStatus.QUOTE_DRAFT : OrderStatus.NEW,
+        status: body.status === 'QUOTE_DRAFT' ? OrderStatus.QUOTE_DRAFT : (body.status === 'WAITING_FOR_CHEF' ? OrderStatus.WAITING_FOR_CHEF : OrderStatus.NEW),
         deliveryType: body.orderType === 'delivery' ? DeliveryType.DELIVERY : DeliveryType.PICKUP,
         targetDate: new Date(body.timeTarget),
         deliveryAddress: body.delivery?.address || null,

@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 import { withBranchIsolation } from './prisma-extension'
+import { logger } from './logger'
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
@@ -23,11 +24,46 @@ function createPrismaClient() {
     
     const adapter = new PrismaPg(pool, { schema })
     
-    return new PrismaClient({ adapter, log: ['query'] })
+    const client = new PrismaClient({ 
+      adapter, 
+      log: [
+        { emit: 'event', level: 'query' },
+        { emit: 'event', level: 'error' },
+      ] 
+    });
+
+    setupPrismaLogging(client);
+    return client;
   } catch (error) {
     console.error('[Prisma] Adapter initialization failed, falling back to standard PrismaClient:', error)
-    return new PrismaClient({ log: ['query'] })
+    const client = new PrismaClient({ 
+      log: [
+        { emit: 'event', level: 'query' },
+        { emit: 'event', level: 'error' },
+      ] 
+    });
+    setupPrismaLogging(client);
+    return client;
   }
+}
+
+function setupPrismaLogging(client: any) {
+  const slowQueryMs = Number(process.env.SLOW_QUERY_MS) || 500;
+  
+  client.$on('query', (e: any) => {
+    if (e.duration >= slowQueryMs) {
+      logger.warn({
+        query: e.query,
+        params: e.params,
+        duration: e.duration,
+        threshold: slowQueryMs,
+      }, 'Slow Database Query Detected');
+    }
+  });
+
+  client.$on('error', (e: any) => {
+    logger.error({ message: e.message, target: e.target }, 'Database Error');
+  });
 }
 
 export const prisma = process.env.NODE_ENV === 'test' 

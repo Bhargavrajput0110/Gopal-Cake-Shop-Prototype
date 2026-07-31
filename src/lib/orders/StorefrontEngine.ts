@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
+import { getFlavourSurcharge } from '@/lib/flavours'
 import {
   OrderSource,
   PaymentMethod,
@@ -112,6 +113,12 @@ export class StorefrontEngine {
       // Base pricing logic (Weight multiplier)
       // This is a simplified business rule: Base Price * Weight
       let unitPrice = Number(product.basePrice) * item.weight
+
+      // Add flavour surcharge
+      if (item.flavor) {
+        const surcharge = getFlavourSurcharge(item.flavor, item.weight)
+        unitPrice += surcharge
+      }
 
       // Apply override if permitted
       if (context.canOverridePrice && item.overridePrice !== undefined) {

@@ -162,6 +162,7 @@ export function ProductGrid({ products, categories = [], isLoading }: ProductGri
                   {filteredProducts.map(product => (
                     <button 
                       key={product.id}
+                      data-testid="standard-product-card"
                       onClick={() => setSelectedProduct({
                         id: product.id,
                         name: product.name,

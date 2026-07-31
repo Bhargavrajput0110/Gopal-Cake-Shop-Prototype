@@ -1,80 +1,101 @@
-# Product Roadmap
+# Bakery OS Product Roadmap
+
+This document outlines the strategic phases and overarching roadmap for the Bakery OS ERP platform.
 
 ## Architecture Freeze Policy
 
 > [!IMPORTANT]
 > **Once implementation of a minor release begins, new functionality is deferred to the next planned version unless it fixes a critical defect, security issue, or architectural flaw. The roadmap for the active release is considered frozen until release completion.**
 
-From this point until v1.1.0 is released:
-- No new features
-- No schema redesigns
-- No roadmap expansion
-- No "while we're here..." additions
+---
 
-Only the following are allowed:
-- Bug fixes
-- Critical design corrections
-- Security fixes
+## ✅ Phase 1 — Core ERP (Completed)
+- Authentication & RBAC
+- POS
+- Products
+- Orders
+- Delivery
+- Kitchen (KDS)
+- Dynamic Pricing
+- Operational Dashboard
+- Timeline
+- Notifications
+- Animation System
+- PWA
+- Branch Isolation
 
 ---
 
-## v1.1.0 - Dashboards & KPI Engine
+## 🟡 Phase 2 — Production Hardening (Active)
+*Goal: Validate, harden, and observe the system before adding new features.*
 
-The primary goal of v1.1.0 is to implement comprehensive business intelligence capabilities, giving executives and branch managers deep visibility into daily performance.
+### 1. Security
+- Penetration testing & RBAC verification
+- Session expiry & PIN brute-force protection
+- Rate limiting & Upload validation
 
-### Phase 1: Dashboards & KPI Engine (Active Implementation)
+### 2. Performance & Stress Testing
+- Test with 500+ orders, 10,000 products, 100 concurrent users.
+- Large Cloudinary libraries.
 
-#### 1. ReportingService
-- KPI aggregation
-- Date range calculations
-- Branch filtering
+### 3. PWA Robustness
+- Offline queue & Background sync.
+- Install flow, update flow, and cache invalidation.
 
-#### 2. Dashboard API
-- `/api/v1/reporting/dashboard`
-- Input validation
-- Authorization
-- API Tests
+### 4. Observability & Backups
+- Error logging & Performance metrics.
+- Audit monitoring & Slow query logging.
+- PostgreSQL & Cloudinary backups.
+- Rollback strategy.
 
-#### 3. Executive Dashboard UI
-- KPI cards
-- Charts
-- Loading states
-- Error handling
-
-#### 4. Branch Dashboard
-- Reuse Executive components
-- Branch-specific filtering
-
-#### 5. Dashboard Tests
-- Unit tests
-- Integration tests
-- E2E tests
+### 5. Staging & Owner UAT
+- Deploy to staging.
+- Shadowing the owner during a full operational simulation.
 
 ---
 
-## v1.2.0 - Core Business Features & Communications
+## 🟢 Phase 3 — Dashboard & KPI Engine (Upcoming)
+*Goal: Decouple reporting from live operational queries to protect performance.*
 
-### 1. Internal Staff Notification System
-- Notification Center, Live Updates, Role-based Targeting.
+### 1. Reporting Architecture
+- `ReportingService` -> Daily Aggregations -> KPI Engine -> Dashboard APIs.
 
-### 2. WhatsApp Integration (Meta Cloud API)
-- Asynchronous queue-based delivery system, templates.
-
-### 3. Comprehensive Manual Order Module
-- Sales Manual Order and Admin Manual Order interfaces.
-
-### 4. Cloudinary Integration
-- Media management gallery for admin and staff.
+### 2. Specialized Dashboards
+- **Executive Dashboard:** Revenue, Orders, AOV, Conversion, Repeat Customers, Profit.
+- **Branch Dashboard:** Branch Revenue, Pending Orders, Kitchen Load, Delivery Performance, Staff Productivity.
+- **Kitchen Dashboard:** Average Prep Time, Delayed Orders, Orders Per Chef, Completion Rate.
+- **Delivery Dashboard:** Average Delivery Time, Failed Deliveries, Driver Performance, Distance Covered.
 
 ---
 
-## v1.3.0 - Advanced Marketing & Expansion
+## 🟣 Phase 4 — Business Modules
+*Goal: Expand core business operations and communications.*
 
-### 1. Marketing & CRM
-- Customer Loyalty and Rewards programs.
-- WhatsApp Marketing campaigns integrated directly into the ERP CRM.
-- Email marketing support.
+### 1. Unified Notification Center
+- Generic abstract channel interface: `Notification -> Channel -> [WhatsApp, Email, SMS, Push, In-App]`.
+- Outbox pattern for async delivery.
 
-### 2. Expansion Features
-- Franchise support structures.
-- Mobile driver app enhancements (GPS tracking, native push notifications).
+### 2. Comprehensive Manual Order Module
+- Unified workflow for Walk-ins, Phone calls, WhatsApp, Instagram, Facebook.
+
+### 3. Media Gallery
+- Cloudinary integration for staff and products.
+
+---
+
+## 🟠 Phase 5 — Inventory & Procurement
+*Goal: Complete the bakery lifecycle.*
+
+- **Workflow:** Ingredient -> Purchase Request -> Vendor -> Purchase Order -> Goods Received -> Stock -> Production -> Waste -> Reorder.
+
+---
+
+## 🔵 Phase 6 — Intelligence Layer (Future)
+*Goal: AI assists decisions, it doesn't replace business rules.*
+
+- Dynamic pricing suggestions.
+- Production forecasting.
+- Ingredient demand prediction.
+- Staff scheduling.
+- Customer recommendations.
+- Inventory forecasting.

@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { TickCircle, ArrowRight2, Location, Card, Bag, Refresh2, Calendar, Clock, Shop } from "iconsax-react";
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { WEIGHT_OPTIONS, getActiveFlavours } from '@/lib/flavours';
+import { WEIGHT_OPTIONS, getActiveFlavours, getFlavourSurcharge } from '@/lib/flavours';
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
@@ -93,15 +93,10 @@ export default function CheckoutPage() {
       itemBasePrice = Math.round(itemBasePrice * scale);
     }
 
-    // Add flavour premium (e.g. +50 for any custom/fusion flavour other than Classic/original/empty)
-    const isSpecialFlavour = selectedFlavour && 
-      selectedFlavour.toLowerCase() !== 'classic' && 
-      selectedFlavour.toLowerCase() !== 'original' &&
-      selectedFlavour.toLowerCase() !== '';
-      
-    if (isSpecialFlavour) {
-      itemBasePrice += 50;
-    }
+    // Add flavour premium based on the master catalogue
+    const weightKg = parseWeightToNumber(selectedWeight);
+    const surcharge = getFlavourSurcharge(selectedFlavour, weightKg);
+    itemBasePrice += surcharge;
 
     return itemBasePrice;
   };
@@ -478,7 +473,9 @@ export default function CheckoutPage() {
                           >
                             <option value="Classic">Classic Flavour</option>
                             {flavours.map(f => (
-                              <option key={f.id} value={f.name}>{f.name}</option>
+                              <option key={f.id} value={f.name}>
+                                {f.name} {f.surchargePerHalfKg ? `(+₹${f.surchargePerHalfKg}/500g)` : ""}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -565,7 +562,12 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-serif font-bold text-sm text-foreground line-clamp-1 leading-snug">{item.name}</h4>
-                      <p className="text-[10px] font-sans text-muted-foreground uppercase font-bold tracking-wider mt-1">{item.variant || 'Standard'} • Qty: {item.quantity}</p>
+                      <p className="text-[10px] font-sans text-muted-foreground uppercase font-bold tracking-wider mt-1">{itemVariants[item.cartItemId] || item.variant || 'Standard'} • Qty: {item.quantity}</p>
+                      {itemFlavors[item.cartItemId] && getFlavourSurcharge(itemFlavors[item.cartItemId], parseWeightToNumber(itemVariants[item.cartItemId] || item.variant || '')) > 0 && (
+                        <p className="text-[10px] font-sans text-[var(--brand-deep-rose)] uppercase font-bold tracking-wider mt-0.5">
+                          + ₹{getFlavourSurcharge(itemFlavors[item.cartItemId], parseWeightToNumber(itemVariants[item.cartItemId] || item.variant || '')) * item.quantity} (Premium Flavour)
+                        </p>
+                      )}
                     </div>
                     <div className="font-serif font-bold text-sm text-foreground shrink-0">
                       ₹{getItemPrice(item) * item.quantity}

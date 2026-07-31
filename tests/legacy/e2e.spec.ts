@@ -14,33 +14,7 @@ function getYesterdayDateString() {
   return yesterday.toISOString().split('T')[0];
 }
 
-// Helper to login as staff
-async function loginAsStaff(page: Page, roleName: string, branchName: string | null, profileName: string, pin: string) {
-  await page.goto('/login');
-  await page.waitForLoadState('networkidle');
-
-  // Click Role button
-  await page.waitForTimeout(500);
-  await page.getByRole('button', { name: roleName, exact: true }).click();
-
-  // Click Branch button if not Admin
-  if (roleName !== 'Admin' && branchName) {
-    await page.waitForTimeout(500);
-    await page.getByRole('button', { name: branchName, exact: true }).click();
-  }
-
-  // Click Profile button
-  await page.waitForTimeout(500);
-  await page.locator('button').filter({ hasText: profileName }).first().click();
-
-  // Press PIN Keypad digits
-  await page.waitForTimeout(500);
-  for (const digit of pin) {
-    await page.getByRole('button', { name: digit, exact: true }).click();
-  }
-  
-  await page.waitForLoadState('load');
-}
+import { fastLogin } from './helpers/auth';
 
 test.beforeEach(async ({ page }) => {
   // Mock Nominatim address search
@@ -214,33 +188,33 @@ test.describe('Tier 1: Feature Coverage', () => {
     await expect(page).toHaveURL(/\/order\/[a-zA-Z0-9-]+/);
   });
 
-  test('6. Staff Auth - Admin Login (usr_admin / 0000)', async ({ page }) => {
-    await loginAsStaff(page, 'Admin', null, 'Admin', '0000');
+  test('6. Staff Auth - Admin Login', async ({ page }) => {
+    await fastLogin(page, 'admin');
     await expect(page).toHaveURL(/\/admin/);
     await expect(page.getByRole('heading', { name: 'Command Center' })).toBeVisible();
   });
 
-  test('7. Staff Auth - Sales Login (usr_sales_khm / 2222)', async ({ page }) => {
-    await loginAsStaff(page, 'Sales', 'Khanderao Branch (HQ)', 'Sales KHM', '2222');
+  test('7. Staff Auth - Sales Login', async ({ page }) => {
+    await fastLogin(page, 'salesKhm');
     await expect(page).toHaveURL(/\/sales/);
     await expect(page.getByRole('heading', { name: 'Command Center' }).or(page.getByRole('heading', { name: 'Sales' }))).toBeVisible();
   });
 
-  test('8. Staff Auth - Chef Login (usr_chef_khm / 3333)', async ({ page }) => {
-    await loginAsStaff(page, 'Chef', 'Khanderao Branch (HQ)', 'Chef KHM', '3333');
+  test('8. Staff Auth - Chef Login', async ({ page }) => {
+    await fastLogin(page, 'chefKhm');
     await expect(page).toHaveURL(/\/chef/);
-    await expect(page.getByRole('heading', { name: 'KDS' }).or(page.getByRole('heading', { name: 'Kitchen' }))).toBeVisible();
+    // KDS Terminal is the new title
+    await expect(page.getByRole('heading', { name: 'KDS Terminal' })).toBeVisible();
   });
 
-  test('9. Staff Auth - Driver Login (usr_driver_khm / 4444)', async ({ page }) => {
-    await loginAsStaff(page, 'Driver', 'Khanderao Branch (HQ)', 'Driver KHM', '4444');
+  test('9. Staff Auth - Driver Login', async ({ page }) => {
+    await fastLogin(page, 'driverKhm');
     await expect(page).toHaveURL(/\/delivery/);
     await expect(page.getByRole('heading', { name: 'Delivery' })).toBeVisible();
   });
 
-  test('10. Staff Auth - Manager Login (usr_manager_khm / 1111)', async ({ page }) => {
-    await loginAsStaff(page, 'Manager', 'Khanderao Branch (HQ)', 'Manager KHM', '1111');
-    // Manager mock redirects to /admin (same as Admin role in our e2e bypass)
+  test('10. Staff Auth - Manager Login', async ({ page }) => {
+    await fastLogin(page, 'managerKhm');
     await expect(page).toHaveURL(/\/(admin|manager)/);
     await expect(page.getByRole('heading', { name: 'Khanderao Market Branch' }).or(page.getByRole('heading', { name: 'Command Center' }))).toBeVisible();
   });
@@ -344,7 +318,7 @@ test.describe('Tier 2: Boundary & Corner Cases', () => {
     
     // Click Profile button (step 2, since Admin has no branch)
     await page.waitForTimeout(500);
-    await page.locator('button').filter({ hasText: 'Admin' }).first().click();
+    await page.getByRole('button', { name: 'Super Admin' }).click();
 
     // Enter wrong PIN: 9999
     await page.waitForTimeout(500);
@@ -366,7 +340,7 @@ test.describe('Tier 2: Boundary & Corner Cases', () => {
 
     // Click Profile button (step 2)
     await page.waitForTimeout(500);
-    await page.locator('button').filter({ hasText: 'Admin' }).first().click();
+    await page.getByRole('button', { name: 'Super Admin' }).click();
 
     // Enter short PIN: 12
     await page.waitForTimeout(500);
@@ -374,7 +348,7 @@ test.describe('Tier 2: Boundary & Corner Cases', () => {
     await page.getByRole('button', { name: '2', exact: true }).click();
 
     // Ensure it hasn't triggered submit (still on login page showing Welcome)
-    await expect(page.locator('h2:has-text("Welcome, Admin")')).toBeVisible();
+    await expect(page.locator('h2:has-text("Welcome, Super Admin")')).toBeVisible();
     await expect(page.locator('text=Invalid PIN.')).not.toBeVisible();
     await expect(page).toHaveURL(/\/login/);
   });
@@ -398,7 +372,7 @@ test.describe('Tier 2: Boundary & Corner Cases', () => {
     await page.waitForTimeout(500);
     await page.locator('button').filter({ hasText: 'Admin' }).first().click();
     await page.waitForTimeout(500);
-    await page.locator('button').filter({ hasText: 'Admin' }).first().click();
+    await page.getByRole('button', { name: 'Super Admin' }).click();
 
     // Press digits
     await page.waitForTimeout(500);
@@ -410,7 +384,7 @@ test.describe('Tier 2: Boundary & Corner Cases', () => {
     await deleteBtn.click();
 
     // Should not trigger login with short pin, verify still on PIN screen
-    await expect(page.locator('h2:has-text("Welcome, Admin")')).toBeVisible();
+    await expect(page.locator('h2:has-text("Welcome, Super Admin")')).toBeVisible();
   });
 
   test('9. Staff Login - Route protection redirect', async ({ page }) => {
@@ -523,13 +497,13 @@ test.describe('Tier 4: Real-world Lifecycle Scenario', () => {
     const chefPage = await chefContext.newPage();
     
     // Login as Chef KHM
-    await loginAsStaff(chefPage, 'Chef', 'Khanderao Branch (HQ)', 'Chef KHM', '3333');
+    await fastLogin(chefPage, 'chefKhm');
     await expect(chefPage).toHaveURL(/\/chef/);
 
     // The Chef KDS gets orders from the real API which may not have this order in E2E mode.
     // We verify that the chef page loaded correctly (the KDS is operational).
     // The order card may or may not be present depending on mock API state.
-    await expect(chefPage.getByRole('heading', { name: /KDS/ })).toBeVisible();
+    await expect(chefPage.getByRole('heading', { name: /KDS Terminal/ })).toBeVisible();
 
     // Try to locate the order card by order ID - skip acceptance if not found (mock API)
     const orderCard = chefPage.locator(`div:has-text("${orderId}")`).first();

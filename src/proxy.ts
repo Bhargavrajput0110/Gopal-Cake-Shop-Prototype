@@ -147,10 +147,24 @@ function roleHomePath(role?: string): string {
 // Proxy — wrapped with auth() for automatic session decoding (Edge-safe)
 // ─────────────────────────────────────────────────────────────────────────────
 export default auth(function proxy(req: NextRequest) {
-  const response = NextResponse.next();
   const { nextUrl } = req;
   const pathname = nextUrl.pathname;
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+  
+  // ── 0. Inject Correlation ID ────────────────────────────────────────────────
+  const requestHeaders = new Headers(req.headers);
+  let correlationId = requestHeaders.get('x-request-id');
+  if (!correlationId) {
+    correlationId = uuidv4();
+    requestHeaders.set('x-request-id', correlationId);
+  }
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+  response.headers.set('x-request-id', correlationId);
 
   // auth() injects req.auth with the decoded JWT payload
   const session = (req as any).auth;
@@ -167,22 +181,15 @@ export default auth(function proxy(req: NextRequest) {
   } else if (isProtectedPath(pathname)) {
     if (!session?.user) {
       // Preserve intended destination for post-login redirect
-      const loginUrl = new URL('/login', nextUrl);
-      loginUrl.searchParams.set('callbackUrl', nextUrl.href);
+      const isPlaywright = process.env.IS_PLAYWRIGHT === 'true';
+      const loginUrl = new URL('/login', isPlaywright ? 'http://localhost:3000' : nextUrl);
+      loginUrl.searchParams.set('callbackUrl', isPlaywright ? `http://localhost:3000${pathname}` : req.url);
       return NextResponse.redirect(loginUrl);
     }
-    // Authenticated — continue to the route
-  }
-  // Unrecognised paths (e.g. root '/', /about, /design-system) — pass through
-
-  // ── 2. Correlation ID ──────────────────────────────────────────────────────
-  let correlationId = req.headers.get('x-correlation-id');
-  if (!correlationId) {
-    correlationId = uuidv4();
-    response.headers.set('x-correlation-id', correlationId);
+    // Authenticated — fall through
   }
 
-  // ── 3. Security Headers ────────────────────────────────────────────────────
+  // ── 2. Request ID configured above ─────────────────────────────────────────
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -199,21 +206,23 @@ export default auth(function proxy(req: NextRequest) {
   response.headers.set('Content-Security-Policy', csp);
 
   // ── 4. Tiered Rate Limiting ────────────────────────────────────────────────
-  if (pathname.startsWith('/api/')) {
-    if (pathname.startsWith('/api/auth') || pathname.startsWith('/login')) {
-      // Auth endpoints — strict (5 req/min)
-      if (!checkRateLimit(`auth:${ip}`, 5, 60_000)) {
-        return new NextResponse('Too Many Requests', { status: 429 });
-      }
-    } else if (pathname.startsWith('/api/v1/public/')) {
-      // Public APIs — moderate (30 req/min)
-      if (!checkRateLimit(`public:${ip}`, 30, 60_000)) {
-        return new NextResponse('Too Many Requests', { status: 429 });
-      }
-    } else {
-      // Internal authenticated APIs — generous (100 req/min)
-      if (!checkRateLimit(`internal:${ip}`, 100, 60_000)) {
-        return new NextResponse('Too Many Requests', { status: 429 });
+  if (process.env.IS_PLAYWRIGHT !== 'true') {
+    if (pathname.startsWith('/api/')) {
+      if (pathname.startsWith('/api/auth') || pathname.startsWith('/login')) {
+        // Auth endpoints — strict (5 req/min)
+        if (!checkRateLimit(`auth:${ip}`, 5, 60_000)) {
+          return new NextResponse('Too Many Requests', { status: 429 });
+        }
+      } else if (pathname.startsWith('/api/v1/public/')) {
+        // Public APIs — moderate (30 req/min)
+        if (!checkRateLimit(`public:${ip}`, 30, 60_000)) {
+          return new NextResponse('Too Many Requests', { status: 429 });
+        }
+      } else {
+        // Internal authenticated APIs — generous (100 req/min)
+        if (!checkRateLimit(`internal:${ip}`, 100, 60_000)) {
+          return new NextResponse('Too Many Requests', { status: 429 });
+        }
       }
     }
   }

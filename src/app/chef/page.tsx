@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { useOrders, Order, IngredientRequest } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { BackButton } from "@/components/ui/BackButton";
@@ -69,12 +70,21 @@ const useSLA = (timeTarget: string | undefined, createdAt: string) => {
 };
 
 export default function ChefDashboardPage() {
-  const { orders, updateOrderFields } = useOrders();
+  const { data: session } = useSession();
+  const { orders, updateOrderFields, transitionOrderAction, addIngredientRequest } = useOrders();
   
-  // UI Mode: Mock Login for Chef
   const [activeBranch, setActiveBranch] = useState<BranchId>("khanderao");
   const [activeTab, setActiveTab] = useState<"queue" | "myTasks" | "ready">("queue");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (session?.user) {
+      const bId = (session.user as any).branchId || (session.user as any).branch;
+      if (bId) {
+        setActiveBranch(toBranchId(bId));
+      }
+    }
+  }, [session]);
 
   // Filtering orders for the active branch
   const branchOrders = orders.filter(o => toBranchId(o.branch) === activeBranch);
@@ -94,6 +104,22 @@ export default function ChefDashboardPage() {
     .filter(o => o.status === "READY_FOR_PICKUP")
     .sort((a, b) => new Date(b.timeline?.[b.timeline.length - 1]?.timestamp || b.createdAt).getTime() - new Date(a.timeline?.[a.timeline.length - 1]?.timestamp || a.createdAt).getTime());
 
+  // Header Stats
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+  
+  const todayOrders = branchOrders.filter(o => {
+    if (!o.timeTarget) return false;
+    const t = new Date(o.timeTarget).getTime();
+    return t >= todayStart.getTime() && t <= todayEnd.getTime();
+  });
+  
+  const statsTotal = todayOrders.length;
+  const statsActive = todayOrders.filter(o => ["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(o.status)).length;
+  const statsCompleted = todayOrders.filter(o => ["READY_FOR_PICKUP", "PENDING_ASSIGNMENT", "ASSIGNED_TO_DRIVER", "PICKED_UP", "ON_THE_WAY", "DELIVERED", "COMPLETED"].includes(o.status)).length;
+
   // Interactive Checklist State
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
 
@@ -108,14 +134,42 @@ export default function ChefDashboardPage() {
   const [missingNote, setMissingNote] = useState("");
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
+  // Mute preference
+  const [isMuted, setIsMuted] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMuted(localStorage.getItem("kds_mute") === "true");
+    }
+  }, []);
+  const toggleMute = () => {
+    const next = !isMuted;
+    setIsMuted(next);
+    localStorage.setItem("kds_mute", String(next));
+  };
+
+  // Click handler to unlock browser AudioContext autoplay policy
+  useEffect(() => {
+    const handleGesture = () => {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (ctx.state === "suspended") ctx.resume();
+    };
+    window.addEventListener("click", handleGesture);
+    return () => window.removeEventListener("click", handleGesture);
+  }, []);
+
   // Priority Beep
   useEffect(() => {
     const hasPriority = queueOrders.some(o => o.priorityLevel === "high" || o.priorityLevel === "vip");
-    if (!hasPriority) return;
+    if (!hasPriority || isMuted) return;
 
     const playBeep = () => {
       try {
+        const lastPlayed = parseInt(localStorage.getItem("kds_priority_beep_time") || "0");
+        if (Date.now() - lastPlayed < 3500) return; // Dedupe cross-tab
+        localStorage.setItem("kds_priority_beep_time", Date.now().toString());
+        
         const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        if (ctx.state === "suspended") ctx.resume();
         const osc = ctx.createOscillator();
         osc.type = "square";
         osc.frequency.setValueAtTime(800, ctx.currentTime);
@@ -128,7 +182,59 @@ export default function ChefDashboardPage() {
     playBeep();
     const intervalId = setInterval(playBeep, 4000);
     return () => clearInterval(intervalId);
-  }, [queueOrders]);
+  }, [queueOrders, isMuted]);
+
+  // New Order Popup & Sound
+  const [newOrderPopup, setNewOrderPopup] = useState<{count: number, recentId: string} | null>(null);
+  const seenQueueIds = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (queueOrders.length === 0) return;
+    
+    // On first load, just populate seen
+    if (seenQueueIds.current.size === 0) {
+      queueOrders.forEach(o => seenQueueIds.current.add(o.id));
+      return;
+    }
+
+    const newOrders = queueOrders.filter(o => !seenQueueIds.current.has(o.id));
+    if (newOrders.length > 0) {
+      // Mark seen
+      newOrders.forEach(o => seenQueueIds.current.add(o.id));
+      
+      // Show popup
+      setNewOrderPopup({ count: newOrders.length, recentId: newOrders[0].id.split('-').pop() || "" });
+
+      // Play chime
+      if (!isMuted) {
+        try {
+          const lastChime = parseInt(localStorage.getItem("kds_new_order_chime") || "0");
+          if (Date.now() - lastChime > 2000) { // Dedupe cross-tab within 2s window
+            localStorage.setItem("kds_new_order_chime", Date.now().toString());
+            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            if (ctx.state === "suspended") ctx.resume();
+            
+            // Double pleasant chime
+            const playTone = (freq: number, startDelay: number) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain); gain.connect(ctx.destination);
+              osc.frequency.value = freq; osc.type = "sine";
+              gain.gain.setValueAtTime(0.3, ctx.currentTime + startDelay);
+              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startDelay + 0.5);
+              osc.start(ctx.currentTime + startDelay);
+              osc.stop(ctx.currentTime + startDelay + 0.5);
+            };
+            playTone(523.25, 0); // C5
+            playTone(659.25, 0.2); // E5
+          }
+        } catch(e) {}
+      }
+      
+      // Auto-hide popup after 5s
+      setTimeout(() => setNewOrderPopup(null), 5000);
+    }
+  }, [queueOrders, isMuted]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -136,50 +242,20 @@ export default function ChefDashboardPage() {
   }
 
   const handleAcceptOrder = async (order: Order) => {
-    await updateOrderFields(order.id, {
-      status: "MAKING",
-      assignedChef: "CHEF_01",
-      productionStartTime: new Date().toISOString(),
-      timeline: [
-        ...(order.timeline || []),
-        { event: "Chef started production", actor: "Chef", timestamp: new Date().toISOString() }
-      ]
-    });
+    await transitionOrderAction(order.id, "chef-accept");
     showToast(`Ticket ${order.id.split('-').pop()} moved to My Tasks!`);
   };
 
   const handleMarkReady = async (order: Order) => {
-    await updateOrderFields(order.id, {
-      status: "READY_FOR_PICKUP",
-      delayLevel: "none",
-      timeline: [
-        ...(order.timeline || []),
-        { event: "Order ready for pickup/delivery", actor: "Chef", timestamp: new Date().toISOString() }
-      ]
-    });
+    await transitionOrderAction(order.id, "ready");
     showToast(`Ticket ${order.id.split('-').pop()} complete!`);
   };
 
   const handleSubmitMissingIngredients = () => {
     if (!showMissingModal || selectedIngredients.length === 0) return;
     
-    const newRequests: IngredientRequest[] = selectedIngredients.map(item => ({
-      id: `ING-${Math.random().toString(36).substr(2, 9)}`,
-      itemCode: item.toUpperCase().replace(/\s+/g, '_'),
-      itemName: item,
-      note: missingNote,
-      requestedBy: "Chef",
-      status: "pending",
-      timestamp: new Date().toISOString(),
-    }));
-
-    updateOrderFields(showMissingModal.id, {
-      ingredientRequests: [...(showMissingModal.ingredientRequests || []), ...newRequests],
-      delayLevel: "warning",
-      timeline: [
-        ...(showMissingModal.timeline || []),
-        { event: `Reported missing ingredients: ${selectedIngredients.join(", ")}`, actor: "Chef", timestamp: new Date().toISOString() }
-      ]
+    selectedIngredients.forEach(item => {
+      addIngredientRequest(showMissingModal.id, item);
     });
 
     setShowMissingModal(null);
@@ -218,9 +294,16 @@ export default function ChefDashboardPage() {
           <div className="text-right">
             {!isReady && (
               <>
+              <div className="flex flex-col items-end">
                 <div className="flex items-center justify-end gap-1 font-black text-lg">
                   <Clock className="w-5 h-5" /> {timeLeftStr}
                 </div>
+                {order.timeTarget && (
+                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5" suppressHydrationWarning>
+                    Target: {new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                )}
+              </div>
                 {order.priorityLevel === "vip" && <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-widest mt-1 inline-block">VIP</span>}
                 {order.priorityLevel === "high" && <span className="bg-white text-rose-600 text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-widest mt-1 inline-block">RUSH</span>}
               </>
@@ -337,9 +420,6 @@ export default function ChefDashboardPage() {
       
       {/* Top Navigation Bar */}
       <div className="bg-gray-900 text-white sticky top-0 z-40 shadow-xl">
-        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-[100]">
-          <BackButton fallback="/login" label="Switch Account" variant="ghost" className="text-white hover:bg-white/10" />
-        </div>
         <div className="px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl font-black tracking-tight flex items-center gap-3">
@@ -347,30 +427,68 @@ export default function ChefDashboardPage() {
             </h1>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Station:</span>
-              <select 
-                value={activeBranch} 
-                onChange={(e) => setActiveBranch(e.target.value as BranchId)}
-                className="bg-gray-800 text-amber-400 font-bold text-xs uppercase tracking-widest px-2 py-1 rounded border border-gray-700 outline-none"
-              >
-                {BRANCHES.map(b => (
-                  <option key={b.id} value={b.id}>{b.shortName} KITCHEN</option>
-                ))}
-              </select>
+              {(() => {
+                const isChefRole = String((session?.user as any)?.role || '').toLowerCase() === 'chef';
+                return (
+                  <select 
+                    value={activeBranch} 
+                    onChange={(e) => setActiveBranch(e.target.value as BranchId)}
+                    disabled={isChefRole}
+                    className="bg-gray-800 text-amber-400 font-bold text-xs uppercase tracking-widest px-2 py-1 rounded border border-gray-700 outline-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    {BRANCHES.filter(b => !isChefRole || b.id === activeBranch).map(b => (
+                      <option key={b.id} value={b.id}>{b.shortName} KITCHEN</option>
+                    ))}
+                  </select>
+                );
+              })()}
             </div>
           </div>
           
-          <div className="flex bg-gray-800 p-1 rounded-xl w-full md:w-auto">
-            <button onClick={() => setActiveTab("queue")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'queue' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
-              Queue 
-              {queueOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'queue' ? 'bg-rose-500 text-white' : 'bg-gray-700'}`}>{queueOrders.length}</span>}
+          {/* Header Stats */}
+          <div className="hidden lg:flex items-center gap-6 bg-gray-800 border border-gray-700 rounded-xl px-6 py-2">
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Today</span>
+              <span className="text-xl font-black text-white">{statsTotal}</span>
+            </div>
+            <div className="w-px h-8 bg-gray-700"></div>
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Active</span>
+              <span className="text-xl font-black text-amber-400">{statsActive}</span>
+            </div>
+            <div className="w-px h-8 bg-gray-700"></div>
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Completed</span>
+              <span className="text-xl font-black text-emerald-400">{statsCompleted}</span>
+            </div>
+          </div>
+          
+          <div className="flex flex-col md:flex-row items-end md:items-center gap-4 w-full md:w-auto">
+            <button 
+              onClick={toggleMute} 
+              className={`hidden md:flex p-2 rounded-lg border ${isMuted ? 'bg-rose-500/10 border-rose-500 text-rose-500' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'} transition-colors`}
+              title={isMuted ? "Unmute Notifications" : "Mute Notifications"}
+            >
+              {isMuted ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+              )}
             </button>
-            <button onClick={() => setActiveTab("myTasks")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'myTasks' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
-              Active 
-              {myTasksOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'myTasks' ? 'bg-gray-900 text-white' : 'bg-gray-700'}`}>{myTasksOrders.length}</span>}
-            </button>
-            <button onClick={() => setActiveTab("ready")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'ready' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}>
-              Ready
-            </button>
+            <div className="flex bg-gray-800 p-1 rounded-xl w-full md:w-auto">
+              <button onClick={() => setActiveTab("queue")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'queue' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
+                Queue 
+                {queueOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'queue' ? 'bg-rose-500 text-white' : 'bg-gray-700'}`}>{queueOrders.length}</span>}
+              </button>
+              <button onClick={() => setActiveTab("myTasks")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'myTasks' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
+                Active 
+                {myTasksOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'myTasks' ? 'bg-gray-900 text-white' : 'bg-gray-700'}`}>{myTasksOrders.length}</span>}
+              </button>
+              <button onClick={() => setActiveTab("ready")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'ready' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}>
+                Ready
+              </button>
+            </div>
+            <BackButton fallback="/login" label="Switch Account" variant="ghost" className="text-white hover:bg-white/10 shrink-0" />
           </div>
         </div>
       </div>
@@ -498,6 +616,33 @@ export default function ChefDashboardPage() {
               alt="Cake Fullscreen" 
               className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" 
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* New Order Popup */}
+      <AnimatePresence>
+        {newOrderPopup && (
+          <motion.div key="new-order-popup" initial={{opacity:0,scale:0.8,y:50}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:0.8,y:50}}
+            className="fixed bottom-6 right-6 w-80 bg-white shadow-2xl rounded-2xl p-4 z-50 border-4 border-emerald-500 overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500 animate-[shrink_5s_linear_forwards]" />
+            <style dangerouslySetInnerHTML={{__html: `
+              @keyframes shrink { from { width: 100%; } to { width: 0%; } }
+            `}} />
+            <div className="flex items-start gap-3">
+              <div className="p-3 bg-emerald-100 text-emerald-600 rounded-full animate-bounce"><Reserve className="w-8 h-8" variant="Bold" /></div>
+              <div className="flex-1 mt-1">
+                <h4 className="font-black text-gray-900 text-xl tracking-tight leading-none uppercase">NEW TICKET!</h4>
+                {newOrderPopup.count > 1 ? (
+                  <p className="text-sm font-bold text-gray-500 mt-2">{newOrderPopup.count} new orders arrived.</p>
+                ) : (
+                  <p className="text-sm font-bold text-gray-500 mt-2">Order #{newOrderPopup.recentId} just entered the queue.</p>
+                )}
+                <button onClick={() => setNewOrderPopup(null)} className="mt-3 w-full bg-emerald-500 text-white text-xs font-black uppercase tracking-widest py-2.5 rounded-lg hover:bg-emerald-600 transition-transform active:scale-95">
+                  Acknowledge
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

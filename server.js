@@ -61,6 +61,44 @@ app.prepare().then(() => {
     console.log(`> 🚀 Custom Server ready on http://${hostname}:${port}`);
     console.log(`> ⚡ Socket.IO initialized`);
   });
+
+  // Graceful Shutdown Handler
+  global.isShuttingDown = false;
+  
+  const shutdown = async (signal) => {
+    if (global.isShuttingDown) return;
+    global.isShuttingDown = true;
+    console.log(`\n[Server] Received ${signal}, starting graceful shutdown...`);
+    
+    // Stop accepting new connections
+    httpServer.close(() => {
+      console.log('[Server] HTTP server closed.');
+    });
+
+    // Close Socket.IO
+    if (io) {
+      io.close(() => {
+        console.log('[Socket] Socket.IO disconnected.');
+      });
+    }
+
+    // Disconnect Prisma
+    try {
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
+      await prisma.$disconnect();
+      console.log('[Prisma] Database disconnected.');
+    } catch (err) {
+      console.error('[Prisma] Error during disconnect:', err);
+    }
+
+    console.log('[Server] Graceful shutdown complete. Exiting.');
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+
 }).catch((ex) => {
   console.error(ex.stack);
   process.exit(1);

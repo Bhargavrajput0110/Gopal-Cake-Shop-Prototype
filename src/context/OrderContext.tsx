@@ -147,7 +147,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const newSocket = io(window.location.origin);
     
     const refetchOrders = () => {
-      fetch("/api/v1/orders?limit=50").then(res => res.json()).then(data => {
+      fetch("/api/v1/orders?limit=500").then(res => res.json()).then(data => {
         if (data && data.success && data.data) {
           setOrders(data.data);
         }
@@ -188,6 +188,23 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const transitionOrderAction = async (id: string, action: string, note?: string) => {
+    const optimisticStatusMap: Record<string, OrderStatus> = {
+      "approve": "WAITING_FOR_CHEF",
+      "chef-accept": "CHEF_ACCEPTED",
+      "start-making": "MAKING",
+      "start-decorating": "DECORATING",
+      "ready": "READY_FOR_PICKUP",
+      "assign-driver": "ASSIGNED_TO_DRIVER",
+      "pick-up": "PICKED_UP",
+      "on-the-way": "ON_THE_WAY",
+      "deliver": "DELIVERED",
+      "complete": "COMPLETED",
+      "cancel": "CANCELLED"
+    };
+    if (optimisticStatusMap[action]) {
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: optimisticStatusMap[action] } : o));
+    }
+
     try {
       const response = await fetch(`/api/v1/orders/${id}/actions/${action}`, {
         method: 'POST',
@@ -201,12 +218,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       }
       
       // Always refetch to sync state
-      const refresh = await fetch("/api/v1/orders?limit=50");
+      const refresh = await fetch("/api/v1/orders?limit=500");
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     } catch (e) {
       console.error(e);
       alert("Error transitioning order.");
+      const refresh = await fetch("/api/v1/orders?limit=500");
+      const refreshData = await refresh.json();
+      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     }
   };
 
@@ -228,9 +248,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (!data.success && data.error?.httpStatus === 409) {
         alert(data.error.message || "Conflict: This order state was recently changed by someone else.");
         // Refetch to sync state
-        const refresh = await fetch("/api/orders");
+        const refresh = await fetch("/api/v1/orders?limit=500");
         const refreshData = await refresh.json();
-        if (refreshData.success) setOrders(refreshData.orders);
+        if (refreshData.success && refreshData.data) setOrders(refreshData.data);
       }
     } catch (e) {
       console.error(e);
@@ -255,9 +275,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
           alert("Assignment failed.");
         }
         // Refetch to sync state
-        const refresh = await fetch("/api/orders");
+        const refresh = await fetch("/api/v1/orders?limit=500");
         const refreshData = await refresh.json();
-        if (refreshData.success) setOrders(refreshData.orders);
+        if (refreshData.success && refreshData.data) setOrders(refreshData.data);
       } else {
         setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
       }
@@ -294,6 +314,17 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   
   const reportIssue = (id: string, issueType: string, severity: "normal" | "urgent", notes: string) => {};
   const addIngredientRequest = async (orderId: string, item: string, qty?: number, unit?: string, ) => {
+    const optimisticReq = {
+      id: `ING-${Math.random().toString(36).substr(2, 9)}`,
+      itemCode: item.toUpperCase().replace(/\s+/g, '_'),
+      itemName: item,
+      qty,
+      unit,
+      requestedBy: "Chef",
+      status: "pending" as const,
+      timestamp: new Date().toISOString()
+    };
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ingredientRequests: [...(o.ingredientRequests || []), optimisticReq], delayLevel: "warning" } : o));
     try {
       const response = await fetch(`/api/orders/${orderId}/ingredient-request`, {
         method: 'POST',
@@ -343,7 +374,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (!data.success) {
         alert(data.error || data.message || "Failed to update order fields");
         // Revert on failure by refetching
-        const refresh = await fetch("/api/v1/orders?limit=50");
+        const refresh = await fetch("/api/v1/orders?limit=500");
         const refreshData = await refresh.json();
         if (refreshData.success && refreshData.data) setOrders(refreshData.data);
       }
@@ -351,7 +382,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       console.error(e);
       alert("Failed to update order fields");
       // Revert on failure by refetching
-      const refresh = await fetch("/api/v1/orders?limit=50");
+      const refresh = await fetch("/api/v1/orders?limit=500");
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     }

@@ -50,7 +50,7 @@ export const STATE_MACHINE: TransitionConfig[] = [
   { action: 'chef-accept', current: 'WAITING_FOR_CHEF', next: 'CHEF_ACCEPTED', roles: ['CHEF', 'ADMIN'] },
   { action: 'start-making', current: 'CHEF_ACCEPTED', next: 'MAKING', roles: ['CHEF', 'ADMIN'] },
   { action: 'start-decorating', current: 'MAKING', next: 'DECORATING', roles: ['CHEF', 'ADMIN'] },
-  { action: 'ready', current: 'DECORATING', next: 'READY_FOR_PICKUP', roles: ['CHEF', 'ADMIN'] },
+  { action: 'ready', current: ['CHEF_ACCEPTED', 'MAKING', 'DECORATING'], next: 'READY_FOR_PICKUP', roles: ['CHEF', 'ADMIN'] },
   
   // Delivery Flow
   { action: 'auto-queue', current: 'READY_FOR_PICKUP', next: 'PENDING_ASSIGNMENT', roles: ['ADMIN'], allowedDeliveryTypes: ['DELIVERY'] }, // System internal action

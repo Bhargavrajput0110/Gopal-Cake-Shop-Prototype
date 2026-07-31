@@ -32,8 +32,10 @@ export const GET = withApiHandler(async ({ req, appRole, branchId, requestId }) 
     const endDate = searchParams.get('endDate') || undefined
     const sortField = searchParams.get('sortField') || undefined
     const sortOrder = searchParams.get('sortOrder') || undefined
+    const dueSoon = searchParams.get('dueSoon') === 'true'
+    const hasIssues = searchParams.get('hasIssues') === 'true'
 
-    const { data, total } = await OrderService.listOrders(branchId, appRole, page, limit, { status, branch, search, startDate, endDate, sortField, sortOrder })
+    const { data, total } = await OrderService.listOrders(branchId, appRole, page, limit, { status, branch, search, startDate, endDate, sortField, sortOrder, dueSoon, hasIssues })
     return paginatedResponse(data, page, limit, total, 'Orders fetched successfully', requestId)
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message || String(err), stack: err.stack }, { status: 500 })

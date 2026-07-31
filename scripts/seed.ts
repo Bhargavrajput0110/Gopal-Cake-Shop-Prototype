@@ -159,19 +159,20 @@ async function main() {
   ];
 
   for (const p of productList) {
-    await prisma.product.upsert({
-      where: { name: p.name },
-      update: {},
-      create: {
-        name: p.name,
-        basePrice: p.basePrice,
-        description: p.description,
-        categoryId: p.categoryId,
-        availableForSale: true,
-        isArchived: false,
-        isCustom: (p as any).isCustom || false,
-      }
-    });
+    const existing = await prisma.product.findFirst({ where: { name: p.name } });
+    if (!existing) {
+      await prisma.product.create({
+        data: {
+          name: p.name,
+          basePrice: p.basePrice,
+          description: p.description,
+          category: { connect: { id: p.categoryId } },
+          availableForSale: true,
+          isArchived: false,
+          isCustomizable: (p as any).isCustom || false,
+        }
+      });
+    }
   }
   console.log(`✔ ${productList.length} Products created`);
 

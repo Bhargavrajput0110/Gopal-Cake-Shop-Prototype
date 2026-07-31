@@ -6,7 +6,7 @@ import { useCart, CartItem } from "@/context/CartContext"
 import { Button } from "@/components/ui/button"
 import { useQuery } from "@tanstack/react-query"
 import { fetchClient } from "@/lib/api/client"
-import { ALL_FLAVOURS } from "@/lib/flavours"
+import { ALL_FLAVOURS, getFlavourSurcharge } from "@/lib/flavours"
 
 interface ItemConfiguratorModalProps {
   cartItemId: string
@@ -135,7 +135,9 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
                   <select value={flavor} onChange={e => setFlavor(e.target.value)} className="w-full p-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-1 focus:ring-primary">
                     <option value="">Standard Flavor</option>
                     {ALL_FLAVOURS.map((f, index) => (
-                      <option key={`${f.id}-${index}`} value={f.name}>{f.name}</option>
+                      <option key={`${f.id}-${index}`} value={f.name}>
+                        {f.name} {f.surchargePerHalfKg ? `(+₹${f.surchargePerHalfKg}/500g)` : ""}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -249,15 +251,23 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
           )}
         </div>
 
-        <div className="p-4 border-t border-border bg-muted/20 flex justify-between gap-2">
-          <div>
-            {item.isCustomizable && activeTab !== 'config' && (
-               <Button variant="outline" onClick={() => setActiveTab('config')}>Back to Config</Button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSave} className="font-bold">Save Configuration</Button>
+        <div className="p-4 border-t border-border bg-muted/20 flex flex-col gap-3">
+          {flavor && getFlavourSurcharge(flavor, weight) > 0 && (
+            <div className="flex justify-between items-center bg-primary/10 text-primary p-2 rounded-lg text-sm font-bold">
+              <span>Premium Flavour Surcharge</span>
+              <span>+₹{getFlavourSurcharge(flavor, weight)}</span>
+            </div>
+          )}
+          <div className="flex justify-between gap-2">
+            <div>
+              {item.isCustomizable && activeTab !== 'config' && (
+                 <Button variant="outline" onClick={() => setActiveTab('config')}>Back to Config</Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button onClick={handleSave} className="font-bold">Save Configuration</Button>
+            </div>
           </div>
         </div>
       </div>

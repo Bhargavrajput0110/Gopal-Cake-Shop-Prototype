@@ -10,6 +10,7 @@ export const authConfig = {
   pages: {
     signIn: "/login",
   },
+  useSecureCookies: process.env.NODE_ENV === "production",
   cookies: {
     sessionToken: {
       name: process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token",
@@ -17,13 +18,15 @@ export const authConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
       },
     },
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      const publicOrigin = process.env.NEXTAUTH_URL || 'https://gopal-cake-shop-prototype.onrender.com';
+      const publicOrigin = process.env.NODE_ENV === "production" 
+        ? 'https://gopal-cake-shop-prototype.onrender.com' 
+        : 'http://localhost:3000';
       if (url.startsWith("/")) return `${publicOrigin}${url}`;
       try {
         const u = new URL(url);
