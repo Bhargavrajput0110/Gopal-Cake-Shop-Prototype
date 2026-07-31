@@ -34,7 +34,7 @@ export function Hero() {
           style={{ willChange: "transform" }}
         >
           <source
-            src="https://res.cloudinary.com/demo/video/upload/spices.mp4"
+            src="https://res.cloudinary.com/dfstyia4c/video/upload/v1784262667/making_an_cake_edit_to_put_it_uhmv3c.mp4"
             type="video/mp4"
           />
         </video>
