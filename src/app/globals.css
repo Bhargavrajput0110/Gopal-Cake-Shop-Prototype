@@ -231,13 +231,13 @@
    TYPOGRAPHY
    ───────────────────────────────────────────────────────────────────────────── */
 .font-display {
-  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-display), Georgia, serif;
 }
 .font-editorial {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-heading), Georgia, serif;
 }
 .font-ui {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
 
 .text-gradient-gold {
