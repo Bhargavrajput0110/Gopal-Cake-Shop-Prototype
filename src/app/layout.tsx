@@ -14,14 +14,14 @@ import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
 
 const inter = Inter({ 
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--next-font-sans",
   display: "swap",
 });
 
 const cormorant = Cormorant_Garamond({ 
   subsets: ["latin"], 
   weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-heading",
+  variable: "--next-font-heading",
   style: ["normal", "italic"],
   display: "swap",
 });
@@ -29,7 +29,7 @@ const cormorant = Cormorant_Garamond({
 const playfair = Playfair_Display({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-display",
+  variable: "--next-font-display",
   style: ["normal", "italic"],
   display: "swap",
 });

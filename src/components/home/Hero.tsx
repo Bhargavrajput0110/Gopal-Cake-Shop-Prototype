@@ -29,11 +29,12 @@ export function Hero() {
           loop
           muted
           playsInline
+          poster="https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=2560&auto=format&fit=crop"
           className="absolute inset-0 w-full h-full object-cover scale-105"
           style={{ willChange: "transform" }}
         >
           <source
-            src="https://assets.mixkit.co/videos/preview/mixkit-decorating-a-delicious-chocolate-cake-with-frosting-42861-large.mp4"
+            src="https://videos.pexels.com/video-files/3125217/3125217-uhd_2560_1440_24fps.mp4"
             type="video/mp4"
           />
         </video>

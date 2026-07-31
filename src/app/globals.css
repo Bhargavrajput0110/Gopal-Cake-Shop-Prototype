@@ -14,10 +14,12 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-heading);
-  --font-display: var(--font-display);
+  --font-sans: var(--next-font-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+  --font-heading: var(--next-font-heading), Georgia, serif;
+  --font-editorial: var(--next-font-heading), Georgia, serif;
+  --font-display: var(--next-font-display), Georgia, serif;
+  --font-ui: var(--next-font-sans), system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -230,16 +232,6 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    TYPOGRAPHY
    ───────────────────────────────────────────────────────────────────────────── */
-.font-display {
-  font-family: var(--font-display), Georgia, serif;
-}
-.font-editorial {
-  font-family: var(--font-heading), Georgia, serif;
-}
-.font-ui {
-  font-family: var(--font-sans), system-ui, sans-serif;
-}
-
 .text-gradient-gold {
   background: linear-gradient(135deg, #C8A97E 0%, #E8C97A 40%, #D4AF37 60%, #C8A97E 100%);
   -webkit-background-clip: text;
