@@ -12,9 +12,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   transpilePackages: ['react-map-gl', 'mapbox-gl', '@mapbox/search-js-react'],
   images: {
     remotePatterns: [
