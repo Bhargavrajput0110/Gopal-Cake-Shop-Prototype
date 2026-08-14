@@ -162,7 +162,7 @@ function FeaturedProductCard({ product }: { product: any }) {
                 }}
                 className="px-4 py-2 bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 transition-all rounded-full font-ui text-[10px] font-bold uppercase tracking-[0.1em] shadow-sm hover:shadow-md hover:-translate-y-0.5"
               >
-                ADD
+                ADD {product.basePrice ? `₹${product.basePrice}` : ''}
               </button>
             )}
           </div>
