@@ -128,17 +128,12 @@ export function FeaturedProducts() {
   const categories = ["All", "Birthday", "Anniversary", "Kids", "Signature", "Custom"];
 
   useEffect(() => {
-    let localSaved: any[] = [];
-    try {
-      localSaved = JSON.parse(localStorage.getItem('gopal_saved_designs') || '[]');
-    } catch (e) {}
-
     Promise.all([
       fetch("/api/v1/designs").then(res => res.ok ? res.json() : { data: { items: [] } }).catch(() => ({ data: { items: [] } })),
       fetch("/api/v1/public/products").then(res => res.ok ? res.json() : []).catch(() => [])
     ]).then(([designsRes, productsRes]) => {
       const apiDesigns = (designsRes?.data?.items || []);
-      const allDesigns = [...localSaved, ...apiDesigns].filter(d => !(d.imageUrl || d.thumbnail || "").startsWith("blob:")).map((d: any) => {
+      const allDesigns = apiDesigns.filter((d: any) => !(d.imageUrl || d.thumbnail || "").startsWith("blob:")).map((d: any) => {
         let computedPrice = d.basePrice ? Number(d.basePrice) : 0;
         let hasMultipleOptions = false;
         if (d.weightConfig && typeof d.weightConfig === 'object') {
@@ -176,10 +171,9 @@ export function FeaturedProducts() {
       
       const combined: any[] = [];
       const seen = new Set();
-      
-      // Put productsList first so approved products with valid images take priority over draft designs
-      [...productsList, ...allDesigns].forEach((item: any) => {
-        const key = item.name ? item.name.toLowerCase().trim() : null;
+      [...allDesigns, ...productsList].forEach((item: any) => {
+        // Deduplicate aggressively by name to prevent same-named Design & Product duplicates
+        const key = item.name?.toLowerCase().trim() || item.code || item.id;
         if (key && !seen.has(key)) {
           seen.add(key);
           combined.push(item);
