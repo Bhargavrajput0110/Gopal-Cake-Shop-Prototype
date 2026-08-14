@@ -109,7 +109,25 @@ const DEFAULT_62_CATEGORIES = [
     }
   })
   
-  const designs = designsPayload?.items || []
+  const designs = React.useMemo(() => {
+    const apiItems = designsPayload?.items || []
+    try {
+      const localStr = typeof window !== 'undefined' ? localStorage.getItem('gopal_saved_designs') : null
+      if (localStr) {
+        const localSaved = JSON.parse(localStr)
+        if (Array.isArray(localSaved) && localSaved.length > 0) {
+          return apiItems.map((apiItem: any) => {
+            const localMatch = localSaved.find(l => l.id === apiItem.id || l.code === apiItem.code)
+            if (localMatch) {
+              return { ...apiItem, ...localMatch } // Restore UI-only fields like weightConfig
+            }
+            return apiItem
+          })
+        }
+      }
+    } catch (e) {}
+    return apiItems
+  }, [designsPayload?.items])
 
   const archiveMutation = useMutation({
     mutationFn: async (id: string) => {
