@@ -130,15 +130,32 @@ export function DesignFormModal({ isOpen, onClose, initialData }: any) {
     if (!newCategoryName.trim()) return
     setIsSavingCat(true)
     try {
-      const res = await fetchClient<any>('/categories', {
-        method: 'POST',
-        body: JSON.stringify({ name: newCategoryName.trim(), status: 'active' })
-      })
-      const newCat = res.data || res
+      let newCat;
+      try {
+        const res = await fetchClient<any>('/categories', {
+          method: 'POST',
+          body: JSON.stringify({ name: newCategoryName.trim(), status: 'active' })
+        })
+        newCat = res.data || res
+      } catch (e) {
+        // If it fails (e.g. 409 Conflict), assume it already exists and use the slug
+        newCat = { slug: newCategoryName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') }
+      }
+
       const catId = newCat.categoryId || newCat.slug || newCat.id || newCategoryName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
       await queryClient.invalidateQueries({ queryKey: ['admin-categories'] })
-      setCustomAdded(prev => [...prev, { categoryId: catId, name: newCategoryName.trim(), slug: catId }])
-      setFormData((prev: any) => ({ ...prev, categoryIds: [catId] }))
+      
+      setCustomAdded(prev => {
+        if (prev.find(p => p.slug === catId)) return prev;
+        return [...prev, { categoryId: catId, name: newCategoryName.trim(), slug: catId }]
+      })
+      
+      setFormData((prev: any) => {
+        const existingIds = prev.categoryIds || []
+        if (existingIds.includes(catId)) return prev;
+        return { ...prev, categoryIds: [...existingIds, catId] }
+      })
+      
       setNewCategoryName("")
       setIsAddingCategory(false)
     } catch (e) {
