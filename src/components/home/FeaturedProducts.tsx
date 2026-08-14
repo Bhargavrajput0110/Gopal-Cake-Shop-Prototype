@@ -22,10 +22,9 @@ function ProductSkeleton() {
   );
 }
 
-function FeaturedProductCard({ product, idx }: { product: any, idx: number }) {
+function FeaturedProductCard({ product }: { product: any }) {
   const [isOpen, setIsOpen] = useState(false);
-  const ratios = ["aspect-[3/4]", "aspect-[4/5]", "aspect-[2/3]", "aspect-square"];
-  const aspectClass = ratios[idx % ratios.length];
+  const aspectClass = "aspect-[4/5]";
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -35,7 +34,6 @@ function FeaturedProductCard({ product, idx }: { product: any, idx: number }) {
         viewport={{ once: true, margin: "-60px" }}
         transition={{
           duration: 0.7,
-          delay: (idx % 4) * 0.1,
           ease: [0.16, 1, 0.3, 1],
         }}
         className="group flex flex-col break-inside-avoid relative"
@@ -104,7 +102,9 @@ function FeaturedProductCard({ product, idx }: { product: any, idx: number }) {
             {product.name}
           </h3>
           <p className="font-ui text-[12px] font-semibold text-[var(--brand-champagne)] mt-1 tracking-wide">
-            {product.basePrice ? `₹${product.basePrice}` : 'Custom Pricing'}
+            {product.hasMultipleOptions 
+              ? `Starting from ₹${product.basePrice}` 
+              : (product.basePrice ? `₹${product.basePrice}` : 'Custom Pricing')}
           </p>
         </div>
       </motion.div>
@@ -123,6 +123,9 @@ function FeaturedProductCard({ product, idx }: { product: any, idx: number }) {
 export function FeaturedProducts() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("All");
+
+  const categories = ["All", "Birthday", "Anniversary", "Kids", "Signature", "Custom"];
 
   useEffect(() => {
     let localSaved: any[] = [];
@@ -137,9 +140,13 @@ export function FeaturedProducts() {
       const apiDesigns = (designsRes?.data?.items || []);
       const allDesigns = [...localSaved, ...apiDesigns].map((d: any) => {
         let computedPrice = d.basePrice ? Number(d.basePrice) : 0;
-        if (!computedPrice && d.weightConfig && typeof d.weightConfig === 'object') {
+        let hasMultipleOptions = false;
+        if (d.weightConfig && typeof d.weightConfig === 'object') {
           const vals = Object.values(d.weightConfig).map((v: any) => Number(v?.price)).filter(p => p > 0);
-          if (vals.length > 0) computedPrice = Math.min(...vals);
+          if (vals.length > 0) {
+            computedPrice = Math.min(...vals);
+            if (vals.length > 1) hasMultipleOptions = true;
+          }
         }
         let thumb = d.imageUrl || d.thumbnail || "";
         if (!thumb || thumb.includes("example.com") || thumb.includes("sample.jpg") || thumb.includes("mock")) {
@@ -150,7 +157,8 @@ export function FeaturedProducts() {
           thumbnail: thumb,
           isCustom: true,
           name: d.name || "Custom Cake Design",
-          basePrice: computedPrice || 600
+          basePrice: computedPrice || 600,
+          hasMultipleOptions
         };
       });
       
@@ -159,7 +167,11 @@ export function FeaturedProducts() {
         if (!thumb || thumb.includes("example.com") || thumb.includes("sample.jpg") || thumb.includes("mock")) {
           thumb = "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&auto=format&fit=crop&q=80";
         }
-        return { ...p, thumbnail: thumb };
+        
+        let hasMultipleOptions = false;
+        if (p.variants && p.variants.length > 1) hasMultipleOptions = true;
+
+        return { ...p, thumbnail: thumb, hasMultipleOptions };
       });
       
       const combined: any[] = [];
@@ -221,19 +233,46 @@ export function FeaturedProducts() {
           </Link>
         </div>
 
+        {/* ── Category Filters ── */}
+        <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-10 pb-2">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-5 py-2 rounded-full whitespace-nowrap font-ui text-sm font-bold transition-all ${
+                activeCategory === cat
+                  ? "bg-[var(--brand-deep-rose)] text-white shadow-md"
+                  : "bg-white text-[var(--foreground)] hover:bg-gray-100 border border-border"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
         {/* ── Product Grid ── */}
-        {/* ── Product Masonry ── */}
         {loading ? (
-          <div className="columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
               <ProductSkeleton key={i} />
             ))}
           </div>
         ) : (
-          <div className="columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6">
-            {products.map((product, idx) => {
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {products
+              .filter(p => {
+                if (activeCategory === "All") return true;
+                if (activeCategory === "Signature" && p.categories?.some((c:any) => c.category?.name?.toLowerCase().includes('signature'))) return true;
+                if (activeCategory === "Custom" && p.isCustom) return true;
+                
+                // General text search in tags/name
+                const searchStr = `${p.name} ${(p.tags||[]).join(" ")} ${(p.labels||[]).join(" ")}`.toLowerCase();
+                return searchStr.includes(activeCategory.toLowerCase());
+              })
+              .slice(0, 12)
+              .map((product) => {
               return (
-                <FeaturedProductCard key={product.id} product={product} idx={idx} />
+                <FeaturedProductCard key={product.id} product={product} />
               );
             })}
           </div>

@@ -51,9 +51,10 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
   );
   const qty = cartItem?.quantity ?? 0;
 
-  // Vary aspect ratios for true masonry look
-  const ratios = ["aspect-[3/4]", "aspect-[4/5]", "aspect-[2/3]", "aspect-square"];
-  const aspectClass = ratios[idx % ratios.length];
+  // Use a consistent aspect ratio for even cards
+  const aspectClass = "aspect-[4/5]";
+
+  const hasMultipleOptions = product.variants && product.variants.length > 1;
 
   return (
     <motion.div
@@ -114,7 +115,9 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
         {/* Price row + stepper/add */}
         <div className="flex items-center justify-between mt-auto pt-1">
           <div className="flex flex-col">
-            <p className="font-ui text-xs text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">From</p>
+            {hasMultipleOptions && (
+              <p className="font-ui text-xs text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">Starting from</p>
+            )}
             <p className="font-ui text-sm font-bold text-[var(--foreground)]">
               ₹{product.basePrice}
             </p>
@@ -451,7 +454,7 @@ function MenuPageContent() {
           </div>
 
           {loading ? (
-            <div className="columns-2 md:columns-3 xl:columns-4 gap-4 md:gap-5 space-y-4 md:space-y-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="flex flex-col gap-4 break-inside-avoid">
                   <div className="w-full aspect-[4/5] rounded-3xl skeleton" />
@@ -491,9 +494,9 @@ function MenuPageContent() {
               </button>
             </div>
           ) : (
-            <div className="columns-2 md:columns-3 xl:columns-4 gap-4 md:gap-5 space-y-4 md:space-y-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
               {filteredProducts.map((product, idx) => (
-                <div key={product.id} className="break-inside-avoid mb-5">
+                <div key={product.id} className="break-inside-avoid">
                   <ProductCard product={product} idx={idx} />
                 </div>
               ))}
