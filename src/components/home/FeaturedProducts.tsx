@@ -176,8 +176,10 @@ export function FeaturedProducts() {
       
       const combined: any[] = [];
       const seen = new Set();
-      [...allDesigns, ...productsList].forEach((item: any) => {
-        const key = item.id || item.code || item.name;
+      
+      // Put productsList first so approved products with valid images take priority over draft designs
+      [...productsList, ...allDesigns].forEach((item: any) => {
+        const key = item.name ? item.name.toLowerCase().trim() : null;
         if (key && !seen.has(key)) {
           seen.add(key);
           combined.push(item);
