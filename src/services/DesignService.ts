@@ -108,31 +108,37 @@ export class DesignService {
       for (const item of anyData.categories.create) {
         const catId = item.categoryId;
         if (catId && typeof catId === 'string') {
+          let realCatId = catId;
           try {
-            await prisma.category.upsert({
-              where: { id: catId },
-              update: {},
-              create: {
-                id: catId,
-                slug: catId,
-                name: catId.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-                isActive: true
-              }
-            });
+            // First try to find by slug, in case the UI sent a string like 'Signature'
+            let existing = await prisma.category.findUnique({ where: { slug: catId.toLowerCase() } });
+            if (!existing) {
+              // Try finding by exact ID just in case
+              existing = await prisma.category.findUnique({ where: { id: catId } });
+            }
+            
+            if (existing) {
+              realCatId = existing.id;
+            } else {
+              // Create it
+              const newCat = await prisma.category.create({
+                data: {
+                  slug: catId.toLowerCase(),
+                  name: catId.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                  isActive: true
+                }
+              });
+              realCatId = newCat.id;
+            }
           } catch (e) {
+            // If creation failed due to race condition, try to fetch again
             try {
-              const existing = await prisma.category.findUnique({ where: { slug: catId } });
-              if (!existing) {
-                await prisma.category.create({
-                  data: {
-                    slug: `${catId}-${Date.now()}`,
-                    name: catId.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-                    isActive: true
-                  }
-                });
-              }
+              const existing = await prisma.category.findUnique({ where: { slug: catId.toLowerCase() } });
+              if (existing) realCatId = existing.id;
             } catch (err) {}
           }
+          // Mutate the payload so it uses the real CUID
+          item.categoryId = realCatId;
         }
       }
     }
@@ -165,18 +171,33 @@ export class DesignService {
       for (const item of anyData.categories.create) {
         const catId = item.categoryId;
         if (catId && typeof catId === 'string') {
+          let realCatId = catId;
           try {
-            await prisma.category.upsert({
-              where: { id: catId },
-              update: {},
-              create: {
-                id: catId,
-                slug: catId,
-                name: catId.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-                isActive: true
-              }
-            });
-          } catch (e) {}
+            let existing = await prisma.category.findUnique({ where: { slug: catId.toLowerCase() } });
+            if (!existing) {
+              existing = await prisma.category.findUnique({ where: { id: catId } });
+            }
+            
+            if (existing) {
+              realCatId = existing.id;
+            } else {
+              const newCat = await prisma.category.create({
+                data: {
+                  slug: catId.toLowerCase(),
+                  name: catId.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                  isActive: true
+                }
+              });
+              realCatId = newCat.id;
+            }
+          } catch (e) {
+            try {
+              const existing = await prisma.category.findUnique({ where: { slug: catId.toLowerCase() } });
+              if (existing) realCatId = existing.id;
+            } catch (err) {}
+          }
+          // Mutate the payload so it uses the real CUID
+          item.categoryId = realCatId;
         }
       }
     }
