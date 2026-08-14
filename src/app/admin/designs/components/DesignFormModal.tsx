@@ -430,10 +430,12 @@ export function DesignFormModal({ isOpen, onClose, initialData }: any) {
                   <input
                     type="number"
                     required
+                    min="0"
+                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     placeholder="e.g. 600"
                     value={formData.basePrice}
                     onChange={e => setFormData({...formData, basePrice: e.target.value})}
-                    className="w-full pl-8 pr-3.5 py-2 bg-background border-2 border-primary/30 rounded-lg text-base font-black text-foreground focus:border-primary transition-all"
+                    className="w-full pl-8 pr-3.5 py-2 bg-background border-2 border-primary/30 rounded-lg text-base font-black text-foreground focus:border-primary transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                 </div>
               </div>

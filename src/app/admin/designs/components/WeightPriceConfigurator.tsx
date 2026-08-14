@@ -161,6 +161,8 @@ export function WeightPriceConfigurator({ initialConfig = {}, onChange }: Props)
                   <span className="absolute left-3 top-2.5 text-xs font-black text-muted-foreground">₹</span>
                   <input
                     type="number"
+                    min="0"
+                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     value={priceMap[weight]?.price || ""}
                     placeholder="0"
                     onChange={(e) => handlePriceChange(weight, e.target.value)}
@@ -281,6 +283,8 @@ export function WeightPriceConfigurator({ initialConfig = {}, onChange }: Props)
                           <span className="absolute left-2.5 top-2 text-xs font-black text-muted-foreground">₹</span>
                           <input
                             type="number"
+                            min="0"
+                            onWheel={(e) => (e.target as HTMLInputElement).blur()}
                             value={displayPrice || ""}
                             onChange={(e) => handlePriceChange(weight, e.target.value)}
                             className="w-full pl-7 pr-2.5 h-9 rounded-lg border border-input bg-background text-sm font-black text-foreground focus:border-primary focus:outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
