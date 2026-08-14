@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { PaymentStatus, TimelineEventType, LedgerEntryType } from '@prisma/client';
+import { FinancialService } from '@/services/FinancialService';
 
 export type HealthSeverity = 'CRITICAL' | 'WARNING' | 'INFO';
 
@@ -59,38 +60,30 @@ export class ReconciliationService {
     }
 
     // 2. Amount Mismatch
-    const successfulPaymentsWithLedger = await prisma.payment.findMany({
+    // Check if the sum of successful Payment intents matches the Ledger paidAmount
+    const ordersWithPayments = await prisma.order.findMany({
       where: {
-        status: PaymentStatus.SUCCESS,
-        order: {
-          ledgerEntries: {
-            some: { type: LedgerEntryType.PAYMENT }
-          }
-        }
+        payments: { some: { status: PaymentStatus.SUCCESS } }
       },
-      include: { 
-        order: {
-          include: {
-            ledgerEntries: {
-              where: { type: LedgerEntryType.PAYMENT }
-            }
-          }
-        }
+      include: {
+        payments: { where: { status: PaymentStatus.SUCCESS } },
+        ledgerEntries: true
       }
     });
 
-    for (const payment of successfulPaymentsWithLedger) {
-      const ledgerTotal = payment.order.ledgerEntries.reduce((sum, entry) => sum + Number(entry.amount), 0);
-      if (Math.abs(Number(payment.amount) - ledgerTotal) > 0.01) { // Floating point safety
+    for (const order of ordersWithPayments) {
+      const summary = await FinancialService.calculateFinancialSummary(order);
+      const gatewayTotal = order.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      
+      if (Math.abs(gatewayTotal - summary.paidAmount) > 0.01) {
         issues.push({
-          id: `am-${payment.id}`,
+          id: `am-${order.id}`,
           type: 'AMOUNT_MISMATCH',
           severity: 'CRITICAL',
-          description: `Payment ${payment.id} amount (${payment.amount}) does not match Ledger Credit total (${ledgerTotal}).`,
-          orderId: payment.orderId,
-          paymentId: payment.id,
-          createdAt: payment.updatedAt,
-          metadata: { paymentAmount: payment.amount, ledgerTotal }
+          description: `Order ${order.id} Gateway SUCCESS total (${gatewayTotal}) does not match Ledger Credit total (${summary.paidAmount}).`,
+          orderId: order.id,
+          createdAt: now,
+          metadata: { gatewayTotal, ledgerTotal: summary.paidAmount }
         });
       }
     }

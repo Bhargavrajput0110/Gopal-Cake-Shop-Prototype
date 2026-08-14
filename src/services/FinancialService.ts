@@ -1,6 +1,16 @@
 import { prisma } from '@/lib/prisma';
 import { TimelineService } from './TimelineService';
-import { LedgerEntryType, PaymentMethod, PaymentStatus, Role } from '@prisma/client';
+import { LedgerEntryType, PaymentMethod, PaymentStatus, Role, LedgerEntry } from '@prisma/client';
+
+export interface FinancialSummary {
+  totalAmount: number;
+  paidAmount: number;
+  outstandingAmount: number;
+  refundedAmount: number;
+  waivedAmount: number;
+  writeOffAmount: number;
+  paymentStatus: 'PAID' | 'PARTIALLY_PAID' | 'UNPAID';
+}
 
 export class FinancialService {
   /**
@@ -25,6 +35,13 @@ export class FinancialService {
     }
     if (!actorId) {
       throw new Error('Manual financial actions require an actorId');
+    }
+
+    const summary = await FinancialService.calculateFinancialSummary(orderId);
+    
+    // Prevent overpayment
+    if (type === 'PAYMENT' && amount > summary.outstandingAmount) {
+      throw new Error(`Amount ₹${amount} exceeds the outstanding balance of ₹${summary.outstandingAmount}`);
     }
 
     const order = await prisma.order.findUnique({
@@ -88,5 +105,85 @@ export class FinancialService {
 
       return entry;
     });
+  }
+
+  /**
+   * Centralized source of truth for all order financial states.
+   * Calculates net payments, refunds, and determines the current status from the Ledger.
+   */
+  static async calculateFinancialSummary(orderOrId: string | (any & { ledgerEntries: LedgerEntry[] })): Promise<FinancialSummary> {
+    let order;
+    if (typeof orderOrId === 'string') {
+      order = await prisma.order.findUnique({
+        where: { id: orderOrId },
+        include: { ledgerEntries: true }
+      });
+      if (!order) {
+        throw new Error(`Order ${orderOrId} not found`);
+      }
+    } else {
+      order = orderOrId;
+      if (!order.ledgerEntries) {
+        throw new Error('calculateFinancialSummary requires ledgerEntries to be included on the order object');
+      }
+    }
+
+    const totalAmount = Number(order.totalAmount);
+    
+    let paidAmount = 0;
+    let refundedAmount = 0;
+    let waivedAmount = 0;
+    let writeOffAmount = 0;
+
+    order.ledgerEntries.forEach((entry: LedgerEntry) => {
+      if (entry.status === 'SUCCESS') {
+        const amount = Number(entry.amount);
+        switch (entry.type) {
+          case 'PAYMENT':
+            paidAmount += amount;
+            break;
+          case 'REFUND':
+            refundedAmount += amount;
+            // A refund conceptually lowers the net paid amount, 
+            // so we subtract it from paidAmount to represent "net cash currently held"
+            paidAmount -= amount; 
+            break;
+          case 'WAIVER':
+            waivedAmount += amount;
+            break;
+          case 'WRITE_OFF':
+            writeOffAmount += amount;
+            break;
+        }
+      }
+    });
+
+    // Ensure we don't have a negative paid amount theoretically
+    if (paidAmount < 0) paidAmount = 0;
+
+    // The amount actually owed left to pay
+    // Adjust total to account for waivers and write-offs
+    const effectiveTotal = Math.max(0, totalAmount - waivedAmount - writeOffAmount);
+    let outstandingAmount = effectiveTotal - paidAmount;
+    if (outstandingAmount < 0) outstandingAmount = 0; // Overpayments shouldn't show as negative due in normal flow, though they are prevented.
+
+    let paymentStatus: FinancialSummary['paymentStatus'] = 'UNPAID';
+    if (paidAmount >= effectiveTotal && effectiveTotal > 0) {
+      paymentStatus = 'PAID';
+    } else if (paidAmount > 0 && paidAmount < effectiveTotal) {
+      paymentStatus = 'PARTIALLY_PAID';
+    } else if (effectiveTotal === 0 && (waivedAmount > 0 || writeOffAmount > 0)) {
+      paymentStatus = 'PAID';
+    }
+
+    return {
+      totalAmount,
+      paidAmount,
+      outstandingAmount,
+      refundedAmount,
+      waivedAmount,
+      writeOffAmount,
+      paymentStatus
+    };
   }
 }

@@ -103,6 +103,40 @@ export class DesignService {
       finalCode = `DSP-${nextNumber.toString().padStart(6, '0')}`
     }
 
+    const anyData: any = data;
+    if (anyData.categories && anyData.categories.create && Array.isArray(anyData.categories.create)) {
+      for (const item of anyData.categories.create) {
+        const catId = item.categoryId;
+        if (catId && typeof catId === 'string') {
+          try {
+            await prisma.category.upsert({
+              where: { id: catId },
+              update: {},
+              create: {
+                id: catId,
+                slug: catId,
+                name: catId.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                isActive: true
+              }
+            });
+          } catch (e) {
+            try {
+              const existing = await prisma.category.findUnique({ where: { slug: catId } });
+              if (!existing) {
+                await prisma.category.create({
+                  data: {
+                    slug: `${catId}-${Date.now()}`,
+                    name: catId.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                    isActive: true
+                  }
+                });
+              }
+            } catch (err) {}
+          }
+        }
+      }
+    }
+
     return prisma.design.create({
       data: {
         ...data,
@@ -123,6 +157,27 @@ export class DesignService {
       // Allow a small grace period for DB truncation differences
       if (Math.abs(existingTime - providedTime) > 1000) {
         throw new Error('CONCURRENCY_CONFLICT')
+      }
+    }
+
+    const anyData: any = data;
+    if (anyData.categories && anyData.categories.create && Array.isArray(anyData.categories.create)) {
+      for (const item of anyData.categories.create) {
+        const catId = item.categoryId;
+        if (catId && typeof catId === 'string') {
+          try {
+            await prisma.category.upsert({
+              where: { id: catId },
+              update: {},
+              create: {
+                id: catId,
+                slug: catId,
+                name: catId.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                isActive: true
+              }
+            });
+          } catch (e) {}
+        }
       }
     }
 

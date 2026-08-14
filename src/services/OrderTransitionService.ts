@@ -118,20 +118,18 @@ export class OrderTransitionService {
         }, tx as any)
       }
 
-      // 3. Insert Audit Log (If Admin)
-      if (appRole === 'ADMIN') {
-        await tx.auditLog.create({
-          data: {
-            action: `Admin Transition: ${action}`,
-            reason: `Transitioned ${orderId} from ${currentState} to ${nextState}`,
-            actorId,
-            tableName: 'Order',
-            recordId: orderId,
-            newValue: { status: nextState },
-            oldValue: { status: currentState }
-          }
-        })
-      }
+      // 3. Insert Audit Log (All Roles)
+      await tx.auditLog.create({
+        data: {
+          action: `Transition: ${action}`,
+          reason: note || `Transitioned ${orderId} from ${currentState} to ${nextState}`,
+          actorId,
+          tableName: 'Order',
+          recordId: orderId,
+          newValue: { status: nextState },
+          oldValue: { status: currentState }
+        }
+      })
     })
 
     const io = (global as any).io;

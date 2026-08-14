@@ -120,14 +120,26 @@ export class NotificationDispatcher {
           targetRecipient = recipientPhone;
         }
 
-        // WhatsApp: only attempt live Meta API call if token is configured
+        // WhatsApp: attempt live Meta API call if token is configured, or mock
         if (channel === 'WHATSAPP') {
-          if (process.env.WHATSAPP_API_TOKEN) {
-            // TODO: Replace with actual Meta Cloud API call when credentials are provided
-            // await fetch(`https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, { ... })
-            LoggerService.info(`[WhatsApp] Would send template '${templateName}' to ${targetRecipient} (Meta API call placeholder)`);
+          // We need order details to format the template
+          let orderData = { id: orderId || 'unknown', customerName: 'Customer', branch: branchId || 'unknown' };
+          
+          if (orderId) {
+            const o = await prisma.order.findUnique({ where: { id: orderId }, select: { customer: { select: { name: true } }, branchId: true } });
+            if (o) {
+              orderData.customerName = o.customer?.name ?? 'Customer';
+              orderData.branch = o.branchId;
+            }
+          }
+          
+          const token = process.env.WHATSAPP_ACCESS_TOKEN;
+          if (token) {
+            // Use our dedicated lib function which handles real sending + local dev mocks
+            const { sendWhatsAppNotification } = await import('@/lib/whatsapp');
+            await sendWhatsAppNotification(targetRecipient, templateName as any, orderData);
           } else {
-            LoggerService.info(`[WhatsApp] Skipped — WHATSAPP_API_TOKEN not configured. Template: ${templateName}, Recipient: ${targetRecipient}`);
+            LoggerService.info(`[WhatsApp] Skipped — WHATSAPP_ACCESS_TOKEN not configured. Template: ${templateName}, Recipient: ${targetRecipient}`);
           }
         }
 

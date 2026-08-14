@@ -3,6 +3,8 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { CreateDraftOrderDTO, UpdateDraftOrderDTO, OrderResponseDTO, DriverOrderDTO } from '@/dtos/OrderSchemas'
 import { Prisma } from '@prisma/client'
 import { toBranchId } from '@/lib/branches'
+import { FinancialService } from '@/services/FinancialService'
+
 
 export class OrderService {
   static async listOrders(
@@ -10,7 +12,7 @@ export class OrderService {
     role: string | null,
     page: number = 1,
     limit: number = 20,
-    filters?: { status?: string, branch?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string, dueSoon?: boolean, hasIssues?: boolean }
+    filters?: { status?: string, branch?: string, driverId?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string, dueSoon?: boolean, hasIssues?: boolean }
   ): Promise<{ data: OrderResponseDTO[], total: number }> {
     const canonicalBranchId = toBranchId(branchId);
     const db = prisma
@@ -21,6 +23,10 @@ export class OrderService {
       whereClause.branchId = canonicalBranchId
     } else if (filters?.branch) {
       whereClause.branchId = toBranchId(filters.branch)
+    }
+
+    if (filters?.driverId) {
+      whereClause.driverId = filters.driverId
     }
 
     if (filters?.status) {
@@ -86,6 +92,7 @@ export class OrderService {
         include: {
           customer: true,
           items: true,
+          ledgerEntries: true,
         }
       }),
       db.order.count({ where: whereClause }),
@@ -108,36 +115,40 @@ export class OrderService {
     }
 
     return {
-      data: orders.map(o => ({
-        id: o.id,
-        orderNumber: o.orderNumber,
-        customerName: o.customer?.name || 'Walk-in',
-        customerPhone: o.customer?.phone || '',
-        branch: o.branchId, // Use branchId directly or map to name
-        status: o.status,
-        orderType: o.deliveryType?.toLowerCase() || 'pickup',
-        grandTotal: Number(o.totalAmount),
-        timeTarget: o.targetDate,
-        createdAt: o.createdAt,
-        items: o.items.map((i: any) => {
-          const product = i.productId ? productMap.get(i.productId) : null;
-          return {
-            id: i.id,
-            name: i.productName || product?.name || 'Custom Item',
-            productName: i.productName || product?.name || 'Custom Item',
-            price: Number(i.price),
-            qty: i.quantity,
-            weight: i.weight ? `${i.weight}kg` : undefined,
-            notes: i.notes || undefined,
-          }
-        }),
-        priorityLevel: (o as any).priorityLevel || "normal",
-        isSurprise: (o as any).isSurprise || false,
-        customerInstructions: (o as any).customerNotes || undefined,
-        pendingBalance: Number(o.totalAmount) - Number((o as any).advancePaid || 0),
-        advancePaid: Number((o as any).advancePaid || 0),
-        delayLevel: "none",
-      })) as any,
+      data: await Promise.all(orders.map(async (o) => {
+        const finSummary = await FinancialService.calculateFinancialSummary(o);
+        return {
+          id: o.id,
+          orderNumber: o.orderNumber,
+          customerName: o.customer?.name || 'Walk-in',
+          customerPhone: o.customer?.phone || '',
+          branch: o.branchId, // Use branchId directly or map to name
+          status: o.status,
+          orderType: o.deliveryType?.toLowerCase() || 'pickup',
+          grandTotal: finSummary.totalAmount,
+          timeTarget: o.targetDate,
+          createdAt: o.createdAt,
+          items: o.items.map((i: any) => {
+            const product = i.productId ? productMap.get(i.productId) : null;
+            return {
+              id: i.id,
+              name: i.productName || product?.name || 'Custom Item',
+              productName: i.productName || product?.name || 'Custom Item',
+              price: Number(i.price),
+              qty: i.quantity,
+              weight: i.weight ? `${i.weight}kg` : undefined,
+              notes: i.notes || undefined,
+            }
+          }),
+          priorityLevel: (o as any).priorityLevel || "normal",
+          isSurprise: (o as any).isSurprise || false,
+          customerInstructions: (o as any).customerNotes || undefined,
+          pendingBalance: finSummary.outstandingAmount,
+          advancePaid: finSummary.paidAmount,
+          financialStatus: finSummary.paymentStatus,
+          delayLevel: "none",
+        } as any;
+      })),
       total,
     }
   }
@@ -151,8 +162,13 @@ export class OrderService {
   ): Promise<OrderResponseDTO | null> {
     const canonicalBranchId = branchId ? toBranchId(branchId) : null;
     const db = getIsolatedPrisma(canonicalBranchId, role)
-    const o = await db.order.findUnique({ where: { id } })
+    const o = await db.order.findUnique({ 
+      where: { id },
+      include: { ledgerEntries: true } 
+    })
     if (!o) return null
+
+    const finSummary = await FinancialService.calculateFinancialSummary(o);
 
     return {
       id: o.id,
@@ -160,10 +176,13 @@ export class OrderService {
       branchId: o.branchId,
       status: o.status,
       deliveryType: o.deliveryType,
-      totalAmount: Number(o.totalAmount),
+      totalAmount: finSummary.totalAmount,
+      advancePaid: finSummary.paidAmount,
+      pendingBalance: finSummary.outstandingAmount,
+      financialStatus: finSummary.paymentStatus,
       expectedDeliveryDate: o.targetDate,
       createdAt: o.createdAt,
-    }
+    } as any
   }
 
   static async createDraftOrder(
@@ -292,9 +311,10 @@ export class OrderService {
       }
     })
 
-    return orders.map(o => {
+    return await Promise.all(orders.map(async o => {
       // Stub coords for V1 if not available
       const coords = null
+      const finSummary = await FinancialService.calculateFinancialSummary(o);
 
       return {
         id: o.id,
@@ -310,10 +330,10 @@ export class OrderService {
         pickedUpAt: (o as any).pickedUpAt || null, // Extend Prisma schema later if missing
         deliveredAt: (o as any).deliveredAt || null,
         
-        totalAmount: Number(o.totalAmount),
-        paidAmount: (o as any).ledgerEntries
-          ?.filter((le: any) => le.type === 'PAYMENT' && le.status === 'SUCCESS')
-          .reduce((sum: number, le: any) => sum + Number(le.amount), 0) || 0,
+        totalAmount: finSummary.totalAmount,
+        paidAmount: finSummary.paidAmount,
+        pendingBalance: finSummary.outstandingAmount,
+        financialStatus: finSummary.paymentStatus,
         
         formattedAddress: o.deliveryAddress || null,
         coordinates: coords,
@@ -332,6 +352,6 @@ export class OrderService {
           status: i.status || 'PENDING'
         }))
       }
-    })
+    }))
   }
 }

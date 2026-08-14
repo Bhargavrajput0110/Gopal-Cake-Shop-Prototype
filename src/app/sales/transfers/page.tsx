@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import { useSession } from "next-auth/react";
 import { useOrders } from "@/context/OrderContext";
 import { SearchNormal1, Clock, CloseSquare, TickCircle, Warning2, ArrowSwapHorizontal, ArchiveBook, Send, TruckFast, CloseCircle } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,8 +29,8 @@ export default function BranchTransferPage() {
   const [activeTab, setActiveTab] = useState<"local" | "outgoing" | "incoming">("local");
   const [search, setSearch] = useState("");
   
-  // UI Mode: Mock Login Switcher
-  const [activeBranch, setActiveBranch] = useState<BranchId>("B_UMA"); 
+  const { data: session } = useSession();
+  const activeBranch = (session?.user as any)?.branchId || ""; 
 
   // Fetch Transfers
   const { data: incoming, mutate: mutateIncoming } = useSWR(`/api/v1/transfers?mode=incoming`, fetcher);
@@ -47,18 +48,6 @@ export default function BranchTransferPage() {
           </div>
           <h2 className="text-3xl font-black tracking-tight font-serif text-[#3E2723] flex items-center gap-2">
             Branch Transfers
-            <div className="ml-2 flex items-center gap-1 bg-[#3E2723] text-white px-2 py-1 rounded-lg">
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#C5A059] border-r border-[#C5A059]/30 pr-1">MOCK LOGIN</span>
-              <select 
-                value={activeBranch} 
-                onChange={(e) => setActiveBranch(e.target.value as BranchId)}
-                className="bg-transparent text-xs font-black uppercase tracking-wider focus:outline-none cursor-pointer"
-              >
-                {BRANCHES.map(b => (
-                  <option key={b.id} value={b.id} className="text-black">{b.shortName} Branch</option>
-                ))}
-              </select>
-            </div>
           </h2>
           <p className="text-muted-foreground text-xs mt-0.5 tracking-wide">Manage internal logistics and order routing between branches.</p>
         </div>

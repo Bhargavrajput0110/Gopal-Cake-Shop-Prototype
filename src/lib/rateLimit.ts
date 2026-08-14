@@ -49,7 +49,7 @@ export async function enforceRateLimit(
   identifier: string,
   requestId: string
 ): Promise<{ success: boolean; limit: number; remaining: number; reset: number }> {
-  if (!limiter) {
+  if (!limiter || process.env.NODE_ENV === 'development') {
     // Graceful bypass for local dev
     return { success: true, limit: 100, remaining: 99, reset: 0 }
   }

@@ -11,6 +11,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { WEIGHT_OPTIONS, getActiveFlavours, getFlavourSurcharge } from '@/lib/flavours';
 
+function parseWeightToNumber(weightStr: string): number {
+  if (!weightStr) return 0.5;
+  const num = parseFloat(weightStr);
+  if (weightStr.toLowerCase().includes('kg')) return num;
+  if (weightStr.toLowerCase().includes('g')) return num / 1000;
+  return num;
+}
+
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
   const router = useRouter();
@@ -104,30 +112,24 @@ export default function CheckoutPage() {
   // Dynamically calculate checkout subtotal based on current selections
   const dynamicSubtotal = items.reduce((acc, item) => acc + (getItemPrice(item) * item.quantity), 0);
 
-  const parseWeightToNumber = (weightStr: string): number => {
-    if (!weightStr) return 0.5;
-    const num = parseFloat(weightStr);
-    if (weightStr.toLowerCase().includes('kg')) return num;
-    if (weightStr.toLowerCase().includes('g')) return num / 1000;
-    return num;
-  };
+
 
   const handlePlaceOrder = async () => {
     if (!formData.name.trim() || !formData.phone.trim()) {
-      alert("Please fill in your Name and Phone Number.");
+      setToast({ id: Date.now().toString(), title: 'Required Fields Missing', message: 'Please fill in your Name and Phone Number.', variant: 'warning' });
       return;
     }
     if (formData.phone.replace(/\D/g, '').length < 10) {
-      alert("Please enter a valid 10-digit Phone Number.");
+      setToast({ id: Date.now().toString(), title: 'Invalid Input', message: 'Please enter a valid 10-digit Phone Number.', variant: 'warning' });
       return;
     }
     if (!date || !time) {
-      alert("Please select a target Date and Time.");
+      setToast({ id: Date.now().toString(), title: 'Required Fields Missing', message: 'Please select a target Date and Time.', variant: 'warning' });
       return;
     }
     if (deliveryType === "DELIVERY") {
       if (!formData.house.trim() || !formData.street.trim() || !formData.area.trim() || !formData.pin.trim()) {
-        alert("Please fill in all required delivery address fields (*).");
+        setToast({ id: Date.now().toString(), title: 'Required Fields Missing', message: 'Please fill in all required delivery address fields (*).', variant: 'warning' });
         return;
       }
     }
@@ -180,15 +182,21 @@ export default function CheckoutPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      });
+      }).catch(e => ({ ok: false, json: async () => ({ error: e.message }) }));
 
+      if (!res.ok) {
+        const errData = await ("json" in res ? res.json().catch(() => ({})) : {});
+        setToast({ id: Date.now().toString(), title: 'Checkout Failed', message: errData.error || "Order could not be placed. Please try again.", variant: 'warning' });
+        return; // Stay on checkout, keep cart, do not redirect
+      }
+      
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Checkout failed');
-
       clearCart();
       router.push(`/track/${data.trackingId}`);
     } catch (err: any) {
-      alert(err.message);
+      console.error("Checkout Exception:", err);
+      setToast({ id: Date.now().toString(), title: 'Checkout Exception', message: "An unexpected error occurred. Please try again.", variant: 'warning' });
+    } finally {
       setIsSubmitting(false);
     }
   };

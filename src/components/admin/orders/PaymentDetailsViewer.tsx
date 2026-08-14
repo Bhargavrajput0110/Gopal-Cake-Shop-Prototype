@@ -22,7 +22,7 @@ export function PaymentDetailsViewer({ payments }: { payments: any[] }) {
             <div className="flex justify-between items-center">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Receipt21 className="w-4 h-4 text-primary" />
-                Payment Record ({payment.provider})
+                Ledger Entry
               </CardTitle>
               <Badge variant={
                 payment.status === 'SUCCESS' ? 'success' :
@@ -42,43 +42,27 @@ export function PaymentDetailsViewer({ payments }: { payments: any[] }) {
               <p>{payment.method} — {payment.type}</p>
             </div>
             
-            {payment.gatewayOrderId && (
+            {payment.referenceId && (
               <div className="col-span-2 pt-2 border-t border-border/50">
                 <p className="text-muted-foreground mb-1 flex items-center gap-1 font-semibold">
-                  <Code className="w-3 h-3" /> Gateway Order ID
+                  <Code className="w-3 h-3" /> Reference ID
                 </p>
-                <p className="font-mono text-muted-foreground break-all">{payment.gatewayOrderId}</p>
+                <p className="font-mono text-muted-foreground break-all">{payment.referenceId}</p>
               </div>
             )}
             
-            {payment.gatewayPaymentId && (
+            {payment.notes && (
               <div className="col-span-2 pt-2 border-t border-border/50">
                 <p className="text-muted-foreground mb-1 flex items-center gap-1 font-semibold">
-                  <CardTick className="w-3 h-3 text-emerald-500" /> Gateway Payment ID
+                  <Code className="w-3 h-3" /> Notes
                 </p>
-                <p className="font-mono text-muted-foreground break-all">{payment.gatewayPaymentId}</p>
-              </div>
-            )}
-            
-            {payment.failureReason && (
-              <div className="col-span-2 pt-2 border-t border-destructive/20 text-destructive">
-                <p className="mb-1 flex items-center gap-1 font-semibold">
-                  <Danger className="w-3 h-3" /> Failure Reason
-                </p>
-                <p>{payment.failureReason}</p>
-              </div>
-            )}
-
-            {payment.gatewayRefundId && (
-              <div className="col-span-2 pt-2 border-t border-border/50">
-                <p className="text-muted-foreground mb-1 font-semibold">Refund ID</p>
-                <p className="font-mono text-muted-foreground">{payment.gatewayRefundId}</p>
+                <p className="font-mono text-muted-foreground break-all">{payment.notes}</p>
               </div>
             )}
             
             <div className="col-span-2 flex justify-between text-muted-foreground pt-2 border-t border-border/50">
               <span>Created: {new Date(payment.createdAt).toLocaleString()}</span>
-              {payment.verifiedAt && <span>Verified: {new Date(payment.verifiedAt).toLocaleString()}</span>}
+              {payment.actorId && <span>Actor: {payment.actorId}</span>}
             </div>
           </CardContent>
         </Card>

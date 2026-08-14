@@ -127,16 +127,16 @@ export function ReceiptStub({ orderId }: ReceiptStubProps) {
           </div>
         </div>
         
-        {order.payments && order.payments.length > 0 && (
+        {(order.paidAmount > 0 || order.advancePaid > 0) && (
           <div className="border-t border-black border-dashed mt-4 pt-2 text-xs">
             <div className="flex justify-between font-bold text-sm mb-1">
-              <span>Advance Paid ({order.payments[0].method})</span>
-              <span>₹{order.payments[0].amount.toFixed(2)}</span>
+              <span>Advance Paid</span>
+              <span>₹{(order.paidAmount || order.advancePaid || 0).toFixed(2)}</span>
             </div>
-            {order.payments[0].amount < order.totalAmount && (
+            {((order.pendingBalance || 0) > 0) && (
               <div className="flex justify-between font-black text-sm mt-1 bg-gray-100 p-1">
                 <span>BALANCE DUE</span>
-                <span>₹{(order.totalAmount - order.payments[0].amount).toFixed(2)}</span>
+                <span>₹{(order.pendingBalance || 0).toFixed(2)}</span>
               </div>
             )}
           </div>

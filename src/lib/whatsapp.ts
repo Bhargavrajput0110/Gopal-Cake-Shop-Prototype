@@ -71,6 +71,17 @@ export async function sendWhatsAppNotification(
     // For local dev simulation without real API keys, we can intercept here if token === 'mock'
     if (token === 'mock') {
        LoggerService.info(`[WhatsApp MOCK] Sent ${metaTemplateName} to ${formattedPhone}`);
+       
+       const io = (global as any).io;
+       if (io && orderData.branch) {
+         io.to(`branch_${orderData.branch}`).emit('notification_sent', {
+           channel: 'WHATSAPP',
+           recipient: phone,
+           template: metaTemplateName,
+           orderId: orderData.id
+         });
+       }
+       
        return { success: true, mocked: true };
     }
 
@@ -91,6 +102,18 @@ export async function sendWhatsAppNotification(
     }
 
     LoggerService.info(`[WhatsApp] Successfully sent ${metaTemplateName} to ${formattedPhone}. MessageId: ${data.messages?.[0]?.id}`);
+    
+    const io = (global as any).io;
+    if (io && orderData.branch) {
+      io.to(`branch_${orderData.branch}`).emit('notification_sent', {
+        channel: 'WHATSAPP',
+        recipient: phone,
+        template: metaTemplateName,
+        orderId: orderData.id,
+        messageId: data.messages?.[0]?.id
+      });
+    }
+    
     return { success: true, messageId: data.messages?.[0]?.id };
 
   } catch (err: any) {

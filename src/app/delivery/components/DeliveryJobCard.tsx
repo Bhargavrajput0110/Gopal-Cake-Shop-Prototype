@@ -26,7 +26,7 @@ export function DeliveryJobCard({ order, isActiveRoute = false }: DeliveryJobCar
   
   const queryClient = useQueryClient()
   
-  const balanceDue = (order.totalAmount || 0) - (order.paidAmount || 0)
+  const balanceDue = order.pendingBalance || 0
   const [cashCollected, setCashCollected] = React.useState(balanceDue === 0)
   const [isCollecting, setIsCollecting] = React.useState(false)
   const [showCashScreen, setShowCashScreen] = React.useState(false)

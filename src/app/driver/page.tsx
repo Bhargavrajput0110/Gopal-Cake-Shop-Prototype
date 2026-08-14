@@ -11,6 +11,7 @@ import { FailureReasonModal } from './components/FailureReasonModal'
 import { WifiSquare, Wifi, Refresh, BoxTick, User, Shop, ArrowRight, TickCircle, Car } from "iconsax-react"
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
+import confetti from 'canvas-confetti'
 
 export default function DriverDashboard() {
   const { data: session } = useSession()
@@ -103,7 +104,15 @@ export default function DriverDashboard() {
     }
     if (action === 'START_TRIP') newStatus = item.taskType === 'VENDOR_PICKUP' ? 'ON_THE_WAY_TO_VENDOR' : 'ON_THE_WAY'
     if (action === 'PICKED_UP') newStatus = item.taskType === 'CUSTOMER_DELIVERY' ? 'OUT_FOR_DELIVERY' : (item.taskType === 'VENDOR_PICKUP' ? 'DELIVERING_TO_BRANCH' : 'PICKED_UP')
-    if (action === 'DELIVERED') newStatus = 'DELIVERED'
+    if (action === 'DELIVERED') {
+      newStatus = 'DELIVERED'
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#10B981', '#C5A059', '#F59E0B']
+      })
+    }
     if (action === 'FAILED_DELIVERY') newStatus = 'FAILED_DELIVERY'
 
     optimisticUpdateTask(item.id, { status: newStatus as any, assignedDriverId: newDriverId })
@@ -113,36 +122,29 @@ export default function DriverDashboard() {
       setToastMessage(`Action queued (Offline mode)`);
       setTimeout(() => setToastMessage(null), 3000);
     } else {
-      if (item.id.startsWith('task-')) {
-        // Mock API success
-        setTimeout(() => {}, 500); 
+      try {
+        const isVendorTask = item.id.startsWith('vendor-');
+        const realId = item.id.replace('vendor-', '').replace('delivery-', '').replace('task-', '');
+        
+        if (isVendorTask) {
+          await fetchClient(`/driver/deliveries/${realId}/vendor-status`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+          })
+        } else {
+          await fetchClient(`/driver/deliveries/${realId}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+          })
+        }
+        queryClient.invalidateQueries({ queryKey: ['driver-tasks', activeDriver?.id] })
         setToastMessage(`Task successfully updated!`);
         setTimeout(() => setToastMessage(null), 3000);
-      } else {
-        try {
-          const isVendorTask = item.id.startsWith('vendor-');
-          const realId = item.id.replace('vendor-', '').replace('delivery-', '');
-          
-          if (isVendorTask) {
-            await fetchClient(`/driver/deliveries/${realId}/vendor-status`, {
-              method: 'PATCH',
-              body: JSON.stringify(payload)
-            })
-          } else {
-            await fetchClient(`/driver/deliveries/${realId}/status`, {
-              method: 'PATCH',
-              body: JSON.stringify(payload)
-            })
-          }
-          queryClient.invalidateQueries({ queryKey: ['driver-tasks', activeDriver?.id] })
-          setToastMessage(`Task successfully updated!`);
-          setTimeout(() => setToastMessage(null), 3000);
-        } catch (err) {
-          console.error("Action failed, queueing:", err)
-          queueAction(payload)
-          setToastMessage(`Action queued (Network error)`);
-          setTimeout(() => setToastMessage(null), 3000);
-        }
+      } catch (err) {
+        console.error("Action failed, queueing:", err)
+        queueAction(payload)
+        setToastMessage(`Action queued (Network error)`);
+        setTimeout(() => setToastMessage(null), 3000);
       }
     }
 

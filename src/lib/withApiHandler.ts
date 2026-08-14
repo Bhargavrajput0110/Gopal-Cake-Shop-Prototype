@@ -89,8 +89,8 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
         user = { id: 'usr_dummy_dev', email: `dummy_${dummyRole.toLowerCase()}@example.com` }
         appRole = dummyRole.toUpperCase() as Role
         branchId = 'khanderao' // Map to main branch 'khanderao' instead of invalid 'b-001'
-      } else if (isTestBypassEnabled && hasBypassCookie) {
-        // Mock a system admin user for load tests
+      } else if ((isTestBypassEnabled && hasBypassCookie) || process.env.NODE_ENV === 'development') {
+        // Mock a system admin user for load tests and local dev prototypes
         user = { id: 'usr_mock_loadtest', email: 'loadtest@example.com' }
         appRole = Role.ADMIN
         branchId = 'khanderao'

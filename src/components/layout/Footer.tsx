@@ -23,10 +23,10 @@ const YoutubeIcon = () => (
 );
 
 const BRANCHES = [
-  { name: "Alkapuri", address: "Near Baroda Club, Alkapuri", phone: "+91 99090 12345" },
-  { name: "Manjalpur", address: "Near Manjalpur Circle", phone: "+91 99090 12346" },
-  { name: "Sayajigunj", address: "Near Lakshmi Vilas Palace Rd", phone: "+91 99090 12347" },
-  { name: "Fatehganj", address: "Near Fatehganj, Main Road", phone: "+91 99090 12348" },
+  { name: "Uma", address: "Uma Char Rasta, Vadodara", phone: "+91 99090 11111" },
+  { name: "Khanderao Market", address: "Near Khanderao Market, Vadodara", phone: "+91 99090 22222" },
+  { name: "Warasiya", address: "Warasiya Ring Road, Vadodara", phone: "+91 99090 33333" },
+  { name: "Ellora", address: "Ellora Park, Vadodara", phone: "+91 99090 44444" },
 ];
 
 const NAV_GROUPS = [

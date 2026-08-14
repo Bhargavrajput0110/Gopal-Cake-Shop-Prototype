@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SearchNormal1, ShoppingCart, User } from "iconsax-react";
@@ -16,7 +17,7 @@ const NAV_LINKS = [
 ];
 
 const ANNOUNCEMENT_ITEMS = [
-  "🎂 Free delivery on orders above ₹999",
+  "🚚 City-wide delivery across Vadodara",
   "⭐ 50,000+ happy customers in Vadodara",
   "🍫 100% eggless — always",
   "🚀 Order by 6pm for same-day delivery",
@@ -87,166 +88,158 @@ export function Navbar() {
         }`}
       >
         <div className="max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12">
-          <div className="flex items-center justify-between h-[72px] md:h-20">
+          {/* 3-column grid: [Logo+Name left] [Nav links center] [Actions right] */}
+          <div className="grid grid-cols-3 items-center h-[72px] md:h-20">
 
-            {/* ── Left: Nav links (desktop) ── */}
-            <nav className="hidden md:flex items-center gap-1">
-              {allNavLinks.slice(0, 2).map((link) => (
+            {/* ── Col 1: Logo + Brand Name (left) ── */}
+            <div className="flex items-center gap-3">
+              {/* Mobile: Hamburger */}
+              <button
+                className="md:hidden flex flex-col items-center justify-center w-10 h-10 gap-[5px] focus:outline-none"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle menu"
+              >
+                <span className={`block w-[22px] h-[1.5px] transition-all duration-300 origin-center ${
+                  mobileMenuOpen
+                    ? "bg-[var(--brand-deep-rose)] rotate-45 translate-y-[6.5px]"
+                    : showScrolledNavbar ? "bg-foreground" : "bg-white"
+                }`} />
+                <span className={`block w-[22px] h-[1.5px] transition-all duration-300 ${
+                  mobileMenuOpen ? "opacity-0" : showScrolledNavbar ? "bg-foreground" : "bg-white"
+                }`} />
+                <span className={`block w-[22px] h-[1.5px] transition-all duration-300 origin-center ${
+                  mobileMenuOpen
+                    ? "bg-[var(--brand-deep-rose)] -rotate-45 -translate-y-[6.5px]"
+                    : showScrolledNavbar ? "bg-foreground" : "bg-white"
+                }`} />
+              </button>
+
+              {/* Desktop: Logo + Brand Name */}
+              <Link
+                href="/"
+                className="hidden md:flex items-center gap-2.5 group transition-opacity duration-200 hover:opacity-85"
+              >
+                <Image
+                  src="/logo.png"
+                  alt="Gopal Cake Shop"
+                  width={44}
+                  height={44}
+                  className="h-10 w-10 object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
+                  priority
+                />
+                <div className="flex flex-col leading-none">
+                  <span className={`font-display italic font-bold text-lg leading-tight transition-colors duration-300 ${
+                    showScrolledNavbar ? "text-[var(--foreground)]" : "text-white"
+                  }`}>
+                    Gopal
+                  </span>
+                  <span className={`font-ui font-bold text-[7px] tracking-[0.3em] uppercase transition-colors duration-300 ${
+                    showScrolledNavbar ? "text-[var(--brand-deep-rose)]" : "text-[var(--brand-champagne)]"
+                  }`}>
+                    Cake Shop
+                  </span>
+                </div>
+              </Link>
+            </div>
+
+            {/* ── Col 2: All Nav Links (perfectly centered) ── */}
+            <nav className="hidden md:flex items-center justify-center gap-7">
+              {allNavLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`font-ui text-[11px] font-semibold uppercase tracking-[0.15em] px-4 py-2 rounded-full transition-all duration-250
-                    ${showScrolledNavbar
-                      ? "text-[var(--foreground)]/70 hover:text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/8"
-                      : "text-white/80 hover:text-white hover:bg-white/10"
-                    }`}
+                  className={`relative font-ui text-[11px] font-semibold uppercase tracking-[0.14em] transition-all duration-250 group ${
+                    showScrolledNavbar
+                      ? "text-[var(--foreground)]/65 hover:text-[var(--brand-deep-rose)]"
+                      : "text-white/75 hover:text-white"
+                  }`}
                 >
                   {link.name}
+                  {/* Animated underline */}
+                  <span className={`absolute -bottom-0.5 left-0 h-px w-0 group-hover:w-full transition-all duration-300 ${
+                    showScrolledNavbar ? "bg-[var(--brand-deep-rose)]" : "bg-white/70"
+                  }`} />
                 </Link>
               ))}
             </nav>
 
-            {/* ── Mobile: Hamburger ── */}
-            <button
-              className="md:hidden flex flex-col items-center justify-center w-10 h-10 gap-[5px] focus:outline-none"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              <span className={`block w-[22px] h-[1.5px] transition-all duration-300 origin-center ${
-                mobileMenuOpen
-                  ? "bg-[var(--brand-deep-rose)] rotate-45 translate-y-[6.5px]"
-                  : showScrolledNavbar ? "bg-foreground" : "bg-white"
-              }`} />
-              <span className={`block w-[22px] h-[1.5px] transition-all duration-300 ${
-                mobileMenuOpen ? "opacity-0" : showScrolledNavbar ? "bg-foreground" : "bg-white"
-              }`} />
-              <span className={`block w-[22px] h-[1.5px] transition-all duration-300 origin-center ${
-                mobileMenuOpen
-                  ? "bg-[var(--brand-deep-rose)] -rotate-45 -translate-y-[6.5px]"
-                  : showScrolledNavbar ? "bg-foreground" : "bg-white"
-              }`} />
-            </button>
-
-            {/* ── Center: Logo ── */}
-            <Link
-              href="/"
-              className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center group"
-            >
-              <div className="flex flex-col items-center">
-                {/* Wordmark */}
-                <span className={`font-display italic font-bold tracking-wide leading-none transition-colors duration-300 ${
-                  showScrolledNavbar ? "text-[var(--foreground)]" : "text-white"
-                } text-xl md:text-2xl`}>
-                  Gopal
-                </span>
-                <span className={`font-ui font-bold text-[7px] tracking-[0.35em] uppercase leading-none mt-0.5 transition-colors duration-300 ${
-                  showScrolledNavbar ? "text-[var(--brand-deep-rose)]" : "text-[var(--brand-champagne)]"
-                }`}>
-                  Cakes
-                </span>
-              </div>
-              {/* Gold underline on hover */}
-              <span className={`block h-px w-0 group-hover:w-full transition-all duration-500 mt-1 ${
-                showScrolledNavbar ? "bg-[var(--brand-champagne)]" : "bg-white/60"
-              }`} />
-            </Link>
-
-            {/* ── Right: Nav links + Actions ── */}
-            <div className="hidden md:flex items-center gap-1">
-              {allNavLinks.slice(2).map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className={`font-ui text-[11px] font-semibold uppercase tracking-[0.15em] px-4 py-2 rounded-full transition-all duration-250
-                    ${showScrolledNavbar
-                      ? "text-[var(--foreground)]/70 hover:text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/8"
-                      : "text-white/80 hover:text-white hover:bg-white/10"
-                    }`}
-                >
-                  {link.name}
-                </Link>
-              ))}
-
-              {/* Divider */}
-              <span className={`w-px h-4 mx-2 ${showScrolledNavbar ? "bg-border" : "bg-white/20"}`} />
-
-              {/* Search */}
-              <button 
-                onClick={() => setIsSearchOpen(true)}
-                className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-250 ${
-                showScrolledNavbar
-                  ? "text-foreground/60 hover:text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/8"
-                  : "text-white/70 hover:text-white hover:bg-white/10"
-              }`}>
-                <SearchNormal1 variant="TwoTone" className="h-[18px] w-[18px]" />
-              </button>
-
-              {/* User */}
-              {user ? (
+            {/* ── Col 3: Action Icons + CTA (right) ── */}
+            <div className="flex items-center justify-end gap-1">
+              {/* Desktop actions */}
+              <div className="hidden md:flex items-center gap-1">
+                {/* Search */}
                 <button
-                  onClick={() => logout()}
-                  className={`font-ui text-[10px] font-bold uppercase tracking-[0.15em] px-4 py-2 rounded-full transition-all duration-250 ${
-                    showScrolledNavbar
-                      ? "text-foreground/60 hover:text-[var(--brand-deep-rose)]"
-                      : "text-white/70 hover:text-white"
-                  }`}
-                >
-                  Logout
-                </button>
-              ) : (
-                <Link
-                  href="/customer/login"
+                  onClick={() => setIsSearchOpen(true)}
                   className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-250 ${
                     showScrolledNavbar
-                      ? "text-foreground/60 hover:text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/8"
-                      : "text-white/70 hover:text-white hover:bg-white/10"
+                      ? "text-foreground/55 hover:text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/8"
+                      : "text-white/65 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <User variant="TwoTone" className="h-[18px] w-[18px]" />
-                </Link>
-              )}
+                  <SearchNormal1 variant="TwoTone" className="h-[17px] w-[17px]" />
+                </button>
 
-              {/* Cart */}
-              {/* Cart */}
-              <button
-                onClick={() => setIsCartOpen(true)}
-                className="relative flex items-center justify-center w-10 h-10 transition-all duration-200 hover:opacity-80"
-              >
-                <ShoppingCart size="30" color={showScrolledNavbar ? "#8b3a52" : "#ffffff"} variant="Bold" />
-                {totalItems > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-[var(--brand-deep-rose)] text-white text-[9px] font-bold flex items-center justify-center border border-white shadow-sm">
-                    {totalItems}
-                  </span>
+                {/* Cart */}
+                <button
+                  onClick={() => setIsCartOpen(true)}
+                  className="relative flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 hover:opacity-75"
+                >
+                  <ShoppingCart size="22" color={showScrolledNavbar ? "#8b3a52" : "#ffffff"} variant="Bold" />
+                  {totalItems > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 h-[16px] w-[16px] rounded-full bg-[var(--brand-deep-rose)] text-white text-[8px] font-bold flex items-center justify-center border border-white shadow-sm">
+                      {totalItems}
+                    </span>
+                  )}
+                </button>
+
+                {/* Divider */}
+                <span className={`w-px h-4 mx-2 ${showScrolledNavbar ? "bg-border" : "bg-white/20"}`} />
+
+                {/* Customer Profile / Logout */}
+                {user ? (
+                  <button
+                    onClick={() => logout()}
+                    className={`font-ui text-[10px] font-bold uppercase tracking-[0.13em] px-4 py-2 rounded-full border transition-all duration-250 ${
+                      showScrolledNavbar
+                        ? "border-[var(--brand-deep-rose)]/40 text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)] hover:text-white"
+                        : "border-white/30 text-white/80 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    Logout
+                  </button>
+                ) : (
+                  <Link
+                    href="/customer/login"
+                    className="btn-primary px-4 py-2 text-[10px] flex items-center gap-1.5"
+                  >
+                    <User variant="Bold" className="h-3 w-3" />
+                    <span>My Profile</span>
+                  </Link>
                 )}
-              </button>
+              </div>
 
-              {/* Order CTA */}
-              <Link href="/custom" className="btn-primary px-5 py-2.5 text-[10px] ml-2">
-                Customize
-              </Link>
-            </div>
-
-            {/* ── Mobile: Cart & Search ── */}
-            <div className="flex md:hidden items-center gap-2">
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-all ${
-                  showScrolledNavbar ? "text-foreground/70" : "text-white/80"
-                }`}
-              >
-                <SearchNormal1 variant="TwoTone" className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setIsCartOpen(true)}
-                className="relative flex items-center justify-center w-10 h-10 transition-all duration-200 hover:opacity-80"
-              >
-                <ShoppingCart size="30" color={showScrolledNavbar ? "#8b3a52" : "#ffffff"} variant="Bold" />
-                {totalItems > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-[var(--brand-deep-rose)] text-white text-[9px] font-bold flex items-center justify-center border border-white shadow-sm">
-                    {totalItems}
-                  </span>
-                )}
-              </button>
+              {/* Mobile: Cart & Search */}
+              <div className="flex md:hidden items-center gap-2">
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-all ${
+                    showScrolledNavbar ? "text-foreground/70" : "text-white/80"
+                  }`}
+                >
+                  <SearchNormal1 variant="TwoTone" className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setIsCartOpen(true)}
+                  className="relative flex items-center justify-center w-10 h-10 transition-all duration-200 hover:opacity-80"
+                >
+                  <ShoppingCart size="26" color={showScrolledNavbar ? "#8b3a52" : "#ffffff"} variant="Bold" />
+                  {totalItems > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-[var(--brand-deep-rose)] text-white text-[9px] font-bold flex items-center justify-center border border-white shadow-sm">
+                      {totalItems}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -331,11 +324,18 @@ export function Navbar() {
             >
               {/* Drawer Header */}
               <div className="flex items-center justify-between px-6 pt-12 pb-8 border-b border-[var(--border)]">
-                <div className="flex flex-col">
-                  <span className="font-display italic font-bold text-2xl text-[var(--foreground)]">Gopal</span>
-                  <span className="font-ui text-[9px] tracking-[0.35em] uppercase text-[var(--brand-deep-rose)] font-bold mt-0.5">
-                    Cakes
-                  </span>
+                <div className="flex items-center gap-3">
+                  <Image
+                    src="/logo.png"
+                    alt="Gopal Cake Shop"
+                    width={52}
+                    height={52}
+                    className="h-12 w-12 object-contain"
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-display italic font-bold text-xl text-[var(--foreground)]">Gopal</span>
+                    <span className="font-ui text-[9px] tracking-[0.35em] uppercase text-[var(--brand-deep-rose)] font-bold mt-0.5">Cake Shop</span>
+                  </div>
                 </div>
                 <button
                   onClick={closeMobile}

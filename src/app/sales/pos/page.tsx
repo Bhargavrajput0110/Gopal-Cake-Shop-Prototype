@@ -8,8 +8,10 @@ import { CartPanel } from "./components/CartPanel"
 import { CustomerSelector } from "./components/CustomerSelector"
 import { PaymentDialog } from "./components/PaymentDialog"
 import { ReceiptStub } from "./components/ReceiptStub"
+import { RetailerBulkOrderModal } from "./components/RetailerBulkOrderModal"
 import { useCart } from "@/context/CartContext"
-import { TickCircle, ArrowLeft, Reserve } from "iconsax-react"
+import { BRANCHES, toBranchId, type BranchId } from "@/lib/branches"
+import { TickCircle, ArrowLeft, Reserve, Box, Shop } from "iconsax-react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -17,9 +19,13 @@ export default function POSPage() {
   const { clearCart } = useCart()
   const [isPaymentOpen, setIsPaymentOpen] = React.useState(false)
   const [successOrder, setSuccessOrder] = React.useState<string | null>(null)
+  const [isBulkModalOpen, setIsBulkModalOpen] = React.useState(false)
+  
+  // Default to Warasiya ('varasiya') so sales staff/admin can immediately experience the wholesale feature
+  const [activeBranch, setActiveBranch] = React.useState<BranchId>("varasiya")
 
   // Fetch only active, POS enabled products.
-  const { data: products = [], isLoading: isLoadingProducts } = useQuery({
+  const { data: products = [], isLoading: isLoadingProducts, error: productsError } = useQuery({
     queryKey: ['pos-products'],
     queryFn: async () => {
       try {
@@ -29,19 +35,26 @@ export default function POSPage() {
         const filtered = (Array.isArray(items) ? items : []).filter((p: any) => p.availableForSale !== false && !p.isArchived);
         if (filtered.length > 0) return filtered;
       } catch (e) {
-        console.warn("API failed, falling back to mock products");
+        console.warn("API failed for products");
       }
       
-      // Fallback Mock Data for UI Prototyping
-      return [
-        { id: "prod-01", name: "2kg Chocolate Truffle Custom", price: 1200, categoryId: "cat-01", isCustomizable: true, imageUrl: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400" },
-        { id: "prod-02", name: "Butterscotch Pastry", price: 60, categoryId: "cat-02", isCustomizable: false, imageUrl: "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=400" },
-        { id: "prod-03", name: "3 Tier Wedding Cake", price: 5500, categoryId: "cat-01", isCustomizable: true, imageUrl: "https://images.unsplash.com/photo-1535254973040-607b474cb50d?w=400" },
-        { id: "prod-04", name: "Black Forest Classic", price: 450, categoryId: "cat-01", isCustomizable: true, imageUrl: "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=400" },
-        { id: "prod-05", name: "Paneer Puff", price: 30, categoryId: "cat-03", isCustomizable: false, imageUrl: "https://images.unsplash.com/photo-1601050690597-df0568a70950?w=400" },
-      ]
+      // Mock fallback — development only. NEVER in production.
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[POS] Using mock product fallback — development mode only');
+        return [
+          { id: "prod-01", name: "2kg Chocolate Truffle Custom", price: 1200, categoryId: "cat-01", isCustomizable: true, imageUrl: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400" },
+          { id: "prod-02", name: "Butterscotch Pastry", price: 60, categoryId: "cat-02", isCustomizable: false, imageUrl: "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=400" },
+          { id: "prod-03", name: "3 Tier Wedding Cake", price: 5500, categoryId: "cat-01", isCustomizable: true, imageUrl: "https://images.unsplash.com/photo-1535254973040-607b474cb50d?w=400" },
+          { id: "prod-04", name: "Black Forest Classic", price: 450, categoryId: "cat-01", isCustomizable: true, imageUrl: "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=400" },
+          { id: "prod-05", name: "Paneer Puff", price: 30, categoryId: "cat-03", isCustomizable: false, imageUrl: "https://images.unsplash.com/photo-1601050690597-df0568a70950?w=400" },
+        ]
+      }
+      
+      // In production: throw so the UI shows a proper error instead of mock data
+      throw new Error('Product catalog unavailable. Check database connection.')
     }
   })
+
 
   // Fetch only active categories for the POS
   const { data: categories = [], isLoading: isLoadingCategories } = useQuery({
@@ -53,15 +66,13 @@ export default function POSPage() {
         const filtered = (Array.isArray(items) ? items : []).filter((c: any) => c.status === 'active');
         if (filtered.length > 0) return filtered;
       } catch (e) {
-        console.warn("API failed, falling back to mock categories");
+        console.error("API failed for categories", e);
+        // Instead of throwing an error that might crash the boundary, we show an alert/toast and return empty state
+        if (typeof window !== 'undefined') {
+          alert("Unable to load product categories. Please contact the manager.");
+        }
+        return [];
       }
-      
-      // Fallback Mock Data
-      return [
-        { categoryId: "cat-01", name: "Cakes" },
-        { categoryId: "cat-02", name: "Pastries" },
-        { categoryId: "cat-03", name: "Savouries" },
-      ]
     }
   })
 
@@ -114,14 +125,52 @@ export default function POSPage() {
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <div>
-            <h1 className="font-display text-3xl font-black text-foreground tracking-tight leading-none">Point of Sale</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="font-display text-3xl font-black text-foreground tracking-tight leading-none">Point of Sale</h1>
+              
+              {/* Active Branch Terminal Switcher */}
+              <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-xl px-3 py-1 ml-2">
+                <Shop className="w-4 h-4 text-primary shrink-0" />
+                <select 
+                  value={activeBranch} 
+                  onChange={(e) => setActiveBranch(e.target.value as BranchId)}
+                  className="bg-transparent font-black text-xs uppercase tracking-wider text-foreground focus:outline-none cursor-pointer"
+                >
+                  {BRANCHES.map(b => (
+                    <option key={b.id} value={b.id} className="text-black">{b.displayName}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <p className="font-ui text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Terminal 01
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Terminal 01 • Active Outlet: {BRANCHES.find(b => b.id === activeBranch)?.shortName}
             </p>
           </div>
         </div>
-        <div className="w-80 relative z-50">
-          <CustomerSelector />
+
+        <div className="flex items-center gap-4 relative z-50">
+          {/* WARASIYA OUTLET EXCLUSIVE BULK ORDERS BUTTON */}
+          {activeBranch === 'varasiya' && (
+            <motion.button
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setIsBulkModalOpen(true)}
+              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-500 to-[var(--brand-deep-rose)] text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 flex items-center gap-2 border border-white/20 transition-all cursor-pointer"
+            >
+              <Box className="w-5 h-5 text-white animate-bounce" variant="Bold" />
+              <span>📦 Retailer Bulk Order</span>
+              <span className="text-[9px] bg-white text-amber-950 px-2 py-0.5 rounded-full font-black uppercase tracking-tight shadow-2xs ml-1">
+                WARASIYA B2B
+              </span>
+            </motion.button>
+          )}
+
+          <div className="w-80">
+            <CustomerSelector />
+          </div>
         </div>
       </header>
 
@@ -147,6 +196,12 @@ export default function POSPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* Warasiya B2B Retailer Bulk Order Modal */}
+      {isBulkModalOpen && (
+        <RetailerBulkOrderModal onClose={() => setIsBulkModalOpen(false)} />
+      )}
     </div>
   )
 }
+

@@ -44,6 +44,9 @@ export function DesignCard({ design, onEdit, onClone, onStatusChange, onDeleteFo
             alt={design.name}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1601050690597-df0568a70950?w=600&auto=format&fit=crop&q=80";
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">

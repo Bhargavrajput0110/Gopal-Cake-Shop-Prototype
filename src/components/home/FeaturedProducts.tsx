@@ -47,11 +47,12 @@ function FeaturedProductCard({ product, idx }: { product: any, idx: number }) {
           style={{ willChange: "transform" }}
         >
           {/* Image / Placeholder */}
-          {product.thumbnail ? (
+          {product.thumbnail || product.imageUrl ? (
             <Image
-              src={product.thumbnail}
-              alt={product.name}
+              src={product.thumbnail || product.imageUrl}
+              alt={product.name || "Cake"}
               fill
+              unoptimized={true}
               className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
@@ -103,7 +104,7 @@ function FeaturedProductCard({ product, idx }: { product: any, idx: number }) {
             {product.name}
           </h3>
           <p className="font-ui text-[12px] font-semibold text-[var(--brand-champagne)] mt-1 tracking-wide">
-            Starts at ₹{product.basePrice}
+            {product.basePrice ? `₹${product.basePrice}` : 'Custom Pricing'}
           </p>
         </div>
       </motion.div>
@@ -111,7 +112,7 @@ function FeaturedProductCard({ product, idx }: { product: any, idx: number }) {
         <QuickBuyForm 
           product={product} 
           isCustom={product.isCustom || product.name.toLowerCase().includes('custom')}
-          isPhotoCake={product.name.toLowerCase().includes('photo') || (product.category?.name || "").toLowerCase().includes('photo')}
+          isPhotoCake={false}
           onClose={() => setIsOpen(false)} 
         />
       </SheetContent>
@@ -124,17 +125,56 @@ export function FeaturedProducts() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/v1/public/products")
-      .then(async (res) => {
-        if (!res.ok) throw new Error("API Route Failed");
-        return res.json();
-      })
-      .then((data) => {
-        const fetched = Array.isArray(data) ? data : data.data || [];
-        setProducts(fetched.slice(0, 8));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    let localSaved: any[] = [];
+    try {
+      localSaved = JSON.parse(localStorage.getItem('gopal_saved_designs') || '[]');
+    } catch (e) {}
+
+    Promise.all([
+      fetch("/api/v1/designs").then(res => res.ok ? res.json() : { data: { items: [] } }).catch(() => ({ data: { items: [] } })),
+      fetch("/api/v1/public/products").then(res => res.ok ? res.json() : []).catch(() => [])
+    ]).then(([designsRes, productsRes]) => {
+      const apiDesigns = (designsRes?.data?.items || []);
+      const allDesigns = [...localSaved, ...apiDesigns].map((d: any) => {
+        let computedPrice = d.basePrice ? Number(d.basePrice) : 0;
+        if (!computedPrice && d.weightConfig && typeof d.weightConfig === 'object') {
+          const vals = Object.values(d.weightConfig).map((v: any) => Number(v?.price)).filter(p => p > 0);
+          if (vals.length > 0) computedPrice = Math.min(...vals);
+        }
+        let thumb = d.imageUrl || d.thumbnail || "";
+        if (!thumb || thumb.includes("example.com") || thumb.includes("sample.jpg") || thumb.includes("mock")) {
+          thumb = "https://images.unsplash.com/photo-1601050690597-df0568a70950?w=600&auto=format&fit=crop&q=80";
+        }
+        return {
+          ...d,
+          thumbnail: thumb,
+          isCustom: true,
+          name: d.name || "Custom Cake Design",
+          basePrice: computedPrice || 600
+        };
+      });
+      
+      const productsList = (Array.isArray(productsRes) ? productsRes : productsRes?.data || []).map((p: any) => {
+        let thumb = p.thumbnail || p.imageUrl || "";
+        if (!thumb || thumb.includes("example.com") || thumb.includes("sample.jpg") || thumb.includes("mock")) {
+          thumb = "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&auto=format&fit=crop&q=80";
+        }
+        return { ...p, thumbnail: thumb };
+      });
+      
+      const combined: any[] = [];
+      const seen = new Set();
+      [...allDesigns, ...productsList].forEach((item: any) => {
+        const key = item.id || item.code || item.name;
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          combined.push(item);
+        }
+      });
+
+      setProducts(combined.slice(0, 12));
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   return (

@@ -42,9 +42,15 @@ const CATEGORY_GROUPS = [
 import { QuickBuyForm } from "@/components/menu/QuickBuyForm";
 
 function ProductCard({ product, idx }: { product: any, idx: number }) {
-  const { addItem } = useCart();
+  const { addItem, items, updateQuantity, removeItem } = useCart();
   const [isOpen, setIsOpen] = useState(false);
-  
+
+  // Find if this product is already in cart (simple match, no custom config)
+  const cartItem = items.find(
+    (i) => i.productId === product.id && !i.flavor && !i.messageOnCake && !i.designId && !i.notes
+  );
+  const qty = cartItem?.quantity ?? 0;
+
   // Vary aspect ratios for true masonry look
   const ratios = ["aspect-[3/4]", "aspect-[4/5]", "aspect-[2/3]", "aspect-square"];
   const aspectClass = ratios[idx % ratios.length];
@@ -57,13 +63,13 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
       className="group flex flex-col"
     >
       {/* Image Container */}
-      <div 
+      <div
         onClick={() => setIsOpen(true)}
         className={`relative w-full ${aspectClass} rounded-[2rem] overflow-hidden bg-[var(--muted)] mb-4 cursor-pointer block`}
         style={{ willChange: "transform" }}
       >
         {product.thumbnail ? (
-          <Image 
+          <Image
             src={product.thumbnail}
             alt={product.name}
             fill
@@ -80,15 +86,6 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
 
         {/* Dark hover overlay */}
         <div className="absolute inset-0 bg-[var(--brand-chocolate)]/0 group-hover:bg-[var(--brand-chocolate)]/30 transition-colors duration-500" />
-        
-        {/* Floating Quick Action (Pinterest style Save/View) */}
-        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] z-10">
-          <div className="w-10 h-10 rounded-full bg-[var(--brand-deep-rose)] text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </div>
-        </div>
 
         {/* Hover text overlay */}
         <div className="absolute inset-x-0 bottom-0 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] p-5 pb-6 bg-gradient-to-t from-black/60 to-transparent">
@@ -113,37 +110,91 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
             </p>
           )}
         </div>
+
+        {/* Price row + stepper/add */}
         <div className="flex items-center justify-between mt-auto pt-1">
           <div className="flex flex-col">
-            <p className="font-ui text-xs text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">Min Weight</p>
+            <p className="font-ui text-xs text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">From</p>
             <p className="font-ui text-sm font-bold text-[var(--foreground)]">
-              500g
+              ₹{product.basePrice}
             </p>
           </div>
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger className="px-3 md:px-5 py-2 bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 transition-all rounded-full font-ui text-[9px] md:text-[10px] font-bold uppercase tracking-[0.1em] shadow-sm hover:shadow-md hover:-translate-y-0.5">
-              ADD ₹{product.basePrice}
-            </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:max-w-md p-0 bg-background z-[150] border-l-0 shadow-2xl">
-              <QuickBuyForm 
-                product={product} 
-                isCustom={
-                  product.isCustom || 
-                  product.name.toLowerCase().includes('custom')
-                }
-                isPhotoCake={
-                  product.name.toLowerCase().includes('photo') || 
-                  (product.category?.name || "").toLowerCase().includes('photo')
-                }
-                onClose={() => setIsOpen(false)} 
-              />
-            </SheetContent>
-          </Sheet>
+
+          {/* Quantity Stepper (if in cart) or ADD button */}
+          {qty > 0 ? (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="flex items-center gap-0 bg-[var(--brand-deep-rose)]/10 rounded-full border border-[var(--brand-deep-rose)]/30 overflow-hidden"
+            >
+              <button
+                onClick={() => {
+                  if (qty === 1 && cartItem) removeItem(cartItem.cartItemId);
+                  else if (cartItem) updateQuantity(cartItem.cartItemId, qty - 1);
+                }}
+                className="w-8 h-8 flex items-center justify-center text-[var(--brand-deep-rose)] font-bold text-lg hover:bg-[var(--brand-deep-rose)]/15 transition-colors rounded-l-full"
+              >
+                −
+              </button>
+              <span className="w-7 text-center font-ui text-[13px] font-black text-[var(--brand-deep-rose)]">
+                {qty}
+              </span>
+              <button
+                onClick={() => setIsOpen(true)}
+                className="w-8 h-8 flex items-center justify-center text-[var(--brand-deep-rose)] font-bold text-lg hover:bg-[var(--brand-deep-rose)]/15 transition-colors rounded-r-full"
+              >
+                +
+              </button>
+            </motion.div>
+          ) : (
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger className="px-3 md:px-5 py-2 bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 transition-all rounded-full font-ui text-[9px] md:text-[10px] font-bold uppercase tracking-[0.1em] shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                ADD ₹{product.basePrice}
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-md p-0 bg-background z-[150] border-l-0 shadow-2xl">
+                <QuickBuyForm
+                  product={product}
+                  isCustom={
+                    product.isCustom ||
+                    product.name.toLowerCase().includes('custom')
+                  }
+                  isPhotoCake={
+                    Boolean(product.isPhotoCake) ||
+                    product.name.toLowerCase().includes('photo') ||
+                    (product.category?.name || "").toLowerCase().includes('photo')
+                  }
+                  onClose={() => setIsOpen(false)}
+                />
+              </SheetContent>
+            </Sheet>
+          )}
         </div>
       </div>
+
+      {/* QuickBuy Sheet — also opened on image click when qty > 0 */}
+      {qty > 0 && (
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-md p-0 bg-background z-[150] border-l-0 shadow-2xl">
+            <QuickBuyForm
+              product={product}
+              isCustom={
+                product.isCustom ||
+                product.name.toLowerCase().includes('custom')
+              }
+              isPhotoCake={
+                Boolean(product.isPhotoCake) ||
+                product.name.toLowerCase().includes('photo') ||
+                (product.category?.name || "").toLowerCase().includes('photo')
+              }
+              onClose={() => setIsOpen(false)}
+            />
+          </SheetContent>
+        </Sheet>
+      )}
     </motion.div>
   );
 }
+
 
 function MenuPageContent() {
   const router = useRouter();

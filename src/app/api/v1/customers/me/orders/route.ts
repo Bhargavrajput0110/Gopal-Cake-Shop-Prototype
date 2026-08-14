@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { withApiHandler, HandlerContext } from '@/lib/withApiHandler'
 import { CustomerService } from '@/services/CustomerService'
+import { FinancialService } from '@/services/FinancialService'
 import { errorResponse } from '@/lib/apiUtils'
 
 const handler = async (ctx: HandlerContext) => {
@@ -35,7 +36,7 @@ const handler = async (ctx: HandlerContext) => {
       where: whereClause,
       include: {
         items: true,
-        payments: true
+        ledgerEntries: true
       },
       orderBy: [
         { createdAt: 'desc' },
@@ -48,29 +49,32 @@ const handler = async (ctx: HandlerContext) => {
   ])
 
   // Map to the shape expected by the frontend
-  const mappedOrders = orders.map(order => ({
-    id: order.id,
-    orderNumber: order.orderNumber,
-    status: order.status,
-    customerName: customer.name,
-    customerPhone: customer.phone,
-    grandTotal: Number(order.totalAmount || 0),
-    totalAmount: Number(order.totalAmount || 0),
-    advancePaid: order.payments?.reduce((acc, p) => acc + Number(p.amount), 0) || 0,
-    pendingBalance: Number(order.totalAmount || 0) - (order.payments?.reduce((acc, p) => acc + Number(p.amount), 0) || 0),
-    timeTarget: order.targetDate?.toISOString(),
-    targetDate: order.targetDate?.toISOString(),
-    deliveryType: order.deliveryType,
-    deliveryAddress: order.deliveryAddress,
-    createdAt: order.createdAt.toISOString(),
-    items: order.items.map(item => ({
-      name: item.productName,
-      qty: item.quantity,
-      weight: item.weight ? `${item.weight}kg` : undefined,
-      notes: item.notes || item.messageOnCake || undefined,
-      flavor: item.flavor || undefined,
-      price: Number(item.price)
-    }))
+  const mappedOrders = await Promise.all(orders.map(async order => {
+    const summary = await FinancialService.calculateFinancialSummary(order);
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      customerName: customer.name,
+      customerPhone: customer.phone,
+      grandTotal: summary.totalAmount,
+      totalAmount: summary.totalAmount,
+      advancePaid: summary.paidAmount,
+      pendingBalance: summary.outstandingAmount,
+      timeTarget: order.targetDate?.toISOString(),
+      targetDate: order.targetDate?.toISOString(),
+      deliveryType: order.deliveryType,
+      deliveryAddress: order.deliveryAddress,
+      createdAt: order.createdAt.toISOString(),
+      items: order.items.map(item => ({
+        name: item.productName,
+        qty: item.quantity,
+        weight: item.weight ? `${item.weight}kg` : undefined,
+        notes: item.notes || item.messageOnCake || undefined,
+        flavor: item.flavor || undefined,
+        price: Number(item.price)
+      }))
+    };
   }))
 
   return NextResponse.json({

@@ -61,6 +61,9 @@ export type OrderResponseDTO = {
   status: string
   deliveryType: string
   totalAmount: number
+  advancePaid?: number
+  pendingBalance?: number
+  financialStatus?: 'PAID' | 'PARTIALLY_PAID' | 'UNPAID'
   expectedDeliveryDate: Date | null
   createdAt: Date
 }
@@ -133,6 +136,8 @@ export type DriverOrderDTO = {
   // Payment Specific
   totalAmount: number
   paidAmount: number
+  pendingBalance?: number
+  financialStatus?: 'PAID' | 'PARTIALLY_PAID' | 'UNPAID'
   
   // Address Accuracy Rule
   formattedAddress: string | null

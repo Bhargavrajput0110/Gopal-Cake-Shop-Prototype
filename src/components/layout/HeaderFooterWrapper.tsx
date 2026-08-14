@@ -5,6 +5,7 @@ import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { CartDrawer } from "../public/CartDrawer";
 import { MobileBottomNav } from "./MobileBottomNav";
+import { FloatingCartPill } from "./FloatingCartPill";
 
 export function HeaderFooterWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -26,6 +27,7 @@ export function HeaderFooterWrapper({ children }: { children: React.ReactNode })
           <Navbar />
           <CartDrawer />
           <MobileBottomNav />
+          <FloatingCartPill />
         </>
       )}
       <main className={`flex-1 flex flex-col ${!isStandaloneApp ? "pb-24 md:pb-0" : ""}`}>

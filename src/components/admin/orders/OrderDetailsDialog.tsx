@@ -51,7 +51,7 @@ export function OrderDetailsDialog({ orderId, isOpen, onClose }: OrderDetailsDia
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 Payment Information
               </h3>
-              <PaymentDetailsViewer payments={order.payments} />
+              <PaymentDetailsViewer payments={order.ledgerEntries} />
             </div>
 
             <div>

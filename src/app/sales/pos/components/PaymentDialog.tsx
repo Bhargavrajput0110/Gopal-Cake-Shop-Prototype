@@ -34,6 +34,18 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
   const [advanceAmount, setAdvanceAmount] = React.useState<string>('')
   
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [checkoutError, setCheckoutError] = React.useState<string | null>(null)
+
+  // Vendor Supply Assignments for Custom Designs (Photograph, Acrylic Topper, Florist)
+  const [vendorSupplies, setVendorSupplies] = React.useState<{
+    photo: { selected: boolean; note: string };
+    acrylic: { selected: boolean; note: string };
+    floral: { selected: boolean; note: string };
+  }>({
+    photo: { selected: false, note: '' },
+    acrylic: { selected: false, note: '' },
+    floral: { selected: false, note: '' },
+  })
 
   // Math
   const discountAmt = discountType === 'PERCENT' 
@@ -57,6 +69,7 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
 
   const handleCheckout = async () => {
     setIsSubmitting(true)
+    setCheckoutError(null)
     
     try {
       const targetDateISO = new Date(`${targetDate}T${targetTime}:00`).toISOString()
@@ -81,6 +94,11 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
         targetDate: targetDateISO,
         isPriority: priority !== 'NORMAL',
         overrideDiscount: discountAmt > 0 ? discountAmt : undefined,
+        vendorAssignments: {
+          photoVendorRequired: vendorSupplies.photo.selected ? (vendorSupplies.photo.note || 'Photo Print Required') : null,
+          acrylicVendorRequired: vendorSupplies.acrylic.selected ? (vendorSupplies.acrylic.note || 'Acrylic Topper Required') : null,
+          floralVendorRequired: vendorSupplies.floral.selected ? (vendorSupplies.floral.note || 'Fresh Flowers Required') : null,
+        },
       }
 
       const res = await fetch('/api/v1/pos/checkout', {
@@ -89,21 +107,40 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
         body: JSON.stringify(payload)
       })
 
-      const data = await res.json()
-
       if (!res.ok) {
-        throw new Error(data.message || 'Checkout failed')
+        let errMsg = `Server error (${res.status})`
+        try {
+          const errData = await res.json()
+          errMsg = errData.error?.message || errData.message || errData.error || errMsg
+        } catch {}
+        // DO NOT generate a fake order ID.
+        // DO NOT clear the cart.
+        // DO NOT navigate away.
+        setCheckoutError(errMsg)
+        return
       }
 
+      const data = await res.json()
+      if (!data.orderId) {
+        setCheckoutError('Order was not confirmed — no order ID returned. Please retry or call the manager.')
+        return
+      }
+
+      // Only clear cart and navigate on confirmed success with a real orderId
       clearCart()
       onSuccess(data.orderId)
     } catch (err: any) {
-      console.error('POS Checkout Error:', err)
-      alert(`Checkout Error: ${err.message}`)
+      console.error('[POS] Checkout network error:', err)
+      // DO NOT silently succeed — DO NOT take payment without confirmation
+      setCheckoutError(
+        'Cannot reach the server. Check your internet connection and retry. ' +
+        'Do NOT take payment until this order is confirmed.'
+      )
     } finally {
       setIsSubmitting(false)
     }
   }
+
 
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4 md:p-8">
@@ -183,6 +220,109 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
                   </div>
                 </div>
               )}
+
+              {/* Custom Design Vendor Supplies & Dispatch */}
+              <div className="space-y-4 pt-2 border-t border-border/20">
+                <h3 className="font-serif text-xl font-bold pb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[var(--brand-deep-rose)]"></span>
+                    Design Supplies & Vendor Dispatch
+                  </span>
+                  <span className="text-[10px] font-sans font-semibold uppercase tracking-widest text-[var(--brand-deep-rose)] bg-rose-50 px-2.5 py-1 rounded-full">1-Tap Assign</span>
+                </h3>
+                <p className="text-xs font-serif italic text-muted-foreground leading-relaxed">
+                  Tap to assign required custom components. Automatically flags order for Vendor Dispatch.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  {/* Edible Print Partner */}
+                  <div 
+                    onClick={() => setVendorSupplies(prev => ({ ...prev, photo: { ...prev.photo, selected: !prev.photo.selected } }))}
+                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer select-none flex flex-col justify-between shadow-xs hover:shadow-md ${
+                      vendorSupplies.photo.selected 
+                        ? 'bg-rose-50/80 border-[var(--brand-deep-rose)] text-[var(--brand-deep-rose)]' 
+                        : 'bg-white border-border/50 text-foreground/80 hover:border-[var(--brand-deep-rose)]/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-xl">🖼️</span>
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-colors ${vendorSupplies.photo.selected ? 'bg-[var(--brand-deep-rose)] border-[var(--brand-deep-rose)] text-white' : 'border-gray-300 bg-gray-50 text-transparent'}`}>✓</span>
+                    </div>
+                    <div>
+                      <span className="font-serif font-bold text-xs block leading-tight">Photograph / Edible Print</span>
+                      <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-[var(--brand-deep-rose)]/80 block mt-1">Edible Print Partner</span>
+                    </div>
+                    {vendorSupplies.photo.selected && (
+                      <input 
+                        type="text"
+                        onClick={e => e.stopPropagation()}
+                        value={vendorSupplies.photo.note}
+                        onChange={e => setVendorSupplies(prev => ({ ...prev, photo: { ...prev.photo, note: e.target.value } }))}
+                        placeholder="e.g. Photo on WhatsApp"
+                        className="mt-3 text-[11px] font-sans bg-white border border-rose-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-[var(--brand-deep-rose)] w-full shadow-inner placeholder:text-muted-foreground/60"
+                      />
+                    )}
+                  </div>
+
+                  {/* Acrylic Topper Vendor */}
+                  <div 
+                    onClick={() => setVendorSupplies(prev => ({ ...prev, acrylic: { ...prev.acrylic, selected: !prev.acrylic.selected } }))}
+                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer select-none flex flex-col justify-between shadow-xs hover:shadow-md ${
+                      vendorSupplies.acrylic.selected 
+                        ? 'bg-amber-50/80 border-amber-500 text-amber-950' 
+                        : 'bg-white border-border/50 text-foreground/80 hover:border-amber-400'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-xl">✨</span>
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-colors ${vendorSupplies.acrylic.selected ? 'bg-amber-500 border-amber-500 text-white' : 'border-gray-300 bg-gray-50 text-transparent'}`}>✓</span>
+                    </div>
+                    <div>
+                      <span className="font-serif font-bold text-xs block leading-tight">Acrylic Topper / Name Tag</span>
+                      <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-amber-600 block mt-1">Laser Cut Vendor</span>
+                    </div>
+                    {vendorSupplies.acrylic.selected && (
+                      <input 
+                        type="text"
+                        onClick={e => e.stopPropagation()}
+                        value={vendorSupplies.acrylic.note}
+                        onChange={e => setVendorSupplies(prev => ({ ...prev, acrylic: { ...prev.acrylic, note: e.target.value } }))}
+                        placeholder="e.g. 'Happy 25th Anniversary'"
+                        className="mt-3 text-[11px] font-sans bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-amber-600 w-full shadow-inner placeholder:text-muted-foreground/60"
+                      />
+                    )}
+                  </div>
+
+                  {/* Floral Vendor */}
+                  <div 
+                    onClick={() => setVendorSupplies(prev => ({ ...prev, floral: { ...prev.floral, selected: !prev.floral.selected } }))}
+                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer select-none flex flex-col justify-between shadow-xs hover:shadow-md ${
+                      vendorSupplies.floral.selected 
+                        ? 'bg-emerald-50/80 border-emerald-600 text-emerald-950' 
+                        : 'bg-white border-border/50 text-foreground/80 hover:border-emerald-500'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-xl">🌸</span>
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-colors ${vendorSupplies.floral.selected ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300 bg-gray-50 text-transparent'}`}>✓</span>
+                    </div>
+                    <div>
+                      <span className="font-serif font-bold text-xs block leading-tight">Fresh Floral Arrangement</span>
+                      <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-emerald-600 block mt-1">Florist Partner</span>
+                    </div>
+                    {vendorSupplies.floral.selected && (
+                      <input 
+                        type="text"
+                        onClick={e => e.stopPropagation()}
+                        value={vendorSupplies.floral.note}
+                        onChange={e => setVendorSupplies(prev => ({ ...prev, floral: { ...prev.floral, note: e.target.value } }))}
+                        placeholder="e.g. Red roses & baby breath"
+                        className="mt-3 text-[11px] font-sans bg-white border border-emerald-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-emerald-600 w-full shadow-inner placeholder:text-muted-foreground/60"
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* RIGHT COLUMN: Overrides, Discounts & Payment */}
@@ -272,12 +412,25 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
           </div>
         </div>
 
+        {/* Checkout Error Banner — shown when API fails */}
+        {checkoutError && (
+          <div className="mx-6 md:mx-8 mb-0 p-4 bg-rose-50 border-2 border-rose-500 rounded-2xl flex items-start gap-3">
+            <Warning2 className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-black text-rose-900 text-sm uppercase tracking-wide">Order Not Saved</p>
+              <p className="font-bold text-rose-700 text-xs mt-1 leading-relaxed">{checkoutError}</p>
+            </div>
+            <button onClick={() => setCheckoutError(null)} className="text-rose-400 hover:text-rose-600 font-bold text-lg leading-none shrink-0">✕</button>
+          </div>
+        )}
+
         {/* Footer Actions */}
         <div className="p-6 md:p-8 border-t border-border/40 bg-white flex justify-end gap-4 shrink-0">
           <button onClick={handleCheckout} disabled={isSubmitting || (paymentType === 'PARTIAL' && amountToPay <= 0)} className="w-full md:w-auto px-12 py-4 bg-foreground text-background rounded-full text-xs font-bold uppercase tracking-widest hover:bg-primary transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 disabled:opacity-50 disabled:pointer-events-none">
-            {isSubmitting ? 'Processing...' : `Accept ₹${amountToPay.toFixed(2)}`}
+            {isSubmitting ? 'Saving Order...' : checkoutError ? `Retry — Accept ₹${amountToPay.toFixed(2)}` : `Accept ₹${amountToPay.toFixed(2)}`}
           </button>
         </div>
+
 
       </div>
     </div>

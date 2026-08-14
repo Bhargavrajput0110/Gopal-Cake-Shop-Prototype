@@ -43,7 +43,7 @@ export type IngredientRequest = {
   itemName: string;
   qty?: number, unit?: string;
   requestedBy: string;
-  status: "pending" | "resolved";
+  status: "pending" | "resolved" | "fulfilled" | "cancelled";
   timestamp: string;
 };
 
@@ -129,10 +129,11 @@ type OrderContextType = {
   updateVendorTaskStatus: (orderId: string, vendorType: VendorType, status: VendorTask["status"], vendorId?: string, vendorName?: string, taskId?: string) => void;
   addVendorNote: (orderId: string, vendorType: VendorType, noteText: string, vendorName?: string, taskId?: string) => void;
   reportIssue: (id: string, issueType: string, severity: "normal" | "urgent", notes: string) => void;
-  addIngredientRequest: (orderId: string, itemName: string, qty: number, unit: string) => Promise<void>;
+  addIngredientRequest: (orderId: string, itemName: string, qty?: number, unit?: string) => Promise<void>;
   updateIngredientRequestStatus: (orderId: string, requestId: string, status: "pending" | "fulfilled" | "cancelled" | "resolved", supplierName?: string) => Promise<void>;
   updateOrderFields: (orderId: string, fields: Partial<Order>) => Promise<void>;
   transitionOrderAction: (id: string, action: string, note?: string) => Promise<void>;
+  socket: Socket | null;
 };
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -147,7 +148,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const newSocket = io(window.location.origin);
     
     const refetchOrders = () => {
-      fetch("/api/v1/orders?limit=500").then(res => res.json()).then(data => {
+      fetch("/api/v1/orders?limit=500").then(res => {
+        // If the server redirects to /login, it returns HTML — not JSON.
+        // Guard against this to prevent "Unexpected token '<'" SyntaxError.
+        if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
+          return null;
+        }
+        return res.json();
+      }).then(data => {
         if (data && data.success && data.data) {
           setOrders(data.data);
         }
@@ -231,29 +239,52 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   };
 
   const updateOrderStatus = async (id: string, status: OrderStatus, updateProductionTime?: boolean, assignedChef?: string, payload?: any) => {
+    // Map status enum to the correct action verb for the verified actions endpoint.
+    // Ref: src/app/api/v1/orders/[id]/actions/[action]/route.ts
+    const statusToAction: Partial<Record<OrderStatus, string>> = {
+      WAITING_FOR_CHEF: 'approve',
+      CHEF_ACCEPTED:    'chef-accept',
+      MAKING:           'start-making',
+      DECORATING:       'start-decorating',
+      READY_FOR_PICKUP: 'ready',
+      ASSIGNED_TO_DRIVER: 'assign-driver',
+      PICKED_UP:        'pick-up',
+      ON_THE_WAY:       'on-the-way',
+      DELIVERED:        'deliver',
+      COMPLETED:        'complete',
+      CANCELLED:        'cancel',
+    };
+    const action = statusToAction[status];
+    if (!action) {
+      console.warn(`[OrderContext] updateOrderStatus: no action mapping for status '${status}'. Skipping.`);
+      return;
+    }
+    // Optimistic update
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
     try {
-      const response = await fetch(`/api/orders/${id}/status`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/v1/orders/${id}/actions/${action}`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          status, 
-          actorId: assignedChef, 
-          actorName: assignedChef, 
-          ...(updateProductionTime ? { productionStartTime: new Date().toISOString() } : {}),
-          ...payload 
-        })
+        body: JSON.stringify({ note: payload?.note })
       });
       const data = await response.json();
-      
-      if (!data.success && data.error?.httpStatus === 409) {
-        alert(data.error.message || "Conflict: This order state was recently changed by someone else.");
-        // Refetch to sync state
-        const refresh = await fetch("/api/v1/orders?limit=500");
-        const refreshData = await refresh.json();
-        if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      if (!data.success) {
+        if (data.error?.httpStatus === 409 || response.status === 409) {
+          alert(data.error?.message || data.message || 'Conflict: This order was recently changed by someone else.');
+        } else {
+          alert(data.error?.message || data.message || 'Failed to update order status.');
+        }
       }
+      // Always refetch to sync authoritative state
+      const refresh = await fetch('/api/v1/orders?limit=500');
+      const refreshData = await refresh.json();
+      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     } catch (e) {
-      console.error(e);
+      console.error('[OrderContext] updateOrderStatus error:', e);
+      alert('Network error updating order status. Please refresh.');
+      const refresh = await fetch('/api/v1/orders?limit=500');
+      const refreshData = await refresh.json();
+      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     }
   };
 
@@ -286,77 +317,66 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateVendorTaskStatus = async (orderId: string, vendorType: VendorType, status: VendorTask["status"], vendorId?: string, vendorName?: string, taskId?: string) => {
-    try {
-      const response = await fetch(`/api/orders/${orderId}/vendor-task`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId, status, vendorType, vendorName })
-      });
-      const data = await response.json();
-      if (!data.success) alert("Failed to update vendor task");
-      else setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
-    } catch (e) { console.error(e); }
+  // P2 — Vendor task/note persistence deferred to v1.1.1.
+  // No VendorTask DB model exists in schema.prisma. Optimistic UI only for Day 1.
+  const updateVendorTaskStatus = (orderId: string, vendorType: VendorType, status: VendorTask["status"], vendorId?: string, vendorName?: string, taskId?: string) => {
+    setOrders(prev => prev.map(o => {
+      if (o.id !== orderId) return o;
+      const updatedTasks = (o.vendorTasks || []).map(t =>
+        t.vendorType === vendorType ? { ...t, status, ...(vendorId ? { vendorId } : {}), ...(vendorName ? { vendorName } : {}) } : t
+      );
+      return { ...o, vendorTasks: updatedTasks };
+    }));
   };
-  
-  const addVendorNote = async (orderId: string, vendorType: VendorType, noteText: string, vendorName?: string, taskId?: string) => {
-    try {
-      const response = await fetch(`/api/orders/${orderId}/vendor-task`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId, vendorType, vendorName, noteText })
-      });
-      const data = await response.json();
-      if (!data.success) alert("Failed to add vendor note");
-      else setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
-    } catch (e) { console.error(e); }
+
+  const addVendorNote = (orderId: string, vendorType: VendorType, noteText: string, vendorName?: string, taskId?: string) => {
+    const newNote = { text: noteText, timestamp: new Date().toISOString(), read: false };
+    setOrders(prev => prev.map(o => {
+      if (o.id !== orderId) return o;
+      const updatedTasks = (o.vendorTasks || []).map(t =>
+        t.vendorType === vendorType ? { ...t, notes: [...(t.notes || []), newNote] } : t
+      );
+      return { ...o, vendorTasks: updatedTasks };
+    }));
   };
   
   const reportIssue = (id: string, issueType: string, severity: "normal" | "urgent", notes: string) => {};
-  const addIngredientRequest = async (orderId: string, item: string, qty?: number, unit?: string, ) => {
-    const optimisticReq = {
+
+  // NOTE: IngredientRequest has no DB model in schema.prisma (v1.1.1 backlog).
+  // For Day 1: optimistic UI update only. Chef sees it flagged on their screen;
+  // Sales sees it on the order card. Data resets on page refresh — acceptable for launch.
+  const addIngredientRequest = async (orderId: string, item: string, qty?: number, unit?: string) => {
+    const optimisticReq: IngredientRequest = {
       id: `ING-${Math.random().toString(36).substr(2, 9)}`,
       itemCode: item.toUpperCase().replace(/\s+/g, '_'),
       itemName: item,
       qty,
       unit,
-      requestedBy: "Chef",
-      status: "pending" as const,
+      requestedBy: 'Chef',
+      status: 'pending' as const,
       timestamp: new Date().toISOString()
     };
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ingredientRequests: [...(o.ingredientRequests || []), optimisticReq], delayLevel: "warning" } : o));
-    try {
-      const response = await fetch(`/api/orders/${orderId}/ingredient-request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item, qty, unit })
-      });
-      const data = await response.json();
-      if (!data.success) {
-        alert("Failed to add ingredient request: " + (data.error?.message || "Unknown error"));
-      } else {
-        setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Error adding ingredient request");
-    }
+    // Optimistic: show immediately on all screens sharing the same context
+    setOrders(prev => prev.map(o =>
+      o.id === orderId
+        ? { ...o, ingredientRequests: [...(o.ingredientRequests || []), optimisticReq], delayLevel: 'warning' }
+        : o
+    ));
+    // No backend call — IngredientRequest model doesn't exist in DB yet.
+    // TODO v1.1.1: Add IngredientRequest model to schema and create POST /api/v1/orders/{id}/ingredient-requests
   };
-  const updateIngredientRequestStatus = async (orderId: string, requestId: string, status: "pending" | "fulfilled" | "cancelled" | "resolved", supplierName?: string) => {
-    try {
-      const response = await fetch(`/api/orders/${orderId}/ingredient-request`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId, status, supplierName })
-      });
-      const data = await response.json();
-      if (!data.success) {
-        alert("Failed to update request: " + (data.error?.message || "Unknown error"));
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Error updating ingredient request");
-    }
+
+  const updateIngredientRequestStatus = async (orderId: string, requestId: string, status: 'pending' | 'fulfilled' | 'cancelled' | 'resolved', supplierName?: string) => {
+    // Optimistic: update local state only
+    setOrders(prev => prev.map(o => {
+      if (o.id !== orderId) return o;
+      const updated = (o.ingredientRequests || []).map(r =>
+        r.id === requestId ? { ...r, status } : r
+      );
+      return { ...o, ingredientRequests: updated };
+    }));
+    // No backend call — IngredientRequest model doesn't exist in DB yet.
+    // TODO v1.1.1: Add PATCH /api/v1/orders/{id}/ingredient-requests/{requestId}
   };
 
   const updateOrderFields = async (orderId: string, fields: Partial<Order>) => {
@@ -399,7 +419,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       addIngredientRequest,
       updateIngredientRequestStatus,
       updateOrderFields,
-      transitionOrderAction
+      transitionOrderAction,
+      socket
     }}>
       {children}
     </OrderContext.Provider>

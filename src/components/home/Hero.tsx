@@ -3,6 +3,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import { useRef } from "react";
+import { ArrowRight2 } from "iconsax-react";
 
 const FLOATING_WORDS = ["Artisanal", "Handcrafted", "Eggless", "Premium", "Fresh Daily"];
 
@@ -19,8 +20,7 @@ export function Hero() {
   return (
     <section
       ref={ref}
-      className="relative w-full h-screen min-h-[700px] overflow-hidden flex flex-col justify-end"
-      style={{ paddingTop: "36px" }} /* account for announcement bar */
+      className="relative w-full min-h-screen overflow-hidden flex flex-col pt-28 md:pt-36"
     >
       {/* ── Video BG ── */}
       <div className="absolute inset-0 z-0">
@@ -45,8 +45,11 @@ export function Hero() {
           style={{ opacity: overlayOpacity, backgroundColor: "#1C0F0A" }}
         />
 
-        {/* Layer 2: Rose gradient bottom */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1C0F0A] via-[#1C0F0A]/20 to-transparent" />
+        {/* Layer 2: Strong left gradient for text contrast & hierarchy */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1C0F0A]/90 via-[#1C0F0A]/50 to-transparent w-full md:w-[80%]" />
+
+        {/* Layer 3: Rose gradient bottom */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1C0F0A] via-[#1C0F0A]/40 to-transparent" />
 
         {/* Layer 3: Vignette edges */}
         <div className="absolute inset-0"
@@ -59,29 +62,10 @@ export function Hero() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#C8A97E]/5 to-transparent mix-blend-screen" />
       </div>
 
-      {/* ── Floating words — decorative background text ── */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        {FLOATING_WORDS.map((word, i) => (
-          <motion.span
-            key={word}
-            className="absolute font-display text-white/[0.025] select-none whitespace-nowrap"
-            style={{
-              fontSize: `${8 + i * 2}vw`,
-              top: `${8 + i * 18}%`,
-              left: i % 2 === 0 ? "-5%" : "auto",
-              right: i % 2 !== 0 ? "-5%" : "auto",
-            }}
-            animate={{ x: i % 2 === 0 ? [0, 20, 0] : [0, -20, 0] }}
-            transition={{ duration: 18 + i * 3, repeat: Infinity, ease: "linear" }}
-          >
-            {word}
-          </motion.span>
-        ))}
-      </div>
 
       {/* ── Hero Content ── */}
       <motion.div
-        className="relative z-10 flex flex-col justify-end pb-16 md:pb-24 px-6 md:px-12 lg:px-20 max-w-[1440px] mx-auto w-full"
+        className="relative z-10 flex flex-col mt-auto pb-16 md:pb-24 px-6 md:px-12 lg:px-20 max-w-[1440px] mx-auto w-full"
         style={{ y: textY }}
       >
         {/* Tag line */}
@@ -89,122 +73,95 @@ export function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="flex items-center gap-3 mb-6 md:mb-8"
+          className="inline-flex items-center gap-3 mb-6 md:mb-8 bg-white/5 backdrop-blur-xl px-5 py-2.5 rounded-full border border-white/10 self-start shadow-[0_4px_24px_-4px_rgba(0,0,0,0.3)]"
         >
-          <span className="block w-8 h-px bg-[var(--brand-champagne)]" />
-          <span className="font-ui text-[10px] tracking-[0.35em] uppercase text-[var(--brand-champagne)] font-semibold">
-            Est. 1995 · Vadodara, Gujarat
+          {/* Pulsating dot */}
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--brand-champagne)] opacity-60"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--brand-champagne)]"></span>
+          </span>
+          <span className="font-ui text-[11px] tracking-[0.2em] uppercase text-[var(--brand-champagne)] font-bold drop-shadow-sm">
+            Est. 1995 · Vadodara
           </span>
         </motion.div>
 
         {/* Main headline */}
-        <div className="overflow-hidden mb-2">
+        <div className="-mb-2 md:-mb-4">
           <motion.h1
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="font-display font-bold text-white leading-[0.88] tracking-tight"
+            className="font-display text-white leading-none drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)]"
             style={{
-              fontSize: "clamp(4rem, 13vw, 14rem)",
-              lineHeight: 0.88,
+              fontSize: "clamp(3.5rem, 12vw, 13rem)",
             }}
           >
-            GOPAL
+            Gopal
           </motion.h1>
         </div>
 
-        <div className="overflow-hidden mb-8 md:mb-12">
+        <div className="mb-6 md:mb-10">
           <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 1, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
             className="flex items-baseline gap-4 md:gap-6"
           >
             <h2
-              className="font-display italic font-light text-[var(--brand-champagne)] leading-[0.88]"
-              style={{ fontSize: "clamp(2.5rem, 8vw, 9rem)", lineHeight: 0.88 }}
+              className="font-display text-[var(--brand-champagne)] leading-none drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)] lowercase"
+              style={{ fontSize: "clamp(3rem, 10vw, 11rem)" }}
             >
-              Cakes
+              cakes
             </h2>
           </motion.div>
         </div>
 
-        {/* Bottom row: Description + CTA */}
+        {/* Bottom Section: Description, CTA, and Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.0 }}
-          className="flex flex-col sm:flex-row items-start sm:items-center gap-8 sm:gap-12"
+          className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mt-4 w-full"
         >
-          {/* Description */}
-          <p className="font-editorial text-white/55 text-base md:text-lg max-w-xs leading-relaxed">
-            Handcrafted daily. 100% eggless. For every celebration in Vadodara.
-          </p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8 sm:gap-12">
+            {/* Description */}
+            <p className="font-editorial text-white/90 text-base md:text-lg max-w-xs leading-relaxed drop-shadow-md">
+              Handcrafted daily. 100% eggless. For every celebration in Vadodara.
+            </p>
 
-          {/* CTA group */}
-          <div className="flex items-center gap-4">
-            <Link href="/menu">
-              <button className="btn-primary px-8 py-4 text-[11px]">
-                Order Now
-              </button>
-            </Link>
-            <Link href="/custom">
-              <button className="btn-secondary px-8 py-4 text-[11px]">
-                Customize
-              </button>
-            </Link>
+            {/* CTA group */}
+            <div className="flex flex-wrap items-center gap-4">
+              <Link href="/menu" className="group flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--brand-deep-rose)] to-[#9a425a] hover:from-[#9a425a] hover:to-[var(--brand-deep-rose)] text-white px-7 md:px-8 py-3.5 md:py-4 rounded-full font-ui text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-500 shadow-[0_8px_32px_rgba(139,58,82,0.3)] hover:shadow-[0_8px_32px_rgba(139,58,82,0.5)] hover:-translate-y-0.5">
+                <span>Order Now</span>
+                <ArrowRight2 variant="Bold" className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+              </Link>
+              <Link href="/custom" className="group flex items-center justify-center bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/20 text-white px-7 md:px-8 py-3.5 md:py-4 rounded-full font-ui text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-500 hover:-translate-y-0.5">
+                <span>Customize</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Stats Grouped inside the bottom layout instead of floating */}
+          <div className="hidden lg:flex items-center gap-2 bg-white/5 backdrop-blur-xl p-5 px-8 rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+            {[
+              { num: "50K+", label: "Happy Customers" },
+              { num: "30+", label: "Years of Craft" },
+              { num: "4", label: "City Branches" },
+            ].map((stat, i) => (
+              <div key={stat.num} className="flex items-center">
+                {i > 0 && <div className="w-px h-10 bg-white/10 mx-6" />}
+                <div className="flex flex-col items-center text-center">
+                  <span className="font-display text-2xl font-bold text-white tracking-wide shadow-black/50 drop-shadow-sm">
+                    {stat.num}
+                  </span>
+                  <span className="font-ui text-[9px] tracking-[0.2em] uppercase text-[var(--brand-champagne)] mt-1.5 whitespace-nowrap">
+                    {stat.label}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </motion.div>
-
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 1 }}
-          className="absolute right-6 md:right-12 bottom-0 flex flex-col items-center gap-2"
-        >
-          <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/30 to-white/60" />
-          <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <svg
-              className="w-4 h-4 text-white/50"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <path d="M12 5v14M5 12l7 7 7-7" />
-            </svg>
-          </motion.div>
-        </motion.div>
-      </motion.div>
-
-      {/* ── Right side floating stats chip ── */}
-      <motion.div
-        initial={{ opacity: 0, x: 40 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.9, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
-        className="absolute top-1/2 right-6 md:right-12 -translate-y-1/2 z-10 hidden lg:flex flex-col gap-3"
-      >
-        {[
-          { num: "50K+", label: "Happy Customers" },
-          { num: "30+", label: "Years of Craft" },
-          { num: "4", label: "City Branches" },
-        ].map((stat) => (
-          <div
-            key={stat.num}
-            className="glass-dark rounded-2xl px-5 py-4 flex flex-col items-center text-center min-w-[100px] border border-white/10"
-          >
-            <span className="font-display text-2xl font-bold text-[var(--brand-champagne)]">
-              {stat.num}
-            </span>
-            <span className="font-ui text-[9px] tracking-[0.15em] uppercase text-white/50 mt-1">
-              {stat.label}
-            </span>
-          </div>
-        ))}
       </motion.div>
 
       {/* ── Gold thin line at bottom ── */}

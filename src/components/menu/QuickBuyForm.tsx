@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
 import { WEIGHT_OPTIONS, getActiveFlavours } from '@/lib/flavours';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +13,15 @@ import { GalleryAdd } from "iconsax-react";
 export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake = false }: { product: any, onClose?: () => void, isCustom?: boolean, isPhotoCake?: boolean }) {
   const { addItem } = useCart();
   const flavours = getActiveFlavours();
+
+  useEffect(() => {
+    // Prevent touchpad scroll bleeding to the background webpage
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
   
   const [selectedWeight, setSelectedWeight] = useState("500g");
   const [selectedFlavour, setSelectedFlavour] = useState("");
@@ -22,7 +31,6 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   const [showOptions, setShowOptions] = useState(isCustom || isPhotoCake);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [printImage, setPrintImage] = useState<string>("");
-  const [includeEdiblePrint, setIncludeEdiblePrint] = useState(false);
 
   const handleFlavourChange = (val: string) => {
     setSelectedFlavour(val);
@@ -67,34 +75,44 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       notes: notes.trim() || undefined,
       referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
       printImage: printImage || undefined,
-      isPhotoCake: isPhotoCake || includeEdiblePrint,
+      isPhotoCake: isPhotoCake,
     });
     if (onClose) onClose();
   };
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
-      {/* Header Image */}
-      <div className="relative w-full h-[140px] bg-muted shrink-0">
+    <div 
+      className="flex flex-col flex-1 min-h-0 h-full w-full max-h-full overflow-hidden bg-background"
+      data-lenis-prevent="true"
+      data-lenis-prevent-wheel="true"
+      data-lenis-prevent-touch="true"
+    >
+      {/* 1. FIXED TOP HEADER CAKE PHOTO (Static at top, never scrolls away) */}
+      <div className="relative w-full h-[180px] shrink-0 bg-black/95 flex items-center justify-center overflow-hidden">
         {product.thumbnail ? (
-          <Image src={product.thumbnail} alt={product.name} fill className="object-cover" />
+          <>
+            <Image src={product.thumbnail} alt={product.name} fill className="object-cover opacity-25 blur-md scale-110" />
+            <Image src={product.thumbnail} alt={product.name} fill className="object-contain p-2 z-10" />
+          </>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground font-editorial italic">No Image</div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute bottom-4 left-4 right-4">
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10 pointer-events-none" />
+        <div className="absolute bottom-3 left-4 right-4 z-20">
           <h2 className="text-xl font-display font-bold text-white leading-tight drop-shadow-md">{product.name}</h2>
           {product.category?.name && (
-            <p className="text-white/90 font-editorial italic text-xs drop-shadow-md">{product.category.name}</p>
+            <p className="text-[var(--brand-champagne)] font-editorial italic text-xs drop-shadow-md">{product.category.name}</p>
           )}
         </div>
       </div>
 
+      {/* 2. ONLY MIDDLE RED SECTION SCROLLS UP AND DOWN */}
       <div 
-        className="p-6 flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-6 custom-scrollbar touch-pan-y" 
-        style={{ WebkitOverflowScrolling: "touch" }}
+        className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6"
+        data-lenis-prevent="true"
+        data-lenis-prevent-wheel="true"
+        data-lenis-prevent-touch="true"
       >
-        
         {/* Weight Selection */}
         <div className="space-y-3">
           <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
@@ -116,149 +134,92 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           </Select>
         </div>
 
-        {/* Advanced Options Toggle */}
-        {!(isCustom || isPhotoCake) && (
-          <button 
-            onClick={() => setShowOptions(!showOptions)}
-            className="w-full flex items-center justify-between bg-primary/5 hover:bg-primary/10 border border-primary/20 p-4 rounded-xl transition-colors text-primary font-ui text-sm font-bold tracking-wide"
-          >
-            <span>{showOptions ? "− Hide Options" : "+ Add Options (Flavour, Message, Notes)"}</span>
-          </button>
-        )}
-
-        {showOptions && (
-          <div className="space-y-6 animate-in slide-in-from-top-4 fade-in duration-300 pt-2">
-            
-            {/* Custom/Photo Image Upload */}
-            {(isCustom || isPhotoCake) && (
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                    <GalleryAdd className="w-4 h-4" />
-                    {isPhotoCake ? "Photo for Edible Print" : "Reference Image"} 
-                    <span className="text-primary normal-case text-[10px]">Required</span>
-                  </label>
-                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-                    <CloudinaryUploader
-                      maxFiles={1}
-                      folder="custom_cakes"
-                      onUploadSuccess={(urls) => {
-                        if (isPhotoCake) setPrintImage(urls[0]);
-                        else setReferenceImages(urls);
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Optional Edible Print for Custom Cakes */}
-                {isCustom && !isPhotoCake && (
-                  <div className="pt-2">
-                    <button 
-                      type="button"
-                      onClick={() => setIncludeEdiblePrint(!includeEdiblePrint)}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
-                        includeEdiblePrint 
-                          ? 'border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/5' 
-                          : 'border-border/60 hover:border-primary/30'
-                      }`}
-                    >
-                      <span className="font-ui text-sm font-bold">Include Edible Photo Print?</span>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${includeEdiblePrint ? 'border-[var(--brand-deep-rose)]' : 'border-foreground/30'}`}>
-                        {includeEdiblePrint && <div className="w-2.5 h-2.5 rounded-full bg-[var(--brand-deep-rose)]" />}
-                      </div>
-                    </button>
-
-                    {includeEdiblePrint && (
-                      <div className="mt-3 space-y-2 animate-in slide-in-from-top-2 fade-in duration-300">
-                        <label className="font-ui text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                          <GalleryAdd className="w-3 h-3" />
-                          Photo to Print
-                        </label>
-                        <div className="bg-background border border-primary/20 rounded-xl p-3">
-                          <CloudinaryUploader
-                            maxFiles={1}
-                            folder="edible_prints"
-                            onUploadSuccess={(urls) => setPrintImage(urls[0])}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Flavour Selection */}
-            <div className="space-y-3">
-              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
-                Select Flavour <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
-              </label>
-              <Select value={selectedFlavour} onValueChange={handleFlavourChange}>
-                <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary">
-                  <SelectValue placeholder="Original Flavour" />
-                </SelectTrigger>
-                <SelectContent side="bottom" position="popper" className="z-[200]" avoidCollisions={false}>
-                  <SelectGroup>
-                    <SelectItem value="original" className="text-base py-3 font-semibold text-primary">
-                      Original Flavour (Recommended)
-                    </SelectItem>
-                    {flavours.map((f) => (
-                      <SelectItem key={f.id} value={f.name} className="text-base py-3">
-                        {f.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Message on Cake */}
-            <div className="space-y-3">
-              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                🎂 Message on Cake
-                <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
-              </label>
-              <input
-                type="text"
-                value={messageOnCake}
-                onChange={(e) => setMessageOnCake(e.target.value)}
-                placeholder='e.g. Happy Birthday Rahul 🎉'
-                maxLength={60}
-                className="w-full rounded-xl border-2 border-primary/30 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+        {/* Dedicated Photo Cake Upload (Only when item is explicitly a Photo Cake) */}
+        {isPhotoCake && (
+          <div className="space-y-3">
+            <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+              <GalleryAdd className="w-4 h-4 text-primary" />
+              Photo for Edible Print
+              <span className="text-primary normal-case text-[10px]">Required</span>
+            </label>
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+              <CloudinaryUploader
+                maxFiles={1}
+                folder="edible_prints"
+                onUploadSuccess={(urls) => setPrintImage(urls[0])}
               />
-              <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
-            </div>
-
-            {/* Special Instructions / Notes */}
-            <div className="space-y-3">
-              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black">✎</span>
-                Special Instructions
-                <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
-              </label>
-              <p className="text-xs text-muted-foreground leading-relaxed bg-primary/5 border border-primary/10 rounded-xl px-4 py-3">
-                Mention <strong>allergies</strong>, delivery timing preferences, box type, or any other special requests for this order.
-              </p>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. No nuts please, deliver before 6 PM…"
-                rows={3}
-                maxLength={300}
-                className="w-full resize-none rounded-xl border-2 border-primary/30 bg-background px-4 py-3 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
-              />
-              <p className="text-right text-[11px] text-muted-foreground">{notes.length}/300</p>
             </div>
           </div>
         )}
 
+        {/* Flavour Selection */}
+        <div className="space-y-3">
+          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
+            Select Flavour <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
+          </label>
+          <Select value={selectedFlavour} onValueChange={handleFlavourChange}>
+            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary">
+              <SelectValue placeholder="Original Flavour" />
+            </SelectTrigger>
+            <SelectContent side="bottom" position="popper" className="z-[200]" avoidCollisions={false}>
+              <SelectGroup>
+                <SelectItem value="original" className="text-base py-3 font-semibold text-primary">
+                  Original Flavour (Recommended)
+                </SelectItem>
+                {flavours.map((f) => (
+                  <SelectItem key={f.id} value={f.name} className="text-base py-3">
+                    {f.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Message on Cake */}
+        <div className="space-y-3">
+          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+            🎂 Message on Cake
+            <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
+          </label>
+          <input
+            type="text"
+            value={messageOnCake}
+            onChange={(e) => setMessageOnCake(e.target.value)}
+            placeholder='e.g. Happy Birthday Rahul 🎉'
+            maxLength={60}
+            className="w-full rounded-xl border-2 border-primary/30 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+          />
+          <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
+        </div>
+
+        {/* Special Instructions / Notes */}
+        <div className="space-y-3">
+          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black">✎</span>
+            Special Instructions
+            <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
+          </label>
+          <p className="text-xs text-muted-foreground leading-relaxed bg-primary/5 border border-primary/10 rounded-xl px-4 py-3">
+            Mention <strong>allergies</strong>, delivery timing preferences, box type, or any other special requests for this order.
+          </p>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="e.g. No nuts please, deliver before 6 PM…"
+            rows={3}
+            maxLength={300}
+            className="w-full resize-none rounded-xl border-2 border-primary/30 bg-background px-4 py-3 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+          />
+          <p className="text-right text-[11px] text-muted-foreground">{notes.length}/300</p>
+        </div>
       </div>
 
-      {/* Footer Checkout */}
-      <div className="p-4 bg-background border-t border-border/40 shrink-0">
+      {/* 3. FIXED CHECKOUT BUTTON BAR */}
+      <div className="shrink-0 h-[84px] bg-background border-t border-border/40 flex items-center justify-center p-3 px-4 z-30">
         <Button 
           onClick={handleAddToCart}
-          className="w-full h-14 rounded-2xl bg-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/90 text-white font-ui font-bold text-sm tracking-widest uppercase shadow-lg shadow-[var(--brand-deep-rose)]/20 hover:-translate-y-1 transition-all"
+          className="w-full h-13 py-3 rounded-2xl bg-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/90 text-white font-ui font-bold text-sm tracking-widest uppercase shadow-lg shadow-[var(--brand-deep-rose)]/20 hover:-translate-y-1 transition-all"
         >
           Add to Cart - ₹{currentPrice}
         </Button>

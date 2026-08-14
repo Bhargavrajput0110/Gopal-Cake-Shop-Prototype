@@ -21,17 +21,8 @@ export const POST = withApiHandler(async (ctx) => {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   }
 
-  // Calculate balance from LedgerEntries that represent positive payments
-  const paidSoFar = order.ledgerEntries
-    .filter(le => le.status === 'SUCCESS' && le.type === 'PAYMENT')
-    .reduce((sum, p) => sum + Number(p.amount), 0)
-    
-  const refundedSoFar = order.ledgerEntries
-    .filter(le => le.status === 'SUCCESS' && le.type === 'REFUND')
-    .reduce((sum, p) => sum + Number(p.amount), 0)
-
-  const netPaid = paidSoFar - refundedSoFar
-  const balance = Number(order.totalAmount) - netPaid
+  const summary = await FinancialService.calculateFinancialSummary(order);
+  const balance = summary.outstandingAmount;
 
   if (amount > balance) {
     return NextResponse.json({ error: 'Amount exceeds balance due' }, { status: 400 })

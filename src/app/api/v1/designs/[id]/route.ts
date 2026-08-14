@@ -5,27 +5,28 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 
 const UpdateDesignSchema = z.object({
-  code: z.string().optional(),
-  name: z.string().optional(),
-  description: z.string().optional(),
-  imageUrl: z.string().url().optional(),
-  categoryIds: z.array(z.string()).optional(),
-  occasions: z.array(z.string()).optional(),
-  themes: z.array(z.string()).optional(),
-  characters: z.array(z.string()).optional(),
-  colours: z.array(z.string()).optional(),
-  shapes: z.array(z.string()).optional(),
-  styles: z.array(z.string()).optional(),
-  recommendedWeight: z.string().optional(),
-  recommendedTier: z.number().optional(),
-  difficulty: z.string().optional(),
-  age: z.string().optional(),
-  isEggless: z.boolean().optional(),
-  tags: z.array(z.string()).optional(),
-  labels: z.array(z.string()).optional(),
-  status: z.string().optional(),
-  currentUpdatedAt: z.string().optional()
-})
+  code: z.string().nullish(),
+  name: z.string().nullish(),
+  description: z.string().nullish(),
+  imageUrl: z.string().nullish(),
+  categoryIds: z.array(z.string()).nullish(),
+  occasions: z.array(z.string()).nullish(),
+  themes: z.array(z.string()).nullish(),
+  characters: z.array(z.string()).nullish(),
+  colours: z.array(z.string()).nullish(),
+  shapes: z.array(z.string()).nullish(),
+  styles: z.array(z.string()).nullish(),
+  recommendedWeight: z.any().nullish(),
+  recommendedTier: z.any().nullish(),
+  difficulty: z.any().nullish(),
+  age: z.any().nullish(),
+  isEggless: z.boolean().nullish(),
+  tags: z.array(z.string()).nullish(),
+  labels: z.array(z.string()).nullish(),
+  status: z.string().nullish(),
+  currentUpdatedAt: z.any().nullish(),
+  weightConfig: z.any().nullish()
+}).passthrough()
 
 export const PUT = withApiHandler(async (ctx: HandlerContext) => {
   if (ctx.appRole !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -34,24 +35,24 @@ export const PUT = withApiHandler(async (ctx: HandlerContext) => {
   const data = UpdateDesignSchema.parse(body)
 
   const updatePayload: any = {
-    code: data.code,
-    name: data.name,
-    description: data.description,
-    imageUrl: data.imageUrl,
-    occasions: data.occasions,
-    themes: data.themes,
-    characters: data.characters,
-    colours: data.colours,
-    shapes: data.shapes,
-    styles: data.styles,
-    recommendedWeight: data.recommendedWeight,
-    recommendedTier: data.recommendedTier,
-    difficulty: data.difficulty,
-    age: data.age,
-    isEggless: data.isEggless,
-    tags: data.tags,
-    labels: data.labels,
-    status: data.status
+    code: data.code || undefined,
+    name: data.name || undefined,
+    description: data.description ?? undefined,
+    imageUrl: data.imageUrl || undefined,
+    occasions: data.occasions ?? undefined,
+    themes: data.themes ?? undefined,
+    characters: data.characters ?? undefined,
+    colours: data.colours ?? undefined,
+    shapes: data.shapes ?? undefined,
+    styles: data.styles ?? undefined,
+    recommendedWeight: typeof data.recommendedWeight === 'string' ? data.recommendedWeight : undefined,
+    recommendedTier: typeof data.recommendedTier === 'number' ? data.recommendedTier : (Number(data.recommendedTier) || undefined),
+    difficulty: typeof data.difficulty === 'string' ? data.difficulty : undefined,
+    age: typeof data.age === 'string' ? data.age : undefined,
+    isEggless: typeof data.isEggless === 'boolean' ? data.isEggless : undefined,
+    tags: data.tags ?? undefined,
+    labels: data.labels ?? undefined,
+    status: data.status ?? undefined
   }
 
   // Remove undefined fields

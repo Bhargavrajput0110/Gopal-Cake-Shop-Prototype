@@ -61,6 +61,17 @@ export class WebhookProcessor {
           if (order) {
             await TimelineAdapter.logPaymentSuccess(payment.orderId, order.status, `Payment Captured (Webhook)`);
             await NotificationAdapter.sendPaymentSuccess(payment.orderId, order.customerId);
+            await prisma.auditLog.create({
+              data: {
+                action: 'PAYMENT_CAPTURED',
+                reason: `Webhook payment captured: ${paymentEntity.id}`,
+                actorId: 'SYSTEM_WEBHOOK',
+                tableName: 'Payment',
+                recordId: payment.id,
+                newValue: { status: 'SUCCESS', gatewayPaymentId: paymentEntity.id },
+                oldValue: { status: 'PENDING' }
+              }
+            });
           }
         }
       } 
@@ -79,6 +90,17 @@ export class WebhookProcessor {
           if (order) {
             await TimelineAdapter.logPaymentFailed(payment.orderId, order.status, `Payment Failed (Webhook)`);
             await NotificationAdapter.sendPaymentFailed(payment.orderId, order.customerId);
+            await prisma.auditLog.create({
+              data: {
+                action: 'PAYMENT_FAILED',
+                reason: `Webhook payment failed: ${paymentEntity.error_description || 'Unknown error'}`,
+                actorId: 'SYSTEM_WEBHOOK',
+                tableName: 'Payment',
+                recordId: payment.id,
+                newValue: { status: 'FAILED' },
+                oldValue: { status: 'PENDING' }
+              }
+            });
           }
         }
       }

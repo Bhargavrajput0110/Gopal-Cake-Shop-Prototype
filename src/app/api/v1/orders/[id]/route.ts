@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { withApiHandler, HandlerContext } from '@/lib/withApiHandler'
+import { FinancialService } from '@/services/FinancialService'
 
 const handler = async (ctx: HandlerContext) => {
   const { id } = ctx.params
@@ -13,7 +14,7 @@ const handler = async (ctx: HandlerContext) => {
     where: { id },
     include: {
       customer: true,
-      payments: true,
+      ledgerEntries: true,
       items: {
         include: {
           media: true
@@ -26,7 +27,18 @@ const handler = async (ctx: HandlerContext) => {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ success: true, data: order })
+  const summary = await FinancialService.calculateFinancialSummary(order);
+  
+  const enrichedOrder = {
+    ...order,
+    totalAmount: summary.totalAmount,
+    paidAmount: summary.paidAmount,
+    pendingBalance: summary.outstandingAmount,
+    financialStatus: summary.paymentStatus,
+    payments: undefined, // ensure backwards compatibility or just remove it if frontend does not rely on raw payments
+  }
+
+  return NextResponse.json({ success: true, data: enrichedOrder })
 }
 
 export const GET = withApiHandler(handler, true)

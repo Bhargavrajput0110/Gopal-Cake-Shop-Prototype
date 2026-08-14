@@ -67,7 +67,7 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
     setError("");
     
     try {
-      const targetUrl = selectedStaff.role === "driver" ? "/delivery" 
+      const targetUrl = selectedStaff.role === "driver" ? "/driver" 
         : selectedStaff.role === "chef" ? "/chef"
         : selectedStaff.role === "sales" || selectedStaff.role === "manager" ? "/sales"
         : "/admin";

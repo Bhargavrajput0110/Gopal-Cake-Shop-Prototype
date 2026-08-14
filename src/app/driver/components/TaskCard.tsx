@@ -192,12 +192,12 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
         </div>
 
         {/* Financials / Cash Collection */}
-        {!isVendorPickup && !isBranchTransfer && item.totalAmount !== undefined && (
-          <div className={`px-4 py-3 rounded-xl border flex justify-between items-center shadow-sm ${item.totalAmount > item.paidAmount ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${item.totalAmount > item.paidAmount ? 'text-rose-600' : 'text-emerald-600'}`}>Payment</span>
-            {item.totalAmount > item.paidAmount ? (
+        {!isVendorPickup && !isBranchTransfer && item.financialStatus && (
+          <div className={`px-4 py-3 rounded-xl border flex justify-between items-center shadow-sm ${item.financialStatus !== 'PAID' ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${item.financialStatus !== 'PAID' ? 'text-rose-600' : 'text-emerald-600'}`}>Payment</span>
+            {item.financialStatus !== 'PAID' ? (
               <span className="text-[12px] font-black text-rose-700 bg-rose-200/50 px-2 py-1 rounded flex items-center gap-1 shadow-sm">
-                COLLECT ₹{item.totalAmount - item.paidAmount}
+                COLLECT ₹{item.pendingBalance || 0}
               </span>
             ) : (
               <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-[0.2em] bg-emerald-100/50 px-2 py-1 rounded">

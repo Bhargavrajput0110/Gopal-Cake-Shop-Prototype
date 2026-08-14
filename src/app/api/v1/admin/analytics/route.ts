@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { DashboardKPIService } from '@/services/reporting/DashboardKPIService';
 import { withApiHandler } from '@/lib/withApiHandler';
 import { prisma } from '@/lib/prisma';
+import { FinancialService } from '@/services/FinancialService';
 import { startOfDay, endOfDay, subDays } from 'date-fns';
 
 export const GET = withApiHandler(async (ctx) => {
@@ -75,30 +76,28 @@ export const GET = withApiHandler(async (ctx) => {
       updatedAt: true,
       customer: { select: { name: true } },
       branch: { select: { name: true } },
-      payments: {
-        where: { status: 'SUCCESS' },
-        select: { amount: true }
-      }
+      ledgerEntries: true
     },
     orderBy: { updatedAt: 'desc' },
     take: 20
   });
 
-  const pendingBalances = pendingOrdersData
-    .map(o => {
-      const paid = o.payments.reduce((sum, p) => sum + Number(p.amount), 0);
-      const total = Number(o.totalAmount);
+  const pendingBalancesUnfiltered = await Promise.all(
+    pendingOrdersData.map(async o => {
+      const summary = await FinancialService.calculateFinancialSummary(o);
       return {
         id: o.orderNumber,
         customer: o.customer?.name || 'Unknown',
         branch: o.branch?.name || 'Unknown',
         deliveredOn: o.updatedAt.toISOString().split('T')[0],
-        total,
-        paid,
-        pending: total - paid
+        total: summary.totalAmount,
+        paid: summary.paidAmount,
+        pending: summary.outstandingAmount
       };
     })
-    .filter(o => o.pending > 0);
+  );
+
+  const pendingBalances = pendingBalancesUnfiltered.filter(o => o.pending > 0);
 
   return NextResponse.json({ 
     success: true, 

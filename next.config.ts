@@ -14,10 +14,23 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: ['react-map-gl', 'mapbox-gl', '@mapbox/search-js-react'],
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "https",
         hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+      {
+        protocol: "http",
+        hostname: "**",
       },
     ],
   },

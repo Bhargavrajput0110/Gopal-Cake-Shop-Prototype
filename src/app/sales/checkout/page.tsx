@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useState } from "react"
+import { useSession } from "next-auth/react"
 import { CakeBuilder, CakeBuilderData } from "@/components/shared/CakeBuilder"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +11,7 @@ import { SearchNormal1, Add, Card, MoneyArchive, Mobile } from "iconsax-react"
 import { BackButton } from "@/components/ui/BackButton"
 
 export default function SalesCheckoutPage() {
+  const { data: session } = useSession()
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -27,6 +29,11 @@ export default function SalesCheckoutPage() {
       alert("Please enter customer phone and cake details")
       return
     }
+    
+    if (!(session?.user as any)?.branchId) {
+      alert("Staff account has no assigned branch.");
+      return;
+    }
 
     setIsSubmitting(true)
     try {
@@ -39,7 +46,7 @@ export default function SalesCheckoutPage() {
           items: [cakeData],
           paymentMethod,
           paymentType,
-          branchId: 'clx123abc0000', // Mock branch ID. In a real app, from user session
+          branchId: (session?.user as any).branchId,
           deliveryType,
           deliveryDate: new Date().toISOString(), // Mock immediate
         })

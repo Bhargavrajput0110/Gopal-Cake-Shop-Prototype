@@ -1,5 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Cormorant_Garamond, Playfair_Display } from "next/font/google";
+// Typography Upgrade: Playfair Display (premium serif) + DM Sans (modern UI)
+import "@fontsource/playfair-display/400.css";
+import "@fontsource/playfair-display/400-italic.css";
+import "@fontsource/playfair-display/600.css";
+import "@fontsource/playfair-display/700.css";
+import "@fontsource/playfair-display/700-italic.css";
+import "@fontsource/dm-sans/300.css";
+import "@fontsource/dm-sans/400.css";
+import "@fontsource/dm-sans/500.css";
+import "@fontsource/dm-sans/600.css";
+import "@fontsource/dm-sans/700.css";
 import "./globals.css";
 import { SmoothScroller } from "@/components/layout/SmoothScroller";
 import { HeaderFooterWrapper } from "@/components/layout/HeaderFooterWrapper";
@@ -11,28 +21,6 @@ import { CustomCursor } from "@/components/layout/CustomCursor";
 import { Noise } from "@/components/layout/Noise";
 import { PWARegistration } from "@/components/PWARegistration";
 import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
-
-const inter = Inter({ 
-  subsets: ["latin"],
-  variable: "--next-font-sans",
-  display: "swap",
-});
-
-const cormorant = Cormorant_Garamond({ 
-  subsets: ["latin"], 
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--next-font-heading",
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--next-font-display",
-  style: ["normal", "italic"],
-  display: "swap",
-});
 
 
 export const metadata: Metadata = {
@@ -95,7 +83,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`antialiased ${inter.variable} ${cormorant.variable} ${playfair.variable}`}
+      className="antialiased font-sans"
     >
       <body suppressHydrationWarning className="flex flex-col bg-background text-foreground relative selection:bg-[#B67A7E] selection:text-white min-h-screen font-sans">
         <PWARegistration />

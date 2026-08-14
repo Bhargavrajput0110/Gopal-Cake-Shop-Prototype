@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma as db } from '@/lib/prisma'
 import { withApiHandler } from '@/lib/withApiHandler'
+import { FinancialService } from '@/services/FinancialService'
 
 export const GET = withApiHandler(async (ctx) => {
   const { appRole, user } = ctx
@@ -37,7 +38,7 @@ export const GET = withApiHandler(async (ctx) => {
           assignedVendor: { select: { name: true } }
         }
       },
-      payments: true
+      ledgerEntries: true
     },
     orderBy: {
       targetDate: 'asc'
@@ -93,49 +94,51 @@ export const GET = withApiHandler(async (ctx) => {
     if (['NEW', 'WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'PENDING_ASSIGNMENT', 'READY_FOR_PICKUP', 'ASSIGNED_TO_DRIVER', 'PICKED_UP', 'ON_THE_WAY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED_DELIVERY'].includes(order.status)) {
       if (driverId && order.driverId && order.driverId !== driverId) return;
 
-      const totalAmount = Number(order.totalAmount)
-      const paidAmount = order.payments
-        .filter((p: any) => p.status === 'SUCCESS')
-        .reduce((sum: number, p: any) => sum + Number(p.amount), 0)
-
-      payload.push({
-        id: `delivery-${order.id}`,
-        taskType: 'CUSTOMER_DELIVERY',
-        orderNumber: order.orderNumber,
-        status: order.status,
-        deliveryType: order.deliveryType,
-        targetDate: order.targetDate,
-        createdAt: order.createdAt,
-        notes: order.internalNotes || null,
-        assignedDriverId: order.driverId,
-        timeTarget: order.targetDate,
-        pickedUpAt: null,
-        deliveredAt: null,
-        totalAmount,
-        paidAmount,
-        formattedAddress: order.deliveryAddress || null,
-        customerName: order.customer.name,
-        customerPhone: order.customer.phone,
-        items: order.items.filter((i: any) => !i.parentItemId).map((item: any) => ({
-          id: item.id,
-          productName: item.productName,
-          quantity: item.quantity,
-          flavor: item.flavor || null,
-          boxCount: item.boxCount,
-          status: item.status,
-          childItems: item.childItems.map((c: any) => ({
-            id: c.id,
-            productName: c.productName,
-            status: c.status,
-            assignedVendorId: c.assignedVendorId
+      payload.push(async () => {
+        const summary = await FinancialService.calculateFinancialSummary(order);
+        return {
+          id: `delivery-${order.id}`,
+          taskType: 'CUSTOMER_DELIVERY',
+          orderNumber: order.orderNumber,
+          status: order.status,
+          deliveryType: order.deliveryType,
+          targetDate: order.targetDate,
+          createdAt: order.createdAt,
+          notes: order.internalNotes || null,
+          assignedDriverId: order.driverId,
+          timeTarget: order.targetDate,
+          pickedUpAt: null,
+          deliveredAt: null,
+          totalAmount: summary.totalAmount,
+          paidAmount: summary.paidAmount,
+          pendingBalance: summary.outstandingAmount,
+          financialStatus: summary.paymentStatus,
+          formattedAddress: order.deliveryAddress || null,
+          customerName: order.customer.name,
+          customerPhone: order.customer.phone,
+          items: order.items.filter((i: any) => !i.parentItemId).map((item: any) => ({
+            id: item.id,
+            productName: item.productName,
+            quantity: item.quantity,
+            flavor: item.flavor || null,
+            boxCount: item.boxCount,
+            status: item.status,
+            childItems: item.childItems.map((c: any) => ({
+              id: c.id,
+              productName: c.productName,
+              status: c.status,
+              assignedVendorId: c.assignedVendorId
+            }))
           }))
-        }))
+        };
       });
     }
   });
 
-  // Sort payload by targetDate
-  payload.sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime());
+  const resolvedPayload = await Promise.all(payload.map(p => typeof p === 'function' ? p() : Promise.resolve(p)));
 
-  return NextResponse.json({ success: true, data: payload })
+  // Sort payload by targetDate
+  resolvedPayload.sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime());
+
+  return NextResponse.json({ success: true, data: resolvedPayload })
 })

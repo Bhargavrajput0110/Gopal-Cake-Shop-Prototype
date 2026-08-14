@@ -1,6 +1,6 @@
 process.env.AUTH_TRUST_HOST = 'true';
 if (!process.env.NEXTAUTH_URL) {
-  process.env.NEXTAUTH_URL = 'https://gopal-cake-shop-prototype.onrender.com';
+  process.env.NEXTAUTH_URL = 'http://localhost:3000';
 }
 
 const express = require('express');

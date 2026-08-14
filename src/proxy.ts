@@ -199,29 +199,29 @@ export default auth(function proxy(req: NextRequest) {
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live;
     style-src 'self' 'unsafe-inline';
-    img-src 'self' blob: data: https://res.cloudinary.com;
-    font-src 'self';
-    connect-src 'self' https://vercel.live wss://ws-us3.pusher.com;
+    img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com https:;
+    font-src 'self' https://fonts.gstatic.com;
+    connect-src 'self' https://vercel.live wss://ws-us3.pusher.com https://images.unsplash.com;
   `.replace(/\s{2,}/g, ' ').trim();
   response.headers.set('Content-Security-Policy', csp);
 
   // ── 4. Tiered Rate Limiting ────────────────────────────────────────────────
-  if (process.env.IS_PLAYWRIGHT !== 'true') {
+  if (process.env.IS_PLAYWRIGHT !== 'true' && process.env.NODE_ENV !== 'development') {
     if (pathname.startsWith('/api/')) {
       if (pathname.startsWith('/api/auth') || pathname.startsWith('/login')) {
         // Auth endpoints — strict (5 req/min)
         if (!checkRateLimit(`auth:${ip}`, 5, 60_000)) {
-          return new NextResponse('Too Many Requests', { status: 429 });
+          return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
         }
       } else if (pathname.startsWith('/api/v1/public/')) {
         // Public APIs — moderate (30 req/min)
         if (!checkRateLimit(`public:${ip}`, 30, 60_000)) {
-          return new NextResponse('Too Many Requests', { status: 429 });
+          return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
         }
       } else {
         // Internal authenticated APIs — generous (100 req/min)
         if (!checkRateLimit(`internal:${ip}`, 100, 60_000)) {
-          return new NextResponse('Too Many Requests', { status: 429 });
+          return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
         }
       }
     }

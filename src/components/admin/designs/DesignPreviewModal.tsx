@@ -8,9 +8,10 @@ interface DesignPreviewModalProps {
   isOpen: boolean
   onClose: () => void
   onCopyToOrder?: (design: Design) => void
+  onEdit?: (design: Design) => void
 }
 
-export function DesignPreviewModal({ design, isOpen, onClose, onCopyToOrder }: DesignPreviewModalProps) {
+export function DesignPreviewModal({ design, isOpen, onClose, onCopyToOrder, onEdit }: DesignPreviewModalProps) {
   const [relatedDesigns, setRelatedDesigns] = React.useState<Design[]>([])
   const [isLoadingRelated, setIsLoadingRelated] = React.useState(false)
 
@@ -148,8 +149,18 @@ export function DesignPreviewModal({ design, isOpen, onClose, onCopyToOrder }: D
             </div>
           )}
 
-          {/* Action Button */}
-          <div className="mt-auto pt-6 mb-8">
+          {/* Action Buttons */}
+          <div className="mt-auto pt-6 mb-8 space-y-3">
+            {onEdit && (
+              <Button 
+                variant="outline"
+                size="lg" 
+                className="w-full text-base font-bold border-2 border-primary text-primary hover:bg-primary/10"
+                onClick={() => onEdit(design)}
+              >
+                ✏️ Edit This Design
+              </Button>
+            )}
             <Button 
               size="lg" 
               className="w-full text-base"

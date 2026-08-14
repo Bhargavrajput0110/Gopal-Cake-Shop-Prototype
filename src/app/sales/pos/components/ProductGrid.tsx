@@ -1,3 +1,4 @@
+// POS ProductGrid - Verified Custom Cake & No Fixed Price Tag
 import * as React from "react"
 import { SearchNormal1 } from "iconsax-react"
 import { QuickBuyForm } from "@/components/menu/QuickBuyForm"
@@ -60,8 +61,8 @@ export function ProductGrid({ products, categories = [], isLoading }: ProductGri
           <QuickBuyForm 
             product={selectedProduct} 
             onClose={() => setSelectedProduct(null)} 
-            isCustom={selectedProduct.id === 'custom-photo-cake'} 
-            isPhotoCake={selectedProduct.id === 'custom-photo-cake'} 
+            isCustom={selectedProduct.id === 'custom-cake-studio' || selectedProduct.isCustomizable} 
+            isPhotoCake={false} 
           />
         </div>
       </div>
@@ -129,8 +130,8 @@ export function ProductGrid({ products, categories = [], isLoading }: ProductGri
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
                 <button 
                   onClick={() => setSelectedProduct({
-                    id: 'custom-photo-cake',
-                    name: 'Custom Photo Cake',
+                    id: 'custom-cake-studio',
+                    name: 'Customize Cake',
                     basePrice: 800,
                     thumbnail: 'https://images.unsplash.com/photo-1604147706283-d7119b5b822c?w=500&q=80',
                     isCustomizable: true,
@@ -140,11 +141,13 @@ export function ProductGrid({ products, categories = [], isLoading }: ProductGri
                 >
                   <div className="h-36 w-full bg-rose-900/10 flex items-center justify-center overflow-hidden relative">
                     <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1604147706283-d7119b5b822c?w=500&q=80')] bg-cover bg-center opacity-40 mix-blend-multiply group-hover:scale-110 transition-transform duration-700" />
-                    <span className="relative z-10 font-ui text-[10px] text-white bg-[var(--brand-deep-rose)] px-3 py-1.5 rounded-full font-black tracking-widest uppercase shadow-md">+ Add Photo Cake</span>
+                    <span className="relative z-10 font-ui text-[11px] text-white bg-[var(--brand-deep-rose)] px-3.5 py-1.5 rounded-full font-black tracking-widest uppercase shadow-md flex items-center gap-1">
+                      ✨ Customize
+                    </span>
                   </div>
                   <div className="p-4 w-full bg-white">
-                    <p className="font-display font-bold text-lg text-foreground truncate transition-colors">Custom Photo Cake</p>
-                    <p className="font-ui text-[11px] uppercase tracking-widest font-bold text-muted-foreground mt-1">Starts at ₹800.00</p>
+                    <p className="font-display font-bold text-lg text-foreground truncate transition-colors">Customize Cake</p>
+                    <p className="font-ui text-[10px] uppercase tracking-wider font-extrabold text-[var(--brand-deep-rose)] mt-1">Bespoke Custom Order</p>
                   </div>
                 </button>
               </div>

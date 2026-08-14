@@ -54,9 +54,9 @@ export default function SalesOverviewPage() {
           <p className="font-editorial italic text-[var(--muted-foreground)] text-lg mt-2">Real-time operational status of your artisan branch.</p>
         </div>
         <div className="flex gap-4 w-full md:w-auto">
-          <button className="px-6 py-3 bg-[var(--muted)] hover:bg-[var(--border)] text-[var(--muted-foreground)] rounded-full font-ui text-[10px] uppercase tracking-[0.2em] font-bold transition-colors border border-[var(--border)]">
-            Daily Report
-          </button>
+          <a href="/sales/orders" className="px-6 py-3 bg-[var(--muted)] hover:bg-[var(--border)] text-[var(--muted-foreground)] rounded-full font-ui text-[10px] uppercase tracking-[0.2em] font-bold transition-colors border border-[var(--border)]">
+            Orders List
+          </a>
           <a href="/sales/pos" className="px-6 py-3 btn-primary rounded-full font-ui text-[10px] uppercase tracking-[0.2em] font-bold shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2">
             Launch POS <ExportSquare className="w-4 h-4" />
           </a>
@@ -66,7 +66,7 @@ export default function SalesOverviewPage() {
       {/* Priority Alerts */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        <div className={`rounded-[2.5rem] p-6 border transition-all duration-300 ${delayedOrders > 0 ? "bg-rose-50/80 border-[var(--brand-deep-rose)]/20 shadow-[0_8px_32px_0_rgba(139,58,82,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
+        <a href="/sales/orders?hasIssues=true" className={`block rounded-[2.5rem] p-6 border transition-all duration-300 hover:scale-[1.02] ${delayedOrders > 0 ? "bg-rose-50/80 border-[var(--brand-deep-rose)]/20 shadow-[0_8px_32px_0_rgba(139,58,82,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={`font-ui text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 ${delayedOrders > 0 ? "text-[var(--brand-deep-rose)]" : "text-[var(--muted-foreground)]"}`}>
               <Danger className="w-5 h-5" variant="Bold" /> Delayed
@@ -74,9 +74,9 @@ export default function SalesOverviewPage() {
             <span className={`text-4xl font-display font-black ${delayedOrders > 0 ? "text-[var(--brand-deep-rose)]" : "text-[var(--foreground)]"}`}>{delayedOrders}</span>
           </div>
           <p className={`font-editorial italic text-sm ${delayedOrders > 0 ? "text-[var(--brand-deep-rose)]/80" : "text-[var(--muted-foreground)]"}`}>Immediate attention required.</p>
-        </div>
+        </a>
 
-        <div className="rounded-[2.5rem] p-6 border bg-[var(--brand-champagne)]/10 border-[var(--brand-champagne)]/30 shadow-[0_8px_32px_0_rgba(200,169,126,0.15)]">
+        <a href="/sales/orders?status=Pending+Verification" className="block rounded-[2.5rem] p-6 border bg-[var(--brand-champagne)]/10 border-[var(--brand-champagne)]/30 shadow-[0_8px_32px_0_rgba(200,169,126,0.15)] hover:scale-[1.02] transition-transform">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-ui text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-[var(--brand-champagne)]">
               <Clock className="w-5 h-5" variant="Bold" /> Unverified
@@ -84,7 +84,7 @@ export default function SalesOverviewPage() {
             <span className="text-4xl font-display font-black text-[var(--brand-champagne)]">{pendingVerification}</span>
           </div>
           <p className="font-editorial italic text-sm text-[var(--brand-champagne)]/80">New online orders awaiting approval.</p>
-        </div>
+        </a>
 
         <div className={`rounded-[2.5rem] p-6 border transition-all duration-300 ${ingredientRequests > 0 ? "bg-amber-50/80 border-amber-200 shadow-[0_8px_32px_0_rgba(245,158,11,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
           <div className="flex items-center justify-between mb-4">
@@ -96,7 +96,7 @@ export default function SalesOverviewPage() {
           <p className={`font-editorial italic text-sm ${ingredientRequests > 0 ? "text-amber-700/80" : "text-[var(--muted-foreground)]"}`}>Pending requests from kitchen.</p>
         </div>
 
-        <div className={`rounded-[2.5rem] p-6 border transition-all duration-300 ${unreadVendorNotes > 0 ? "bg-blue-50/80 border-blue-200 shadow-[0_8px_32px_0_rgba(59,130,246,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
+        <a href="/sales/orders?hasIssues=true" className={`block rounded-[2.5rem] p-6 border transition-all duration-300 hover:scale-[1.02] ${unreadVendorNotes > 0 ? "bg-blue-50/80 border-blue-200 shadow-[0_8px_32px_0_rgba(59,130,246,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={`font-ui text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 ${unreadVendorNotes > 0 ? "text-blue-700" : "text-[var(--muted-foreground)]"}`}>
               <Message className="w-5 h-5" /> Vendor Notes
@@ -104,7 +104,7 @@ export default function SalesOverviewPage() {
             <span className={`text-4xl font-display font-black ${unreadVendorNotes > 0 ? "text-blue-700" : "text-[var(--foreground)]"}`}>{unreadVendorNotes}</span>
           </div>
           <p className={`font-editorial italic text-sm ${unreadVendorNotes > 0 ? "text-blue-700/80" : "text-[var(--muted-foreground)]"}`}>Unread messages from partners.</p>
-        </div>
+        </a>
       </motion.div>
 
       {/* Ingredient Request Panel */}
@@ -144,7 +144,7 @@ export default function SalesOverviewPage() {
       <motion.div variants={itemVariants} className="mt-12">
         <h3 className="font-display text-2xl font-bold text-[var(--foreground)] border-b border-[var(--border)] pb-4 mb-6">Kitchen Pipeline</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          <div className={`rounded-[2.5rem] p-6 border flex flex-col justify-between h-44 transition-all duration-300 ${waitingForChef > 0 ? "bg-rose-50/80 border-[var(--brand-deep-rose)]/20 shadow-[0_8px_32px_0_rgba(139,58,82,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
+          <a href="/sales/orders?status=Waiting+for+Chef" className={`block rounded-[2.5rem] p-6 border flex flex-col justify-between h-44 transition-all duration-300 hover:scale-[1.02] ${waitingForChef > 0 ? "bg-rose-50/80 border-[var(--brand-deep-rose)]/20 shadow-[0_8px_32px_0_rgba(139,58,82,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
             <div className="flex justify-between items-start">
               <h3 className={`font-ui text-[10px] font-bold uppercase tracking-[0.2em] pr-2 leading-tight ${waitingForChef > 0 ? "text-[var(--brand-deep-rose)]" : "text-[var(--muted-foreground)]"}`}>Pending Orders</h3>
               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
@@ -152,10 +152,13 @@ export default function SalesOverviewPage() {
               </div>
             </div>
             <p className={`text-5xl font-display font-black drop-shadow-sm ${waitingForChef > 0 ? "text-[var(--brand-deep-rose)]" : "text-[var(--foreground)]"}`}>{waitingForChef}</p>
-          </div>
-          <KPICard title="Active Orders" value={inProduction} icon={<Flash className="w-6 h-6 text-orange-500" />} />
+          </a>
           
-          <div className={`rounded-[2.5rem] p-6 border flex flex-col justify-between h-44 transition-all duration-300 ${readyOrders > 0 ? "bg-emerald-50 border-emerald-200 shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
+          <a href="/sales/orders?status=In+Kitchen" className="block">
+            <KPICard title="Active Orders" value={inProduction} icon={<Flash className="w-6 h-6 text-orange-500" />} />
+          </a>
+          
+          <a href="/sales/orders?status=Ready" className={`block rounded-[2.5rem] p-6 border flex flex-col justify-between h-44 transition-all duration-300 hover:scale-[1.02] ${readyOrders > 0 ? "bg-emerald-50 border-emerald-200 shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
             <div className="flex justify-between items-start">
               <h3 className={`font-ui text-[10px] font-bold uppercase tracking-[0.2em] pr-2 leading-tight ${readyOrders > 0 ? "text-emerald-700" : "text-[var(--muted-foreground)]"}`}>Ready Orders</h3>
               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
@@ -163,9 +166,11 @@ export default function SalesOverviewPage() {
               </div>
             </div>
             <p className={`text-5xl font-display font-black drop-shadow-sm ${readyOrders > 0 ? "text-emerald-600" : "text-[var(--foreground)]"}`}>{readyOrders}</p>
-          </div>
+          </a>
 
-          <KPICard title="Total Orders" value={ordersToday} icon={<TaskSquare className="w-6 h-6 text-[var(--muted-foreground)]" />} />
+          <a href="/sales/orders?status=All" className="block">
+            <KPICard title="Total Orders" value={ordersToday} icon={<TaskSquare className="w-6 h-6 text-[var(--muted-foreground)]" />} />
+          </a>
         </div>
       </motion.div>
 
@@ -173,7 +178,7 @@ export default function SalesOverviewPage() {
       <motion.div variants={itemVariants} className="mt-12">
         <h3 className="font-display text-2xl font-bold text-[var(--foreground)] border-b border-[var(--border)] pb-4 mb-6">Logistics & Delivery</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className={`rounded-[2.5rem] p-6 border flex flex-col justify-between h-44 transition-all duration-300 ${deliveryPool > 0 ? "bg-amber-50/80 border-amber-200 shadow-[0_8px_32px_0_rgba(245,158,11,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
+          <a href="/sales/orders?status=Delivery" className={`block rounded-[2.5rem] p-6 border flex flex-col justify-between h-44 transition-all duration-300 hover:scale-[1.02] ${deliveryPool > 0 ? "bg-amber-50/80 border-amber-200 shadow-[0_8px_32px_0_rgba(245,158,11,0.1)]" : "bg-white/40 backdrop-blur-md border-[var(--border)] shadow-[0_8px_32px_0_rgba(74,59,53,0.05)]"}`}>
             <div className="flex justify-between items-start">
               <h3 className={`font-ui text-[10px] font-bold uppercase tracking-[0.2em] ${deliveryPool > 0 ? "text-amber-700" : "text-[var(--muted-foreground)]"}`}>Pending Delivery</h3>
               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
@@ -181,10 +186,16 @@ export default function SalesOverviewPage() {
               </div>
             </div>
             <p className={`text-5xl font-display font-black drop-shadow-sm ${deliveryPool > 0 ? "text-amber-700" : "text-[var(--foreground)]"}`}>{deliveryPool}</p>
-          </div>
-          <KPICard title="Active Deliveries" value={activeDeliveries} icon={<TruckFast className="w-6 h-6 text-[var(--muted-foreground)]" />} />
-          <KPICard title="Pending Swap" value={pendingSwap} icon={<Box className="w-6 h-6 text-[var(--brand-champagne)]" />} />
-          <KPICard title="Completed Orders" value={completedOrders} icon={<TickCircle className="w-6 h-6 text-[var(--muted-foreground)]" />} />
+          </a>
+          <a href="/sales/orders?status=Delivery" className="block">
+            <KPICard title="Active Deliveries" value={activeDeliveries} icon={<TruckFast className="w-6 h-6 text-[var(--muted-foreground)]" />} />
+          </a>
+          <a href="/sales/orders?status=All" className="block">
+            <KPICard title="Pending Swap" value={pendingSwap} icon={<Box className="w-6 h-6 text-[var(--brand-champagne)]" />} />
+          </a>
+          <a href="/sales/orders?status=All" className="block">
+            <KPICard title="Completed Orders" value={completedOrders} icon={<TickCircle className="w-6 h-6 text-[var(--muted-foreground)]" />} />
+          </a>
         </div>
       </motion.div>
 

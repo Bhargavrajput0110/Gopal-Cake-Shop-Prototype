@@ -68,6 +68,27 @@ export interface CheckoutPayload {
 
 export class StorefrontEngine {
   /**
+   * Calculates the delivery charge based on distance.
+   *
+   * Tier 1: 0 – 5 km   → ₹100 flat
+   * Tier 2: 5 – 10 km  → ₹150 flat
+   * Tier 3: > 10 km    → ₹150 base + ₹10 per km beyond 10 km (rounded up)
+   *
+   * @param distanceKm - Distance from branch to delivery address in km.
+   * @returns Delivery charge in INR.
+   */
+  static calculateDistanceBasedDeliveryCharge(distanceKm: number): number {
+    if (distanceKm <= 5) {
+      return 100
+    } else if (distanceKm <= 10) {
+      return 150
+    } else {
+      const extraKm = Math.ceil(distanceKm - 10)
+      return 150 + extraKm * 10
+    }
+  }
+
+  /**
    * Processes a checkout request and creates an Order.
    * Enforces business rules based on the provided CheckoutContext.
    */
@@ -182,20 +203,32 @@ export class StorefrontEngine {
     let calculatedIsFarDistance: boolean = payload.isFarDistance || false;
 
     if (payload.deliveryType === DeliveryType.DELIVERY) {
-      deliveryCharge = defaultDeliveryCharge // Applied from settings
+      // Staff override takes full priority — skip all distance logic
       if (context.canOverrideDelivery && payload.overrideDeliveryCharge !== undefined) {
         deliveryCharge = payload.overrideDeliveryCharge
-      }
+      } else {
+        // Try to calculate the real distance, then apply tiered pricing
+        if (payload.deliveryAddress && branch.address) {
+          try {
+            const distanceProvider = DistanceFactory.getProvider();
+            const distanceResult = await distanceProvider.calculateDistance(branch.address, payload.deliveryAddress);
+            calculatedDistanceKm = distanceResult.distanceKm;
+            calculatedIsFarDistance = distanceResult.isFarDistance;
+          } catch (error) {
+            console.error('[DistanceProvider] Failed to calculate distance:', error);
+            // calculatedDistanceKm stays as client-provided value (or undefined)
+          }
+        }
 
-      if (payload.deliveryAddress && branch.address) {
-        try {
-          const distanceProvider = DistanceFactory.getProvider();
-          const distanceResult = await distanceProvider.calculateDistance(branch.address, payload.deliveryAddress);
-          calculatedDistanceKm = distanceResult.distanceKm;
-          calculatedIsFarDistance = distanceResult.isFarDistance;
-        } catch (error) {
-          console.error('[DistanceProvider] Failed to calculate distance:', error);
-          // Fallback to client provided values if distance calculation fails
+        if (calculatedDistanceKm !== undefined) {
+          // Apply tiered distance-based pricing:
+          // 0–5 km → ₹100 | 5–10 km → ₹150 | >10 km → ₹150 + ₹10/km beyond 10
+          deliveryCharge = StorefrontEngine.calculateDistanceBasedDeliveryCharge(calculatedDistanceKm)
+          console.log(`[DeliveryCharge] ${calculatedDistanceKm} km → ₹${deliveryCharge}`)
+        } else {
+          // No distance data available — fall back to the flat setting
+          deliveryCharge = defaultDeliveryCharge
+          console.warn('[DeliveryCharge] Distance unknown — using flat DELIVERY_CHARGE setting:', defaultDeliveryCharge)
         }
       }
     }
@@ -279,6 +312,17 @@ export class StorefrontEngine {
                 type: payload.paymentType,
                 status: 'SUCCESS'
               }))
+            },
+            ledgerEntries: {
+              create: payload.payments.map(p => ({
+                amount: p.amount,
+                method: p.method,
+                type: 'PAYMENT',
+                status: 'SUCCESS',
+                actorId: context.createdById || 'SYSTEM',
+                branchId: canonicalBranchId,
+                notes: 'Initial payment at checkout'
+              }))
             }
           } : (payload.paymentType === 'FULL' ? {
             payments: {
@@ -287,6 +331,17 @@ export class StorefrontEngine {
                 method: payload.paymentMethod,
                 type: 'FULL',
                 status: 'SUCCESS'
+              }
+            },
+            ledgerEntries: {
+              create: {
+                amount: totalAmount,
+                method: payload.paymentMethod,
+                type: 'PAYMENT',
+                status: 'SUCCESS',
+                actorId: context.createdById || 'SYSTEM',
+                branchId: canonicalBranchId,
+                notes: 'Full payment at checkout'
               }
             }
           } : {}))
@@ -310,6 +365,19 @@ export class StorefrontEngine {
           status: newOrder.status,
           nextState: newOrder.status,
           note: `Order received via ${context.source}`,
+        }
+      })
+
+      // Record Forensic AuditLog
+      await tx.auditLog.create({
+        data: {
+          action: 'ORDER_CREATED',
+          reason: `Order created via ${context.source}`,
+          actorId: context.createdById || 'SYSTEM',
+          tableName: 'Order',
+          recordId: newOrder.id,
+          newValue: { status: newOrder.status, totalAmount: newOrder.totalAmount },
+          oldValue: {}
         }
       })
 
