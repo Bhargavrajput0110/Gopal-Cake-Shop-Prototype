@@ -201,7 +201,7 @@ export default auth(function proxy(req: NextRequest) {
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com https:;
     font-src 'self' https://fonts.gstatic.com;
-    connect-src 'self' https://vercel.live wss://ws-us3.pusher.com https://images.unsplash.com;
+    connect-src 'self' https://vercel.live wss://ws-us3.pusher.com https://images.unsplash.com https://api.cloudinary.com;
   `.replace(/\s{2,}/g, ' ').trim();
   response.headers.set('Content-Security-Policy', csp);
 
