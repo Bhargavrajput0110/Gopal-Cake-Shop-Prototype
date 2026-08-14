@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button"
 import { Save2 } from "iconsax-react"
 import { WeightPriceConfigurator } from "./WeightPriceConfigurator"
+import CloudinaryUploader from "@/components/ui/CloudinaryUploader"
 
 // 62 Starter Categories from Gopal Cake Shop catalog for guaranteed UI population
 const DEFAULT_62_CATEGORIES = [
@@ -147,17 +148,7 @@ export function DesignFormModal({ isOpen, onClose, initialData }: any) {
     }
   }
 
-  // Basic Image Upload placeholder simulating a new blob URL generation
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      // In a real app, upload to Vercel Blob / S3 and get the new URL here.
-      // For V1 simulation, we use a local object URL to represent the new "blob"
-      // Note: This ensures replacing the image generates a NEW url, preserving KDS snapshot URLs.
-      const fakeUploadedUrl = URL.createObjectURL(file)
-      setFormData({ ...formData, imageUrl: fakeUploadedUrl })
-    }
-  }
+
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -256,30 +247,13 @@ export function DesignFormModal({ isOpen, onClose, initialData }: any) {
               {/* Image Uploader Box */}
               <div className="sm:col-span-1">
                 <label className="text-xs font-bold text-foreground block mb-1.5">Cake Photo *</label>
-                <div className="border-2 border-dashed border-primary/30 rounded-2xl p-3 flex flex-col items-center justify-center text-center bg-primary/[0.02] hover:bg-primary/[0.05] hover:border-primary transition-all cursor-pointer relative group h-[160px]">
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleImageUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer z-10" 
-                    required={!initialData}
-                  />
-                  {formData.imageUrl ? (
-                    <div className="relative w-full h-full rounded-xl overflow-hidden border border-border bg-muted shadow-xs">
-                      <img src={formData.imageUrl} className="w-full h-full object-cover" alt="Preview" />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center">
-                        <span className="text-white text-xs font-extrabold">📸 Change Photo</span>
-                        <span className="text-white/80 text-[10px] mt-0.5">Click or drag new file</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="py-4 space-y-1">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center text-lg font-bold">➕</div>
-                      <p className="text-xs font-extrabold text-foreground">Upload Photo</p>
-                      <p className="text-[10px] text-muted-foreground leading-tight">Click to select JPG/PNG</p>
-                    </div>
-                  )}
-                </div>
+                <CloudinaryUploader
+                  onUploadSuccess={(urls) => setFormData({ ...formData, imageUrl: urls[0] || "" })}
+                  maxFiles={1}
+                  label="Upload Photo"
+                  existingImages={formData.imageUrl ? [formData.imageUrl] : []}
+                  folder="gopal-cakes/designs"
+                />
               </div>
 
               {/* Name & Category Selector */}
