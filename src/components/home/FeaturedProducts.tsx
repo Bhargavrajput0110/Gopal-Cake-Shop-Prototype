@@ -138,7 +138,16 @@ export function FeaturedProducts() {
       fetch("/api/v1/public/products").then(res => res.ok ? res.json() : []).catch(() => [])
     ]).then(([designsRes, productsRes]) => {
       const apiDesigns = (designsRes?.data?.items || []);
-      const allDesigns = [...localSaved, ...apiDesigns].map((d: any) => {
+      
+      // Properly merge local data with API data to avoid duplicates
+      const mergedDesigns = apiDesigns.map((apiItem: any) => {
+        const localMatch = localSaved.find((l: any) => l.id === apiItem.id || (l.code && l.code === apiItem.code));
+        return localMatch ? { ...apiItem, ...localMatch } : apiItem;
+      });
+      
+      const unmergedLocal = localSaved.filter((l: any) => !apiDesigns.some((a: any) => a.id === l.id || (a.code && a.code === l.code)));
+      
+      const allDesigns = [...unmergedLocal, ...mergedDesigns].map((d: any) => {
         let computedPrice = d.basePrice ? Number(d.basePrice) : 0;
         let hasMultipleOptions = false;
         if (d.weightConfig && typeof d.weightConfig === 'object') {
