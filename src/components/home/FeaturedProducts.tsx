@@ -138,16 +138,7 @@ export function FeaturedProducts() {
       fetch("/api/v1/public/products").then(res => res.ok ? res.json() : []).catch(() => [])
     ]).then(([designsRes, productsRes]) => {
       const apiDesigns = (designsRes?.data?.items || []);
-      
-      // Properly merge local data with API data to avoid duplicates
-      const mergedDesigns = apiDesigns.map((apiItem: any) => {
-        const localMatch = localSaved.find((l: any) => l.id === apiItem.id || (l.code && l.code === apiItem.code));
-        return localMatch ? { ...apiItem, ...localMatch } : apiItem;
-      });
-      
-      const unmergedLocal = localSaved.filter((l: any) => !apiDesigns.some((a: any) => a.id === l.id || (a.code && a.code === l.code)));
-      
-      const allDesigns = [...unmergedLocal, ...mergedDesigns].map((d: any) => {
+      const allDesigns = [...localSaved, ...apiDesigns].filter(d => !(d.imageUrl || d.thumbnail || "").startsWith("blob:")).map((d: any) => {
         let computedPrice = d.basePrice ? Number(d.basePrice) : 0;
         let hasMultipleOptions = false;
         if (d.weightConfig && typeof d.weightConfig === 'object') {
@@ -158,7 +149,7 @@ export function FeaturedProducts() {
           }
         }
         let thumb = d.imageUrl || d.thumbnail || "";
-        if (!thumb || thumb.includes("example.com") || thumb.includes("sample.jpg") || thumb.includes("mock")) {
+        if (!thumb || thumb.includes("example.com") || thumb.includes("sample.jpg") || thumb.includes("mock") || thumb.startsWith("blob:")) {
           thumb = "https://images.unsplash.com/photo-1601050690597-df0568a70950?w=600&auto=format&fit=crop&q=80";
         }
         return {
