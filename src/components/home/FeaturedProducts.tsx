@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ArrowRight2 } from "iconsax-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { QuickBuyForm } from "@/components/menu/QuickBuyForm";
+import { useCart } from "@/context/CartContext";
 
 const SKELETON_COUNT = 8;
 
@@ -25,6 +26,12 @@ function ProductSkeleton() {
 function FeaturedProductCard({ product }: { product: any }) {
   const [isOpen, setIsOpen] = useState(false);
   const aspectClass = "aspect-[4/5]";
+  const { items, updateQuantity, removeItem } = useCart();
+
+  const cartItem = items.find(
+    (i) => (i.productId === product.id || i.designId === product.id) && !i.flavor && !i.messageOnCake && !i.notes
+  );
+  const qty = cartItem?.quantity ?? 0;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -94,18 +101,71 @@ function FeaturedProductCard({ product }: { product: any }) {
         </div>
 
         {/* Text info */}
-        <div
-          onClick={() => setIsOpen(true)}
-          className="flex flex-col px-2 cursor-pointer"
-        >
-          <h3 className="font-display font-bold text-base md:text-lg text-[var(--foreground)] group-hover:text-[var(--brand-deep-rose)] transition-colors duration-300 leading-snug line-clamp-1">
-            {product.name}
-          </h3>
-          <p className="font-ui text-[12px] font-semibold text-[var(--brand-champagne)] mt-1 tracking-wide">
-            {product.hasMultipleOptions 
-              ? `Starting from ₹${product.basePrice}` 
-              : (product.basePrice ? `₹${product.basePrice}` : 'Custom Pricing')}
-          </p>
+        <div className="flex flex-col px-2 mt-3">
+          <div onClick={() => setIsOpen(true)} className="flex flex-col mb-2 cursor-pointer">
+            <h3 className="font-display font-bold text-base md:text-lg text-[var(--foreground)] group-hover:text-[var(--brand-deep-rose)] transition-colors duration-300 leading-snug line-clamp-1">
+              {product.name}
+            </h3>
+            {product.category?.name && (
+              <p className="font-editorial italic text-[var(--muted-foreground)] text-xs line-clamp-1">
+                {product.category.name}
+              </p>
+            )}
+          </div>
+
+          {/* Price row + stepper/add */}
+          <div className="flex items-center justify-between mt-auto pt-1">
+            <div className="flex flex-col cursor-pointer" onClick={() => setIsOpen(true)}>
+              {product.hasMultipleOptions && (
+                <p className="font-ui text-[10px] text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">Starting from</p>
+              )}
+              <p className="font-ui text-sm font-bold text-[var(--foreground)]">
+                {product.basePrice ? `₹${product.basePrice}` : 'Custom Pricing'}
+              </p>
+            </div>
+
+            {/* Quantity Stepper or ADD button */}
+            {qty > 0 ? (
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="flex items-center gap-0 bg-[var(--brand-deep-rose)]/10 rounded-full border border-[var(--brand-deep-rose)]/30 overflow-hidden"
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (qty === 1 && cartItem) removeItem(cartItem.cartItemId);
+                    else if (cartItem) updateQuantity(cartItem.cartItemId, qty - 1);
+                  }}
+                  className="w-8 h-8 flex items-center justify-center text-[var(--brand-deep-rose)] font-bold text-lg hover:bg-[var(--brand-deep-rose)]/15 transition-colors rounded-l-full"
+                >
+                  −
+                </button>
+                <span className="w-7 text-center font-ui text-[13px] font-black text-[var(--brand-deep-rose)]">
+                  {qty}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(true);
+                  }}
+                  className="w-8 h-8 flex items-center justify-center text-[var(--brand-deep-rose)] font-bold text-lg hover:bg-[var(--brand-deep-rose)]/15 transition-colors rounded-r-full"
+                >
+                  +
+                </button>
+              </motion.div>
+            ) : (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(true);
+                }}
+                className="px-4 py-2 bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 transition-all rounded-full font-ui text-[10px] font-bold uppercase tracking-[0.1em] shadow-sm hover:shadow-md hover:-translate-y-0.5"
+              >
+                ADD
+              </button>
+            )}
+          </div>
         </div>
       </motion.div>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 bg-background z-[150] border-l-0 shadow-2xl">
