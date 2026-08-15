@@ -205,13 +205,12 @@ function MenuPageContent() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [categories, setCategories] = useState<any[]>([{ id: "all", name: "All" }]);
   
   // Initialize state from URL
   const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'All');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [sort, setSort] = useState(searchParams.get('sort') || 'newest');
-  const [page, setPage] = useState(parseInt(searchParams.get('page') || '1', 10));
-  const [totalPages, setTotalPages] = useState(1);
   
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
   const [isInitialMount, setIsInitialMount] = useState(true);
@@ -222,7 +221,6 @@ function MenuPageContent() {
     if (activeCategory !== 'All') params.set('category', activeCategory);
     if (debouncedSearch) params.set('search', debouncedSearch);
     if (sort !== 'newest') params.set('sort', sort);
-    if (page > 1) params.set('page', page.toString());
     
     const currentQueryString = searchParams.toString();
     const newQueryString = params.toString();
@@ -230,7 +228,7 @@ function MenuPageContent() {
     if (currentQueryString !== newQueryString && !isInitialMount) {
       router.replace(`${pathname}?${newQueryString}`, { scroll: false });
     }
-  }, [activeCategory, debouncedSearch, sort, page, pathname, router, searchParams, isInitialMount]);
+  }, [activeCategory, debouncedSearch, sort, pathname, router, searchParams, isInitialMount]);
 
   // Debounce search
   useEffect(() => {
@@ -238,45 +236,91 @@ function MenuPageContent() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Reset page on filter changes (skip initial mount)
   useEffect(() => {
-    if (isInitialMount) {
-      setIsInitialMount(false);
-      return;
-    }
-    setPage(1);
-  }, [activeCategory, debouncedSearch, sort]);
+    if (isInitialMount) setIsInitialMount(false);
+  }, [isInitialMount]);
 
   useEffect(() => {
     setLoading(true);
     setError(false);
     
-    const params = new URLSearchParams();
-    if (activeCategory !== 'All') params.append('category', activeCategory);
-    if (debouncedSearch) params.append('search', debouncedSearch);
-    params.append('sort', sort);
-    params.append('page', page.toString());
-    params.append('limit', '20'); // Use 20 for proper pagination demo
+    Promise.all([
+      fetch("/api/v1/designs").then(res => res.ok ? res.json() : { data: { items: [] } }).catch(() => ({ data: { items: [] } })),
+      fetch("/api/v1/public/products").then(res => res.ok ? res.json() : []).catch(() => []),
+      fetch("/api/v1/categories").then(res => res.ok ? res.json() : []).catch(() => [])
+    ]).then(([designsRes, productsRes, categoriesRes]) => {
+      // Process categories
+      const fetchedCats = Array.isArray(categoriesRes) ? categoriesRes : (categoriesRes?.data || []);
+      const formattedCats = [{ id: "all", name: "All" }, ...fetchedCats.filter((c: any) => c.name)];
+      setCategories(formattedCats);
 
-    fetch(`/api/v1/public/products?${params.toString()}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error("API Route Failed");
-        return res.json();
-      })
-      .then((data) => {
-        const fetchedProducts = Array.isArray(data) ? data : data.data || [];
-        setProducts(fetchedProducts);
-        if (data.meta) setTotalPages(data.meta.totalPages);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setError(true);
-        setLoading(false);
+      let apiDesigns = (designsRes?.data?.items || []);
+      
+      // Merge with local storage designs
+      try {
+        const localStr = typeof window !== 'undefined' ? localStorage.getItem('gopal_saved_designs') : null;
+        if (localStr) {
+          const localDesigns = JSON.parse(localStr);
+          if (Array.isArray(localDesigns)) {
+            const localMap = new Map(localDesigns.map(d => [d.id || d.code, d]));
+            apiDesigns = apiDesigns.map((d: any) => localMap.get(d.id || d.code) || d);
+            const apiIds = new Set(apiDesigns.map((d: any) => d.id || d.code));
+            localDesigns.forEach(d => {
+              if (!apiIds.has(d.id || d.code)) apiDesigns.unshift(d);
+            });
+          }
+        }
+      } catch(e) {}
+
+      const allDesigns = apiDesigns.filter((d: any) => !(d.imageUrl || d.thumbnail || "").startsWith("blob:")).map((d: any) => {
+        let computedPrice = d.basePrice ? Number(d.basePrice) : 0;
+        let hasMultipleOptions = false;
+        let wc = d.weightConfig;
+        if (typeof wc === 'string') {
+          try { wc = JSON.parse(wc); } catch(e) {}
+        }
+        if (wc && typeof wc === 'object' && Object.keys(wc).length > 0) {
+          const weights = Object.keys(wc).map(Number).sort((a,b) => a-b);
+          if (weights.length > 0 && wc[weights[0]]?.price) {
+            computedPrice = Number(wc[weights[0]].price);
+            if (weights.length > 1) hasMultipleOptions = true;
+          }
+        }
+        return {
+          ...d,
+          isCustom: true,
+          basePrice: computedPrice,
+          hasMultipleOptions
+        };
       });
-  }, [activeCategory, debouncedSearch, sort, page]);
 
-  const filteredProducts = products;
+      const fetchedProducts = Array.isArray(productsRes) ? productsRes : (productsRes?.data || []);
+      
+      setProducts([...allDesigns, ...fetchedProducts]);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setError(true);
+      setLoading(false);
+    });
+  }, []); // Only run once on mount
+
+  // Filter and sort products client-side
+  const filteredProducts = React.useMemo(() => {
+    let result = products;
+    if (activeCategory !== 'All') {
+      result = result.filter(p => p.category?.name === activeCategory || p.category?.slug === activeCategory || p.categories?.some((c: any) => c.category?.name === activeCategory || c.category?.slug === activeCategory));
+    }
+    if (debouncedSearch) {
+      const search = debouncedSearch.toLowerCase();
+      result = result.filter(p => p.name?.toLowerCase().includes(search) || p.description?.toLowerCase().includes(search));
+    }
+    if (sort === 'price_asc') result.sort((a, b) => (a.basePrice || 0) - (b.basePrice || 0));
+    if (sort === 'price_desc') result.sort((a, b) => (b.basePrice || 0) - (a.basePrice || 0));
+    if (sort === 'name_asc') result.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    if (sort === 'newest') result.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    return result;
+  }, [products, activeCategory, debouncedSearch, sort]);
 
   return (
     <div className="min-h-screen bg-background text-foreground pt-[90px] md:pt-[116px] pb-32">
@@ -359,30 +403,28 @@ function MenuPageContent() {
             </div>
 
             <div className="space-y-10">
-              {CATEGORY_GROUPS.map(group => (
-                <div key={group.title}>
-                  <h3 className="font-ui text-[10px] tracking-[0.25em] uppercase text-[var(--brand-champagne)] font-semibold mb-5 flex items-center gap-3">
-                    <span className="w-3 h-px bg-[var(--brand-champagne)]/50" />
-                    {group.title}
-                  </h3>
-                  <ul className="space-y-1">
-                    {group.items.map(item => (
-                      <li key={item}>
-                        <button
-                          onClick={() => setActiveCategory(item)}
-                          className={`w-full text-left py-1.5 font-editorial text-sm md:text-base transition-colors duration-300 ${
-                            activeCategory === item 
-                              ? "text-[var(--brand-deep-rose)] italic" 
-                              : "text-foreground/60 hover:text-[var(--brand-champagne)]"
-                          }`}
-                        >
-                          {item}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+              <div>
+                <h3 className="font-ui text-[10px] tracking-[0.25em] uppercase text-[var(--brand-champagne)] font-semibold mb-5 flex items-center gap-3">
+                  <span className="w-3 h-px bg-[var(--brand-champagne)]/50" />
+                  Categories
+                </h3>
+                <ul className="space-y-1">
+                  {categories.filter(c => c.id !== 'all').map(item => (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => setActiveCategory(item.name || item.slug)}
+                        className={`w-full text-left py-1.5 font-editorial text-sm md:text-base transition-colors duration-300 ${
+                          activeCategory === (item.name || item.slug) 
+                            ? "text-[var(--brand-deep-rose)] italic" 
+                            : "text-foreground/60 hover:text-[var(--brand-champagne)]"
+                        }`}
+                      >
+                        {item.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </div>
@@ -411,17 +453,17 @@ function MenuPageContent() {
             >
               All
             </button>
-            {CATEGORY_GROUPS.flatMap(g => g.items).slice(0, 15).map(item => (
+            {categories.filter(c => c.id !== 'all').map(item => (
               <button
-                key={item}
-                onClick={() => setActiveCategory(item)}
+                key={item.id}
+                onClick={() => setActiveCategory(item.name || item.slug)}
                 className={`flex-shrink-0 px-5 py-2.5 rounded-full font-ui text-[11px] font-bold uppercase tracking-[0.1em] transition-all border ${
-                  activeCategory === item 
+                  activeCategory === (item.name || item.slug) 
                     ? 'bg-[var(--brand-deep-rose)] border-[var(--brand-deep-rose)] text-white' 
                     : 'bg-transparent border-[var(--border)] text-foreground/60'
                 }`}
               >
-                {item}
+                {item.name}
               </button>
             ))}
           </div>

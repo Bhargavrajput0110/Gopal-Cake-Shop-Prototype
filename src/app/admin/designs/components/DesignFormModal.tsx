@@ -128,7 +128,7 @@ export function DesignFormModal({ isOpen, onClose, initialData }: any) {
         description: initialData?.description || "",
         image: null as File | null,
         imageUrl: initialData?.imageUrl || initialData?.thumbnail || "",
-        categoryIds: initialData?.categories?.map((c: any) => c.categoryId || c.id || c) || (Array.isArray(initialData?.categoryIds) ? initialData.categoryIds : (initialData?.category?.slug ? [initialData.category.slug] : (initialData?.categoryId ? [initialData.categoryId] : []))),
+        categoryIds: initialData?.categories?.map((c: any) => c.category?.slug || c.category?.id || c.categoryId || c.id || c) || (Array.isArray(initialData?.categoryIds) ? initialData.categoryIds : (initialData?.category?.slug ? [initialData.category.slug] : (initialData?.categoryId ? [initialData.categoryId] : []))),
         tags: Array.isArray(initialData?.tags) ? initialData.tags.join(", ") : (initialData?.tags || ""),
         themes: Array.isArray(initialData?.themes) ? initialData.themes.join(", ") : (initialData?.themes || ""),
         colours: Array.isArray(initialData?.colours) ? initialData.colours.join(", ") : (initialData?.colours || ""),

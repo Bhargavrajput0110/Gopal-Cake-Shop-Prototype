@@ -11,7 +11,7 @@ import { useCustomerAuth } from "@/context/CustomerAuthContext";
 
 const NAV_LINKS = [
   { name: "Home", href: "/" },
-  { name: "Order", href: "/menu" },
+  { name: "Menu", href: "/menu" },
   { name: "Custom", href: "/custom" },
   { name: "About Us", href: "/about" },
 ];

@@ -31,7 +31,7 @@ const BRANCHES = [
 
 const NAV_GROUPS = [
   {
-    heading: "Order",
+    heading: "Menu",
     links: [
       { name: "Our Menu", href: "/menu" },
       { name: "Custom Cakes", href: "/custom" },
