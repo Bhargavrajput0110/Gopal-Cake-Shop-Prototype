@@ -169,7 +169,7 @@ export default function DesignLibraryPage() {
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: '24',
+        limit: '50',
         status: currentTab
       });
       if (searchQuery) params.set('search', searchQuery);
@@ -187,7 +187,7 @@ export default function DesignLibraryPage() {
         if (res.ok) {
           const json = await res.json();
           apiItems = json.data?.items || [];
-          if (apiItems.length < 24) {
+          if (apiItems.length < 50) {
             setHasMore(false);
           }
         }

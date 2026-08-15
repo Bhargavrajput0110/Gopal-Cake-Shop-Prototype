@@ -24,15 +24,7 @@ interface DesignCardProps {
 export function DesignCard({ design, onEdit, onClone, onStatusChange, onDeleteForever }: DesignCardProps) {
   const [menuOpen, setMenuOpen] = React.useState(false)
 
-  // Use Cloudinary optimization for the URL
-  // e.g. transform /v12345/ to /c_fill,w_400,h_400,q_auto,f_auto/v12345/
-  const getOptimizedUrl = (url: string) => {
-    if (!url.includes('cloudinary.com')) return url
-    if (url.includes('/upload/v')) {
-      return url.replace('/upload/', '/upload/c_fill,w_400,h_400,q_auto,f_auto/')
-    }
-    return url
-  }
+
 
   return (
     <div className="group relative bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow">
@@ -40,7 +32,7 @@ export function DesignCard({ design, onEdit, onClone, onStatusChange, onDeleteFo
       <div className="relative aspect-square w-full bg-secondary overflow-hidden">
         {design.imageUrl ? (
           <img 
-            src={getOptimizedUrl(design.imageUrl)} 
+            src={design.imageUrl} 
             alt={design.name}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
