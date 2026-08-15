@@ -247,8 +247,8 @@ function MenuPageContent() {
     setError(false);
     
     Promise.all([
-      fetch("/api/v1/designs").then(res => res.ok ? res.json() : { data: { items: [] } }).catch(() => ({ data: { items: [] } })),
-      fetch("/api/v1/public/products").then(res => res.ok ? res.json() : []).catch(() => []),
+      fetch("/api/v1/designs?limit=200").then(res => res.ok ? res.json() : { data: { items: [] } }).catch(() => ({ data: { items: [] } })),
+      fetch("/api/v1/public/products?limit=200").then(res => res.ok ? res.json() : []).catch(() => []),
       fetch("/api/v1/categories").then(res => res.ok ? res.json() : []).catch(() => [])
     ]).then(([designsRes, productsRes, categoriesRes]) => {
       // Process categories
