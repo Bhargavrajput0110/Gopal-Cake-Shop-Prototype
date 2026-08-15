@@ -179,17 +179,23 @@ function FeaturedProductCard({ product }: { product: any }) {
 }
 
 export function FeaturedProducts() {
+  const [allProducts, setAllProducts] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
-
-  const categories = ["All", "Birthday", "Anniversary", "Kids", "Signature", "Custom"];
+  const [categories, setCategories] = useState<any[]>([{ id: "all", name: "All" }]);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/v1/designs").then(res => res.ok ? res.json() : { data: { items: [] } }).catch(() => ({ data: { items: [] } })),
-      fetch("/api/v1/public/products").then(res => res.ok ? res.json() : []).catch(() => [])
-    ]).then(([designsRes, productsRes]) => {
+      fetch("/api/v1/public/products").then(res => res.ok ? res.json() : []).catch(() => []),
+      fetch("/api/v1/categories").then(res => res.ok ? res.json() : []).catch(() => [])
+    ]).then(([designsRes, productsRes, categoriesRes]) => {
+      // Process categories
+      const fetchedCats = Array.isArray(categoriesRes) ? categoriesRes : (categoriesRes?.data || []);
+      const formattedCats = [{ id: "all", name: "All" }, ...fetchedCats.filter((c: any) => c.name)];
+      setCategories(formattedCats);
+
       const apiDesigns = (designsRes?.data?.items || []);
       const allDesigns = apiDesigns.filter((d: any) => !(d.imageUrl || d.thumbnail || "").startsWith("blob:")).map((d: any) => {
         let computedPrice = d.basePrice ? Number(d.basePrice) : 0;
@@ -242,10 +248,32 @@ export function FeaturedProducts() {
         }
       });
 
+      setAllProducts(combined);
       setProducts(combined.slice(0, 12));
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (activeCategory === "All") {
+      setProducts(allProducts.slice(0, 12));
+      return;
+    }
+    const filtered = allProducts.filter(item => {
+      // Check design categories structure
+      if (item.categories && Array.isArray(item.categories)) {
+        if (item.categories.some((c: any) => c.category?.name === activeCategory || c.categoryId === activeCategory)) {
+          return true;
+        }
+      }
+      // Check product category structure
+      if (item.category?.name === activeCategory || item.categoryId === activeCategory || item.category === activeCategory) {
+        return true;
+      }
+      return false;
+    });
+    setProducts(filtered.slice(0, 12));
+  }, [activeCategory, allProducts]);
 
   return (
     <section className="py-28 md:py-36 bg-[var(--background)] overflow-hidden relative">
@@ -295,15 +323,15 @@ export function FeaturedProducts() {
         <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-10 pb-2">
           {categories.map(cat => (
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
+              key={cat.id || cat.name}
+              onClick={() => setActiveCategory(cat.name)}
               className={`px-5 py-2 rounded-full whitespace-nowrap font-ui text-sm font-bold transition-all border ${
-                activeCategory === cat
+                activeCategory === cat.name
                   ? "bg-[var(--brand-deep-rose)] border-[var(--brand-deep-rose)] text-white shadow-md"
                   : "bg-white text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/5 border-[var(--brand-deep-rose)]/30"
               }`}
             >
-              {cat}
+              {cat.name}
             </button>
           ))}
         </div>
