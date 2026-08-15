@@ -11,7 +11,7 @@ interface DesignPreviewModalProps {
   onEdit?: (design: Design) => void
 }
 
-export function DesignPreviewModal({ design, isOpen, onClose, onCopyToOrder, onEdit }: DesignPreviewModalProps) {
+export function DesignPreviewModal({ design, isOpen, onClose, onCopyToOrder, onEdit, onDelete }: DesignPreviewModalProps) {
   const [relatedDesigns, setRelatedDesigns] = React.useState<Design[]>([])
   const [isLoadingRelated, setIsLoadingRelated] = React.useState(false)
 
@@ -32,8 +32,6 @@ export function DesignPreviewModal({ design, isOpen, onClose, onCopyToOrder, onE
           setIsLoadingRelated(false)
         }
       }
-      // Wait, we have getRelatedDesigns in the backend. 
-      // But we can just use the search API with tags for now.
       fetchRelated()
     }
   }, [isOpen, design])
@@ -53,7 +51,7 @@ export function DesignPreviewModal({ design, isOpen, onClose, onCopyToOrder, onE
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-5xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[90vh] md:h-[80vh]">
+      <div className="relative w-full max-w-4xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-[85vh] md:h-[75vh]">
         {/* Close Button */}
         <button 
           onClick={onClose}
@@ -63,111 +61,91 @@ export function DesignPreviewModal({ design, isOpen, onClose, onCopyToOrder, onE
         </button>
 
         {/* Image Section */}
-        <div className="w-full md:w-1/2 bg-secondary/50 flex items-center justify-center p-6 h-1/2 md:h-full">
+        <div className="w-full md:w-1/2 bg-secondary/30 flex items-center justify-center p-6 h-1/2 md:h-full border-r border-border/50">
           <img 
             src={getOptimizedUrl(design.imageUrl)} 
             alt={design.name}
-            className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
+            className="max-w-full max-h-full object-contain drop-shadow-xl"
           />
         </div>
 
         {/* Details Section */}
         <div className="w-full md:w-1/2 flex flex-col h-1/2 md:h-full overflow-y-auto custom-scrollbar p-6 lg:p-8">
           
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-2 py-1 bg-primary/10 text-primary font-mono text-xs font-bold rounded">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="px-2.5 py-1 bg-primary/10 text-primary font-mono text-xs font-bold rounded">
               {design.code}
             </span>
             {(design as any).status === 'ACTIVE' ? (
-              <span className="px-2 py-1 bg-green-500/10 text-green-600 font-bold text-xs rounded">ACTIVE</span>
+              <span className="px-2.5 py-1 bg-green-500/10 text-green-600 font-bold text-xs rounded">ACTIVE</span>
             ) : (
-              <span className="px-2 py-1 bg-muted text-muted-foreground font-bold text-xs rounded">{(design as any).status}</span>
+              <span className="px-2.5 py-1 bg-muted text-muted-foreground font-bold text-xs rounded">{(design as any).status}</span>
             )}
           </div>
 
-          <h2 className="text-2xl font-bold text-foreground mb-4">{design.name}</h2>
+          <h2 className="text-2xl font-black text-foreground mb-6 leading-tight">{design.name}</h2>
           
-          {/* Metadata Grid */}
-          <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
-            {design.themes && design.themes.length > 0 && (
-              <div>
-                <p className="text-muted-foreground mb-1 font-medium">Themes</p>
-                <div className="flex flex-wrap gap-1">
-                  {design.themes.map(t => <span key={t} className="px-2 py-1 bg-muted rounded text-xs">{t}</span>)}
-                </div>
-              </div>
-            )}
-            {(design as any).occasions && (design as any).occasions.length > 0 && (
-              <div>
-                <p className="text-muted-foreground mb-1 font-medium">Occasions</p>
-                <div className="flex flex-wrap gap-1">
-                  {(design as any).occasions.map((o: string) => <span key={o} className="px-2 py-1 bg-muted rounded text-xs">{o}</span>)}
-                </div>
-              </div>
-            )}
+          {/* Metadata Simple */}
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex items-center justify-between border-b border-border/50 pb-3">
+              <span className="text-muted-foreground text-sm font-medium">Eggless Only?</span>
+              <span className="font-bold text-sm">{(design as any).isEggless ? "Yes" : "No"}</span>
+            </div>
             {(design as any).recommendedWeight && (
-              <div>
-                <p className="text-muted-foreground mb-1 font-medium">Recommended Weight</p>
-                <p className="font-semibold">{(design as any).recommendedWeight}</p>
+              <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                <span className="text-muted-foreground text-sm font-medium">Recommended Weight</span>
+                <span className="font-bold text-sm">{(design as any).recommendedWeight}</span>
               </div>
             )}
             {(design as any).recommendedTier && (
-              <div>
-                <p className="text-muted-foreground mb-1 font-medium">Tiers</p>
-                <p className="font-semibold">{(design as any).recommendedTier}</p>
+              <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                <span className="text-muted-foreground text-sm font-medium">Tiers</span>
+                <span className="font-bold text-sm">{(design as any).recommendedTier}</span>
               </div>
             )}
-            {(design as any).difficulty && (
-              <div>
-                <p className="text-muted-foreground mb-1 font-medium">Difficulty</p>
-                <p className="font-semibold">{(design as any).difficulty}</p>
-              </div>
-            )}
-            {(design as any).age && (
-              <div>
-                <p className="text-muted-foreground mb-1 font-medium">Age Group</p>
-                <p className="font-semibold">{(design as any).age}</p>
-              </div>
-            )}
-            <div>
-              <p className="text-muted-foreground mb-1 font-medium">Eggless Only?</p>
-              <p className="font-semibold">{(design as any).isEggless ? "Yes" : "No"}</p>
-            </div>
-          </div>
-
-          {/* Labels */}
-          {(design as any).labels && (design as any).labels.length > 0 && (
-            <div className="mb-6">
-              <p className="text-muted-foreground mb-2 font-medium flex items-center gap-1"><Tag className="w-4 h-4"/> Labels</p>
-              <div className="flex flex-wrap gap-2">
+            
+            {(design as any).labels && (design as any).labels.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
                 {(design as any).labels.map((l: string) => (
-                  <span key={l} className="px-2.5 py-1 bg-accent text-accent-foreground font-bold rounded-full text-xs">
+                  <span key={l} className="px-3 py-1 bg-accent/50 text-accent-foreground font-bold rounded-full text-xs">
                     {l}
                   </span>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Action Buttons */}
-          <div className="mt-auto pt-6 mb-8 space-y-3">
-            {onEdit && (
-              <Button 
-                variant="outline"
-                size="lg" 
-                className="w-full text-base font-bold border-2 border-primary text-primary hover:bg-primary/10"
-                onClick={() => onEdit(design)}
-              >
-                ✏️ Edit This Design
-              </Button>
-            )}
+          <div className="mt-auto pt-6 space-y-3">
+            <div className="flex gap-3">
+              {onEdit && (
+                <Button 
+                  variant="outline"
+                  size="lg" 
+                  className="flex-1 font-bold border-2 border-primary text-primary hover:bg-primary/10 transition-colors"
+                  onClick={() => onEdit(design)}
+                >
+                  ✏️ Edit
+                </Button>
+              )}
+              {onDelete && (
+                <Button 
+                  variant="outline"
+                  size="lg" 
+                  className="flex-1 font-bold border-2 border-destructive text-destructive hover:bg-destructive/10 transition-colors"
+                  onClick={() => onDelete(design)}
+                >
+                  🗑️ Delete
+                </Button>
+              )}
+            </div>
             <Button 
               size="lg" 
-              className="w-full text-base"
+              className="w-full text-base font-bold shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
               onClick={() => onCopyToOrder && onCopyToOrder(design)}
             >
               <ShoppingCart className="w-5 h-5 mr-2" />
-              Copy Design to Order
+              Copy to Order
             </Button>
           </div>
 

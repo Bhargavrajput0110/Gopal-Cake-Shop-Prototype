@@ -385,6 +385,10 @@ export default function DesignLibraryPage() {
           console.log('Copy to order', d)
           setPreviewDesign(null)
         }}
+        onDelete={async (d) => {
+          await handleDeleteForever(d);
+          setPreviewDesign(null);
+        }}
       />
 
       <BulkImportModal 
