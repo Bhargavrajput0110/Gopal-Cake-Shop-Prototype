@@ -69,20 +69,22 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
         className={`relative w-full ${aspectClass} rounded-[2rem] overflow-hidden bg-[var(--muted)] mb-4 cursor-pointer block`}
         style={{ willChange: "transform" }}
       >
-        {product.thumbnail ? (
+        {product.thumbnail || product.imageUrl ? (
           <Image
-            src={product.thumbnail}
+            src={product.thumbnail || product.imageUrl}
             alt={product.name}
             fill
             className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-[var(--muted)]">
-            <span className="font-editorial italic text-[var(--muted-foreground)] text-sm">
-              Image Coming Soon
-            </span>
-          </div>
+          <Image
+            src="https://images.unsplash.com/photo-1601050690597-df0568a70950?w=600&auto=format&fit=crop&q=80"
+            alt={product.name}
+            fill
+            className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          />
         )}
 
         {/* Dark hover overlay */}
