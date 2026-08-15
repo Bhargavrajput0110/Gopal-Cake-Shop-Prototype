@@ -4,8 +4,9 @@ const fetch = require('node-fetch');
   const json = await res.json();
   const designs = json.data.items;
   console.log("Found", designs.length, "designs");
-  if (designs.length > 0) {
-    console.log("First design basePrice:", designs[0].basePrice);
-    console.log("First design weightConfig:", designs[0].weightConfig);
-  }
+  designs.forEach(d => {
+    console.log(`Design ${d.name} (${d.code})`);
+    console.log(`  basePrice:`, d.basePrice);
+    console.log(`  weightConfig:`, typeof d.weightConfig, d.weightConfig);
+  });
 })();
