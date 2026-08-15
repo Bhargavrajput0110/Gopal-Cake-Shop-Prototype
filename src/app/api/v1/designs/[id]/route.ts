@@ -25,7 +25,9 @@ const UpdateDesignSchema = z.object({
   labels: z.array(z.string()).nullish(),
   status: z.string().nullish(),
   currentUpdatedAt: z.any().nullish(),
-  weightConfig: z.any().nullish()
+  weightConfig: z.any().nullish(),
+  basePrice: z.any().nullish(),
+  isPhotoCake: z.boolean().nullish()
 }).passthrough()
 
 export const PUT = withApiHandler(async (ctx: HandlerContext) => {
@@ -52,7 +54,10 @@ export const PUT = withApiHandler(async (ctx: HandlerContext) => {
     isEggless: typeof data.isEggless === 'boolean' ? data.isEggless : undefined,
     tags: data.tags ?? undefined,
     labels: data.labels ?? undefined,
-    status: data.status ?? undefined
+    status: data.status ?? undefined,
+    basePrice: data.basePrice !== undefined ? Number(data.basePrice) : undefined,
+    weightConfig: data.weightConfig || undefined,
+    isPhotoCake: typeof data.isPhotoCake === 'boolean' ? data.isPhotoCake : undefined
   }
 
   // Remove undefined fields

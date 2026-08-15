@@ -24,7 +24,9 @@ const DesignSchema = z.object({
   labels: z.array(z.string()).nullish(),
   status: z.string().nullish(),
   imageHash: z.string().nullish(),
-  weightConfig: z.any().nullish()
+  weightConfig: z.any().nullish(),
+  basePrice: z.any().nullish(),
+  isPhotoCake: z.boolean().nullish()
 }).passthrough()
 
 export const GET = withApiHandler(async (ctx: HandlerContext) => {
@@ -86,7 +88,10 @@ export const POST = withApiHandler(async (ctx: HandlerContext) => {
     tags: data.tags || [],
     labels: data.labels || [],
     status: data.status || 'ACTIVE',
-    imageHash: data.imageHash || undefined
+    imageHash: data.imageHash || undefined,
+    basePrice: data.basePrice !== undefined ? Number(data.basePrice) : undefined,
+    weightConfig: data.weightConfig || undefined,
+    isPhotoCake: Boolean(data.isPhotoCake)
   }
 
   if (data.categoryIds && data.categoryIds.length > 0) {

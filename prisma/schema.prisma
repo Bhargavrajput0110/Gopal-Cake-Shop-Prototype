@@ -350,6 +350,9 @@ model Design {
   labels            String[]
   recommendedTier   Int?
   status            String           @default("ACTIVE")
+  basePrice         Decimal?
+  weightConfig      Json?
+  isPhotoCake       Boolean          @default(false)
   categories        DesignCategory[]
 }
 

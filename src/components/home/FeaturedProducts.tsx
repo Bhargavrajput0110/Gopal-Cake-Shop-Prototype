@@ -196,7 +196,26 @@ export function FeaturedProducts() {
       const formattedCats = [{ id: "all", name: "All" }, ...fetchedCats.filter((c: any) => c.name)];
       setCategories(formattedCats);
 
-      const apiDesigns = (designsRes?.data?.items || []);
+      let apiDesigns = (designsRes?.data?.items || []);
+      
+      // Merge with local storage designs (Phase 1 prototype memory)
+      try {
+        const localStr = typeof window !== 'undefined' ? localStorage.getItem('gopal_saved_designs') : null;
+        if (localStr) {
+          const localDesigns = JSON.parse(localStr);
+          if (Array.isArray(localDesigns)) {
+            // Replace API designs with local ones if they match by ID or Code
+            const localMap = new Map(localDesigns.map(d => [d.id || d.code, d]));
+            apiDesigns = apiDesigns.map((d: any) => localMap.get(d.id || d.code) || d);
+            // Add any local designs that are completely new
+            const apiIds = new Set(apiDesigns.map((d: any) => d.id || d.code));
+            localDesigns.forEach(d => {
+              if (!apiIds.has(d.id || d.code)) apiDesigns.unshift(d);
+            });
+          }
+        }
+      } catch(e) {}
+
       const allDesigns = apiDesigns.filter((d: any) => !(d.imageUrl || d.thumbnail || "").startsWith("blob:")).map((d: any) => {
         let computedPrice = d.basePrice ? Number(d.basePrice) : 0;
         let hasMultipleOptions = false;
@@ -204,13 +223,16 @@ export function FeaturedProducts() {
         if (typeof wc === 'string') {
           try { wc = JSON.parse(wc); } catch(e) {}
         }
-        if (wc && typeof wc === 'object' && wc !== null) {
-          const vals = Object.values(wc).map((v: any) => Number(v?.price)).filter(p => p > 0);
-          if (vals.length > 0) {
-            computedPrice = Math.min(...vals);
-            if (vals.length > 1) hasMultipleOptions = true;
+        if (wc && typeof wc === 'object' && Object.keys(wc).length > 0) {
+          const weights = Object.keys(wc).map(Number).sort((a,b) => a-b);
+          if (weights.length > 0 && wc[weights[0]]?.price) {
+            computedPrice = Number(wc[weights[0]].price);
+            if (weights.length > 1) hasMultipleOptions = true;
           }
+        } else if (d.basePrice) {
+          computedPrice = Number(d.basePrice);
         }
+        
         let thumb = d.imageUrl || d.thumbnail || "";
         if (!thumb || thumb.includes("example.com") || thumb.includes("sample.jpg") || thumb.includes("mock") || thumb.startsWith("blob:")) {
           thumb = "https://images.unsplash.com/photo-1601050690597-df0568a70950?w=600&auto=format&fit=crop&q=80";
