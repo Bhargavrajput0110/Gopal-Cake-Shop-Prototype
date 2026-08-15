@@ -191,9 +191,24 @@ export function WeightPriceConfigurator({ initialConfig = {}, onChange }: Props)
           <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
             2. Available Cake Sizes
           </label>
-          <span className="text-xs font-bold text-muted-foreground">
-            {enabledWeights.length} sizes available
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (enabledWeights.length === ALL_WEIGHT_TIERS.length) {
+                  setEnabledWeights([]);
+                } else {
+                  setEnabledWeights([...ALL_WEIGHT_TIERS]);
+                }
+              }}
+              className="text-xs font-bold text-[var(--brand-deep-rose)] hover:underline"
+            >
+              {enabledWeights.length === ALL_WEIGHT_TIERS.length ? "Deselect All" : "Select All"}
+            </button>
+            <span className="text-xs font-bold text-muted-foreground">
+              {enabledWeights.length} sizes available
+            </span>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground -mt-1">
           Click sizes to toggle what customers can select on your website menu.
