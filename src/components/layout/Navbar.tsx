@@ -20,7 +20,6 @@ const ANNOUNCEMENT_ITEMS = [
   "🚚 City-wide delivery across Vadodara",
   "⭐ 50,000+ happy customers in Vadodara",
   "🍫 100% eggless — always",
-  "🚀 Order by 6pm for same-day delivery",
   "🏆 Est. 1995 — 30 Years of Craft",
 ];
 
