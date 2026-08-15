@@ -200,7 +200,7 @@ export function FeaturedProducts() {
         if (typeof wc === 'string') {
           try { wc = JSON.parse(wc); } catch(e) {}
         }
-        if (wc && typeof wc === 'object') {
+        if (wc && typeof wc === 'object' && wc !== null) {
           const vals = Object.values(wc).map((v: any) => Number(v?.price)).filter(p => p > 0);
           if (vals.length > 0) {
             computedPrice = Math.min(...vals);
