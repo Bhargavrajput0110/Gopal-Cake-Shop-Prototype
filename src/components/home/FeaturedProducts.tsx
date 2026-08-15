@@ -116,9 +116,7 @@ function FeaturedProductCard({ product }: { product: any }) {
           {/* Price row + stepper/add */}
           <div className="flex items-center justify-between mt-auto pt-1">
             <div className="flex flex-col cursor-pointer" onClick={() => setIsOpen(true)}>
-              {product.hasMultipleOptions && (
-                <p className="font-ui text-[10px] text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">Starting from</p>
-              )}
+              <p className="font-ui text-[10px] text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">Starting from</p>
               <p className="font-ui text-sm font-bold text-[var(--foreground)]">
                 {product.basePrice ? `₹${product.basePrice}` : 'Custom Pricing'}
               </p>
@@ -299,10 +297,10 @@ export function FeaturedProducts() {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-5 py-2 rounded-full whitespace-nowrap font-ui text-sm font-bold transition-all ${
+              className={`px-5 py-2 rounded-full whitespace-nowrap font-ui text-sm font-bold transition-all border ${
                 activeCategory === cat
-                  ? "bg-[var(--brand-deep-rose)] text-white shadow-md"
-                  : "bg-white text-[var(--foreground)] hover:bg-gray-100 border border-border"
+                  ? "bg-[var(--brand-deep-rose)] border-[var(--brand-deep-rose)] text-white shadow-md"
+                  : "bg-white text-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/5 border-[var(--brand-deep-rose)]/30"
               }`}
             >
               {cat}

@@ -115,9 +115,7 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
         {/* Price row + stepper/add */}
         <div className="flex items-center justify-between mt-auto pt-1">
           <div className="flex flex-col">
-            {hasMultipleOptions && (
-              <p className="font-ui text-xs text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">Starting from</p>
-            )}
+            <p className="font-ui text-xs text-[var(--muted-foreground)] uppercase tracking-widest font-semibold mb-0.5">Starting from</p>
             <p className="font-ui text-sm font-bold text-[var(--foreground)]">
               ₹{product.basePrice}
             </p>
