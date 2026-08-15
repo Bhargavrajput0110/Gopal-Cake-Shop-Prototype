@@ -543,28 +543,7 @@ function MenuPageContent() {
             </div>
           )}
 
-          {/* Pagination Controls */}
-          {!loading && totalPages > 1 && (
-            <div className="flex justify-center items-center gap-4 mt-12">
-              <button 
-                disabled={page === 1}
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                className="font-ui text-xs font-bold uppercase tracking-wider disabled:opacity-30 transition-opacity"
-              >
-                Prev
-              </button>
-              <span className="font-editorial text-sm text-[var(--muted-foreground)]">
-                Page {page} of {totalPages}
-              </span>
-              <button 
-                disabled={page === totalPages}
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                className="font-ui text-xs font-bold uppercase tracking-wider disabled:opacity-30 transition-opacity"
-              >
-                Next
-              </button>
-            </div>
-          )}
+
         </div>
       </div>
     </div>
