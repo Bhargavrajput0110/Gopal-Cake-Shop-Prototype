@@ -79,7 +79,29 @@ const DEFAULT_62_CATEGORIES = [
 export function DesignFormModal({ isOpen, onClose, initialData }: any) {
   const queryClient = useQueryClient()
   const [customAdded, setCustomAdded] = React.useState<any[]>([])
-  const categories = React.useMemo(() => [...DEFAULT_62_CATEGORIES, ...customAdded], [customAdded])
+  const categories = React.useMemo(() => {
+    const map = new Map<string, any>();
+    DEFAULT_62_CATEGORIES.forEach(c => map.set(c.slug || c.categoryId, c));
+    customAdded.forEach(c => map.set(c.slug || c.categoryId, c));
+    return Array.from(map.values());
+  }, [customAdded])
+
+  React.useEffect(() => {
+    fetch('/api/v1/categories')
+      .then(res => res.json())
+      .then(data => {
+        const fetched = Array.isArray(data) ? data : (data?.data || []);
+        if (fetched.length > 0) {
+          setCustomAdded(prev => {
+            const map = new Map<string, any>();
+            prev.forEach(c => map.set(c.slug || c.categoryId, c));
+            fetched.forEach((c: any) => map.set(c.slug || c.categoryId, c));
+            return Array.from(map.values());
+          });
+        }
+      })
+      .catch(console.error);
+  }, []);
   const [formData, setFormData] = React.useState({
     code: initialData?.code || "",
     name: initialData?.name || initialData?.title || "",
@@ -175,7 +197,11 @@ export function DesignFormModal({ isOpen, onClose, initialData }: any) {
         themes: typeof formData.themes === 'string' ? formData.themes.split(',').map((s: string) => s.trim()).filter(Boolean) : (formData.themes || []),
         colours: typeof formData.colours === 'string' ? formData.colours.split(',').map((s: string) => s.trim()).filter(Boolean) : (formData.colours || []),
         occasions: typeof formData.occasions === 'string' ? formData.occasions.split(',').map((s: string) => s.trim()).filter(Boolean) : (formData.occasions || []),
-        basePrice: Number(formData.basePrice || Object.values(formData.weightConfig || {}).map((v: any) => Number(v?.price)).filter((p: number) => p > 0).sort((a: number, b: number) => a - b)[0] || 600),
+        basePrice: Number((() => {
+          const enabledWeights = Object.keys(formData.weightConfig || {}).map(Number).sort((a, b) => a - b);
+          const lowestWeight = enabledWeights[0];
+          return lowestWeight ? formData.weightConfig[lowestWeight]?.price : (formData.basePrice || 600);
+        })()),
         isPhotoCake: Boolean(formData.isPhotoCake),
         currentUpdatedAt: initialData?.updatedAt
       }
@@ -422,20 +448,20 @@ export function DesignFormModal({ isOpen, onClose, initialData }: any) {
               <div className="space-y-1.5 bg-background p-3.5 rounded-xl border border-border shadow-2xs">
                 <label className="text-xs font-bold text-foreground flex items-center justify-between">
                   <span>Starting Display Rate *</span>
-                  <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded font-extrabold">Storefront Badge</span>
+                  <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded font-extrabold">Auto-calculated</span>
                 </label>
-                <p className="text-[10px] text-muted-foreground leading-tight">The base price advertised on catalog cards</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Automatically fetched from the lowest available weight price.</p>
                 <div className="relative pt-1">
                   <span className="absolute left-3.5 top-3.5 text-sm font-black text-muted-foreground">₹</span>
                   <input
                     type="number"
-                    required
-                    min="0"
-                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                    placeholder="e.g. 600"
-                    value={formData.basePrice}
-                    onChange={e => setFormData({...formData, basePrice: e.target.value})}
-                    className="w-full pl-8 pr-3.5 py-2 bg-background border-2 border-primary/30 rounded-lg text-base font-black text-foreground focus:border-primary transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    disabled
+                    value={(() => {
+                      const enabledWeights = Object.keys(formData.weightConfig || {}).map(Number).sort((a, b) => a - b);
+                      const lowestWeight = enabledWeights[0];
+                      return lowestWeight ? formData.weightConfig[lowestWeight]?.price : formData.basePrice;
+                    })()}
+                    className="w-full pl-8 pr-3.5 py-2 bg-muted border-2 border-border/50 rounded-lg text-base font-black text-muted-foreground cursor-not-allowed"
                   />
                 </div>
               </div>

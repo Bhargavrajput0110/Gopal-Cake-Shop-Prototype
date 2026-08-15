@@ -134,7 +134,24 @@ export default function DesignLibraryPage() {
   const [categories, setCategories] = useState<any[]>(DEFAULT_62_CATEGORIES);
 
   useEffect(() => {
-    // Keep DEFAULT_62_CATEGORIES as primary source in UI mode
+    // Fetch categories from the database so new ones appear
+    fetch('/api/v1/categories')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          // Combine fetched categories with defaults, removing duplicates by slug
+          const map = new Map<string, any>();
+          DEFAULT_62_CATEGORIES.forEach(c => map.set(c.slug || c.categoryId, c));
+          data.forEach(c => map.set(c.slug || c.categoryId, c));
+          setCategories(Array.from(map.values()));
+        } else if (data && Array.isArray(data.data)) {
+          const map = new Map<string, any>();
+          DEFAULT_62_CATEGORIES.forEach(c => map.set(c.slug || c.categoryId, c));
+          data.data.forEach((c: any) => map.set(c.slug || c.categoryId, c));
+          setCategories(Array.from(map.values()));
+        }
+      })
+      .catch(console.error);
   }, []);
   
   // Filters & Pagination

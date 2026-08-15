@@ -23,7 +23,37 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
     };
   }, []);
   
-  const [selectedWeight, setSelectedWeight] = useState("500g");
+  let initialAvailableWeights = [...WEIGHT_OPTIONS];
+  let initialDefaultWeight = "500g";
+  let wc: any = null;
+  
+  if (product?.weightConfig) {
+    try {
+      wc = typeof product.weightConfig === 'string' ? JSON.parse(product.weightConfig) : product.weightConfig;
+      if (wc && typeof wc === 'object' && Object.keys(wc).length > 0) {
+        const keys = Object.keys(wc).map(Number).sort((a,b) => a-b);
+        initialAvailableWeights = keys.map(k => ({
+          value: k >= 1 ? (Number.isInteger(k) ? `${k}kg` : `${k}kg`) : `${k*1000}g`, // 1.5kg, 500g
+          label: k >= 1 ? `${k} kg` : `${k*1000} g`,
+          numValue: k,
+          price: wc[k]?.price || 0
+        }));
+        // For keys like 1.5, we want value to be "1.5kg", for 0.5 we want "500g"
+        initialAvailableWeights = keys.map(k => {
+            const valStr = k >= 1 ? `${k}kg` : `${k*1000}g`;
+            return {
+                value: valStr,
+                label: k >= 1 ? `${k} kg` : `${k*1000} g`,
+                price: wc[k]?.price || 0
+            };
+        });
+        initialDefaultWeight = initialAvailableWeights[0].value;
+      }
+    } catch(e) {}
+  }
+
+  const [availableWeights, setAvailableWeights] = useState<any[]>(initialAvailableWeights);
+  const [selectedWeight, setSelectedWeight] = useState(initialDefaultWeight);
   const [selectedFlavour, setSelectedFlavour] = useState("");
   const [messageOnCake, setMessageOnCake] = useState("");
   const [notes, setNotes] = useState("");
@@ -44,22 +74,26 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
     }
   };
 
-  // Calculate dynamic price based on weight (mocking the basePrices logic)
-  const basePrices: Record<string, number> = {
-    "250g": 350, "500g": 600, "750g": 850, "1kg": 1100,
-    "1.5kg": 1600, "2kg": 2100, "2.5kg": 2600, "3kg": 3100,
-    "3.5kg": 3500, "4kg": 4000, "4.5kg": 4400, "5kg": 4900,
-    "5.5kg": 5300, "6kg": 5800, "6.5kg": 6300, "7kg": 6800,
-    "7.5kg": 7300, "8kg": 7800, "8.5kg": 8300, "9kg": 8300, "9.5kg": 8750, "10kg": 9200,
-  };
+  // Calculate dynamic price based on weight
+  let currentPrice = product?.basePrice || 600;
   
-  // Use product base price if available and if we are at base weight, otherwise use our lookup table
-  // Assuming base weight is 500g
-  let currentPrice = product.basePrice || 600;
-  if (selectedWeight && basePrices[selectedWeight]) {
-      // Scale price appropriately, assuming basePrice is for 500g
-      const scale = basePrices[selectedWeight] / basePrices["500g"];
-      currentPrice = Math.round(currentPrice * scale);
+  if (wc && typeof wc === 'object' && Object.keys(wc).length > 0) {
+      const selectedOption = availableWeights.find((w: any) => w.value === selectedWeight);
+      if (selectedOption && selectedOption.price) {
+          currentPrice = selectedOption.price;
+      }
+  } else {
+      const basePrices: Record<string, number> = {
+        "250g": 350, "500g": 600, "750g": 850, "1kg": 1100,
+        "1.5kg": 1600, "2kg": 2100, "2.5kg": 2600, "3kg": 3100,
+        "3.5kg": 3500, "4kg": 4000, "4.5kg": 4400, "5kg": 4900,
+        "5.5kg": 5300, "6kg": 5800, "6.5kg": 6300, "7kg": 6800,
+        "7.5kg": 7300, "8kg": 7800, "8.5kg": 8300, "9kg": 8300, "9.5kg": 8750, "10kg": 9200,
+      };
+      if (selectedWeight && basePrices[selectedWeight]) {
+          const scale = basePrices[selectedWeight] / basePrices["500g"];
+          currentPrice = Math.round(currentPrice * scale);
+      }
   }
 
   const handleAddToCart = () => {
@@ -124,7 +158,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
             </SelectTrigger>
             <SelectContent side="bottom" position="popper" className="z-[200]">
               <SelectGroup>
-                {WEIGHT_OPTIONS.map((w) => (
+                {availableWeights.map((w: any) => (
                   <SelectItem key={w.value} value={w.value} className="text-base py-3">
                     {w.label}
                   </SelectItem>
