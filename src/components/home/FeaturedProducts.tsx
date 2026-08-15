@@ -196,8 +196,12 @@ export function FeaturedProducts() {
       const allDesigns = apiDesigns.filter((d: any) => !(d.imageUrl || d.thumbnail || "").startsWith("blob:")).map((d: any) => {
         let computedPrice = d.basePrice ? Number(d.basePrice) : 0;
         let hasMultipleOptions = false;
-        if (d.weightConfig && typeof d.weightConfig === 'object') {
-          const vals = Object.values(d.weightConfig).map((v: any) => Number(v?.price)).filter(p => p > 0);
+        let wc = d.weightConfig;
+        if (typeof wc === 'string') {
+          try { wc = JSON.parse(wc); } catch(e) {}
+        }
+        if (wc && typeof wc === 'object') {
+          const vals = Object.values(wc).map((v: any) => Number(v?.price)).filter(p => p > 0);
           if (vals.length > 0) {
             computedPrice = Math.min(...vals);
             if (vals.length > 1) hasMultipleOptions = true;
