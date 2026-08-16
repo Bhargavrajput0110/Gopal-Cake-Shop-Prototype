@@ -4,8 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag } from "iconsax-react";
 import { useCart } from "@/context/CartContext";
 
+import { usePathname } from "next/navigation";
+
 export function FloatingCartPill() {
   const { totalItems, subtotal, setIsCartOpen } = useCart();
+  const pathname = usePathname();
+
+  if (pathname === "/checkout") return null;
 
   return (
     <AnimatePresence>

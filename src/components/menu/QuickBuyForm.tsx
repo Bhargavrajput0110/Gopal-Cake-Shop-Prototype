@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
-import { WEIGHT_OPTIONS, getActiveFlavours } from '@/lib/flavours';
+import { WEIGHT_OPTIONS, getActiveFlavours, getFlavourSurcharge } from '@/lib/flavours';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
@@ -96,13 +96,20 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       }
   }
 
+  // Add flavour surcharge
+  const weightVal = parseFloat(selectedWeight);
+  const weightKg = selectedWeight.toLowerCase().includes("kg") ? weightVal : (selectedWeight.toLowerCase().includes("g") ? weightVal / 1000 : weightVal);
+  const surcharge = getFlavourSurcharge(selectedFlavour, weightKg);
+  const finalPrice = currentPrice + surcharge;
+
   const handleAddToCart = () => {
     addItem({
       productId: product.id,
       name: product.name,
-      price: currentPrice,
+      price: finalPrice,
+      basePrice: product.basePrice || 600,
       quantity: 1,
-      image: product.thumbnail,
+      image: product.thumbnail || product.imageUrl || product.image,
       variant: selectedWeight,
       flavor: selectedFlavour || "Classic",
       messageOnCake: messageOnCake.trim() || undefined,
@@ -123,10 +130,10 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
     >
       {/* 1. FIXED TOP HEADER CAKE PHOTO (Static at top, never scrolls away) */}
       <div className="relative w-full h-[180px] shrink-0 bg-black/95 flex items-center justify-center overflow-hidden">
-        {product.thumbnail ? (
+        {(product.thumbnail || product.imageUrl || product.image) ? (
           <>
-            <Image src={product.thumbnail} alt={product.name} fill className="object-cover opacity-25 blur-md scale-110" />
-            <Image src={product.thumbnail} alt={product.name} fill className="object-contain p-2 z-10" />
+            <Image src={product.thumbnail || product.imageUrl || product.image} alt={product.name} fill className="object-cover opacity-25 blur-md scale-110" />
+            <Image src={product.thumbnail || product.imageUrl || product.image} alt={product.name} fill className="object-contain p-2 z-10" />
           </>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground font-editorial italic">No Image</div>
@@ -193,18 +200,23 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           </label>
           <Select value={selectedFlavour} onValueChange={handleFlavourChange}>
             <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary">
-              <SelectValue placeholder="Original Flavour" />
+              <SelectValue placeholder="Select a Flavour" />
             </SelectTrigger>
             <SelectContent side="bottom" position="popper" className="z-[200]" avoidCollisions={false}>
               <SelectGroup>
                 <SelectItem value="original" className="text-base py-3 font-semibold text-primary">
-                  Original Flavour (Recommended)
+                  Original Flavour
                 </SelectItem>
-                {flavours.map((f) => (
-                  <SelectItem key={f.id} value={f.name} className="text-base py-3">
-                    {f.name}
-                  </SelectItem>
-                ))}
+                {flavours.map((f) => {
+                  const wVal = parseFloat(selectedWeight);
+                  const itemWeightKg = selectedWeight.toLowerCase().includes("kg") ? wVal : (selectedWeight.toLowerCase().includes("g") ? wVal / 1000 : wVal);
+                  const surcharge = getFlavourSurcharge(f.name, itemWeightKg);
+                  return (
+                    <SelectItem key={f.id} value={f.name} className="text-base py-3">
+                      {f.name} {surcharge > 0 ? `(+₹${surcharge})` : ''}
+                    </SelectItem>
+                  );
+                })}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -255,7 +267,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           onClick={handleAddToCart}
           className="w-full h-13 py-3 rounded-2xl bg-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/90 text-white font-ui font-bold text-sm tracking-widest uppercase shadow-lg shadow-[var(--brand-deep-rose)]/20 hover:-translate-y-1 transition-all"
         >
-          Add to Cart - ₹{currentPrice}
+          Add to Cart - ₹{finalPrice}
         </Button>
       </div>
 
