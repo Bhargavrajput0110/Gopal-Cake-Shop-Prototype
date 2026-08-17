@@ -155,26 +155,25 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
         data-lenis-prevent-wheel="true"
         data-lenis-prevent-touch="true"
       >
-        {/* Weight Selection - Visual Pills */}
+        {/* Weight Selection */}
         <div className="space-y-3">
           <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
             Select Weight
           </label>
-          <div className="flex flex-wrap gap-2">
-            {availableWeights.map((w: any) => (
-              <button
-                key={w.value}
-                onClick={() => setSelectedWeight(w.value)}
-                className={`px-5 py-2.5 rounded-full border-2 text-sm font-ui transition-all ${
-                  selectedWeight === w.value 
-                    ? 'border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/10 text-[var(--brand-deep-rose)] font-bold shadow-sm' 
-                    : 'border-border bg-background text-foreground hover:border-primary/50'
-                }`}
-              >
-                {w.label}
-              </button>
-            ))}
-          </div>
+          <Select value={selectedWeight} onValueChange={setSelectedWeight}>
+            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary transition-all">
+              <SelectValue placeholder="Choose weight" />
+            </SelectTrigger>
+            <SelectContent side="bottom" position="popper" className="z-[200]">
+              <SelectGroup>
+                {availableWeights.map((w: any) => (
+                  <SelectItem key={w.value} value={w.value} className="text-base py-3 cursor-pointer">
+                    {w.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Dedicated Photo Cake Upload (Only when item is explicitly a Photo Cake) */}
@@ -195,44 +194,33 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           </div>
         )}
 
-        {/* Flavour Selection - Visual Horizontal Scroll */}
-        <div className="space-y-3 w-full overflow-hidden">
-          <div className="flex items-center justify-between">
-            <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
-              Select Flavour
-            </label>
-          </div>
-          
-          <div className="flex overflow-x-auto gap-2 pb-2 -mx-5 px-5 scrollbar-hide snap-x" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <button
-              onClick={() => handleFlavourChange('Classic')}
-              className={`snap-start flex-shrink-0 px-5 py-2.5 rounded-full border-2 text-sm font-ui transition-all whitespace-nowrap ${
-                selectedFlavour === 'Classic' || selectedFlavour === ''
-                  ? 'border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/10 text-[var(--brand-deep-rose)] font-bold shadow-sm' 
-                  : 'border-border bg-background text-foreground hover:border-primary/50'
-              }`}
-            >
-              Classic
-            </button>
-            {flavours.map((f) => {
-              const wVal = parseFloat(selectedWeight);
-              const itemWeightKg = selectedWeight.toLowerCase().includes("kg") ? wVal : (selectedWeight.toLowerCase().includes("g") ? wVal / 1000 : wVal);
-              const surcharge = getFlavourSurcharge(f.name, itemWeightKg);
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => handleFlavourChange(f.name)}
-                  className={`snap-start flex-shrink-0 px-5 py-2.5 rounded-full border-2 text-sm font-ui transition-all whitespace-nowrap ${
-                    selectedFlavour === f.name 
-                      ? 'border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/10 text-[var(--brand-deep-rose)] font-bold shadow-sm' 
-                      : 'border-border bg-background text-foreground hover:border-primary/50'
-                  }`}
-                >
-                  {f.name} {surcharge > 0 ? <span className="text-xs opacity-70 ml-1">(+₹{surcharge})</span> : ''}
-                </button>
-              );
-            })}
-          </div>
+        {/* Flavour Selection */}
+        <div className="space-y-3">
+          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
+            Select Flavour
+          </label>
+          <Select value={selectedFlavour} onValueChange={handleFlavourChange}>
+            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary transition-all">
+              <SelectValue placeholder="Select a Flavour" />
+            </SelectTrigger>
+            <SelectContent side="bottom" position="popper" className="z-[200]" avoidCollisions={false}>
+              <SelectGroup>
+                <SelectItem value="Classic" className="text-base py-3 font-semibold text-primary cursor-pointer">
+                  Classic
+                </SelectItem>
+                {flavours.map((f) => {
+                  const wVal = parseFloat(selectedWeight);
+                  const itemWeightKg = selectedWeight.toLowerCase().includes("kg") ? wVal : (selectedWeight.toLowerCase().includes("g") ? wVal / 1000 : wVal);
+                  const surcharge = getFlavourSurcharge(f.name, itemWeightKg);
+                  return (
+                    <SelectItem key={f.id} value={f.name} className="text-base py-3 cursor-pointer">
+                      {f.name} {surcharge > 0 ? `(+₹${surcharge})` : ''}
+                    </SelectItem>
+                  );
+                })}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Extras Toggle */}
