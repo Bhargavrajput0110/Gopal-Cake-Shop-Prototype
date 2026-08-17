@@ -310,8 +310,8 @@ export default function CheckoutPage() {
           className="mb-6 text-foreground/80 hover:text-primary uppercase tracking-widest text-xs font-bold w-fit"
         />
 
-        {/* Editorial Header */}
-        <div className="mb-12 border-b border-border/40 pb-6 flex items-end justify-between">
+        {/* Editorial Header & Progress Bar */}
+        <div className="mb-12 border-b border-border/40 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <span className="text-[10px] font-sans font-bold text-secondary tracking-[0.3em] uppercase block mb-3">
               Secure Checkout
@@ -319,8 +319,26 @@ export default function CheckoutPage() {
             <h1 className="font-serif text-5xl md:text-6xl font-bold text-foreground leading-[1.1]">
               Complete your
               <br />
-              <span className="italic font-light text-secondary">Order</span>
+              <span className="italic font-light text-[var(--brand-champagne)]">Order</span>
             </h1>
+          </div>
+          
+          {/* 3-Step Progress Indicator */}
+          <div className="flex items-center gap-2 md:gap-4 bg-primary/5 p-3 px-5 rounded-full border border-primary/10 self-start md:self-auto">
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-[var(--brand-deep-rose)] text-white flex items-center justify-center text-[10px] font-bold">1</span>
+              <span className="font-ui text-xs font-bold uppercase tracking-wider text-[var(--brand-deep-rose)] hidden sm:block">Items</span>
+            </div>
+            <ArrowRight2 className="w-4 h-4 text-primary/30" variant="Bold" />
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full border-2 border-[var(--brand-deep-rose)] text-[var(--brand-deep-rose)] flex items-center justify-center text-[10px] font-bold">2</span>
+              <span className="font-ui text-xs font-bold uppercase tracking-wider text-foreground hidden sm:block">Delivery</span>
+            </div>
+            <ArrowRight2 className="w-4 h-4 text-primary/30" variant="Bold" />
+            <div className="flex items-center gap-2 opacity-50">
+              <span className="w-5 h-5 rounded-full border-2 border-foreground/30 text-foreground/50 flex items-center justify-center text-[10px] font-bold">3</span>
+              <span className="font-ui text-xs font-bold uppercase tracking-wider text-foreground/50 hidden sm:block">Payment</span>
+            </div>
           </div>
         </div>
 
@@ -345,31 +363,42 @@ export default function CheckoutPage() {
                     setToast({
                       id: Date.now().toString(),
                       title: "Home Delivery Selected",
-                      message:
-                        "A delivery charge will apply depending on your location and distance from the branch.",
+                      message: "A delivery charge will apply depending on distance.",
                       variant: "info",
                     });
                   }}
-                  className={`flex-1 py-4 px-6 rounded-2xl border-2 transition-all font-serif font-bold text-base flex flex-col items-center justify-center gap-2 ${
+                  className={`flex-1 py-6 px-6 rounded-2xl border-2 transition-all flex flex-col items-start text-left gap-3 relative overflow-hidden ${
                     deliveryType === "DELIVERY"
-                      ? "border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/5 text-[var(--brand-deep-rose)] shadow-sm"
-                      : "border-primary/30 hover:border-primary/60 text-foreground/50 hover:text-foreground bg-background"
+                      ? "border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/5 shadow-md"
+                      : "border-primary/20 hover:border-primary/40 bg-background"
                   }`}
                 >
-                  <Location className="w-6 h-6" />
-                  Home Delivery
+                  {deliveryType === "DELIVERY" && <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[var(--brand-deep-rose)]/20 to-transparent rounded-bl-3xl" />}
+                  <div className={`p-3 rounded-full ${deliveryType === "DELIVERY" ? "bg-[var(--brand-deep-rose)] text-white" : "bg-primary/5 text-primary"}`}>
+                    <Location className="w-6 h-6" variant={deliveryType === "DELIVERY" ? "Bold" : "Outline"} />
+                  </div>
+                  <div>
+                    <h3 className={`font-serif text-xl font-bold ${deliveryType === "DELIVERY" ? "text-[var(--brand-deep-rose)]" : "text-foreground"}`}>Home Delivery</h3>
+                    <p className="font-ui text-xs text-muted-foreground mt-1">Delivered to your doorstep.</p>
+                  </div>
                 </button>
                 <button
                   type="button"
                   onClick={() => setDeliveryType("PICKUP")}
-                  className={`flex-1 py-4 px-6 rounded-2xl border-2 transition-all font-serif font-bold text-base flex flex-col items-center justify-center gap-2 ${
+                  className={`flex-1 py-6 px-6 rounded-2xl border-2 transition-all flex flex-col items-start text-left gap-3 relative overflow-hidden ${
                     deliveryType === "PICKUP"
-                      ? "border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/5 text-[var(--brand-deep-rose)] shadow-sm"
-                      : "border-primary/30 hover:border-primary/60 text-foreground/50 hover:text-foreground bg-background"
+                      ? "border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/5 shadow-md"
+                      : "border-primary/20 hover:border-primary/40 bg-background"
                   }`}
                 >
-                  <Shop className="w-6 h-6" />
-                  Store Pickup
+                  {deliveryType === "PICKUP" && <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[var(--brand-deep-rose)]/20 to-transparent rounded-bl-3xl" />}
+                  <div className={`p-3 rounded-full ${deliveryType === "PICKUP" ? "bg-[var(--brand-deep-rose)] text-white" : "bg-primary/5 text-primary"}`}>
+                    <Shop className="w-6 h-6" variant={deliveryType === "PICKUP" ? "Bold" : "Outline"} />
+                  </div>
+                  <div>
+                    <h3 className={`font-serif text-xl font-bold ${deliveryType === "PICKUP" ? "text-[var(--brand-deep-rose)]" : "text-foreground"}`}>Store Pickup</h3>
+                    <p className="font-ui text-xs text-muted-foreground mt-1">Pick up from our kitchen.</p>
+                  </div>
                 </button>
               </div>
 

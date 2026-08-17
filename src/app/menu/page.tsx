@@ -131,7 +131,8 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
               className="flex items-center gap-0 bg-[var(--brand-deep-rose)]/10 rounded-full border border-[var(--brand-deep-rose)]/30 overflow-hidden"
             >
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (qty === 1 && cartItem) removeItem(cartItem.cartItemId);
                   else if (cartItem) updateQuantity(cartItem.cartItemId, qty - 1);
                 }}
@@ -143,33 +144,71 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
                 {qty}
               </span>
               <button
-                onClick={() => setIsOpen(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(true);
+                }}
                 className="w-8 h-8 flex items-center justify-center text-[var(--brand-deep-rose)] font-bold text-lg hover:bg-[var(--brand-deep-rose)]/15 transition-colors rounded-r-full"
               >
                 +
               </button>
             </motion.div>
           ) : (
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger className="px-3 md:px-5 py-2 bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 transition-all rounded-full font-ui text-[9px] md:text-[10px] font-bold uppercase tracking-[0.1em] shadow-sm hover:shadow-md hover:-translate-y-0.5">
-                ADD ₹{product.basePrice}
-              </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:max-w-md p-0 bg-background z-[150] border-l-0 shadow-2xl">
-                <QuickBuyForm
-                  product={product}
-                  isCustom={
-                    product.isCustom ||
-                    product.name.toLowerCase().includes('custom')
-                  }
-                  isPhotoCake={
-                    Boolean(product.isPhotoCake) ||
-                    product.name.toLowerCase().includes('photo') ||
-                    (product.category?.name || "").toLowerCase().includes('photo')
-                  }
-                  onClose={() => setIsOpen(false)}
-                />
-              </SheetContent>
-            </Sheet>
+            <div className="flex items-center gap-2">
+              {(!product.isCustom && !(product.name || "").toLowerCase().includes('custom') && !Boolean(product.isPhotoCake) && !(product.name || "").toLowerCase().includes('photo') && !(product.category?.name || "").toLowerCase().includes('photo')) ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    let defaultVariant = "500g";
+                    if (product.weightConfig) {
+                      try {
+                        const wc = typeof product.weightConfig === 'string' ? JSON.parse(product.weightConfig) : product.weightConfig;
+                        if (wc && typeof wc === 'object' && Object.keys(wc).length > 0) {
+                           const keys = Object.keys(wc).map(Number).sort((a,b) => a-b);
+                           const k = keys[0];
+                           defaultVariant = k >= 1 ? `${k}kg` : `${k*1000}g`;
+                        }
+                      } catch(err) {}
+                    }
+                    addItem({
+                      productId: product.id,
+                      name: product.name,
+                      price: product.basePrice || 600,
+                      basePrice: product.basePrice || 600,
+                      quantity: 1,
+                      image: product.thumbnail || product.imageUrl || product.image,
+                      variant: defaultVariant,
+                      flavor: "Classic",
+                      isPhotoCake: false
+                    });
+                  }}
+                  className="w-9 h-9 flex items-center justify-center bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all rounded-full font-bold shadow-sm"
+                  aria-label="Quick Add"
+                >
+                  <span className="text-lg leading-none mb-0.5">+</span>
+                </button>
+              ) : null}
+              <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                <SheetTrigger className="px-3 md:px-5 py-2 bg-[var(--brand-deep-rose)] text-white hover:bg-[var(--brand-deep-rose)]/90 transition-all rounded-full font-ui text-[9px] md:text-[10px] font-bold uppercase tracking-[0.1em] shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                  ADD ₹{product.basePrice}
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:max-w-md p-0 bg-background z-[150] border-l-0 shadow-2xl">
+                  <QuickBuyForm
+                    product={product}
+                    isCustom={
+                      product.isCustom ||
+                      product.name.toLowerCase().includes('custom')
+                    }
+                    isPhotoCake={
+                      Boolean(product.isPhotoCake) ||
+                      product.name.toLowerCase().includes('photo') ||
+                      (product.category?.name || "").toLowerCase().includes('photo')
+                    }
+                    onClose={() => setIsOpen(false)}
+                  />
+                </SheetContent>
+              </Sheet>
+            </div>
           )}
         </div>
       </div>

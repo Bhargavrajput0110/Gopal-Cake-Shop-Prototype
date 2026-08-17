@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { WEIGHT_OPTIONS, getActiveFlavours, getFlavourSurcharge } from '@/lib/flavours';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -54,11 +55,11 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
 
   const [availableWeights, setAvailableWeights] = useState<any[]>(initialAvailableWeights);
   const [selectedWeight, setSelectedWeight] = useState(initialDefaultWeight);
-  const [selectedFlavour, setSelectedFlavour] = useState("");
+  const [selectedFlavour, setSelectedFlavour] = useState("Classic");
   const [messageOnCake, setMessageOnCake] = useState("");
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<{ id: string; title: string; message: string; variant: 'info' | 'success' | 'warning' } | null>(null);
-  const [showOptions, setShowOptions] = useState(isCustom || isPhotoCake);
+  const [showExtras, setShowExtras] = useState(false);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [printImage, setPrintImage] = useState<string>("");
 
@@ -154,25 +155,26 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
         data-lenis-prevent-wheel="true"
         data-lenis-prevent-touch="true"
       >
-        {/* Weight Selection */}
+        {/* Weight Selection - Visual Pills */}
         <div className="space-y-3">
           <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
             Select Weight
           </label>
-          <Select value={selectedWeight} onValueChange={setSelectedWeight}>
-            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary">
-              <SelectValue placeholder="Choose weight" />
-            </SelectTrigger>
-            <SelectContent side="bottom" position="popper" className="z-[200]">
-              <SelectGroup>
-                {availableWeights.map((w: any) => (
-                  <SelectItem key={w.value} value={w.value} className="text-base py-3">
-                    {w.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap gap-2">
+            {availableWeights.map((w: any) => (
+              <button
+                key={w.value}
+                onClick={() => setSelectedWeight(w.value)}
+                className={`px-5 py-2.5 rounded-full border-2 text-sm font-ui transition-all ${
+                  selectedWeight === w.value 
+                    ? 'border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/10 text-[var(--brand-deep-rose)] font-bold shadow-sm' 
+                    : 'border-border bg-background text-foreground hover:border-primary/50'
+                }`}
+              >
+                {w.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Dedicated Photo Cake Upload (Only when item is explicitly a Photo Cake) */}
@@ -193,72 +195,97 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           </div>
         )}
 
-        {/* Flavour Selection */}
-        <div className="space-y-3">
-          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
-            Select Flavour <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
-          </label>
-          <Select value={selectedFlavour} onValueChange={handleFlavourChange}>
-            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary">
-              <SelectValue placeholder="Select a Flavour" />
-            </SelectTrigger>
-            <SelectContent side="bottom" position="popper" className="z-[200]" avoidCollisions={false}>
-              <SelectGroup>
-                <SelectItem value="original" className="text-base py-3 font-semibold text-primary">
-                  Original Flavour
-                </SelectItem>
-                {flavours.map((f) => {
-                  const wVal = parseFloat(selectedWeight);
-                  const itemWeightKg = selectedWeight.toLowerCase().includes("kg") ? wVal : (selectedWeight.toLowerCase().includes("g") ? wVal / 1000 : wVal);
-                  const surcharge = getFlavourSurcharge(f.name, itemWeightKg);
-                  return (
-                    <SelectItem key={f.id} value={f.name} className="text-base py-3">
-                      {f.name} {surcharge > 0 ? `(+₹${surcharge})` : ''}
-                    </SelectItem>
-                  );
-                })}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+        {/* Flavour Selection - Visual Horizontal Scroll */}
+        <div className="space-y-3 w-full overflow-hidden">
+          <div className="flex items-center justify-between">
+            <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
+              Select Flavour
+            </label>
+          </div>
+          
+          <div className="flex overflow-x-auto gap-2 pb-2 -mx-5 px-5 scrollbar-hide snap-x" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <button
+              onClick={() => handleFlavourChange('Classic')}
+              className={`snap-start flex-shrink-0 px-5 py-2.5 rounded-full border-2 text-sm font-ui transition-all whitespace-nowrap ${
+                selectedFlavour === 'Classic' || selectedFlavour === ''
+                  ? 'border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/10 text-[var(--brand-deep-rose)] font-bold shadow-sm' 
+                  : 'border-border bg-background text-foreground hover:border-primary/50'
+              }`}
+            >
+              Classic
+            </button>
+            {flavours.map((f) => {
+              const wVal = parseFloat(selectedWeight);
+              const itemWeightKg = selectedWeight.toLowerCase().includes("kg") ? wVal : (selectedWeight.toLowerCase().includes("g") ? wVal / 1000 : wVal);
+              const surcharge = getFlavourSurcharge(f.name, itemWeightKg);
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => handleFlavourChange(f.name)}
+                  className={`snap-start flex-shrink-0 px-5 py-2.5 rounded-full border-2 text-sm font-ui transition-all whitespace-nowrap ${
+                    selectedFlavour === f.name 
+                      ? 'border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/10 text-[var(--brand-deep-rose)] font-bold shadow-sm' 
+                      : 'border-border bg-background text-foreground hover:border-primary/50'
+                  }`}
+                >
+                  {f.name} {surcharge > 0 ? <span className="text-xs opacity-70 ml-1">(+₹{surcharge})</span> : ''}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Message on Cake */}
-        <div className="space-y-3">
-          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-            🎂 Message on Cake
-            <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
-          </label>
-          <input
-            type="text"
-            value={messageOnCake}
-            onChange={(e) => setMessageOnCake(e.target.value)}
-            placeholder='e.g. Happy Birthday Rahul 🎉'
-            maxLength={60}
-            className="w-full rounded-xl border-2 border-primary/30 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
-          />
-          <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
+        {/* Extras Toggle */}
+        <div className="pt-2">
+          <button 
+            onClick={() => setShowExtras(!showExtras)}
+            className="flex items-center justify-center gap-2 text-[var(--brand-deep-rose)] font-ui text-sm font-bold w-full py-3.5 bg-[var(--brand-deep-rose)]/5 rounded-2xl border border-[var(--brand-deep-rose)]/20 transition-colors hover:bg-[var(--brand-deep-rose)]/10"
+          >
+            {showExtras ? "− Hide Extras" : "➕ Add Message or Instructions"}
+          </button>
         </div>
 
-        {/* Special Instructions / Notes */}
-        <div className="space-y-3">
-          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black">✎</span>
-            Special Instructions
-            <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
-          </label>
-          <p className="text-xs text-muted-foreground leading-relaxed bg-primary/5 border border-primary/10 rounded-xl px-4 py-3">
-            Mention <strong>allergies</strong>, delivery timing preferences, box type, or any other special requests for this order.
-          </p>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. No nuts please, deliver before 6 PM…"
-            rows={3}
-            maxLength={300}
-            className="w-full resize-none rounded-xl border-2 border-primary/30 bg-background px-4 py-3 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
-          />
-          <p className="text-right text-[11px] text-muted-foreground">{notes.length}/300</p>
-        </div>
+        {/* Collapsible Extras */}
+        {showExtras && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            className="space-y-6 overflow-hidden pt-2"
+          >
+            {/* Message on Cake */}
+            <div className="space-y-3">
+              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                🎂 Message on Cake
+              </label>
+              <input
+                type="text"
+                value={messageOnCake}
+                onChange={(e) => setMessageOnCake(e.target.value)}
+                placeholder='e.g. Happy Birthday Rahul 🎉'
+                maxLength={60}
+                className="w-full rounded-xl border-2 border-primary/20 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+              />
+              <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
+            </div>
+
+            {/* Special Instructions / Notes */}
+            <div className="space-y-3 pb-6">
+              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black">✎</span>
+                Special Instructions
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Mention allergies, delivery timing preferences, etc..."
+                rows={3}
+                maxLength={300}
+                className="w-full resize-none rounded-xl border-2 border-primary/20 bg-background px-4 py-3 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+              />
+              <p className="text-right text-[11px] text-muted-foreground">{notes.length}/300</p>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* 3. FIXED CHECKOUT BUTTON BAR */}
