@@ -12,7 +12,7 @@ const handler = async (ctx: HandlerContext) => {
 
   // Query Validation
   if (isNaN(page) || page < 1) page = 1
-  if (isNaN(limit) || limit < 1 || limit > 100) limit = 50
+  if (isNaN(limit) || limit < 1 || limit > 1000) limit = 50
   
   const validSorts = ['newest', 'price_asc', 'price_desc', 'name_asc']
   if (!validSorts.includes(sort)) sort = 'newest'

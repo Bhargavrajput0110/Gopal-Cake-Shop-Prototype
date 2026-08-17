@@ -221,10 +221,10 @@ export function FeaturedProducts() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/v1/designs")
+      fetch("/api/v1/designs?limit=500")
         .then((res) => (res.ok ? res.json() : { data: { items: [] } }))
         .catch(() => ({ data: { items: [] } })),
-      fetch("/api/v1/public/products")
+      fetch("/api/v1/public/products?limit=500")
         .then((res) => (res.ok ? res.json() : []))
         .catch(() => []),
       fetch("/api/v1/categories")
@@ -360,30 +360,35 @@ export function FeaturedProducts() {
       setProducts(allProducts.slice(0, 12));
       return;
     }
+    const targetCategory = activeCategory.toLowerCase().trim();
+    
     const filtered = allProducts.filter((item) => {
       // Check design categories structure
       if (item.categories && Array.isArray(item.categories)) {
         if (
           item.categories.some(
             (c: any) =>
-              c.category?.name === activeCategory ||
+              (c.category?.name || "").toLowerCase().trim() === targetCategory ||
               c.categoryId === activeCategory,
           )
         ) {
           return true;
         }
       }
+      
       // Check product category structure
+      const catName = (item.category?.name || item.category || "").toLowerCase().trim();
+      
       if (
-        item.category?.name === activeCategory ||
-        item.categoryId === activeCategory ||
-        item.category === activeCategory
+        catName === targetCategory ||
+        item.categoryId === activeCategory
       ) {
         return true;
       }
+      
       return false;
     });
-    setProducts(filtered.slice(0, 12));
+    setProducts(filtered);
   }, [activeCategory, allProducts]);
 
   return (
