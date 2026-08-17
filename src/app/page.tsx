@@ -28,11 +28,11 @@ export default function Home() {
       {/* Ready to Pick Shelf Cakes */}
       <ShelfCakes />
 
-      {/* Florals & Bouquets */}
-      <BouquetSection />
-
-      {/* Featured Products */}
+      {/* Featured Products (Signature Bakes - Core Offering) */}
       <FeaturedProducts />
+
+      {/* Florals & Bouquets (Upsell / Cross-sell) */}
+      <BouquetSection />
 
       {/* Brand Legacy + Stats — dark section */}
       <QualityDescription />
