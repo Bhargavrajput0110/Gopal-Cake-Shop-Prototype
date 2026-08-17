@@ -3,6 +3,7 @@ import { Categories } from "@/components/home/Categories";
 import { QualityDescription } from "@/components/home/QualityDescription";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
 import { TrustStrip } from "@/components/home/TrustStrip";
+import { ShelfCakes } from "@/components/home/ShelfCakes";
 import { TestimonialsSection } from "@/components/home/TestimonialsSection";
 import { Suspense } from "react";
 
@@ -22,6 +23,9 @@ export default function Home() {
 
       {/* Trust Marquee Strip — right after hero */}
       <TrustStrip />
+
+      {/* Ready to Pick Shelf Cakes */}
+      <ShelfCakes />
 
       {/* Featured Products */}
       <FeaturedProducts />
