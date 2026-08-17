@@ -193,15 +193,11 @@ export default function CheckoutPage() {
       const selectedBranchName =
         branches.find((b) => b.id === branchId)?.name || "Vadodara Branch";
 
-      let finalBranchId = branchId || "dummy-branch-id";
-      if (deliveryType === "DELIVERY") {
-        const umaBranch = branches.find((b) =>
-          b.name.toLowerCase().includes("uma"),
-        );
-        if (umaBranch) {
-          finalBranchId = umaBranch.id;
-        }
-      }
+      // For DELIVERY, the backend enforces Uma Branch as the fulfillment outlet.
+      // We just pass the first available branch as a placeholder; it will be ignored.
+      const finalBranchId = deliveryType === "PICKUP"
+        ? (branchId || branches[0]?.id || "uma")
+        : (branches[0]?.id || "uma"); // Backend overrides this for DELIVERY
 
       const payload = {
         idempotencyKey,

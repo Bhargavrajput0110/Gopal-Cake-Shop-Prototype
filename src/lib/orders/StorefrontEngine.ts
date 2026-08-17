@@ -97,11 +97,25 @@ export class StorefrontEngine {
       throw new Error('Order must contain at least one item.')
     }
 
-    // 1. Validate Branch
-    const canonicalBranchId = toBranchId(payload.branchId)
-    const branch = await prisma.branch.findUnique({ where: { id: canonicalBranchId } })
-    if (!branch || !branch.isActive) {
-      throw new Error('Selected branch is invalid or inactive.')
+    // 1. Resolve Fulfillment Branch
+    // BUSINESS RULE: All delivery orders are ALWAYS fulfilled from Uma Branch.
+    // This is enforced server-side and cannot be overridden by the client.
+    // For PICKUP orders, the customer-selected branch is used.
+    let branch;
+    if (payload.deliveryType === DeliveryType.DELIVERY) {
+      // Enforce Uma as the fulfillment outlet — ignore whatever branchId the client sent
+      branch = await prisma.branch.findFirst({
+        where: { isActive: true, OR: [{ code: 'UMA' }, { name: { contains: 'Uma', mode: 'insensitive' } }] }
+      })
+      if (!branch) {
+        throw new Error('Uma Branch (delivery fulfillment outlet) is not configured or inactive.')
+      }
+    } else {
+      const canonicalBranchId = toBranchId(payload.branchId)
+      branch = await prisma.branch.findUnique({ where: { id: canonicalBranchId } })
+      if (!branch || !branch.isActive) {
+        throw new Error('Selected pickup branch is invalid or inactive.')
+      }
     }
 
     // Fetch Settings

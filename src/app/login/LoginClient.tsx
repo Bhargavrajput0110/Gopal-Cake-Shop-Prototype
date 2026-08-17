@@ -38,8 +38,10 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
   // Derived filtered staff
   const filteredStaff = staffList.filter(s => {
     if (s.role !== selectedRole) return false;
-    // Admins usually aren't tied to a specific branch in the same way, but let's check
-    if (selectedRole === "admin" || selectedRole === "vendor") return true; 
+    // Admins and global delivery staff have no branch restriction
+    if (selectedRole === "admin" || selectedRole === "vendor") return true;
+    // Global staff (null branchId) appear under any branch selection
+    if (!s.branchId) return true;
     return s.branchId === selectedBranch;
   });
 
