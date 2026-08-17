@@ -4,6 +4,7 @@ import { QualityDescription } from "@/components/home/QualityDescription";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
 import { TrustStrip } from "@/components/home/TrustStrip";
 import { ShelfCakes } from "@/components/home/ShelfCakes";
+import { BouquetSection } from "@/components/home/BouquetSection";
 import { TestimonialsSection } from "@/components/home/TestimonialsSection";
 import { Suspense } from "react";
 
@@ -26,6 +27,9 @@ export default function Home() {
 
       {/* Ready to Pick Shelf Cakes */}
       <ShelfCakes />
+
+      {/* Florals & Bouquets */}
+      <BouquetSection />
 
       {/* Featured Products */}
       <FeaturedProducts />
