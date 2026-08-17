@@ -212,9 +212,39 @@ export function BouquetSection() {
           (p.categories && p.categories.some((c: any) => (c.category?.name || "").toLowerCase().includes("bouquet")))
         );
 
-        // Fallback: If no floral products are found, just take a few products and pretend they are florals for the prototype UI. 
-        // Real app would just return null if none found.
-        const itemsToShow = florals.length > 0 ? florals : fetched.slice(4, 8);
+        // Fallback: If no floral products are found in the DB yet, use these beautiful placeholders
+        const fallbackFlorals = [
+          {
+            id: 'dummy-floral-1',
+            name: 'Red Roses Elegance',
+            basePrice: 800,
+            imageUrl: 'https://images.unsplash.com/photo-1591886960571-74d43a9d4166?q=80&w=600&auto=format&fit=crop',
+            category: { name: 'Bouquets' }
+          },
+          {
+            id: 'dummy-floral-2',
+            name: 'Blushing Peonies',
+            basePrice: 1200,
+            imageUrl: 'https://images.unsplash.com/photo-1563241598-4cb98425ec43?q=80&w=600&auto=format&fit=crop',
+            category: { name: 'Bouquets' }
+          },
+          {
+            id: 'dummy-floral-3',
+            name: 'Sunny Sunflowers',
+            basePrice: 650,
+            imageUrl: 'https://images.unsplash.com/photo-1557004652-30691cb5282f?q=80&w=600&auto=format&fit=crop',
+            category: { name: 'Bouquets' }
+          },
+          {
+            id: 'dummy-floral-4',
+            name: 'Premium Orchids',
+            basePrice: 1500,
+            imageUrl: 'https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?q=80&w=600&auto=format&fit=crop',
+            category: { name: 'Bouquets' }
+          }
+        ];
+        
+        const itemsToShow = florals.length > 0 ? florals : fallbackFlorals;
         
         setProducts(itemsToShow.slice(0, 4));
         setLoading(false);
