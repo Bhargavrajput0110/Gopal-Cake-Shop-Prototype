@@ -54,12 +54,11 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   }
 
   const [availableWeights, setAvailableWeights] = useState<any[]>(initialAvailableWeights);
-  const [selectedWeight, setSelectedWeight] = useState(initialDefaultWeight);
-  const [selectedFlavour, setSelectedFlavour] = useState("Classic");
+  const [selectedWeight, setSelectedWeight] = useState("");
+  const [selectedFlavour, setSelectedFlavour] = useState("");
   const [messageOnCake, setMessageOnCake] = useState("");
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<{ id: string; title: string; message: string; variant: 'info' | 'success' | 'warning' } | null>(null);
-  const [showExtras, setShowExtras] = useState(false);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [printImage, setPrintImage] = useState<string>("");
 
@@ -98,12 +97,31 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   }
 
   // Add flavour surcharge
-  const weightVal = parseFloat(selectedWeight);
-  const weightKg = selectedWeight.toLowerCase().includes("kg") ? weightVal : (selectedWeight.toLowerCase().includes("g") ? weightVal / 1000 : weightVal);
-  const surcharge = getFlavourSurcharge(selectedFlavour, weightKg);
+  const weightVal = parseFloat(selectedWeight || "0");
+  const weightKg = (selectedWeight || "").toLowerCase().includes("kg") ? weightVal : ((selectedWeight || "").toLowerCase().includes("g") ? weightVal / 1000 : weightVal);
+  const surcharge = selectedFlavour ? getFlavourSurcharge(selectedFlavour, weightKg) : 0;
   const finalPrice = currentPrice + surcharge;
 
   const handleAddToCart = () => {
+    if (!selectedWeight) {
+      setToast({
+        id: Date.now().toString(),
+        title: 'Selection Required',
+        message: 'Please select a cake weight.',
+        variant: 'warning'
+      });
+      return;
+    }
+    if (!selectedFlavour) {
+      setToast({
+        id: Date.now().toString(),
+        title: 'Selection Required',
+        message: 'Please select a cake flavour.',
+        variant: 'warning'
+      });
+      return;
+    }
+
     addItem({
       productId: product.id,
       name: product.name,
@@ -112,7 +130,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       quantity: 1,
       image: product.thumbnail || product.imageUrl || product.image,
       variant: selectedWeight,
-      flavor: selectedFlavour || "Classic",
+      flavor: selectedFlavour,
       messageOnCake: messageOnCake.trim() || undefined,
       notes: notes.trim() || undefined,
       referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
@@ -223,57 +241,41 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           </Select>
         </div>
 
-        {/* Extras Toggle */}
-        <div className="pt-2">
-          <button 
-            onClick={() => setShowExtras(!showExtras)}
-            className="flex items-center justify-center gap-2 text-[var(--brand-deep-rose)] font-ui text-sm font-bold w-full py-3.5 bg-[var(--brand-deep-rose)]/5 rounded-2xl border border-[var(--brand-deep-rose)]/20 transition-colors hover:bg-[var(--brand-deep-rose)]/10"
-          >
-            {showExtras ? "− Hide Extras" : "➕ Add Message or Instructions"}
-          </button>
+        {/* Extra Fields (Always Visible) */}
+        <div className="space-y-6 pt-2 pb-6">
+          {/* Message on Cake */}
+          <div className="space-y-3">
+            <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+              🎂 Message on Cake
+            </label>
+            <input
+              type="text"
+              value={messageOnCake}
+              onChange={(e) => setMessageOnCake(e.target.value)}
+              placeholder='e.g. Happy Birthday Rahul 🎉'
+              maxLength={60}
+              className="w-full rounded-xl border-2 border-primary/20 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+            />
+            <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
+          </div>
+
+          {/* Special Instructions / Notes */}
+          <div className="space-y-3">
+            <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black">✎</span>
+              Special Instructions
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Mention allergies, delivery timing preferences, etc..."
+              rows={3}
+              maxLength={300}
+              className="w-full resize-none rounded-xl border-2 border-primary/20 bg-background px-4 py-3 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+            />
+            <p className="text-right text-[11px] text-muted-foreground">{notes.length}/300</p>
+          </div>
         </div>
-
-        {/* Collapsible Extras */}
-        {showExtras && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            className="space-y-6 overflow-hidden pt-2"
-          >
-            {/* Message on Cake */}
-            <div className="space-y-3">
-              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                🎂 Message on Cake
-              </label>
-              <input
-                type="text"
-                value={messageOnCake}
-                onChange={(e) => setMessageOnCake(e.target.value)}
-                placeholder='e.g. Happy Birthday Rahul 🎉'
-                maxLength={60}
-                className="w-full rounded-xl border-2 border-primary/20 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
-              />
-              <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
-            </div>
-
-            {/* Special Instructions / Notes */}
-            <div className="space-y-3 pb-6">
-              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black">✎</span>
-                Special Instructions
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Mention allergies, delivery timing preferences, etc..."
-                rows={3}
-                maxLength={300}
-                className="w-full resize-none rounded-xl border-2 border-primary/20 bg-background px-4 py-3 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
-              />
-              <p className="text-right text-[11px] text-muted-foreground">{notes.length}/300</p>
-            </div>
-          </motion.div>
-        )}
       </div>
 
       {/* 3. FIXED CHECKOUT BUTTON BAR */}
