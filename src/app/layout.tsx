@@ -1,15 +1,5 @@
 import type { Metadata, Viewport } from "next";
-// Typography Upgrade: Playfair Display (premium serif) + DM Sans (modern UI)
-import "@fontsource/playfair-display/400.css";
-import "@fontsource/playfair-display/400-italic.css";
-import "@fontsource/playfair-display/600.css";
-import "@fontsource/playfair-display/700.css";
-import "@fontsource/playfair-display/700-italic.css";
-import "@fontsource/dm-sans/300.css";
-import "@fontsource/dm-sans/400.css";
-import "@fontsource/dm-sans/500.css";
-import "@fontsource/dm-sans/600.css";
-import "@fontsource/dm-sans/700.css";
+import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { SmoothScroller } from "@/components/layout/SmoothScroller";
 import { HeaderFooterWrapper } from "@/components/layout/HeaderFooterWrapper";
@@ -21,6 +11,24 @@ import { CustomCursor } from "@/components/layout/CustomCursor";
 import { Noise } from "@/components/layout/Noise";
 import { PWARegistration } from "@/components/PWARegistration";
 import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
+
+// Fonts — self-hosted via next/font (no external requests, auto-optimized)
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-playfair",
+  display: "swap",
+  preload: true,
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-dm-sans",
+  display: "swap",
+  preload: true,
+});
 
 
 export const metadata: Metadata = {
@@ -83,7 +91,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className="antialiased font-sans"
+      className={`antialiased font-sans ${playfair.variable} ${dmSans.variable}`}
     >
       <body suppressHydrationWarning className="flex flex-col bg-background text-foreground relative selection:bg-[#B67A7E] selection:text-white min-h-screen font-sans">
         <PWARegistration />

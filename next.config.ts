@@ -14,7 +14,9 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: ['react-map-gl', 'mapbox-gl', '@mapbox/search-js-react'],
   images: {
-    unoptimized: true,
+    // Optimization enabled — Cloudinary images are auto-resized & served as WebP
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 3600,
     remotePatterns: [
       {
         protocol: "https",

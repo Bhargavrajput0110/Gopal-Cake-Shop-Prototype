@@ -10,22 +10,22 @@ export function Preloader() {
   useEffect(() => {
     document.body.style.overflow = "hidden";
 
-    // Animate progress counter
+    // Animate progress counter — faster and smoother
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(progressInterval);
           return 100;
         }
-        return prev + Math.random() * 18;
+        return prev + Math.random() * 28; // faster progress
       });
-    }, 120);
+    }, 80); // faster tick
 
     const timer = setTimeout(() => {
       setIsLoading(false);
       document.body.style.overflow = "unset";
       window.scrollTo(0, 0);
-    }, 2600);
+    }, 1600); // reduced from 2600ms
 
     return () => {
       clearTimeout(timer);
