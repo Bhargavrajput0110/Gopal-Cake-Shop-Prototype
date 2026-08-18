@@ -149,8 +149,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     
     const refetchOrders = () => {
       fetch("/api/v1/orders?limit=500").then(res => {
-        // If the server redirects to /login, it returns HTML — not JSON.
-        // Guard against this to prevent "Unexpected token '<'" SyntaxError.
         if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
           return null;
         }
@@ -159,13 +157,18 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         if (data && data.success && data.data) {
           setOrders(data.data);
         }
-      }).catch(console.error);
+      }).catch((err) => {
+        console.warn("Could not fetch orders (server might be restarting):", err);
+      });
     };
 
     // Fetch orders immediately on component mount
     refetchOrders();
 
-    fetch('/api/auth/session').then(res => res.json()).then(session => {
+    fetch('/api/auth/session').then(res => {
+      if (!res.ok) return null;
+      return res.json();
+    }).then(session => {
       const branchId = session?.user?.branchId;
       
       // Re-join rooms and fetch authoritative state on EVERY connection (handles server restart/disconnect recovery)
@@ -180,7 +183,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         if (branchId) newSocket.emit("join_branch", branchId);
         if (session?.user?.role === 'ADMIN') newSocket.emit("join_admin");
       }
-    }).catch(console.error);
+    }).catch((err) => {
+      console.warn("Could not fetch session (server might be restarting):", err);
+    });
     
     newSocket.on("order_updated", refetchOrders);
     newSocket.on("order_created", refetchOrders);
