@@ -40,6 +40,12 @@ model User {
   requestedTransfers BranchTransfer[]    @relation("TransferRequestedBy")
   respondedTransfers BranchTransfer[]    @relation("TransferRespondedBy")
 
+  // New relations for V1 Production
+  vendorTasks         VendorTask[]         @relation("VendorTasks")
+  ingredientRequests  IngredientRequest[]  @relation("IngredientRequests")
+  deliveryAssignments DeliveryAssignment[] @relation("DeliveryPersonAssignments")
+  assignedDeliveries  DeliveryAssignment[] @relation("AssignedByDeliveries")
+
   branch                 Branch?                 @relation("StaffBranch", fields: [branchId], references: [id])
   pushSubscriptions      PushSubscription[]
   notificationPreference NotificationPreference?
@@ -60,6 +66,7 @@ model Customer {
   preferences     Json?
   isVip           Boolean   @default(false)
   orders          Order[]
+  reviews         Review[]
 
   @@index([email])
 }
@@ -112,6 +119,9 @@ model Order {
   deliveryFailureReason DeliveryFailureReason?
   isFarDistance         Boolean                @default(false)
   deliveryDistanceKm    Float?
+  deliveryLatitude      Float?
+  deliveryLongitude     Float?
+  deliveryAssignedAt    DateTime?
   notifications         NotificationLog[]
   branch                Branch                 @relation("BranchOrders", fields: [branchId], references: [id])
   chef                  User?                  @relation("ChefOrders", fields: [chefId], references: [id])
@@ -124,6 +134,10 @@ model Order {
   timeline              Timeline[]
   ledgerEntries         LedgerEntry[]
   transfers             BranchTransfer[]       @relation("OrderTransfers")
+  review                Review?
+  vendorTasks           VendorTask[]
+  ingredientRequests    IngredientRequest[]
+  deliveryAssignments   DeliveryAssignment[]
 
   @@index([branchId, status])
   @@index([branchId, createdAt])
@@ -715,4 +729,65 @@ model LedgerEntry {
   @@index([orderId])
   @@index([type])
   @@index([branchId])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  orderId     String   @unique
+  customerId  String
+  rating      Int
+  feedback    String?
+  photos      String[]
+  status      String   @default("PENDING") // PENDING, APPROVED, HIDDEN
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  order       Order    @relation(fields: [orderId], references: [id])
+  customer    Customer @relation(fields: [customerId], references: [id])
+}
+
+model VendorTask {
+  id            String   @id @default(cuid())
+  orderId       String
+  vendorType    String   // FLORIST, ACRYLIC, PHOTO
+  vendorId      String?
+  status        String   @default("PENDING") // PENDING, ACCEPTED, IN_PROGRESS, READY
+  instructions  String
+  notes         Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  order         Order    @relation(fields: [orderId], references: [id])
+  vendor        User?    @relation("VendorTasks", fields: [vendorId], references: [id])
+}
+
+model IngredientRequest {
+  id            String   @id @default(cuid())
+  orderId       String
+  itemCode      String
+  itemName      String
+  qty           Float?
+  unit          String?
+  requestedById String
+  status        String   @default("PENDING") // PENDING, FULFILLED, RESOLVED, CANCELLED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  order         Order    @relation(fields: [orderId], references: [id])
+  requestedBy   User     @relation("IngredientRequests", fields: [requestedById], references: [id])
+}
+
+model DeliveryAssignment {
+  id               String   @id @default(cuid())
+  orderId          String
+  deliveryPersonId String
+  assignedByUserId String
+  assignedAt       DateTime @default(now())
+  unassignedAt     DateTime?
+  status           String   @default("ACTIVE") // ACTIVE, REASSIGNED, UNASSIGNED
+  reason           String?
+
+  order            Order    @relation(fields: [orderId], references: [id])
+  deliveryPerson   User     @relation("DeliveryPersonAssignments", fields: [deliveryPersonId], references: [id])
+  assignedBy       User     @relation("AssignedByDeliveries", fields: [assignedByUserId], references: [id])
 }
