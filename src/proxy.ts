@@ -180,10 +180,13 @@ export default auth(function proxy(req: NextRequest) {
     // Public path — fall through to security headers & rate limiting
   } else if (isProtectedPath(pathname)) {
     if (!session?.user) {
-      // Preserve intended destination for post-login redirect
-      const isPlaywright = process.env.IS_PLAYWRIGHT === 'true';
-      const loginUrl = new URL('/login', isPlaywright ? 'http://localhost:3000' : nextUrl);
-      loginUrl.searchParams.set('callbackUrl', isPlaywright ? `http://localhost:3000${pathname}` : req.url);
+      // Use forwarded host in production (e.g. Render) to avoid localhost redirects
+      const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || nextUrl.host;
+      const proto = req.headers.get('x-forwarded-proto') || (nextUrl.protocol.replace(':', ''));
+      const baseOrigin = `${proto}://${host}`;
+      
+      const loginUrl = new URL('/login', baseOrigin);
+      loginUrl.searchParams.set('callbackUrl', `${baseOrigin}${pathname}`);
       return NextResponse.redirect(loginUrl);
     }
     // Authenticated — fall through
