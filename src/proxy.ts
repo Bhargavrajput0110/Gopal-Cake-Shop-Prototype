@@ -180,10 +180,9 @@ export default auth(function proxy(req: NextRequest) {
     // Public path — fall through to security headers & rate limiting
   } else if (isProtectedPath(pathname)) {
     if (!session?.user) {
-      // Use forwarded host in production (e.g. Render) to avoid localhost redirects
-      const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || nextUrl.host;
-      const proto = req.headers.get('x-forwarded-proto') || (nextUrl.protocol.replace(':', ''));
-      const baseOrigin = `${proto}://${host}`;
+      // Use explicit origin in production to bypass Render proxy header issues
+      const isProd = process.env.NODE_ENV === 'production';
+      const baseOrigin = isProd ? 'https://gopal-cake-shop-prototype.onrender.com' : 'http://localhost:3000';
       
       const loginUrl = new URL('/login', baseOrigin);
       loginUrl.searchParams.set('callbackUrl', `${baseOrigin}${pathname}`);
