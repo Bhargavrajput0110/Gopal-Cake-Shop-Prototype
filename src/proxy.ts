@@ -167,19 +167,21 @@ export default auth(function proxy(req: NextRequest) {
 
   // ── 1. Route Protection ────────────────────────────────────────────────────
 
+  // Calculate actual base origin to bypass Render proxy header issues
+  const isProd = process.env.NODE_ENV === 'production';
+  const baseOrigin = isProd ? 'https://gopal-cake-shop-prototype.onrender.com' : 'http://localhost:3000';
+
+  // ── 1. Route Protection ────────────────────────────────────────────────────
+
   if (isPublicPath(pathname)) {
     // Anti-loop: authenticated users landing on /login → redirect to role home
     if ((pathname === '/login' || pathname.startsWith('/login?')) && session?.user) {
       const role = (session.user as any)?.role;
-      return NextResponse.redirect(new URL(roleHomePath(role), nextUrl));
+      return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
     }
     // Public path — fall through to security headers & rate limiting
   } else if (isProtectedPath(pathname)) {
     if (!session?.user) {
-      // Use explicit origin in production to bypass Render proxy header issues
-      const isProd = process.env.NODE_ENV === 'production';
-      const baseOrigin = isProd ? 'https://gopal-cake-shop-prototype.onrender.com' : 'http://localhost:3000';
-      
       const loginUrl = new URL('/login', baseOrigin);
       loginUrl.searchParams.set('callbackUrl', `${baseOrigin}${pathname}`);
       return NextResponse.redirect(loginUrl);
