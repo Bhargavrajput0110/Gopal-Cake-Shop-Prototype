@@ -93,7 +93,7 @@ export default function RootLayout({
       lang="en"
       className={`antialiased font-sans ${playfair.variable} ${dmSans.variable}`}
     >
-      <body suppressHydrationWarning className="flex flex-col bg-background text-foreground relative selection:bg-[#B67A7E] selection:text-white min-h-screen font-sans">
+      <body suppressHydrationWarning className="flex flex-col w-full overflow-x-hidden bg-background text-foreground relative selection:bg-[#B67A7E] selection:text-white min-h-screen font-sans">
         <PWARegistration />
         <Noise />
         <Preloader />

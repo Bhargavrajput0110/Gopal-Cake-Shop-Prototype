@@ -61,9 +61,9 @@ export function CategoryCardsNav() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
             
             {/* Content */}
-            <div className="relative z-10 w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-1 md:gap-0">
+            <div className="relative z-10 w-full flex flex-col md:flex-row items-center justify-center md:justify-between gap-1 md:gap-0 h-full text-center md:text-left">
               <div>
-                <h3 className="font-display font-bold md:font-black text-[13px] sm:text-base md:text-2xl text-white tracking-tight leading-tight">{card.title}</h3>
+                <h3 className="font-display font-bold md:font-black text-[11px] sm:text-[13px] md:text-2xl text-white tracking-tight leading-tight break-words">{card.title}</h3>
                 <p className="hidden md:block font-ui text-[10px] uppercase tracking-widest text-white/80 font-bold mt-1">{card.subtitle}</p>
               </div>
               <div className="hidden md:flex w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
