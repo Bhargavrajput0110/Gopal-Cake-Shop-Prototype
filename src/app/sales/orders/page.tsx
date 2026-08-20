@@ -469,7 +469,6 @@ function SalesDashboardContent() {
             order={vendorAssignOrder} 
             onClose={() => setVendorAssignOrder(null)} 
             onWhatsApp={(msg) => setToastData({ show: true, msg, rec: vendorAssignOrder.customerPhone })} 
-            onMutated={() => fetchOrders()}
           />
         )}
       </AnimatePresence>
@@ -862,7 +861,7 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
   );
 }
 
-function VendorAssignModal({ order, onClose, onWhatsApp, onMutated }: { order: Order; onClose: () => void; onWhatsApp: (msg: string) => void; onMutated: () => void }) {
+function VendorAssignModal({ order, onClose, onWhatsApp }: { order: Order; onClose: () => void; onWhatsApp: (msg: string) => void }) {
   const { updateOrderFields } = useOrders();
   const [selectedVendors, setSelectedVendors] = useState<Array<{name: string, type: "photo"|"flower"|"acrylic"}>>([]);
 
@@ -874,25 +873,20 @@ function VendorAssignModal({ order, onClose, onWhatsApp, onMutated }: { order: O
     });
   };
 
-  const handleConfirmVendorAssignment = async () => {
-    try {
-      const promises = selectedVendors.map(v => 
-        fetch(`/api/v1/orders/${order.id}/vendor-tasks`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ vendorType: v.type, status: 'accepted', instructions: 'Assigned manually by Sales' })
-        })
-      );
-      
-      await Promise.all(promises);
-      
-      if(selectedVendors.length > 0) onWhatsApp(`Notified partners for Order ${order.id}.`);
-      onClose();
-      onMutated();
-    } catch (e) {
-      console.error(e);
-      alert("Failed to assign vendors");
-    }
+  const handleConfirmVendorAssignment = () => {
+    const newTasks = [...(order.vendorTasks || [])];
+    selectedVendors.forEach(v => {
+      const existingIndex = newTasks.findIndex(vt => vt.vendorType === v.type);
+      if (existingIndex >= 0) {
+        newTasks[existingIndex] = { ...newTasks[existingIndex], status: 'accepted', vendorName: v.name };
+      } else {
+        newTasks.push({ vendorType: v.type, status: 'accepted', vendorName: v.name, instructions: 'Assigned manually by Sales' });
+      }
+    });
+    
+    updateOrderFields(order.id, { vendorTasks: newTasks });
+    if(selectedVendors.length > 0) onWhatsApp(`Notified partners for Order ${order.id}.`);
+    onClose();
   };
 
   return (
