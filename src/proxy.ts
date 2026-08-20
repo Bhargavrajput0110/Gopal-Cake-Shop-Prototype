@@ -207,8 +207,8 @@ export default auth(function proxy(req: NextRequest) {
   if (process.env.IS_PLAYWRIGHT !== 'true' && process.env.NODE_ENV !== 'development') {
     if (pathname.startsWith('/api/')) {
       if (pathname.startsWith('/api/auth') || pathname.startsWith('/login')) {
-        // Auth endpoints — strict (5 req/min)
-        if (!checkRateLimit(`auth:${ip}`, 5, 60_000)) {
+        // Auth endpoints — strict but fair (30 req/min)
+        if (!checkRateLimit(`auth:${ip}`, 30, 60_000)) {
           return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
         }
       } else if (pathname.startsWith('/api/v1/public/')) {
