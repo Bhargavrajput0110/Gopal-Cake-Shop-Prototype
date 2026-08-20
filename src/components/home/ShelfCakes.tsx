@@ -256,13 +256,15 @@ export function ShelfCakes() {
         </div>
 
         {/* Horizontal Scroll / Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 relative z-10">
+        <div className="grid grid-flow-col auto-cols-[85%] sm:auto-cols-[45%] md:auto-cols-auto md:grid-flow-row md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-6 -mx-6 px-6 md:mx-0 md:px-0 md:pb-0 relative z-10">
           {loading
             ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (
                 <ProductSkeleton key={i} />
               ))
             : products.map((product) => (
-                <ShelfProductCard key={product.id} product={product} />
+                <div key={product.id} className="snap-center">
+                <ShelfProductCard product={product} />
+              </div>
               ))}
         </div>
       </div>

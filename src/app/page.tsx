@@ -6,6 +6,7 @@ import { TrustStrip } from "@/components/home/TrustStrip";
 import { ShelfCakes } from "@/components/home/ShelfCakes";
 import { BouquetSection } from "@/components/home/BouquetSection";
 import { TestimonialsSection } from "@/components/home/TestimonialsSection";
+import { CategoryCardsNav } from "@/components/home/CategoryCardsNav";
 import { Suspense } from "react";
 
 export default function Home() {
@@ -22,17 +23,26 @@ export default function Home() {
         <Hero />
       </Suspense>
 
+      {/* Quick Navigation Cards (Mobile UX) */}
+      <CategoryCardsNav />
+
       {/* Trust Marquee Strip — right after hero */}
       <TrustStrip />
 
       {/* Ready to Pick Shelf Cakes */}
-      <ShelfCakes />
+      <div id="fresh-bakes">
+        <ShelfCakes />
+      </div>
 
       {/* Featured Products (Signature Bakes - Core Offering) */}
-      <FeaturedProducts />
+      <div id="signature-cakes" className="scroll-mt-24">
+        <FeaturedProducts />
+      </div>
 
       {/* Florals & Bouquets (Upsell / Cross-sell) */}
-      <BouquetSection />
+      <div id="fresh-florals" className="scroll-mt-24">
+        <BouquetSection />
+      </div>
 
       {/* Brand Legacy + Stats — dark section */}
       <QualityDescription />
