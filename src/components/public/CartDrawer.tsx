@@ -2,11 +2,13 @@
 
 import React from 'react';
 import { useCart } from '@/context/CartContext';
-import { CloseSquare, Minus, Add, Bag } from "iconsax-react";
+import { CloseSquare, Minus, Add, Bag, ArrowLeft } from "iconsax-react";
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export function CartDrawer() {
   const { isCartOpen, setIsCartOpen, items, updateQuantity, removeItem, subtotal } = useCart();
+  const router = useRouter();
 
   if (!isCartOpen) return null;
 
@@ -18,14 +20,14 @@ export function CartDrawer() {
         onClick={() => setIsCartOpen(false)}
       />
       <aside aria-label="Shopping Cart" className="fixed inset-y-0 right-0 w-full max-w-md bg-background z-[110] shadow-2xl flex flex-col theme-public border-l">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-black flex items-center gap-2">
-            <Bag className="w-5 h-5" />
+        <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-10">
+          <button onClick={() => setIsCartOpen(false)} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded-xl transition-colors text-muted-foreground font-semibold">
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back</span>
+          </button>
+          <h2 className="text-xl font-black flex items-center gap-2 mr-2">
             Your Cart
           </h2>
-          <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-muted rounded-full">
-            <CloseSquare className="w-5 h-5" />
-          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -74,9 +76,15 @@ export function CartDrawer() {
               <span className="font-bold text-muted-foreground">Subtotal</span>
               <span className="font-black">₹{subtotal}</span>
             </div>
-            <Link href="/checkout" onClick={() => setIsCartOpen(false)} className="w-full flex items-center justify-center bg-primary text-primary-foreground h-14 rounded-xl font-black text-lg hover:bg-primary/90 shadow-md">
+            <button 
+              onClick={() => {
+                setIsCartOpen(false);
+                router.push("/checkout");
+              }} 
+              className="w-full flex items-center justify-center bg-primary text-primary-foreground h-14 rounded-xl font-black text-lg hover:bg-primary/90 shadow-md"
+            >
               Proceed to Checkout
-            </Link>
+            </button>
           </div>
         )}
       </aside>

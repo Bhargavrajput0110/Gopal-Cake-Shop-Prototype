@@ -53,11 +53,12 @@ export default function CheckoutPage() {
   );
 
   // Target Date & Time (Default to tomorrow)
-  const [date, setDate] = useState(() => {
+  const [date, setDate] = useState("");
+  useEffect(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split("T")[0];
-  });
+    setDate(tomorrow.toISOString().split("T")[0]);
+  }, []);
   const [time, setTime] = useState("18:00");
 
   // Customer Contact Info
