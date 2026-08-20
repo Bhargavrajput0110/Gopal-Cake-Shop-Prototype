@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query"
 import { fetchClient } from "@/lib/api/client"
 import { ProductGrid } from "./components/ProductGrid"
 import { CartPanel } from "./components/CartPanel"
+import { CustomerSelector } from "./components/CustomerSelector"
 import { PaymentDialog } from "./components/PaymentDialog"
 import { ReceiptStub } from "./components/ReceiptStub"
 import { RetailerBulkOrderModal } from "./components/RetailerBulkOrderModal"
@@ -169,6 +170,9 @@ export default function POSPage() {
             </motion.button>
           )}
 
+          <div className="w-80">
+            <CustomerSelector />
+          </div>
         </div>
       </header>
 

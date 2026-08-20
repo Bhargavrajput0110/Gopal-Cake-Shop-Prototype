@@ -174,21 +174,18 @@ export function ProductGrid({ products, categories = [], isLoading }: ProductGri
                         isCustomizable: product.isCustomizable,
                         category: { name: categories.find(c => c.categoryId === product.categoryId)?.name || 'Cake' }
                       })}
-                      className="flex flex-col text-left bg-white rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-[0.98] group shadow-sm border border-black/5 relative"
+                      className="flex flex-col text-left bg-white border border-border hover:border-[var(--brand-deep-rose)]/30 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] group shadow-sm"
                     >
-                      <div className="h-44 w-full bg-muted flex items-center justify-center overflow-hidden relative">
+                      <div className="h-36 w-full bg-muted flex items-center justify-center overflow-hidden relative">
                         {product.images?.[0] ? (
-                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                         ) : (
                           <span className="font-ui text-[9px] text-muted-foreground uppercase font-bold tracking-widest">No Image</span>
                         )}
-                        <div className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-[var(--brand-deep-rose)] font-black text-xl leading-none opacity-90 group-hover:opacity-100 transition-opacity">
-                          +
-                        </div>
                       </div>
-                      <div className="p-4 w-full bg-white flex flex-col justify-between flex-1">
-                        <p className="font-display font-bold text-lg text-foreground leading-tight">{product.name}</p>
-                        <p className="font-ui text-[12px] uppercase tracking-widest font-black text-[var(--brand-deep-rose)] mt-2">₹{Number(product.price || product.basePrice || 0).toFixed(2)}</p>
+                      <div className="p-4 w-full bg-white">
+                        <p className="font-display font-bold text-lg text-foreground truncate">{product.name}</p>
+                        <p className="font-ui text-[11px] uppercase tracking-widest font-black text-muted-foreground mt-1">₹{Number(product.price || product.basePrice || 0).toFixed(2)}</p>
                       </div>
                     </button>
                   ))}
