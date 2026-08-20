@@ -4,6 +4,7 @@ import { useCart } from "@/context/CartContext"
 import { ItemConfiguratorModal } from "./ItemConfiguratorModal"
 import { OrdersApiClient } from "@/lib/api/orders.api"
 import { useSession } from "next-auth/react"
+import { CustomerSelector } from "./CustomerSelector"
 
 interface CartPanelProps {
   onCheckout: () => void
@@ -98,6 +99,12 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
         </div>
       </div>
 
+      {/* Customer Selection */}
+      <div className="p-4 border-b border-border bg-rose-50/50">
+        <CustomerSelector />
+      </div>
+
+
       {/* Cart Items List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 z-10 relative custom-scrollbar">
         {cart.length === 0 ? (
@@ -191,12 +198,13 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
           >
             {isSavingQuote ? 'Saving...' : 'Save Quote'}
           </button>
-          <button 
-            onClick={onCheckout}
+          <button
             disabled={cart.length === 0}
-            className="flex-[2] py-5 bg-[var(--brand-deep-rose)] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-ui text-[11px] uppercase tracking-widest font-black shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+            onClick={onCheckout}
+            className="w-full py-5 rounded-[1.5rem] bg-[var(--brand-deep-rose)] text-white font-display font-black text-2xl uppercase tracking-wider shadow-xl shadow-rose-900/20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-rose-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-between px-8"
           >
-            Proceed to Checkout
+            <span>Charge</span>
+            <span>₹{total.toFixed(2)}</span>
           </button>
         </div>
       </div>
