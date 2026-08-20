@@ -18,13 +18,24 @@ export const GET = withApiHandler(async (ctx) => {
   const startOfDay = new Date()
   startOfDay.setHours(0, 0, 0, 0)
 
+  let branchFilter: any = {};
+  if (appRole === 'DELIVERY') {
+    if (ctx.deliveryScopes && ctx.deliveryScopes.includes('ALL')) {
+      branchFilter = {};
+    } else if (ctx.deliveryScopes && ctx.deliveryScopes.length > 0) {
+      branchFilter = { branchId: { in: ctx.deliveryScopes } };
+    } else if (user.branchId) {
+      branchFilter = { branchId: user.branchId };
+    }
+  }
+
   const orders = await db.order.findMany({
     where: {
       deliveryType: 'DELIVERY',
       OR: [
-        { status: { in: ['NEW', 'WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'READY_FOR_PICKUP', 'PENDING_ASSIGNMENT'] }, driverId: null },
+        { status: { in: ['NEW', 'WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'READY_FOR_PICKUP', 'PENDING_ASSIGNMENT'] }, driverId: null, ...branchFilter },
         { driverId: driverId ? driverId : { not: null } },
-        { items: { some: { status: { in: ['READY_FOR_PICKUP', 'DELIVERED'] }, assignedVendorId: { not: null } } }, driverId: null }
+        { items: { some: { status: { in: ['READY_FOR_PICKUP', 'DELIVERED'] }, assignedVendorId: { not: null } } }, driverId: null, ...branchFilter }
       ]
     },
     include: {
@@ -114,6 +125,8 @@ export const GET = withApiHandler(async (ctx) => {
           pendingBalance: summary.outstandingAmount,
           financialStatus: summary.paymentStatus,
           formattedAddress: order.deliveryAddress || null,
+          distanceKm: order.deliveryDistanceKm || null,
+          googleMapsUrl: (order.deliveryLatitude && order.deliveryLongitude) ? `https://www.google.com/maps/dir/?api=1&destination=${order.deliveryLatitude},${order.deliveryLongitude}` : null,
           customerName: order.customer.name,
           customerPhone: order.customer.phone,
           items: order.items.filter((i: any) => !i.parentItemId).map((item: any) => ({

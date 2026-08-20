@@ -22,6 +22,7 @@ export type HandlerContext = {
   user: any // Supabase user
   appRole: Role | null
   branchId: string | null
+  deliveryScopes: string[] | null
   params: Record<string, string>
 }
 
@@ -50,6 +51,7 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
     let user = null
     let appRole = null
     let branchId = null
+    let deliveryScopes: string[] | null = null
 
     // Authentication (if not public)
     if (!isPublic) {
@@ -84,16 +86,25 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
         user = { id: session.user.id, email: session.user.email || null }
         appRole = ((session.user as any).role as string)?.toUpperCase() as Role
         branchId = (session.user as any).branchId ? toBranchId((session.user as any).branchId) : 'khanderao'
-      } else if (dummyRole) {
-        // Fallback user from prototype login screen
-        user = { id: 'usr_dummy_dev', email: `dummy_${dummyRole.toLowerCase()}@example.com` }
+      } else if (process.env.NODE_ENV !== 'production' && dummyRole) {
+        // ⚠️  DEV/STAGING ONLY — prototype login bypass.
+        // SECURITY: This block is explicitly disabled in production (NODE_ENV === 'production').
+        // In production, only the NextAuth session path (above) or Supabase Auth (below) are valid.
+        // A production client cannot set gopal_dummy_role or gopal_delivery_scopes to escalate permissions.
+        const dummyUserId = req.cookies.get('gopal_dummy_user_id')?.value || 'usr_dummy_dev'
+        user = { id: dummyUserId, email: `dummy_${dummyRole.toLowerCase()}@example.com` }
         appRole = dummyRole.toUpperCase() as Role
         branchId = 'khanderao' // Map to main branch 'khanderao' instead of invalid 'b-001'
+        const dummyScopes = req.cookies.get('gopal_delivery_scopes')?.value
+        if (dummyScopes) {
+          deliveryScopes = dummyScopes.split(',').map(s => s.trim())
+        }
       } else if ((isTestBypassEnabled && hasBypassCookie) || process.env.NODE_ENV === 'development') {
         // Mock a system admin user for load tests and local dev prototypes
         user = { id: 'usr_mock_loadtest', email: 'loadtest@example.com' }
         appRole = Role.ADMIN
         branchId = 'khanderao'
+        deliveryScopes = ['ALL']
       } else {
         // 2. Try Supabase Auth (used by mobile apps / external clients)
         const { data: authData } = await supabase.auth.getUser()
@@ -201,7 +212,16 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
 
     try {
       // Execute the actual handler
-      const response = await handler({ req, requestId, user, appRole, branchId, params: resolvedParams })
+      const handlerCtx: HandlerContext = {
+        req,
+        requestId,
+        user,
+        appRole,
+        branchId,
+        deliveryScopes,
+        params: resolvedParams as Record<string, string>
+      }
+      const response = await handler(handlerCtx)
       const executionTime = Date.now() - startTime
       LoggerService.info(`API Response: ${req.method} ${req.nextUrl.pathname}`, { requestId, ip, user: user?.id, userAgent, status: response.status, executionTimeMs: executionTime })
       return response

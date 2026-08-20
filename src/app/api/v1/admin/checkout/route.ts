@@ -26,6 +26,8 @@ const AdminCheckoutSchema = z.object({
   deliveryType: z.nativeEnum(DeliveryType),
   deliveryDate: z.string(),
   deliveryAddress: z.string().optional(),
+  deliveryLatitude: z.number().optional(),
+  deliveryLongitude: z.number().optional(),
   couponCode: z.string().optional(),
   overrideDeliveryCharge: z.number().optional(), // Admins can waive or set delivery fee
   isPriority: z.boolean().optional(), // Admins can prioritize
@@ -35,8 +37,9 @@ const AdminCheckoutSchema = z.object({
 
 export const POST = withApiHandler(async (ctx: HandlerContext) => {
   const { user, appRole, req } = ctx
+  console.log('CHECKOUT ROUTE DEBUG:', { user, appRole })
   if (!user || appRole !== 'ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized', user, appRole }, { status: 401 })
   }
 
   const body = await req.json()
@@ -57,6 +60,8 @@ export const POST = withApiHandler(async (ctx: HandlerContext) => {
       deliveryType: data.deliveryType,
       targetDate: data.deliveryDate,
       deliveryAddress: data.deliveryAddress,
+      deliveryLatitude: data.deliveryLatitude,
+      deliveryLongitude: data.deliveryLongitude,
       paymentMethod: data.paymentMethod,
       paymentType: data.paymentType,
       couponCode: data.couponCode,

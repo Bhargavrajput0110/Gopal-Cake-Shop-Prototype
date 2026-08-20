@@ -64,6 +64,8 @@ export interface CheckoutPayload {
   type?: 'ORDER' | 'QUOTE'
   isFarDistance?: boolean
   deliveryDistanceKm?: number
+  deliveryLatitude?: number
+  deliveryLongitude?: number
 }
 
 export class StorefrontEngine {
@@ -111,8 +113,8 @@ export class StorefrontEngine {
         throw new Error('Uma Branch (delivery fulfillment outlet) is not configured or inactive.')
       }
     } else {
-      const canonicalBranchId = toBranchId(payload.branchId)
-      branch = await prisma.branch.findUnique({ where: { id: canonicalBranchId } })
+      const parsedBranchId = toBranchId(payload.branchId)
+      branch = await prisma.branch.findUnique({ where: { id: parsedBranchId } })
       if (!branch || !branch.isActive) {
         throw new Error('Selected pickup branch is invalid or inactive.')
       }
@@ -297,7 +299,7 @@ export class StorefrontEngine {
           orderNumber: `ORD-${Date.now()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`,
           trackingId: `GCS-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
           customerId: payload.customerId,
-          branchId: canonicalBranchId,
+          branchId: branch.id,
           source: context.source,
           createdById: (process.env.NODE_ENV === 'test' || process.env.IS_PLAYWRIGHT === 'true') && (context.createdById?.startsWith('mock-') || context.createdById?.includes('dummy') || context.createdById?.includes('loadtest')) ? null : context.createdById,
           isPriority: context.canAssignPriority ? payload.isPriority : false,
@@ -315,6 +317,8 @@ export class StorefrontEngine {
           idempotencyKey: payload.idempotencyKey,
           isFarDistance: calculatedIsFarDistance,
           deliveryDistanceKm: calculatedDistanceKm,
+          deliveryLatitude: payload.deliveryLatitude,
+          deliveryLongitude: payload.deliveryLongitude,
           items: {
             create: orderItemsData
           },
@@ -334,7 +338,7 @@ export class StorefrontEngine {
                 type: 'PAYMENT',
                 status: 'SUCCESS',
                 actorId: context.createdById || 'SYSTEM',
-                branchId: canonicalBranchId,
+                branchId: branch.id,
                 notes: 'Initial payment at checkout'
               }))
             }
@@ -354,7 +358,7 @@ export class StorefrontEngine {
                 type: 'PAYMENT',
                 status: 'SUCCESS',
                 actorId: context.createdById || 'SYSTEM',
-                branchId: canonicalBranchId,
+                branchId: branch.id,
                 notes: 'Full payment at checkout'
               }
             }

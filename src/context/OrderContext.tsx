@@ -28,6 +28,7 @@ export type OrderStatus =
 
 export type VendorType = "flower" | "photo" | "acrylic";
 export type VendorTask = {
+  id?: string;
   vendorId?: string;
   vendorName?: string;
   vendorType: VendorType;
@@ -322,37 +323,69 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // P2 — Vendor task/note persistence deferred to v1.1.1.
-  // No VendorTask DB model exists in schema.prisma. Optimistic UI only for Day 1.
-  const updateVendorTaskStatus = (orderId: string, vendorType: VendorType, status: VendorTask["status"], vendorId?: string, vendorName?: string, taskId?: string) => {
+  const updateVendorTaskStatus = async (orderId: string, vendorType: VendorType, status: VendorTask["status"], vendorId?: string, vendorName?: string, taskId?: string) => {
+    // Optimistic UI update
     setOrders(prev => prev.map(o => {
       if (o.id !== orderId) return o;
       const updatedTasks = (o.vendorTasks || []).map(t =>
-        t.vendorType === vendorType ? { ...t, status, ...(vendorId ? { vendorId } : {}), ...(vendorName ? { vendorName } : {}) } : t
+        (taskId ? t.id === taskId : t.vendorType === vendorType) 
+          ? { ...t, status, ...(vendorId ? { vendorId } : {}), ...(vendorName ? { vendorName } : {}) } 
+          : t
       );
       return { ...o, vendorTasks: updatedTasks };
     }));
+
+    try {
+      if (taskId) {
+        const response = await fetch(`/api/v1/orders/${orderId}/vendor-tasks`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId, status, vendorId })
+        });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error);
+      }
+      // If we don't have a taskId, we might be creating it, but UI uses VendorAssignModal for creation
+    } catch (e) {
+      console.error(e);
+      const refresh = await fetch("/api/v1/orders?limit=500");
+      const refreshData = await refresh.json();
+      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+    }
   };
 
-  const addVendorNote = (orderId: string, vendorType: VendorType, noteText: string, vendorName?: string, taskId?: string) => {
+  const addVendorNote = async (orderId: string, vendorType: VendorType, noteText: string, vendorName?: string, taskId?: string) => {
+    if (!taskId) return;
     const newNote = { text: noteText, timestamp: new Date().toISOString(), read: false };
     setOrders(prev => prev.map(o => {
       if (o.id !== orderId) return o;
       const updatedTasks = (o.vendorTasks || []).map(t =>
-        t.vendorType === vendorType ? { ...t, notes: [...(t.notes || []), newNote] } : t
+        t.id === taskId ? { ...t, notes: [...(t.notes || []), newNote] } : t
       );
       return { ...o, vendorTasks: updatedTasks };
     }));
+
+    try {
+      const response = await fetch(`/api/v1/orders/${orderId}/vendor-tasks`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId, note: noteText })
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error);
+    } catch (e) {
+      console.error(e);
+      const refresh = await fetch("/api/v1/orders?limit=500");
+      const refreshData = await refresh.json();
+      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+    }
   };
   
   const reportIssue = (id: string, issueType: string, severity: "normal" | "urgent", notes: string) => {};
 
-  // NOTE: IngredientRequest has no DB model in schema.prisma (v1.1.1 backlog).
-  // For Day 1: optimistic UI update only. Chef sees it flagged on their screen;
-  // Sales sees it on the order card. Data resets on page refresh — acceptable for launch.
   const addIngredientRequest = async (orderId: string, item: string, qty?: number, unit?: string) => {
     const optimisticReq: IngredientRequest = {
-      id: `ING-${Math.random().toString(36).substr(2, 9)}`,
+      id: `tmp-${Date.now()}`,
       itemCode: item.toUpperCase().replace(/\s+/g, '_'),
       itemName: item,
       qty,
@@ -361,18 +394,36 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       status: 'pending' as const,
       timestamp: new Date().toISOString()
     };
-    // Optimistic: show immediately on all screens sharing the same context
+    
     setOrders(prev => prev.map(o =>
       o.id === orderId
         ? { ...o, ingredientRequests: [...(o.ingredientRequests || []), optimisticReq], delayLevel: 'warning' }
         : o
     ));
-    // No backend call — IngredientRequest model doesn't exist in DB yet.
-    // TODO v1.1.1: Add IngredientRequest model to schema and create POST /api/v1/orders/{id}/ingredient-requests
+
+    try {
+      const response = await fetch(`/api/v1/orders/${orderId}/ingredient-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemCode: optimisticReq.itemCode, itemName: optimisticReq.itemName, qty, unit })
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error);
+
+      // Re-fetch to get the true database ID
+      const refresh = await fetch("/api/v1/orders?limit=500");
+      const refreshData = await refresh.json();
+      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to submit ingredient request.");
+      const refresh = await fetch("/api/v1/orders?limit=500");
+      const refreshData = await refresh.json();
+      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+    }
   };
 
   const updateIngredientRequestStatus = async (orderId: string, requestId: string, status: 'pending' | 'fulfilled' | 'cancelled' | 'resolved', supplierName?: string) => {
-    // Optimistic: update local state only
     setOrders(prev => prev.map(o => {
       if (o.id !== orderId) return o;
       const updated = (o.ingredientRequests || []).map(r =>
@@ -380,8 +431,21 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       );
       return { ...o, ingredientRequests: updated };
     }));
-    // No backend call — IngredientRequest model doesn't exist in DB yet.
-    // TODO v1.1.1: Add PATCH /api/v1/orders/{id}/ingredient-requests/{requestId}
+
+    try {
+      const response = await fetch(`/api/v1/orders/${orderId}/ingredient-requests`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, status: status.toUpperCase() })
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error);
+    } catch (e) {
+      console.error(e);
+      const refresh = await fetch("/api/v1/orders?limit=500");
+      const refreshData = await refresh.json();
+      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+    }
   };
 
   const updateOrderFields = async (orderId: string, fields: Partial<Order>) => {

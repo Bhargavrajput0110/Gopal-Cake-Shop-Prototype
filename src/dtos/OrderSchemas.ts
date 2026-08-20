@@ -141,7 +141,9 @@ export type DriverOrderDTO = {
   
   // Address Accuracy Rule
   formattedAddress: string | null
-  coordinates: {
+  distanceKm?: number | null
+  googleMapsUrl?: string | null
+  coordinates?: {
     lat: number
     lng: number
   } | null

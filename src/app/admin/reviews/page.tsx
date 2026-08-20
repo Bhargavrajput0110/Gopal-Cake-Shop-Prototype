@@ -9,7 +9,8 @@ type Review = {
   id: string;
   rating: number;
   comment: string | null;
-  approved: boolean;
+  status: string; // PENDING, APPROVED, HIDDEN
+  photos: string[];
   createdAt: string;
   reviewerName: string;
   productName: string;
@@ -24,12 +25,12 @@ export default function ReviewModeration() {
   const fetchReviews = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/v1/reviews?moderation=true");
+      const res = await fetch("/api/v1/admin/reviews");
       if (res.ok) {
         const data = await res.json();
         if (data.error) {
           setError(data.error);
-          setReviews(getFallbackReviews());
+          setReviews([]);
         } else {
           setReviews(data);
           setError(null);
@@ -37,12 +38,12 @@ export default function ReviewModeration() {
       } else {
         const errData = await res.json().catch(() => ({}));
         setError(errData.error || "Failed to fetch reviews");
-        setReviews(getFallbackReviews());
+        setReviews([]);
       }
     } catch (e: any) {
       console.error("Failed to load reviews:", e);
       setError(e.message || "Failed to connect to reviews API");
-      setReviews(getFallbackReviews());
+      setReviews([]);
     } finally {
       setIsLoading(false);
     }
@@ -52,68 +53,32 @@ export default function ReviewModeration() {
     fetchReviews();
   }, []);
 
-  const handleModerate = async (reviewId: string, approved: boolean) => {
-    // Optimistic UI update for instantaneous, zero-friction admin feedback
+  const handleModerate = async (reviewId: string, status: 'APPROVED' | 'HIDDEN') => {
+    // Optimistic UI update
     setReviews(prev =>
-      prev.map(r => (r.id === reviewId ? { ...r, approved } : r))
+      prev.map(r => (r.id === reviewId ? { ...r, status } : r))
     );
 
     try {
-      const res = await fetch("/api/v1/reviews/moderate", {
+      const res = await fetch("/api/v1/admin/reviews", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reviewId, approved }),
+        body: JSON.stringify({ reviewId, status }),
       });
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        console.warn("Moderate API fallback (offline/mock mode active):", errData.error || `Status ${res.status}`);
+        console.warn("Moderate API error:", errData.error || `Status ${res.status}`);
+        // Revert on error
+        fetchReviews();
       }
     } catch (e) {
-      console.warn("Offline moderation active: updated local review state seamlessly.", e);
+      console.error("Network error during moderation", e);
+      fetchReviews();
     }
   };
 
-  const getFallbackReviews = (): Review[] => {
-    return [
-      {
-        id: "rev-1",
-        rating: 5,
-        comment: "Absolutely delicious! The Premium Belgian Chocolate cake was the highlight of my birthday party. Very moist and perfectly sweet.",
-        approved: true,
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        reviewerName: "Sunita Sharma",
-        productName: "Premium Belgian Chocolate Cake",
-      },
-      {
-        id: "rev-2",
-        rating: 2,
-        comment: "The Pineapple cake was too sweet and dry. Delivery was also 20 minutes late. Hopefully, this was just a one-off issue.",
-        approved: false,
-        createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-        reviewerName: "Rajesh Kumar",
-        productName: "Pineapple Fusion Cake",
-      },
-      {
-        id: "rev-3",
-        rating: 4,
-        comment: "Super creative presentation on the custom wedding cake! Everyone loved the gold accents and fresh roses. Flavors were excellent.",
-        approved: true,
-        createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-        reviewerName: "Sneha Desai",
-        productName: "3-Tier Custom Wedding Cake",
-      },
-      {
-        id: "rev-4",
-        rating: 5,
-        comment: "The Mango Cheesecake is to die for! The base is buttery and crumbly, and the mango puree tastes fresh and natural. Will order again!",
-        approved: false,
-        createdAt: new Date().toISOString(),
-        reviewerName: "Ananya Desai",
-        productName: "Mango Cheesecake",
-      }
-    ];
-  };
+
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] p-4 md:p-8 font-sans relative overflow-hidden">
@@ -132,12 +97,12 @@ export default function ReviewModeration() {
         </div>
 
         {error && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
-            <ShieldCross className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+            <ShieldCross className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-bold text-amber-800">Database Connection Notice</p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                The database table for reviews has not been initialized in the schema ({error}). Showing offline local state so moderation workflows can be simulated.
+              <p className="text-sm font-bold text-rose-800">Error Loading Reviews</p>
+              <p className="text-xs text-rose-700 mt-0.5">
+                {error}
               </p>
             </div>
           </div>
@@ -211,36 +176,38 @@ export default function ReviewModeration() {
                       <td className="p-4">
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            review.approved
+                            review.status === 'APPROVED'
                               ? "bg-emerald-100 text-emerald-700"
+                              : review.status === 'HIDDEN'
+                              ? "bg-rose-100 text-rose-700"
                               : "bg-amber-100 text-amber-700"
                           }`}
                         >
-                          {review.approved ? "Approved" : "Pending Moderation"}
+                          {review.status}
                         </span>
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => handleModerate(review.id, true)}
+                            onClick={() => handleModerate(review.id, 'APPROVED')}
                             className={`p-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs font-bold ${
-                              review.approved
+                              review.status === 'APPROVED'
                                 ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                                 : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
                             }`}
-                            disabled={review.approved}
+                            disabled={review.status === 'APPROVED'}
                             title="Approve Review"
                           >
                             <TickSquare className="w-4 h-4" /> Approve
                           </button>
                           <button
-                            onClick={() => handleModerate(review.id, false)}
+                            onClick={() => handleModerate(review.id, 'HIDDEN')}
                             className={`p-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs font-bold ${
-                              !review.approved
+                              review.status === 'HIDDEN'
                                 ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                                 : "bg-rose-50 text-rose-600 hover:bg-rose-100"
                             }`}
-                            disabled={!review.approved}
+                            disabled={review.status === 'HIDDEN'}
                             title="Hide Review"
                           >
                             <CloseSquare className="w-4 h-4" /> Hide

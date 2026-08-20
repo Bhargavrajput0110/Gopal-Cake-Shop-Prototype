@@ -19,6 +19,10 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
   const deliveryTime = new Date(item.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   const handleNavigate = () => {
+    if (item.googleMapsUrl) {
+      window.open(item.googleMapsUrl, '_blank')
+      return;
+    }
     const destination = (item.status === 'PICKED_UP' || item.status === 'ON_THE_WAY' || item.status === 'DELIVERING_TO_BRANCH') 
       ? (item.dropoffLocation || item.formattedAddress)
       : (item.pickupLocation || item.formattedAddress)
@@ -185,7 +189,10 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
                 <span className="text-[9px] uppercase tracking-widest text-foreground/50 font-bold">Dropoff To</span>
                 <p className="font-serif font-bold text-lg leading-tight">{item.dropoffLocation}</p>
                 {isCustomerDelivery && item.customerName && (
-                  <p className="text-sm font-bold text-foreground/70 mt-1">{item.customerName}</p>
+                  <>
+                    <p className="text-sm font-bold text-foreground/70 mt-1">{item.customerName}</p>
+                    {item.distanceKm && <p className="text-xs text-foreground/50 mt-0.5">Distance: {item.distanceKm.toFixed(1)} km</p>}
+                  </>
                 )}
              </div>
           </div>

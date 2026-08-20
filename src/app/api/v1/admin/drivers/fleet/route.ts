@@ -79,13 +79,18 @@ export const GET = withApiHandler(async (ctx) => {
   const dispatchOrdersData = await prisma.order.findMany({
     where: {
       ...branchFilter,
-      status: { in: [OrderStatus.READY, OrderStatus.PENDING_ASSIGNMENT, OrderStatus.READY_FOR_PICKUP] },
+      status: { in: [OrderStatus.NEW, OrderStatus.READY, OrderStatus.PENDING_ASSIGNMENT, OrderStatus.ASSIGNED_TO_DRIVER, OrderStatus.READY_FOR_PICKUP] },
       deliveryType: 'DELIVERY'
     },
     include: {
       branch: true,
       customer: true,
-      items: true
+      items: true,
+      driver: { select: { name: true, phone: true } },
+      deliveryAssignments: {
+        include: { deliveryPerson: { select: { name: true } }, assignedBy: { select: { name: true } } },
+        orderBy: { assignedAt: 'desc' }
+      }
     },
     orderBy: { targetDate: 'asc' }
   });
@@ -100,7 +105,15 @@ export const GET = withApiHandler(async (ctx) => {
     status: o.status,
     targetDate: o.targetDate,
     items: o.items.map(i => ({ name: i.productName, quantity: i.quantity, weight: Number(i.weight) })),
-    grandTotal: Number(o.totalAmount)
+    grandTotal: Number(o.totalAmount),
+    assignedDriver: o.driver ? { name: o.driver.name, phone: o.driver.phone } : null,
+    assignments: o.deliveryAssignments.map(a => ({
+      status: a.status,
+      deliveryPerson: a.deliveryPerson.name,
+      assignedBy: a.assignedBy.name,
+      assignedAt: a.assignedAt,
+      unassignedAt: a.unassignedAt
+    }))
   }));
 
   return NextResponse.json({ success: true, drivers, dispatchOrders });

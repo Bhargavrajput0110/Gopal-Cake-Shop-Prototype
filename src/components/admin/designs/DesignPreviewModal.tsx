@@ -9,6 +9,7 @@ interface DesignPreviewModalProps {
   onClose: () => void
   onCopyToOrder?: (design: Design) => void
   onEdit?: (design: Design) => void
+  onDelete?: (design: Design) => void | Promise<void>
 }
 
 export function DesignPreviewModal({ design, isOpen, onClose, onCopyToOrder, onEdit, onDelete }: DesignPreviewModalProps) {

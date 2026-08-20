@@ -93,6 +93,8 @@ export class OrderService {
           customer: true,
           items: true,
           ledgerEntries: true,
+          vendorTasks: { include: { vendor: true } },
+          ingredientRequests: { include: { requestedBy: true } },
         }
       }),
       db.order.count({ where: whereClause }),
@@ -147,6 +149,25 @@ export class OrderService {
           advancePaid: finSummary.paidAmount,
           financialStatus: finSummary.paymentStatus,
           delayLevel: "none",
+          vendorTasks: ((o as any).vendorTasks || []).map((vt: any) => ({
+            id: vt.id,
+            vendorId: vt.vendorId,
+            vendorName: vt.vendor?.name,
+            vendorType: vt.vendorType,
+            status: vt.status.toLowerCase(),
+            instructions: vt.instructions,
+            notes: vt.notes || []
+          })),
+          ingredientRequests: ((o as any).ingredientRequests || []).map((ir: any) => ({
+            id: ir.id,
+            itemCode: ir.itemCode,
+            itemName: ir.itemName,
+            qty: ir.qty,
+            unit: ir.unit,
+            requestedBy: ir.requestedBy?.name || 'Chef',
+            status: ir.status.toLowerCase(),
+            timestamp: ir.createdAt
+          })),
         } as any;
       })),
       total,
@@ -164,7 +185,11 @@ export class OrderService {
     const db = getIsolatedPrisma(canonicalBranchId, role)
     const o = await db.order.findUnique({ 
       where: { id },
-      include: { ledgerEntries: true } 
+      include: { 
+        ledgerEntries: true,
+        vendorTasks: { include: { vendor: true } },
+        ingredientRequests: { include: { requestedBy: true } },
+      } 
     })
     if (!o) return null
 
@@ -182,6 +207,25 @@ export class OrderService {
       financialStatus: finSummary.paymentStatus,
       expectedDeliveryDate: o.targetDate,
       createdAt: o.createdAt,
+      vendorTasks: ((o as any).vendorTasks || []).map((vt: any) => ({
+        id: vt.id,
+        vendorId: vt.vendorId,
+        vendorName: vt.vendor?.name,
+        vendorType: vt.vendorType,
+        status: vt.status.toLowerCase(),
+        instructions: vt.instructions,
+        notes: vt.notes || []
+      })),
+      ingredientRequests: ((o as any).ingredientRequests || []).map((ir: any) => ({
+        id: ir.id,
+        itemCode: ir.itemCode,
+        itemName: ir.itemName,
+        qty: ir.qty,
+        unit: ir.unit,
+        requestedBy: ir.requestedBy?.name || 'Chef',
+        status: ir.status.toLowerCase(),
+        timestamp: ir.createdAt
+      })),
     } as any
   }
 

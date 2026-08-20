@@ -94,13 +94,10 @@ export default function AnalyticsPage() {
   // We map branch rankings if any
   const branchMetrics = kpis?.branchRanking || [];
   
-  // Create mock sourceData for now, as DB doesn't track this perfectly yet
-  const sourceData = [
-    { name: 'Website', value: 45 },
-    { name: 'In-Store POS', value: 30 },
-    { name: 'WhatsApp', value: 15 },
-    { name: 'Zomato/Swiggy', value: 10 },
-  ];
+  // Replace mock sourceData with actual Sales by Category from API
+  const sourceData = data?.salesByCategory?.length > 0 
+    ? data.salesByCategory.map((c: any) => ({ name: c.categoryName, value: c.revenue }))
+    : [{ name: 'No Data', value: 1 }];
 
   const topProducts = kpis?.topProducts || [];
 
@@ -230,7 +227,7 @@ export default function AnalyticsPage() {
         {/* Order Sources (Pie Chart) */}
         <div className="bg-white/80 backdrop-blur-md border border-[var(--border)] rounded-[2.5rem] p-8 shadow-[0_8px_32px_0_rgba(74,59,53,0.04)] flex flex-col relative overflow-hidden group">
           <h3 className="font-display text-2xl font-bold text-[var(--foreground)] mb-6 flex items-center gap-2">
-            <ShoppingCart className="w-6 h-6 text-primary" /> Sales Channels
+            <ShoppingCart className="w-6 h-6 text-primary" /> Sales by Category
           </h3>
           <div className="flex-1 relative z-10 flex flex-col items-center justify-center min-h-[250px]">
             <ResponsiveContainer width="100%" height={250}>
@@ -245,7 +242,7 @@ export default function AnalyticsPage() {
                   dataKey="value"
                   stroke="none"
                 >
-                  {sourceData.map((entry, index) => (
+                  {sourceData.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -257,12 +254,12 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-2 gap-4 mt-4">
-            {sourceData.map((src, idx) => (
+            {sourceData.map((src: any, idx: number) => (
               <div key={idx} className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
                 <div>
-                  <p className="text-[10px] font-ui uppercase font-bold text-gray-500 tracking-wider">{src.name}</p>
-                  <p className="text-sm font-black font-display">{src.value}%</p>
+                  <p className="text-[10px] font-ui uppercase font-bold text-gray-500 tracking-wider truncate w-24" title={src.name}>{src.name}</p>
+                  <p className="text-sm font-black font-display">₹{src.value.toLocaleString()}</p>
                 </div>
               </div>
             ))}

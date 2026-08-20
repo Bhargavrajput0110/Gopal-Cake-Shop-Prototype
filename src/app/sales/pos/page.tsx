@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useSession } from "next-auth/react"
 import { useQuery } from "@tanstack/react-query"
 import { fetchClient } from "@/lib/api/client"
 import { ProductGrid } from "./components/ProductGrid"
@@ -16,13 +17,20 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 
 export default function POSPage() {
+  const { data: session } = useSession()
   const { clearCart } = useCart()
   const [isPaymentOpen, setIsPaymentOpen] = React.useState(false)
   const [successOrder, setSuccessOrder] = React.useState<string | null>(null)
   const [isBulkModalOpen, setIsBulkModalOpen] = React.useState(false)
   
-  // Default to Warasiya ('varasiya') so sales staff/admin can immediately experience the wholesale feature
-  const [activeBranch, setActiveBranch] = React.useState<BranchId>("varasiya")
+  const defaultBranch = (session?.user?.branchId as BranchId) || "uma"
+  const [activeBranch, setActiveBranch] = React.useState<BranchId>(defaultBranch)
+
+  React.useEffect(() => {
+    if (session?.user?.branchId) {
+      setActiveBranch(session.user.branchId as BranchId)
+    }
+  }, [session?.user?.branchId])
 
   // Fetch only active, POS enabled products.
   const { data: products = [], isLoading: isLoadingProducts, error: productsError } = useQuery({
@@ -128,18 +136,12 @@ export default function POSPage() {
             <div className="flex items-center gap-3">
               <h1 className="font-display text-3xl font-black text-foreground tracking-tight leading-none">Point of Sale</h1>
               
-              {/* Active Branch Terminal Switcher */}
+              {/* Active Branch Display (Locked to user) */}
               <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-xl px-3 py-1 ml-2">
                 <Shop className="w-4 h-4 text-primary shrink-0" />
-                <select 
-                  value={activeBranch} 
-                  onChange={(e) => setActiveBranch(e.target.value as BranchId)}
-                  className="bg-transparent font-black text-xs uppercase tracking-wider text-foreground focus:outline-none cursor-pointer"
-                >
-                  {BRANCHES.map(b => (
-                    <option key={b.id} value={b.id} className="text-black">{b.displayName}</option>
-                  ))}
-                </select>
+                <span className="font-black text-xs uppercase tracking-wider text-foreground">
+                  {BRANCHES.find(b => b.id === activeBranch)?.displayName || 'BRANCH'}
+                </span>
               </div>
             </div>
 
