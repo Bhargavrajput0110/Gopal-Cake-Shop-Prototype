@@ -461,13 +461,13 @@ export function FeaturedProducts() {
 
         {/* ── Product Grid ── */}
         {loading ? (
-          <div className="grid grid-flow-col auto-cols-[45%] md:auto-cols-auto md:grid-flow-row md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-6 -mx-6 px-6 md:mx-0 md:px-0 md:pb-0">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
               <ProductSkeleton key={i} />
             ))}
           </div>
         ) : (
-          <div className="grid grid-flow-col auto-cols-[45%] md:auto-cols-auto md:grid-flow-row md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-6 -mx-6 px-6 md:mx-0 md:px-0 md:pb-0">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {products
               .filter((p) => {
                 if (activeCategory === "All") return true;
@@ -508,9 +508,7 @@ export function FeaturedProducts() {
               .slice(0, 12)
               .map((product) => {
                 return (
-                  <div key={product.id} className="snap-center">
-                    <FeaturedProductCard product={product} />
-                  </div>
+                  <FeaturedProductCard key={product.id} product={product} />
                 );
               })}
           </div>
