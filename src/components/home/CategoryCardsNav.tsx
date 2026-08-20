@@ -41,7 +41,7 @@ export function CategoryCardsNav() {
 
   return (
     <section className="px-6 py-10 max-w-[1440px] mx-auto bg-background z-20 relative">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 pb-4 -mx-6 px-6 md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-3">
         {cards.map((card, index) => (
           <motion.a
             key={card.id}
@@ -50,7 +50,7 @@ export function CategoryCardsNav() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * index, duration: 0.5 }}
-            className="group relative h-32 md:h-48 w-full rounded-[2rem] overflow-hidden flex items-end p-6 border border-[var(--border)] shadow-sm hover:shadow-md transition-shadow active:scale-[0.98]"
+            className="group relative h-32 md:h-48 flex-shrink-0 w-[85vw] sm:w-[45vw] md:w-auto snap-center rounded-[2rem] overflow-hidden flex items-end p-6 border border-[var(--border)] shadow-sm hover:shadow-md transition-shadow active:scale-[0.98]"
           >
             {/* Background Image */}
             <div 
