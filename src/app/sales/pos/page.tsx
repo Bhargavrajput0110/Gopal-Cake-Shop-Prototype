@@ -128,27 +128,29 @@ export default function POSPage() {
     <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground relative">
       
       {/* POS Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border bg-white shrink-0 z-20 shadow-sm">
-        <div className="flex items-center gap-6">
-          <Link href="/sales" className="p-3 bg-muted hover:bg-muted/80 border border-border rounded-full text-foreground transition-colors shadow-sm">
-            <ArrowLeft className="w-6 h-6" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="font-display text-3xl font-black text-foreground tracking-tight leading-none">Point of Sale</h1>
-              
-              {/* Active Branch Terminal Switcher */}
-              <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-xl px-3 py-1 ml-2">
-                <Shop className="w-4 h-4 text-primary shrink-0" />
-                <span className="font-black text-xs uppercase tracking-wider text-foreground">
-                  {BRANCHES.find(b => b.id === activeBranch)?.displayName || 'BRANCH'}
-                </span>
+      <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 px-4 sm:px-6 py-4 border-b border-border bg-white shrink-0 z-20 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full md:w-auto">
+          <div className="flex items-center gap-4">
+            <Link href="/sales" className="p-3 bg-muted hover:bg-muted/80 border border-border rounded-full text-foreground transition-colors shadow-sm shrink-0">
+              <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+            </Link>
+            <div>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <h1 className="font-display text-2xl sm:text-3xl font-black text-foreground tracking-tight leading-none">Point of Sale</h1>
+                
+                {/* Active Branch Terminal Switcher */}
+                <div className="flex items-center gap-1.5 sm:gap-2 bg-muted/50 border border-border rounded-xl px-2 py-1 sm:px-3 sm:py-1">
+                  <Shop className="w-4 h-4 text-primary shrink-0" />
+                  <span className="font-black text-xs uppercase tracking-wider text-foreground">
+                    {BRANCHES.find(b => b.id === activeBranch)?.displayName || 'BRANCH'}
+                  </span>
+                </div>
               </div>
+  
+              <p className="font-ui text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Terminal 01 • Active Outlet: {BRANCHES.find(b => b.id === activeBranch)?.shortName}
+              </p>
             </div>
-
-            <p className="font-ui text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Terminal 01 • Active Outlet: {BRANCHES.find(b => b.id === activeBranch)?.shortName}
-            </p>
           </div>
         </div>
 
@@ -171,7 +173,7 @@ export default function POSPage() {
             </motion.button>
           )}
 
-          <div className="w-80">
+          <div className="w-full sm:w-80 mt-2 md:mt-0">
             <CustomerSelector />
           </div>
         </div>

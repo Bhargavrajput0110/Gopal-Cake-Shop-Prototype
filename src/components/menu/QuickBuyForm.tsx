@@ -279,7 +279,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       </div>
 
       {/* 3. FIXED CHECKOUT BUTTON BAR */}
-      <div className="shrink-0 h-[84px] bg-background border-t border-border/40 flex items-center justify-center p-3 px-4 z-30">
+      <div className="shrink-0 h-[84px] bg-background border-t border-border/40 flex items-center justify-center p-3 px-4 z-30 sticky bottom-0 mt-auto">
         <Button 
           onClick={handleAddToCart}
           className="w-full h-13 py-3 rounded-2xl bg-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/90 text-white font-ui font-bold text-sm tracking-widest uppercase shadow-lg shadow-[var(--brand-deep-rose)]/20 hover:-translate-y-1 transition-all"
