@@ -148,7 +148,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       data-lenis-prevent-touch="true"
     >
       {/* 1. FIXED TOP HEADER CAKE PHOTO (Static at top, never scrolls away) */}
-      <div className="relative w-full h-[180px] shrink-0 bg-black/95 flex items-center justify-center overflow-hidden">
+      <div className="relative w-full h-[120px] md:h-[180px] shrink-0 bg-black/95 flex items-center justify-center overflow-hidden">
         {(product.thumbnail || product.imageUrl || product.image) ? (
           <>
             <Image src={product.thumbnail || product.imageUrl || product.image} alt={product.name} fill className="object-cover opacity-25 blur-md scale-110" />

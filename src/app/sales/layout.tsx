@@ -1,7 +1,7 @@
 "use client"
 
 import { AppSidebar, AppTopbar, SALES_NAV_CONFIG } from "@/components/navigation"
-import { ClipboardText, Monitor, Location, Convert3DCube, ShoppingCart } from "iconsax-react"
+import { ClipboardText, Monitor, Location, Convert3DCube, Shop } from "iconsax-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -15,9 +15,9 @@ export default function SalesLayout({
   const pathname = usePathname();
 
   const bottomNavItems = [
+    { name: "Overview", href: "/sales", icon: Shop, exact: true },
     { name: "Orders", href: "/sales/orders", icon: ClipboardText },
     { name: "POS", href: "/sales/pos", icon: Monitor },
-    { name: "Checkout", href: "/sales/checkout", icon: ShoppingCart },
     { name: "Delivery", href: "/sales/delivery", icon: Location },
     { name: "Transfers", href: "/sales/transfers", icon: Convert3DCube },
   ];
@@ -38,8 +38,8 @@ export default function SalesLayout({
         {/* Mobile Bottom Navigation */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--border)] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-[100] pb-safe">
           <div className="flex items-center justify-around p-2">
-            {bottomNavItems.map((item) => {
-              const isActive = pathname.startsWith(item.href);
+            {bottomNavItems.map((item: any) => {
+              const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
               const Icon = item.icon;
               return (
                 <Link key={item.name} href={item.href} className="flex flex-col items-center gap-1 p-1">

@@ -178,14 +178,14 @@ export default function POSPage() {
       </header>
 
       {/* POS Body */}
-      <main className="flex-1 flex overflow-hidden p-6 gap-6 z-10 relative max-w-[1440px] mx-auto w-full">
+      <main className="flex-1 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden p-2 sm:p-6 gap-6 z-10 relative max-w-[1440px] mx-auto w-full pb-24 xl:pb-6">
         {/* Left Side: Product Grid / Form */}
-        <div className="flex-1 h-full min-w-[500px]">
+        <div className="flex-1 w-full xl:h-full xl:min-w-[500px]">
           <ProductGrid products={products} categories={categories} isLoading={isLoadingProducts || isLoadingCategories} />
         </div>
 
         {/* Right Side: Cart */}
-        <div className="w-[420px] shrink-0 h-full">
+        <div className="w-full xl:w-[420px] shrink-0 xl:h-full">
           <CartPanel onCheckout={() => setIsPaymentOpen(true)} />
         </div>
       </main>
