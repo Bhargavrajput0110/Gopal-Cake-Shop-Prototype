@@ -186,7 +186,26 @@ export default auth(function proxy(req: NextRequest) {
       loginUrl.searchParams.set('callbackUrl', `${baseOrigin}${pathname}`);
       return NextResponse.redirect(loginUrl);
     }
-    // Authenticated — fall through
+    
+    // STRICT ROLE-BASED ACCESS CONTROL (RBAC)
+    const role = (session.user as any)?.role?.toUpperCase();
+    
+    if (pathname.startsWith('/admin') && role !== 'ADMIN') {
+      return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
+    }
+    if (pathname.startsWith('/chef') && role !== 'CHEF' && role !== 'ADMIN') {
+      return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
+    }
+    if (pathname.startsWith('/sales') && role !== 'SALESPERSON' && role !== 'MANAGER' && role !== 'ADMIN') {
+      return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
+    }
+    if ((pathname.startsWith('/driver') || pathname.startsWith('/delivery')) && role !== 'DELIVERY' && role !== 'ADMIN') {
+      return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
+    }
+    if (pathname.startsWith('/manager') && role !== 'MANAGER' && role !== 'ADMIN') {
+      return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
+    }
+    // Authenticated and authorized — fall through
   }
 
   // ── 2. Request ID configured above ─────────────────────────────────────────
