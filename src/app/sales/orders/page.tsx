@@ -101,10 +101,16 @@ function SalesDashboardContent() {
 
   // Determine branch using canonical IDs
   const [activeBranch, setActiveBranch] = useState<BranchId>(() => {
-    if (employeeId.includes("-UMA-")) return "uma";
-    if (employeeId.includes("-KHM-")) return "khanderao";
-    if (employeeId.includes("-ELR-")) return "elora";
-    if (employeeId.includes("-WAS-")) return "varasiya";
+    if (employeeId) {
+      if (employeeId.includes("-UMA-")) return "uma";
+      if (employeeId.includes("-KHM-")) return "khanderao";
+      if (employeeId.includes("-ELR-")) return "elora";
+      if (employeeId.includes("-WAS-")) return "varasiya";
+    }
+    // Fallback to session branch
+    if ((session?.user as any)?.branchId) {
+      return (session?.user as any).branchId;
+    }
     return "khanderao"; // Default
   });
 
@@ -114,8 +120,10 @@ function SalesDashboardContent() {
       else if (employeeId.includes("-KHM-")) setActiveBranch("khanderao");
       else if (employeeId.includes("-ELR-")) setActiveBranch("elora");
       else if (employeeId.includes("-WAS-")) setActiveBranch("varasiya");
+    } else if ((session?.user as any)?.branchId) {
+      setActiveBranch((session?.user as any).branchId);
     }
-  }, [employeeId]);
+  }, [employeeId, session?.user]);
 
   const fetchOrders = async (signal?: AbortSignal) => {
     setLoading(true);
