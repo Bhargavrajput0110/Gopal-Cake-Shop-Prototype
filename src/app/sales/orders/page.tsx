@@ -276,12 +276,22 @@ function SalesDashboardContent() {
         }
       };
       
+      const handleOrderUpdate = () => {
+        fetchOrders();
+      };
+      
       socket.on('notification_sent', handleNotificationSent);
+      socket.on('order_created', handleOrderUpdate);
+      socket.on('order_updated', handleOrderUpdate);
+      
       return () => {
         socket.off('notification_sent', handleNotificationSent);
+        socket.off('order_created', handleOrderUpdate);
+        socket.off('order_updated', handleOrderUpdate);
       };
     }
-  }, [socket]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, page, filter, search, dateFilter, customDate, activeBranch]);
 
   const unapprovedCount = serverOrders.filter(o => o.status === "NEW").length;
   const priorityAlertCount = serverOrders.filter(o => 
