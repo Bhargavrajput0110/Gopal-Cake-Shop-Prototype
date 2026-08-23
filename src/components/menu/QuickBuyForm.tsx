@@ -275,6 +275,27 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
             />
             <p className="text-right text-[11px] text-muted-foreground">{notes.length}/300</p>
           </div>
+
+          {/* Reference Images for Custom Cakes */}
+          {isCustom && (
+            <div className="space-y-3">
+              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                <GalleryAdd className="w-4 h-4 text-primary" />
+                Reference Images
+                <span className="text-muted-foreground normal-case text-[10px]">(Optional - Max 3)</span>
+              </label>
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                <CloudinaryUploader
+                  maxFiles={3}
+                  folder="custom_references"
+                  onUploadSuccess={(urls) => setReferenceImages(urls)}
+                />
+                {referenceImages.length > 0 && (
+                  <p className="text-xs text-emerald-600 font-bold mt-2">{referenceImages.length} image(s) uploaded</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
