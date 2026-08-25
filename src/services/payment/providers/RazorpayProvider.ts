@@ -15,8 +15,8 @@ export class RazorpayProvider implements PaymentProvider {
 
   constructor() {
     this.razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID || 'dummy_key',
-      key_secret: process.env.RAZORPAY_KEY_SECRET || 'dummy_secret',
+      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_TTyllhwAQDGGkO',
+      key_secret: process.env.RAZORPAY_KEY_SECRET || '1yQ2KyVQ0CSh832Yqe3rg6mf',
     });
   }
 

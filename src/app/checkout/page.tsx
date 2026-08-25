@@ -286,7 +286,7 @@ export default function CheckoutPage() {
         const rzpData = await rzpRes.json();
         
         const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_TTyllhwAQDGGkO',
           amount: rzpData.data.amount,
           currency: rzpData.data.currency,
           name: "Gopal Cake Shop",
