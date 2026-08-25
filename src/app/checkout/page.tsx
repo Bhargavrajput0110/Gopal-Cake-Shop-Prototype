@@ -1,5 +1,6 @@
 "use client";
 
+import Script from "next/script";
 import { BackButton } from "@/components/ui/BackButton";
 import { NotificationToast } from "@/components/ui/NotificationToast";
 import React, { useState, useEffect } from "react";
@@ -266,8 +267,81 @@ export default function CheckoutPage() {
       }
 
       const data = await res.json();
-      clearCart();
-      router.push(`/track/${data.trackingId}`);
+      const createdOrderId = data.orderId;
+      const trackingId = data.trackingId;
+
+      if (paymentMethod === "ADVANCE_50" || paymentMethod === "ONLINE_100") {
+        const paymentAmount = paymentMethod === "ADVANCE_50" ? subtotal / 2 : subtotal;
+        
+        const rzpRes = await fetch("/api/v1/payments/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: createdOrderId, amount: paymentAmount, method: "RAZORPAY" })
+        });
+        
+        if (!rzpRes.ok) {
+          throw new Error("Failed to initialize payment gateway");
+        }
+        
+        const rzpData = await rzpRes.json();
+        
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: rzpData.data.amount,
+          currency: rzpData.data.currency,
+          name: "Gopal Cake Shop",
+          description: "Order Payment",
+          order_id: rzpData.data.id,
+          handler: async function (response: any) {
+            const verifyRes = await fetch("/api/v1/payments/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                orderId: createdOrderId,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature
+              })
+            });
+            
+            if (verifyRes.ok) {
+              clearCart();
+              router.push(`/track/${trackingId}`);
+            } else {
+              setToast({
+                id: Date.now().toString(),
+                title: "Payment Verification Failed",
+                message: "Please contact support if amount was deducted.",
+                variant: "warning",
+              });
+              setIsSubmitting(false);
+            }
+          },
+          prefill: {
+            name: formData.name,
+            email: formData.email,
+            contact: formData.phone
+          },
+          theme: {
+            color: "#e11d48"
+          }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (response: any){
+          setToast({
+            id: Date.now().toString(),
+            title: "Payment Failed",
+            message: response.error.description || "Payment was not completed.",
+            variant: "warning",
+          });
+          setIsSubmitting(false);
+        });
+        rzp.open();
+      } else {
+        clearCart();
+        router.push(`/track/${trackingId}`);
+      }
     } catch (err: any) {
       console.error("Checkout Exception:", err);
       setToast({
@@ -302,7 +376,9 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32 pt-24 md:pt-32">
+    <>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
+      <div className="min-h-screen bg-background pb-32 lg:pb-0 relative">
       <div className="max-w-[1200px] mx-auto px-4 md:px-8">
         <BackButton
           fallback="/menu"
@@ -922,5 +998,6 @@ export default function CheckoutPage() {
         </div>
       )}
     </div>
+    </>
   );
 }
