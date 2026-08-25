@@ -5,7 +5,8 @@ import { FinancialService } from '@/services/FinancialService'
 
 export const GET = withApiHandler(async (ctx) => {
   const { appRole, user } = ctx
-  if (appRole !== 'DELIVERY' && appRole !== 'ADMIN' && appRole !== 'MANAGER') {
+  const hasDeliveryScope = !!(user as any).deliveryScope;
+  if (appRole !== 'DELIVERY' && appRole !== 'ADMIN' && appRole !== 'MANAGER' && !hasDeliveryScope) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -19,13 +20,18 @@ export const GET = withApiHandler(async (ctx) => {
   startOfDay.setHours(0, 0, 0, 0)
 
   let branchFilter: any = {};
-  if (appRole === 'DELIVERY') {
-    if (ctx.deliveryScopes && ctx.deliveryScopes.includes('ALL')) {
+  if (appRole === 'DELIVERY' || appRole === 'SALESPERSON') {
+    const scope = (user as any).deliveryScope || null;
+    if (scope === 'GLOBAL' || scope === 'ALL_BRANCHES') {
       branchFilter = {};
-    } else if (ctx.deliveryScopes && ctx.deliveryScopes.length > 0) {
-      branchFilter = { branchId: { in: ctx.deliveryScopes } };
+    } else if (scope === 'UMA_WARASHIYA_PLUS_ASSIGNED') {
+      branchFilter = { branchId: { in: ['uma', 'cmswuiiu000021su3kv1mr41f'] } };
+    } else if (scope === 'WARASHIYA_PLUS_ASSIGNED' || scope === 'WARASHIYA') {
+      branchFilter = { branchId: 'cmswuiiu000021su3kv1mr41f' };
     } else if (user.branchId) {
       branchFilter = { branchId: user.branchId };
+    } else {
+      branchFilter = { branchId: 'no-access' }; // fallback
     }
   }
 

@@ -325,12 +325,30 @@ export default function ChefDashboardPage() {
         {/* Ticket Body (Items) */}
         <div className="flex-1 p-4 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-10">
           
-          {order.cakeImage && (
-            <div className="mb-4 relative group cursor-pointer border-2 border-dashed border-gray-300 p-1 rounded-xl" onClick={() => setFullscreenImage(order.cakeImage!)}>
-              <img src={order.cakeImage} alt="Ref" className="w-full h-32 object-cover rounded-lg group-hover:opacity-80" />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <span className="bg-black/70 text-white font-bold text-xs px-3 py-1 rounded-full backdrop-blur-sm">ENLARGE</span>
+          {(() => {
+            const allImages = [
+              ...(order.cakeImage ? [order.cakeImage] : []),
+              ...order.items.flatMap(i => [...(i.referenceImages || []), ...(i.printImages || [])])
+            ].filter(Boolean);
+
+            return allImages.length > 0 ? (
+              <div className="mb-4 flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                {allImages.map((img, i) => (
+                  <div key={i} className="relative group cursor-pointer border-2 border-dashed border-gray-300 p-1 rounded-xl shrink-0 w-32 h-32" onClick={() => setFullscreenImage(img)}>
+                    <img src={img} alt="Ref" className="w-full h-full object-cover rounded-lg group-hover:opacity-80" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      <span className="bg-black/70 text-white font-bold text-[10px] px-2 py-1 rounded-full backdrop-blur-sm">ENLARGE</span>
+                    </div>
+                  </div>
+                ))}
               </div>
+            ) : null;
+          })()}
+
+          {order.customerInstructions && (
+            <div className="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded-xl">
+              <p className="font-black text-blue-900 text-[10px] uppercase tracking-widest mb-1">Customer Instructions</p>
+              <p className="font-bold text-blue-800 text-sm whitespace-pre-wrap">{order.customerInstructions}</p>
             </div>
           )}
 

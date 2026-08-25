@@ -237,6 +237,10 @@ export class StorefrontEngine {
         }
 
         if (calculatedDistanceKm !== undefined) {
+          // BUSINESS RULE: Delivery distance capped at 20km
+          if (calculatedDistanceKm > 20) {
+            throw new Error(`Delivery distance (${calculatedDistanceKm.toFixed(1)}km) exceeds 20km. For orders outside Vadodara, please contact Owner Rishi Bhai at +91 97126 32132 to proceed.`);
+          }
           // Apply tiered distance-based pricing:
           // 0–5 km → ₹100 | 5–10 km → ₹150 | >10 km → ₹150 + ₹10/km beyond 10
           deliveryCharge = StorefrontEngine.calculateDistanceBasedDeliveryCharge(calculatedDistanceKm)
