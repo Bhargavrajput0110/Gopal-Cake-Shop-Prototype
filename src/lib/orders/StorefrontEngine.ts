@@ -113,8 +113,17 @@ export class StorefrontEngine {
         throw new Error('Uma Branch (delivery fulfillment outlet) is not configured or inactive.')
       }
     } else {
-      const parsedBranchId = toBranchId(payload.branchId)
-      branch = await prisma.branch.findUnique({ where: { id: parsedBranchId } })
+      // First try to find by exact ID (if frontend sent a real CUID)
+      branch = await prisma.branch.findUnique({ where: { id: payload.branchId } })
+      
+      if (!branch) {
+        // Fallback: If it's an alias like "uma", parse it and lookup by code
+        const parsedBranchCode = toBranchId(payload.branchId)
+        branch = await prisma.branch.findFirst({
+          where: { code: { equals: parsedBranchCode, mode: 'insensitive' } }
+        })
+      }
+      
       if (!branch || !branch.isActive) {
         throw new Error('Selected pickup branch is invalid or inactive.')
       }
