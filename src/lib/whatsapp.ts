@@ -53,15 +53,15 @@ export async function sendWhatsAppNotification(
       language: {
         code: "en"
       },
-      // Optional: Add parameters here if your templates in Meta require dynamic variables
-      // components: [
-      //   {
-      //     type: "body",
-      //     parameters: [
-      //       { type: "text", text: orderData.customerName }
-      //     ]
-      //   }
-      // ]
+      components: [
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: orderData.customerName || "Valued Customer" },
+            { type: "text", text: orderData.id }
+          ]
+        }
+      ]
     }
   };
 

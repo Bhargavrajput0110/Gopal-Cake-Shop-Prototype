@@ -7,11 +7,11 @@ export interface NotificationRule {
 // Maps Timeline `action` strings to a list of Notification Rules
 export const NotificationMatrix: Record<string, NotificationRule[]> = {
   'checkout': [
-    { recipientRole: 'CUSTOMER', channel: 'WHATSAPP', templateName: 'Order Received' },
+    { recipientRole: 'CUSTOMER', channel: 'WHATSAPP', templateName: 'ORDER_CONFIRMED' },
     { recipientRole: 'SALES', channel: 'IN_APP', templateName: 'Order Placed' }
   ],
   'chef-accept': [
-    { recipientRole: 'CUSTOMER', channel: 'WHATSAPP', templateName: 'Chef Accepted' }
+    { recipientRole: 'CUSTOMER', channel: 'WHATSAPP', templateName: 'MAKING' }
   ],
   'VENDOR_ACCEPTED': [
     { recipientRole: 'SALES', channel: 'IN_APP', templateName: 'Vendor Accepted' }
@@ -20,19 +20,16 @@ export const NotificationMatrix: Record<string, NotificationRule[]> = {
     { recipientRole: 'SALES', channel: 'IN_APP', templateName: 'Vendor Component Ready' }
   ],
   'ready': [
-    // This is typically a broadcast to delivery drivers in the branch if order is delivery
     { recipientRole: 'DELIVERY', channel: 'IN_APP', templateName: 'Ready For Pickup Broadcast' }
   ],
   'assign-driver': [
     { recipientRole: 'DRIVER_ASSIGNEE', channel: 'PUSH', templateName: 'Assigned to Driver' }
   ],
   'ADMIN_OVERRIDE': [
-    // Admin assigned driver is an ADMIN_OVERRIDE action with nextState ASSIGNED_TO_DRIVER
-    // We will handle dynamic checks in the service, but let's define rule:
     { recipientRole: 'DRIVER_ASSIGNEE', channel: 'PUSH', templateName: 'Assigned to Driver' }
   ],
   'on-the-way': [
-    { recipientRole: 'CUSTOMER', channel: 'WHATSAPP', templateName: 'On The Way' }
+    { recipientRole: 'CUSTOMER', channel: 'WHATSAPP', templateName: 'OUT_FOR_DELIVERY' }
   ],
   'deliver': [
     { recipientRole: 'CUSTOMER', channel: 'WHATSAPP', templateName: 'DELIVERED' }
