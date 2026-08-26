@@ -20,6 +20,7 @@ export const NotificationMatrix: Record<string, NotificationRule[]> = {
     { recipientRole: 'SALES', channel: 'IN_APP', templateName: 'Vendor Component Ready' }
   ],
   'ready': [
+    { recipientRole: 'CUSTOMER', channel: 'WHATSAPP', templateName: 'READY_FOR_PICKUP' },
     { recipientRole: 'DELIVERY', channel: 'IN_APP', templateName: 'Ready For Pickup Broadcast' }
   ],
   'assign-driver': [

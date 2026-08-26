@@ -126,10 +126,18 @@ export class NotificationDispatcher {
           let orderData = { id: orderId || 'unknown', customerName: 'Customer', branch: branchId || 'unknown' };
           
           if (orderId) {
-            const o = await prisma.order.findUnique({ where: { id: orderId }, select: { customer: { select: { name: true } }, branchId: true } });
+            const o = await prisma.order.findUnique({ 
+              where: { id: orderId }, 
+              select: { customer: { select: { name: true } }, branchId: true, deliveryType: true } 
+            });
             if (o) {
               orderData.customerName = o.customer?.name ?? 'Customer';
               orderData.branch = o.branchId;
+              
+              if (templateName === 'READY_FOR_PICKUP' && o.deliveryType !== 'PICKUP') {
+                LoggerService.info(`[WhatsApp] Skipped READY_FOR_PICKUP because order is ${o.deliveryType}`);
+                return; // Skip sending "ready for pickup" if it's a delivery order
+              }
             }
           }
           
