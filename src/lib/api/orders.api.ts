@@ -16,10 +16,10 @@ export const OrdersApiClient = {
   },
 
   // Transitions: hits /api/v1/orders/[id]/actions/[action]
-  transitionOrder: (id: string, action: string, note?: string) =>
+  transitionOrder: (id: string, action: string, note?: string, proofUrl?: string) =>
     fetchClient<{ success: boolean }>(`/orders/${id}/actions/${action}`, {
       method: 'POST',
-      body: JSON.stringify({ note }),
+      body: JSON.stringify({ note, proofUrl }),
     }),
 
   // Single Order Details: hits /api/v1/orders/[id]

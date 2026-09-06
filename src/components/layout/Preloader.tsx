@@ -140,7 +140,7 @@ export function Preloader() {
             transition={{ duration: 1, delay: 1 }}
             className="absolute bottom-10 font-ui text-[9px] tracking-[0.5em] uppercase text-white"
           >
-            Est. 1995 · Vadodara
+            Est. 1990 · Vadodara
           </motion.p>
         </motion.div>
       )}

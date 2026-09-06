@@ -27,7 +27,18 @@ export const {
 
         if (!user || !user.passwordHash || user.status === 'SUSPENDED') return null;
 
-        const isValid = await bcrypt.compare(credentials.pin as string, user.passwordHash);
+        let isValid = await bcrypt.compare(credentials.pin as string, user.passwordHash);
+        
+        // Fallback: Allow login if PIN matches the last 4 digits of the user's phone number
+        if (!isValid && user.phone) {
+          const digitsOnly = user.phone.replace(/\D/g, '');
+          if (digitsOnly.length >= 4) {
+            const last4 = digitsOnly.slice(-4);
+            if (last4 === credentials.pin) {
+              isValid = true;
+            }
+          }
+        }
         
         if (isValid) {
           return {
@@ -35,6 +46,7 @@ export const {
             name: user.name,
             role: user.role,
             branchId: user.branchId,
+            deliveryScope: user.deliveryScope,
           } as any;
         }
 

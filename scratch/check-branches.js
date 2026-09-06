@@ -1,9 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-
-async function main() {
-  const branches = await prisma.branch.findMany();
-  console.log('Current Branches in DB:', branches);
-}
-
-main().catch(console.error).finally(() => prisma.$disconnect());
+prisma.branch.findMany().then(b => {
+  console.log(b.map(br => ({ id: br.id, name: br.name, code: br.code })))
+}).finally(() => prisma.$disconnect());

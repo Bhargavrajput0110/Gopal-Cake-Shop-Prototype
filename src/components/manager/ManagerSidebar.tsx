@@ -1,8 +1,10 @@
 "use client";
+import { signOut } from "next-auth/react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Category, Reserve, BoxTick, Car, Logout } from "iconsax-react";
+import { authSignOut } from "@/lib/authUtils";
 
 export const navItems = [
   { name: "Branch Dashboard", href: "/manager", icon: Category },
@@ -57,7 +59,7 @@ export function ManagerSidebar() {
       {/* User Footer */}
       <div className="p-4 border-t border-border">
         <button 
-          onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
+          onClick={() => { authSignOut("/login") }}
           className="flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-destructive transition-colors w-full px-3 py-2 rounded-lg hover:bg-destructive/10"
         >
           <Logout className="w-4 h-4" />

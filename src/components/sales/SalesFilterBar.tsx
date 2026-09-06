@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { SearchNormal1, CloseSquare } from "iconsax-react";
 
@@ -37,7 +37,7 @@ export function SalesFilterBar() {
     return () => clearTimeout(handler);
   }, [localSearch, currentSearch]);
 
-  const updateUrlParams = useCallback((updates: Record<string, string | null>) => {
+  const updateUrlParams = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(updates).forEach(([key, value]) => {
       if (value === null || value === "") {
@@ -47,7 +47,7 @@ export function SalesFilterBar() {
       }
     });
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [searchParams, pathname, router]);
+  };
 
   const handleCustomDateChange = (val: string) => {
     if (!val) {

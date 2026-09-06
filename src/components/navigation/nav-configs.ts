@@ -7,13 +7,11 @@ import { Category, Bag, Profile2User, Shop, Setting2, Box, Tag, People, TruckFas
 import type { AppConfig } from "./navigation.types"
 
 import { signOut } from "next-auth/react"
+import { authSignOut } from "@/lib/authUtils";
 
 const SIGN_OUT = async () => {
-  document.cookie = "gopal_dummy_role=; path=/; max-age=0"
-  document.cookie = "e2e-bypass-auth=; path=/; max-age=0"
-  
   try {
-    await signOut({ callbackUrl: '/login' })
+    await authSignOut("/login")
   } catch (e) {
     window.location.href = "/login"
   }
@@ -24,8 +22,8 @@ export const ADMIN_NAV_CONFIG: AppConfig = {
   appName: "Gopal Cake Shop",
   appSubtitle: "Admin Panel",
   rootHref: "/admin",
-  user: { name: "Gopal Bhai", role: "Owner · Admin", initials: "G", mockId: "ADM-01" },
-  onSignOut: SIGN_OUT,
+  user: { name: "Gopal Bhai", role: "Owner · Admin", initials: "G" },
+  
   nav: [
     {
       label: "Management",
@@ -53,7 +51,7 @@ export const SALES_NAV_CONFIG: AppConfig = {
   appName: "Gopal Bakery",
   appSubtitle: "Sales Desk",
   rootHref: "/sales",
-  onSignOut: SIGN_OUT,
+  
   nav: [
     {
       items: [
@@ -74,8 +72,8 @@ export const MANAGER_NAV_CONFIG: AppConfig = {
   appName: "Gopal Bakery",
   appSubtitle: "Branch Manager",
   rootHref: "/manager",
-  user: { name: "Rahul Sharma", role: "Branch Manager", initials: "RS", mockId: "MGR-KHM" },
-  onSignOut: SIGN_OUT,
+  user: { name: "Rahul Sharma", role: "Branch Manager", initials: "RS" },
+  
   nav: [
     {
       items: [
@@ -93,8 +91,8 @@ export const CHEF_NAV_CONFIG: AppConfig = {
   appName: "Kitchen Display",
   appSubtitle: "Chef Station",
   rootHref: "/chef",
-  user: { name: "Chef Sanjeev", role: "Head Chef", initials: "CS", mockId: "CHEF-01" },
-  onSignOut: SIGN_OUT,
+  user: { name: "Chef Sanjeev", role: "Head Chef", initials: "CS" },
+  
   nav: [
     {
       items: [
@@ -109,8 +107,8 @@ export const DELIVERY_NAV_CONFIG: AppConfig = {
   appName: "Driver App",
   appSubtitle: "Delivery Portal",
   rootHref: "/driver",
-  user: { name: "Amit Kumar", role: "Driver", initials: "AK", mockId: "DRV-14" },
-  onSignOut: SIGN_OUT,
+  user: { name: "Amit Kumar", role: "Driver", initials: "AK" },
+  
   nav: [
     {
       items: [
@@ -125,8 +123,8 @@ export const VENDOR_NAV_CONFIG: AppConfig = {
   appName: "Vendor Portal",
   appSubtitle: "Tasks",
   rootHref: "/vendor",
-  user: { name: "PrintMagic Studio", role: "Vendor", initials: "PM", mockId: "VND-PHOTO" },
-  onSignOut: SIGN_OUT,
+  user: { name: "PrintMagic Studio", role: "Vendor", initials: "PM" },
+  
   nav: [
     {
       items: [

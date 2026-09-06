@@ -55,4 +55,4 @@ export const POST = withApiHandler(async ({ req, appRole, branchId, requestId })
 
   const order = await OrderService.createDraftOrder(payload, branchId, appRole)
   return createdResponse(order, 'Draft order created successfully', requestId)
-}, true)
+})

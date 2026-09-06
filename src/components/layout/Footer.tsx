@@ -81,7 +81,7 @@ export function Footer() {
               <span className="font-display italic font-light text-2xl text-[var(--brand-champagne)] ml-2">Cakes</span>
             </Link>
             <p className="font-editorial italic text-white/40 text-base leading-relaxed mb-8 max-w-[280px]">
-              Handcrafted cakes for every celebration. 100% eggless. Baked fresh daily since 1995.
+              Handcrafted cakes for every celebration. 100% eggless. Baked fresh daily since 1990.
             </p>
 
             {/* Socials */}

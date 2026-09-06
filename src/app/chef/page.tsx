@@ -101,7 +101,7 @@ export default function ChefDashboardPage() {
     
   // Ready
   const readyOrders = branchOrders
-    .filter(o => o.status === "READY_FOR_PICKUP")
+    .filter(o => ["READY_FOR_PICKUP", "PENDING_ASSIGNMENT", "ASSIGNED_TO_DRIVER"].includes(o.status))
     .sort((a, b) => new Date(b.timeline?.[b.timeline.length - 1]?.timestamp || b.createdAt).getTime() - new Date(a.timeline?.[a.timeline.length - 1]?.timestamp || a.createdAt).getTime());
 
   // Header Stats
@@ -117,8 +117,8 @@ export default function ChefDashboardPage() {
   });
   
   const statsTotal = todayOrders.length;
-  const statsActive = todayOrders.filter(o => ["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(o.status)).length;
-  const statsCompleted = todayOrders.filter(o => ["READY_FOR_PICKUP", "PENDING_ASSIGNMENT", "ASSIGNED_TO_DRIVER", "PICKED_UP", "ON_THE_WAY", "DELIVERED", "COMPLETED"].includes(o.status)).length;
+  const statsActive = myTasksOrders.length;
+  const statsCompleted = readyOrders.length;
 
   // Interactive Checklist State
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
@@ -243,12 +243,12 @@ export default function ChefDashboardPage() {
 
   const handleAcceptOrder = async (order: Order) => {
     await transitionOrderAction(order.id, "chef-accept");
-    showToast(`Ticket ${order.id.split('-').pop()} moved to My Tasks!`);
+    showToast(`Ticket ${order.orderNumber ? order.orderNumber.split('-').pop() : order.id.slice(-6)} moved to My Tasks!`);
   };
 
   const handleMarkReady = async (order: Order) => {
     await transitionOrderAction(order.id, "ready");
-    showToast(`Ticket ${order.id.split('-').pop()} complete!`);
+    showToast(`Ticket ${order.orderNumber ? order.orderNumber.split('-').pop() : order.id.slice(-6)} complete!`);
   };
 
   const handleSubmitMissingIngredients = () => {
@@ -288,7 +288,7 @@ export default function ChefDashboardPage() {
         {/* Ticket Header */}
         <div className={`p-4 flex justify-between items-center ${headerClass}`}>
           <div>
-            <h3 className="font-black text-2xl tracking-tighter">#{order.id.split('-').pop()}</h3>
+            <h3 className="font-black text-2xl tracking-tighter">#{order.orderNumber ? order.orderNumber.split('-').pop() : order.id.slice(-6)}</h3>
             <span className="font-bold text-xs uppercase tracking-widest opacity-80">{order.orderType}</span>
           </div>
           <div className="text-right">

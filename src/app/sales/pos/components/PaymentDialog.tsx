@@ -2,13 +2,15 @@ import * as React from "react"
 import { MoneyArchive, Card, Mobile, Calendar2, Clock, Location, User, Tag, Warning2 } from "iconsax-react"
 import { useCart } from "@/context/CartContext"
 import { OrdersApiClient } from "@/lib/api/orders.api"
+import { GoogleAddressPicker } from "@/components/home/GoogleAddressPicker"
 
 interface PaymentDialogProps {
   onClose: () => void
   onSuccess: (orderId: string) => void
+  activeBranch?: string
 }
 
-export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
+export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: PaymentDialogProps) {
   const { items: cart, subtotal, clearCart } = useCart()
   
   // Customer & Delivery State
@@ -16,12 +18,34 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
   const [customer, setCustomer] = React.useState({ name: '', phone: '', email: '' })
   const [address, setAddress] = React.useState({ house: '', street: '', area: '', city: 'Vadodara', pin: '', landmark: '' })
   
-  // Fulfillment Time
+  // Fulfillment Time & Location
   const now = new Date()
   now.setHours(now.getHours() + 1)
   const todayStr = new Date().toISOString().split('T')[0]
   const [targetDate, setTargetDate] = React.useState<string>(now.toISOString().split('T')[0])
   const [targetTime, setTargetTime] = React.useState<string>(now.toTimeString().slice(0, 5))
+  
+  // Delivery distance & pricing
+  const [deliveryDistanceKm, setDeliveryDistanceKm] = React.useState<number | undefined>(undefined)
+  const [deliveryLatitude, setDeliveryLatitude] = React.useState<number | null>(null)
+  const [deliveryLongitude, setDeliveryLongitude] = React.useState<number | null>(null)
+  const [isFarDistance, setIsFarDistance] = React.useState<boolean>(false)
+  const [calculatingDistance, setCalculatingDistance] = React.useState<boolean>(false)
+  
+  const deliveryCharge = React.useMemo(() => {
+    if (orderType !== 'DELIVERY' || deliveryDistanceKm === undefined) return 0
+    if (deliveryDistanceKm <= 5) return 100
+    if (deliveryDistanceKm <= 10) return 150
+    return 150 + (Math.ceil(deliveryDistanceKm - 10) * 10)
+  }, [orderType, deliveryDistanceKm])
+
+  const getBranchDisplayName = (id: string) => {
+    if (id === 'uma') return "Uma Char Rasta";
+    if (id === 'khanderao') return "Khanderao Market";
+    if (id === 'elora' || id === 'ellora') return "Ellora Park";
+    if (id === 'varasiya' || id === 'warashiya') return "Factory Warashiya";
+    return "Uma Char Rasta";
+  }
   
   // Store Overrides
   const [priority, setPriority] = React.useState<'NORMAL' | 'HIGH' | 'VIP'>('NORMAL')
@@ -54,7 +78,7 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
       ? (parseFloat(discountValue) || 0) 
       : 0
       
-  const total = Math.max(0, subtotal - discountAmt)
+  const total = Math.max(0, subtotal - discountAmt) + deliveryCharge
   const amountToPay = paymentType === 'FULL' ? total : (parseFloat(advanceAmount) || 0)
   const balanceDue = total - amountToPay
 
@@ -75,14 +99,18 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
       const targetDateISO = new Date(`${targetDate}T${targetTime}:00`).toISOString()
       
       const payload = {
-        customerId: customer.name ? customer.name : 'walk-in',
+        customerId: 'walk-in',
+        customerName: customer.name || undefined,
+        customerPhone: customer.phone || undefined,
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
           weight: item.weight || 1,
           flavor: item.flavor,
           messageOnCake: item.messageOnCake,
-          frontendPrice: item.price
+          overridePrice: item.price,
+          designId: item.productId.startsWith('custom-') ? item.productId : undefined,
+          designName: item.productId.startsWith('custom-') ? item.name : undefined,
         })),
         payments: [
           {
@@ -92,6 +120,11 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
         ],
         paymentType,
         targetDate: targetDateISO,
+        branchId: activeBranch,
+        deliveryType: orderType,
+        address: orderType === 'DELIVERY' ? address : undefined,
+        deliveryDistanceKm: orderType === 'DELIVERY' ? deliveryDistanceKm : undefined,
+        isFarDistance: orderType === 'DELIVERY' ? isFarDistance : undefined,
         isPriority: priority !== 'NORMAL',
         overrideDiscount: discountAmt > 0 ? discountAmt : undefined,
         vendorAssignments: {
@@ -193,7 +226,10 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Phone</label>
-                    <input type="tel" value={customer.phone} onChange={e => setCustomer({...customer, phone: e.target.value})} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif transition-colors placeholder:text-foreground/20" placeholder="+91 9876543210" />
+                    <input type="tel" value={customer.phone} onChange={e => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setCustomer({...customer, phone: val});
+                    }} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif transition-colors placeholder:text-foreground/20" placeholder="9876543210" />
                   </div>
                 </div>
               </div>
@@ -203,20 +239,52 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
                 <div className="space-y-6 animate-in slide-in-from-top-4 fade-in duration-300">
                   <h3 className="font-serif text-xl font-bold border-b border-border/40 pb-2 flex items-center gap-2"><Location className="w-5 h-5 text-primary"/> Delivery Address</h3>
                   
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">House / Flat No.</label>
-                    <input type="text" value={address.house} onChange={e => setAddress({...address, house: e.target.value})} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif transition-colors" />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4 relative z-50">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Street / Society</label>
-                      <input type="text" value={address.street} onChange={e => setAddress({...address, street: e.target.value})} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif transition-colors" />
+                      <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">House / Flat No.</label>
+                      <input type="text" value={address.house} onChange={e => setAddress({...address, house: e.target.value})} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif transition-colors" />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Area</label>
-                      <input type="text" value={address.area} onChange={e => setAddress({...address, area: e.target.value})} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif transition-colors" />
+                    
+                    <div className="pt-2 relative z-50">
+                      <GoogleAddressPicker
+                        onAddressChange={(addr) => setAddress({ ...address, street: addr })}
+                        onDistancesCalculated={(distances, error) => {
+                          if (error) {
+                            setCheckoutError(`Distance Error: ${error}`)
+                          } else {
+                            const branchName = getBranchDisplayName(activeBranch)
+                            const dist = distances.find(d => d.branch === branchName)?.distanceKm || 0
+                            setDeliveryDistanceKm(dist)
+                            setIsFarDistance(dist > 15) // Example far distance logic
+                          }
+                        }}
+                        onCalculating={(isCalculating) => {
+                          setCalculatingDistance(isCalculating)
+                        }}
+                        onLocationSelected={(lat, lng) => {
+                          setDeliveryLatitude(lat)
+                          setDeliveryLongitude(lng)
+                        }}
+                      />
                     </div>
+                    
+                    {calculatingDistance && (
+                      <p className="text-sm text-foreground/50 animate-pulse">Calculating delivery distance from {getBranchDisplayName(activeBranch)}...</p>
+                    )}
+                    
+                    {!calculatingDistance && deliveryDistanceKm !== undefined && (
+                      <div className="pt-2 bg-emerald-50 p-4 rounded-xl border border-emerald-100 flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-800">Calculated Distance</p>
+                          <p className="font-serif text-lg text-emerald-950 font-bold">{deliveryDistanceKm} km</p>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-600/70">From {getBranchDisplayName(activeBranch)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-800">Delivery Charge</p>
+                          <p className="font-serif text-2xl text-emerald-600 font-black">₹{deliveryCharge}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -397,6 +465,7 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
               {/* Math Summary */}
               <div className="mt-auto space-y-3 pt-6 border-t border-border/20">
                 <div className="flex justify-between text-sm font-serif"><span className="text-foreground/60">Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+                {deliveryCharge > 0 && <div className="flex justify-between text-sm font-serif text-emerald-600"><span>Delivery Charge</span><span>+₹{deliveryCharge.toFixed(2)}</span></div>}
                 {discountAmt > 0 && <div className="flex justify-between text-sm font-serif text-emerald-600"><span>Discount</span><span>-₹{discountAmt.toFixed(2)}</span></div>}
                 <div className="flex justify-between text-2xl font-serif font-black pt-2 border-t border-border/40">
                   <span>Total</span><span>₹{total.toFixed(2)}</span>
@@ -420,14 +489,14 @@ export function PaymentDialog({ onClose, onSuccess }: PaymentDialogProps) {
               <p className="font-black text-rose-900 text-sm uppercase tracking-wide">Order Not Saved</p>
               <p className="font-bold text-rose-700 text-xs mt-1 leading-relaxed">{checkoutError}</p>
             </div>
-            <button onClick={() => setCheckoutError(null)} className="text-rose-400 hover:text-rose-600 font-bold text-lg leading-none shrink-0">✕</button>
+            <button onClick={() => setCheckoutError(null)} className="text-rose-400 hover:text-rose-600 font-bold text-lg leading-none shrink-0">X</button>
           </div>
         )}
 
         {/* Footer Actions */}
         <div className="p-6 md:p-8 border-t border-border/40 bg-white flex justify-end gap-4 shrink-0">
           <button onClick={handleCheckout} disabled={isSubmitting || (paymentType === 'PARTIAL' && amountToPay <= 0)} className="w-full md:w-auto px-12 py-4 bg-foreground text-background rounded-full text-xs font-bold uppercase tracking-widest hover:bg-primary transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 disabled:opacity-50 disabled:pointer-events-none">
-            {isSubmitting ? 'Saving Order...' : checkoutError ? `Retry — Accept ₹${amountToPay.toFixed(2)}` : `Accept ₹${amountToPay.toFixed(2)}`}
+            {isSubmitting ? 'Saving Order...' : checkoutError ? `Retry - Accept ₹${amountToPay.toFixed(2)}` : `Accept ₹${amountToPay.toFixed(2)}`}
           </button>
         </div>
 

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { io, Socket } from "socket.io-client";
+import { supabase } from "@/lib/supabase";
+import type { Socket } from "socket.io-client";
 
 export type OrderStatus = 
   | "QUOTE_DRAFT"
@@ -141,64 +142,50 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
+  // socket kept as null — Supabase Realtime is used instead of Socket.io
+  const socket: Socket | null = null;
 
-  // Initialize Socket and fetch initial orders
+  const refetchOrders = () => {
+    fetch("/api/v1/orders?limit=500").then(res => {
+      if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
+        return null;
+      }
+      return res.json();
+    }).then(data => {
+      if (data && data.success && data.data) {
+        setOrders(data.data);
+      }
+    }).catch((err) => {
+      console.warn("Could not fetch orders:", err);
+    });
+  };
+
+  // Initialize Supabase Realtime + fetch initial orders
   useEffect(() => {
-    // Connect to custom Socket.IO server
-    const newSocket = io(window.location.origin);
-    
-    const refetchOrders = () => {
-      fetch("/api/v1/orders?limit=500").then(res => {
-        if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
-          return null;
-        }
-        return res.json();
-      }).then(data => {
-        if (data && data.success && data.data) {
-          setOrders(data.data);
-        }
-      }).catch((err) => {
-        console.warn("Could not fetch orders (server might be restarting):", err);
-      });
-    };
-
     // Fetch orders immediately on component mount
     refetchOrders();
 
-    fetch('/api/auth/session').then(res => {
-      if (!res.ok) return null;
-      return res.json();
-    }).then(session => {
-      const branchId = session?.user?.branchId;
-      
-      // Re-join rooms and fetch authoritative state on EVERY connection (handles server restart/disconnect recovery)
-      newSocket.on('connect', () => {
-        if (branchId) newSocket.emit("join_branch", branchId);
-        if (session?.user?.role === 'ADMIN') newSocket.emit("join_admin");
-        refetchOrders();
+    // Subscribe to any INSERT or UPDATE on the Order table via Supabase Realtime
+    // When any order changes in the DB, all connected POS screens refetch instantly
+    const channel = supabase
+      .channel('orders-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Order' },
+        () => {
+          refetchOrders();
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Realtime] Subscribed to Order changes');
+        }
       });
 
-      // Also join immediately if it's already connected by the time this fetch completes
-      if (newSocket.connected) {
-        if (branchId) newSocket.emit("join_branch", branchId);
-        if (session?.user?.role === 'ADMIN') newSocket.emit("join_admin");
-      }
-    }).catch((err) => {
-      console.warn("Could not fetch session (server might be restarting):", err);
-    });
-    
-    newSocket.on("order_updated", refetchOrders);
-    newSocket.on("order_created", refetchOrders);
-
-
-    setSocket(newSocket);
-
-    // Real-time synchronization handled via Socket.IO events (order_created, order_updated)
-
     return () => {
-      newSocket.disconnect();
+      supabase.removeChannel(channel);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const transitionOrderAction = async (id: string, action: string, note?: string) => {
@@ -248,6 +235,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     // Map status enum to the correct action verb for the verified actions endpoint.
     // Ref: src/app/api/v1/orders/[id]/actions/[action]/route.ts
     const statusToAction: Partial<Record<OrderStatus, string>> = {
+      QUOTE_SENT:       'send-quote',
       WAITING_FOR_CHEF: 'approve',
       CHEF_ACCEPTED:    'chef-accept',
       MAKING:           'start-making',
@@ -271,7 +259,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       const response = await fetch(`/api/v1/orders/${id}/actions/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note: payload?.note })
+        body: JSON.stringify(payload ? payload : { note: undefined })
       });
       const data = await response.json();
       if (!data.success) {

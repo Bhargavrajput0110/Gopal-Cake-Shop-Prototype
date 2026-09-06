@@ -4,6 +4,8 @@ import { prisma as db } from '@/lib/prisma'
 import { FinancialService } from '@/services/FinancialService'
 import { Role, LedgerEntryType } from '@prisma/client'
 
+import { toBranchId } from '@/lib/branches'
+
 export const POST = withApiHandler(async (ctx) => {
   const { id } = ctx.params
   const { amount, method } = await ctx.req.json()
@@ -19,6 +21,11 @@ export const POST = withApiHandler(async (ctx) => {
 
   if (!order) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+  }
+
+  // Branch isolation: non-ADMIN users can only record payments on their own branch's orders
+  if (ctx.appRole !== 'ADMIN' && ctx.branchId && toBranchId(order.branchId) !== toBranchId(ctx.branchId)) {
+    return NextResponse.json({ error: 'Access denied: order belongs to a different branch' }, { status: 403 })
   }
 
   const summary = await FinancialService.calculateFinancialSummary(order);

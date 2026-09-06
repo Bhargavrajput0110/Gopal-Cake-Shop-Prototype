@@ -9,7 +9,7 @@ import { BackButton } from "@/components/ui/BackButton";
 
 const TIMELINE = [
   {
-    year: "1995",
+    year: "1990",
     title: "The Beginning",
     desc: "Started as a small bakery in Vadodara with a single oven and a passion for crafting the perfect eggless sponge."
   },
@@ -70,7 +70,7 @@ export default function AboutPage() {
             <div className="flex items-center gap-3 mb-6">
               <span className="block w-10 h-px bg-[var(--brand-champagne)]" />
               <span className="font-ui font-bold text-[10px] tracking-[0.35em] uppercase text-[var(--brand-champagne)] block">
-                Since 1995
+                Since 1990
               </span>
             </div>
 

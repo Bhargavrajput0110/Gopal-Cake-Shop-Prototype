@@ -129,6 +129,7 @@ function checkRateLimit(ip: string, limit: number, windowMs: number): boolean {
 // Role → Home path mapping
 // ─────────────────────────────────────────────────────────────────────────────
 function roleHomePath(role?: string): string {
+  if (role?.toUpperCase().startsWith('VENDOR')) return '/vendor';
   switch (role?.toUpperCase()) {
     case 'ADMIN':       return '/admin';
     case 'MANAGER':     return '/manager';
@@ -205,6 +206,9 @@ export default auth(function proxy(req: NextRequest) {
     if (pathname.startsWith('/manager') && role !== 'MANAGER' && role !== 'ADMIN') {
       return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
     }
+    if (pathname.startsWith('/vendor') && !role?.startsWith('VENDOR') && role !== 'ADMIN') {
+      return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
+    }
     // Authenticated and authorized — fall through
   }
 
@@ -221,6 +225,7 @@ export default auth(function proxy(req: NextRequest) {
     img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com https:;
     font-src 'self' https://fonts.gstatic.com;
     connect-src 'self' https://vercel.live wss://ws-us3.pusher.com https://images.unsplash.com https://api.cloudinary.com;
+    media-src 'self' https://res.cloudinary.com;
   `.replace(/\s{2,}/g, ' ').trim();
   response.headers.set('Content-Security-Policy', csp);
 

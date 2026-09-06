@@ -14,15 +14,28 @@ export class OrderService {
     limit: number = 20,
     filters?: { status?: string, branch?: string, driverId?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string, dueSoon?: boolean, hasIssues?: boolean }
   ): Promise<{ data: OrderResponseDTO[], total: number }> {
-    const canonicalBranchId = toBranchId(branchId);
+    // For non-admin users, use their real DB branchId from session directly
+    // (session branchId is the real Supabase CUID like cmswuiiun00031su3vfrn9eq5)
+    // For admin filtering by the ?branch= query param, resolve alias -> real CUID
+    const BRANCH_CUID_MAP: Record<string, string> = {
+      'elora': 'cmswuiiun00031su3vfrn9eq5',
+      'khanderao': 'cmswuiita00011su3977ajl1z',
+      'varasiya': 'cmswuiiu000021su3kv1mr41f',
+      'uma': 'uma',
+    };
+    const resolveToDbId = (id: string) => BRANCH_CUID_MAP[id] ?? id;
+
     const db = prisma
     const skip = (page - 1) * limit
-    
     const whereClause: Prisma.OrderWhereInput = {}
+
     if (role && role.toUpperCase() !== 'ADMIN') {
-      whereClause.branchId = canonicalBranchId
+      // withApiHandler converts the session CUID into a canonical short name (e.g. 'elora')
+      // We must convert it back to the real DB CUID for the query
+      whereClause.branchId = branchId ? resolveToDbId(branchId) : undefined;
     } else if (filters?.branch) {
-      whereClause.branchId = toBranchId(filters.branch)
+      const canonical = toBranchId(filters.branch);
+      whereClause.branchId = resolveToDbId(canonical);
     }
 
     if (filters?.driverId) {
@@ -82,7 +95,7 @@ export class OrderService {
     }
     orderBy.push({ id: 'desc' });
 
-    console.log(`[OrderService.listOrders] role=${role} canonicalBranchId=${canonicalBranchId} whereClause=${JSON.stringify(whereClause)}`)
+    console.log(`[OrderService.listOrders] role=${role} branchId=${branchId} whereClause=${JSON.stringify(whereClause)}`)
     const [orders, total] = await Promise.all([
       db.order.findMany({
         where: whereClause,
@@ -91,7 +104,7 @@ export class OrderService {
         orderBy,
         include: {
           customer: true,
-          items: true,
+          items: { include: { media: true } },
           ledgerEntries: true,
           vendorTasks: { include: { vendor: true } },
           ingredientRequests: { include: { requestedBy: true } },
@@ -130,8 +143,11 @@ export class OrderService {
           grandTotal: finSummary.totalAmount,
           timeTarget: o.targetDate,
           createdAt: o.createdAt,
+          cakeImage: o.items[0]?.media?.find((m: any) => m.type === 'REFERENCE')?.url || o.items[0]?.image || undefined,
           items: o.items.map((i: any) => {
             const product = i.productId ? productMap.get(i.productId) : null;
+            const referenceImages = i.media ? i.media.filter((m: any) => m.type === 'REFERENCE').map((m: any) => m.url) : [];
+            const printImages = i.media ? i.media.filter((m: any) => m.type === 'PRODUCTION').map((m: any) => m.url) : [];
             return {
               id: i.id,
               name: i.productName || product?.name || 'Custom Item',
@@ -139,7 +155,11 @@ export class OrderService {
               price: Number(i.price),
               qty: i.quantity,
               weight: i.weight ? `${i.weight}kg` : undefined,
+              flavor: i.flavor || undefined,
               notes: i.notes || undefined,
+              image: i.image || product?.thumbnail || undefined,
+              referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+              printImages: printImages.length > 0 ? printImages : undefined,
             }
           }),
           priorityLevel: (o as any).priorityLevel || "normal",

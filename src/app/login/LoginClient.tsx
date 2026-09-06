@@ -72,11 +72,11 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
       const targetUrl = selectedStaff.role === "driver" ? "/driver" 
         : selectedStaff.role === "chef" ? "/chef"
         : selectedStaff.role === "sales" || selectedStaff.role === "manager" ? "/sales"
+        : selectedStaff.role === "vendor" ? "/vendor"
         : "/admin";
 
       // Pre-set session cookies to eliminate browser cookie persistence race conditions
       if (typeof document !== 'undefined') {
-        document.cookie = `gopal_dummy_role=${selectedStaff.role}; path=/; max-age=86400; SameSite=Lax`;
         document.cookie = `next-auth.session-token=active; path=/; max-age=86400; SameSite=Lax`;
       }
 
@@ -92,10 +92,6 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
         setPin("");
         setIsLoading(false);
       } else {
-        if (typeof document !== 'undefined') {
-          document.cookie = `gopal_dummy_role=${selectedStaff.role}; path=/; max-age=86400; SameSite=Lax`;
-          document.cookie = `next-auth.session-token=active; path=/; max-age=86400; SameSite=Lax`;
-        }
         window.location.replace(targetUrl);
       }
     } catch (err) {

@@ -11,8 +11,8 @@ if (!supabaseAnonKey) {
   console.warn("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
 }
 
-const finalUrl = supabaseUrl || "https://dummy-url.supabase.co";
-const finalKey = supabaseAnonKey || "dummy-key";
+const finalUrl = supabaseUrl as string;
+const finalKey = supabaseAnonKey as string;
 
 // Client for public/browser usage (subject to RLS)
 export const supabase = createClient(finalUrl, finalKey);

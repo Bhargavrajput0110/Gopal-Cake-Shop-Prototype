@@ -20,7 +20,7 @@ const ANNOUNCEMENT_ITEMS = [
   "🚚 City-wide delivery across Vadodara",
   "⭐ 50,000+ happy customers in Vadodara",
   "🍫 100% eggless — always",
-  "🏆 Est. 1995 — 30 Years of Craft",
+  "🏆 Est. 1990 — 35+ Years of Craft",
 ];
 
 export function Navbar() {

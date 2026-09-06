@@ -1,55 +1,75 @@
-import { prisma } from '@/lib/prisma';
+/**
+ * NotificationService — V4 Architecture
+ *
+ * Entry point called by EventSubscribers when a TIMELINE_CREATED outbox event fires.
+ * Reads the NotificationMatrix for the triggering action, then dispatches each rule.
+ *
+ * For WHATSAPP channel: builds the canonical OrderNotificationData DTO via
+ * NotificationDataAggregator before calling NotificationDispatcher.
+ *
+ * The existing EventSubscribers → NotificationService.handleTimelineEvent() call
+ * chain is preserved — only the internals of this service have changed.
+ */
+
 import { LoggerService } from '@/services/LoggerService';
 import { NotificationMatrix } from './NotificationMatrix';
 import { NotificationDispatcher } from './NotificationDispatcher';
+import { NotificationDataAggregator } from './NotificationDataAggregator';
 
 export class NotificationService {
   /**
    * Main entry point for TIMELINE_CREATED events from the Outbox.
+   * Called by EventSubscribers with the full timeline payload.
+   *
+   * The `eventId` comes from the Outbox row — it is the Timeline.id,
+   * guaranteeing deterministic idempotency keys.
    */
   static async handleTimelineEvent(payload: any, eventId: string) {
-    const { action, orderId, actorId, branchId } = payload;
-    
+    const { action, orderId, actorId, branchId, nextState } = payload;
+
     const rules = NotificationMatrix[action];
     if (!rules || rules.length === 0) {
-      // No notifications configured for this action
+      LoggerService.info(`[NotificationService] No rules for action: ${action}`);
       return;
     }
 
-    // Resolve common metadata needed for dispatch
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: { customer: true }
-    });
+    // Determine if any rule needs WhatsApp (requires full DTO build)
+    const hasWhatsAppRule = rules.some((r) => r.channel === 'WHATSAPP');
 
-    if (!order) {
-      LoggerService.warn(`[NotificationService] Order ${orderId} not found for event ${eventId}`);
-      return;
+    // Build canonical DTO once — only if WhatsApp is needed
+    let orderData: import('./NotificationDataAggregator').OrderNotificationData | undefined;
+    if (hasWhatsAppRule && orderId) {
+      const built = await NotificationDataAggregator.build(orderId);
+      orderData = built ?? undefined;
+      if (!orderData) {
+        LoggerService.warn(`[NotificationService] Could not build notification data for order ${orderId}. Skipping WhatsApp.`);
+        // Still proceed with IN_APP rules
+      }
     }
 
-    // For independent retry isolation, we process each rule, catching errors locally.
-    // However, if we want the Outbox to retry failed channels, we must throw if ANY channel fails.
-    // Or we keep track of successful channels in a separate table, but idempotency handles duplicate sends.
-    // So we can safely loop and throw at the end if any failed.
+    // Guard: skip WhatsApp entirely if DTO build failed
+    const effectiveRules = orderData
+      ? rules
+      : rules.filter((r) => r.channel !== 'WHATSAPP');
+
     const errors: Error[] = [];
 
-    for (const rule of rules) {
+    for (const rule of effectiveRules) {
       try {
         let recipientId: string | undefined;
         let recipientPhone: string | undefined;
-        let message = `Order ${order.orderNumber}: ${rule.templateName}`;
+        const msg = `Order ${payload.orderNumber || orderId}: ${rule.templateName}`;
 
-        if (rule.recipientRole === 'CUSTOMER' && order.customer) {
-          recipientPhone = order.customer.phone;
+        if (rule.recipientRole === 'CUSTOMER' && orderData) {
+          recipientPhone = orderData.customer.phone;
         }
 
         if (rule.recipientRole === 'DRIVER_ASSIGNEE') {
-          // If action is assign-driver, actorId might be the driver, or actorId is admin and payload has notes with driver?
-          // Actually, if driver is assigned, order.driverId is set!
-          if (order.driverId) {
-            recipientId = order.driverId;
+          // Driver ID is stored on the order after assignment
+          if (payload.driverId) {
+            recipientId = payload.driverId;
           } else {
-             continue; // No driver to notify
+            continue; // No driver to notify
           }
         }
 
@@ -61,8 +81,10 @@ export class NotificationService {
           recipientId,
           recipientPhone,
           templateName: rule.templateName,
-          message,
-          branchId: branchId || order.branchId // fallback to order branch if timeline doesn't have it
+          message: msg,
+          branchId: branchId || payload.branchId,
+          orderData: rule.channel === 'WHATSAPP' ? orderData : undefined,
+          eventTimestamp: payload.createdAt ? new Date(payload.createdAt) : new Date(),
         });
       } catch (err: any) {
         errors.push(err);
@@ -70,7 +92,10 @@ export class NotificationService {
     }
 
     if (errors.length > 0) {
-      throw new Error(`Failed to dispatch some notifications for ${eventId}: ${errors.map(e => e.message).join(', ')}`);
+      // Throw so OutboxProcessor marks this event as FAILED and retries
+      throw new Error(
+        `[NotificationService] Failed to dispatch some rules for event ${eventId}: ${errors.map((e) => e.message).join(', ')}`
+      );
     }
   }
 }

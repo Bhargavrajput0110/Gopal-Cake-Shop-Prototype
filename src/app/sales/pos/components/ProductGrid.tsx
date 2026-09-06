@@ -9,8 +9,12 @@ type Product = {
   price?: number
   basePrice?: number
   categoryId: string
-  images: string[]
-  thumbnail?: string
+  images?: string[]
+  thumbnail?: string | null
+  mediumImage?: string | null
+  largeImage?: string | null
+  webpImage?: string | null
+  imageUrl?: string | null
   sku?: string
   isCustomizable?: boolean
   category?: { name: string }
@@ -26,10 +30,11 @@ type Category = {
 interface ProductGridProps {
   products: Product[]
   categories?: Category[]
+  designs?: any[]
   isLoading: boolean
 }
 
-export function ProductGrid({ products, categories = [], isLoading }: ProductGridProps) {
+export function ProductGrid({ products, categories = [], designs = [], isLoading }: ProductGridProps) {
   const [search, setSearch] = React.useState("")
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null)
   const [selectedProduct, setSelectedProduct] = React.useState<any>(null)
@@ -45,6 +50,25 @@ export function ProductGrid({ products, categories = [], isLoading }: ProductGri
     })
   }, [products, search, selectedCategory, categories])
 
+  const filteredDesigns = React.useMemo(() => {
+    const s = search.toLowerCase()
+    return designs.filter((d: any) => {
+      const matchesSearch = d.name.toLowerCase().includes(s) || (d.code && d.code.toLowerCase().includes(s))
+      
+      let matchesCategory = true;
+      if (selectedCategory) {
+        const selectedCatName = categories.find(c => c.categoryId === selectedCategory)?.name?.toLowerCase();
+        const hasCategory = d.categories?.some((c: any) => c.categoryId === selectedCategory || c.category?.id === selectedCategory || c.category?.name?.toLowerCase() === selectedCatName);
+        const hasTag = d.tags?.some((t: string) => t.toLowerCase() === selectedCatName || t.toLowerCase() === selectedCategory.toLowerCase());
+        const hasOccasion = d.occasions?.some((o: string) => o.toLowerCase() === selectedCatName || o.toLowerCase() === selectedCategory.toLowerCase());
+        
+        matchesCategory = hasCategory || hasTag || hasOccasion;
+      }
+
+      return matchesSearch && matchesCategory;
+    })
+  }, [designs, search, selectedCategory, categories])
+
   if (selectedProduct) {
     return (
       <div className="flex flex-col h-full bg-white rounded-3xl overflow-hidden relative shadow-sm border border-border">
@@ -59,10 +83,18 @@ export function ProductGrid({ products, categories = [], isLoading }: ProductGri
         </div>
         <div className="flex-1 overflow-y-auto">
           <QuickBuyForm 
+            key={selectedProduct.id}
             product={selectedProduct} 
             onClose={() => setSelectedProduct(null)} 
-            isCustom={selectedProduct.id === 'custom-cake-studio' || selectedProduct.isCustomizable} 
-            isPhotoCake={false} 
+            isCustom={
+              !(Boolean(selectedProduct.isPhotoCake) || selectedProduct.name.toLowerCase().includes('photo') || (selectedProduct.category?.name || "").toLowerCase().includes('photo')) &&
+              (selectedProduct.id === 'custom-cake-studio' || selectedProduct.isCustomizable || selectedProduct.name.toLowerCase().includes('custom'))
+            }
+            isPhotoCake={
+              Boolean(selectedProduct.isPhotoCake) || 
+              selectedProduct.name.toLowerCase().includes('photo') || 
+              (selectedProduct.category?.name || "").toLowerCase().includes('photo')
+            } 
           />
         </div>
       </div>
@@ -153,6 +185,45 @@ export function ProductGrid({ products, categories = [], isLoading }: ProductGri
               </div>
             </div>
 
+            {/* Design Library Section — real Cloudinary images */}
+            {filteredDesigns.length > 0 && (
+              <div>
+                <h3 className="font-ui text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-4 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span> Design Cakes — {filteredDesigns.length} designs
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredDesigns.map((design: any) => (
+                    <button
+                      key={design.id}
+                      onClick={() => setSelectedProduct({
+                        id: design.id,
+                        name: design.name,
+                        basePrice: Number(design.basePrice || 800),
+                        thumbnail: design.imageUrl,
+                        isCustomizable: true,
+                        designId: design.id,
+                        designCode: design.code,
+                        minWeight: design.recommendedWeight,
+                        weightConfig: design.weightConfig,
+                        category: { name: 'Design Cake' }
+                      })}
+                      className="flex flex-col text-left bg-purple-50 border border-purple-100 hover:border-purple-300 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] group shadow-sm"
+                    >
+                      <div className="h-36 w-full bg-purple-100 flex items-center justify-center overflow-hidden relative">
+                        <img src={design.imageUrl} alt={design.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        <span className="absolute top-2 right-2 bg-purple-600 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow">Design</span>
+                      </div>
+                      <div className="p-3 w-full bg-white">
+                        <p className="font-display font-bold text-sm text-foreground truncate">{design.name}</p>
+                        <p className="font-mono text-[9px] text-purple-500 font-bold mt-0.5">{design.code}</p>
+                        <p className="font-ui text-[10px] uppercase tracking-widest font-black text-muted-foreground mt-1">from ₹{Number(design.basePrice || 0).toFixed(0)}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Standard Products */}
             <div>
               <h3 className="font-ui text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-4 flex items-center gap-2">
@@ -170,18 +241,21 @@ export function ProductGrid({ products, categories = [], isLoading }: ProductGri
                         id: product.id,
                         name: product.name,
                         basePrice: Number(product.basePrice || product.price || 0),
-                        thumbnail: product.images?.[0],
+                        thumbnail: product.thumbnail || product.mediumImage || product.largeImage || product.imageUrl || product.images?.[0],
                         isCustomizable: product.isCustomizable,
                         category: { name: categories.find(c => c.categoryId === product.categoryId)?.name || 'Cake' }
                       })}
                       className="flex flex-col text-left bg-white border border-border hover:border-[var(--brand-deep-rose)]/30 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] group shadow-sm"
                     >
-                      <div className="h-36 w-full bg-muted flex items-center justify-center overflow-hidden relative">
-                        {product.images?.[0] ? (
-                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                        ) : (
-                          <span className="font-ui text-[9px] text-muted-foreground uppercase font-bold tracking-widest">No Image</span>
-                        )}
+                    <div className="h-36 w-full bg-muted flex items-center justify-center overflow-hidden relative">
+                        {(() => {
+                          const img = product.thumbnail || product.mediumImage || product.largeImage || product.imageUrl || product.images?.[0]
+                          return img ? (
+                            <img src={img} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                          ) : (
+                            <span className="font-ui text-[9px] text-muted-foreground uppercase font-bold tracking-widest">No Image</span>
+                          )
+                        })()}
                       </div>
                       <div className="p-4 w-full bg-white">
                         <p className="font-display font-bold text-lg text-foreground truncate">{product.name}</p>

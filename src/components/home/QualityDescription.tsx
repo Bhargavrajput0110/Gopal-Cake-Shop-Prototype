@@ -1,11 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import NumberTicker from "@/components/magicui/NumberTicker";
 
 const STATS = [
-  { value: 1995, suffix: "", label: "Est. Year", sublabel: "Started in Vadodara" },
-  { value: 30, suffix: "+", label: "Years of Craft", sublabel: "Three decades of excellence" },
+  { value: 1990, suffix: "", label: "Est. Year", sublabel: "Started in Vadodara" },
+  { value: 35, suffix: "+", label: "Years of Craft", sublabel: "Over three decades of excellence" },
   { value: 100, suffix: "%", label: "Eggless", sublabel: "No compromise, ever" },
   { value: 50, suffix: "K+", label: "Cakes Delivered", sublabel: "And counting every day" },
 ];
@@ -17,13 +18,44 @@ const PROCESS_STEPS = [
 ];
 
 export function QualityDescription() {
+  const containerRef = useRef(null);
+  
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"],
+  });
+
+  const y1 = useTransform(scrollYProgress, [0, 1], [200, -300]);
+  const y2 = useTransform(scrollYProgress, [0, 1], [-150, 150]);
+  const y3 = useTransform(scrollYProgress, [0, 1], [350, -400]);
+
   return (
-    <section className="relative overflow-hidden" style={{ background: "var(--brand-chocolate)" }}>
+    <section ref={containerRef} className="relative overflow-hidden" style={{ background: "var(--brand-chocolate)" }}>
       {/* Ambient glow */}
       <div className="absolute top-0 left-1/4 w-[600px] h-[400px] rounded-full blur-[140px] pointer-events-none"
         style={{ background: "rgba(200,169,126,0.06)" }} />
       <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full blur-[120px] pointer-events-none"
         style={{ background: "rgba(139,58,82,0.05)" }} />
+
+      {/* Floating Parallax Cakes (Placeholders) */}
+      <motion.div
+        style={{ y: y1 }}
+        className="absolute top-[10%] right-[10%] w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden shadow-2xl opacity-60 mix-blend-luminosity z-0 hidden md:block"
+      >
+        <img src="https://images.unsplash.com/photo-1535141192574-5d4897c12636?q=80&w=1000&auto=format&fit=crop" alt="Cake" className="w-full h-full object-cover" />
+      </motion.div>
+      <motion.div
+        style={{ y: y2 }}
+        className="absolute top-[40%] left-[5%] w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden shadow-2xl opacity-40 mix-blend-luminosity z-0 hidden lg:block"
+      >
+        <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=1000&auto=format&fit=crop" alt="Cake" className="w-full h-full object-cover" />
+      </motion.div>
+      <motion.div
+        style={{ y: y3 }}
+        className="absolute bottom-[20%] right-[20%] w-40 h-40 md:w-56 md:h-56 rounded-full overflow-hidden shadow-2xl opacity-50 mix-blend-luminosity z-0 hidden md:block"
+      >
+        <img src="https://images.unsplash.com/photo-1601050690597-df0568a70950?q=80&w=1000&auto=format&fit=crop" alt="Cake" className="w-full h-full object-cover" />
+      </motion.div>
 
       <div className="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20 py-32 md:py-44 relative z-10">
 
@@ -50,7 +82,7 @@ export function QualityDescription() {
             className="font-display italic text-white leading-[1.08]"
             style={{ fontSize: "clamp(2rem, 4.5vw, 4.5rem)" }}
           >
-            Since 1995, we haven&apos;t just baked cakes. We&apos;ve crafted{" "}
+            Since 1990, we haven&apos;t just baked cakes. We&apos;ve crafted{" "}
             <span className="text-[var(--brand-champagne)] not-italic">memories</span> using pure
             Belgian chocolate and uncompromising{" "}
             <span className="text-[var(--brand-champagne)] not-italic">passion.</span>

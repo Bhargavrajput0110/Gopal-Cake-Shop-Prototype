@@ -65,3 +65,25 @@ export const PUT = withApiHandler(async ({ req, user, appRole, requestId }) => {
 
   return successResponse(updatedSetting, 'Setting updated successfully', requestId)
 })
+
+/**
+ * @swagger
+ * /api/v1/settings:
+ *   post:
+ *     summary: Create a global setting
+ */
+export const POST = withApiHandler(async ({ req, user, appRole, requestId }) => {
+  if (appRole !== 'ADMIN') {
+    return errorResponse('Forbidden', 'FORBIDDEN', 403, [], requestId)
+  }
+
+  const body = await req.json()
+  const data = UpdateSettingSchema.parse(body) // Reuse schema or use CreateSettingSchema if diff
+
+  if (!data.key || !data.value) {
+    return errorResponse('Key and value are required', 'VALIDATION_ERROR', 400, [], requestId)
+  }
+
+  const newSetting = await SettingsService.createSetting(data as any)
+  return successResponse(newSetting, 'Setting created successfully', requestId)
+})

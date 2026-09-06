@@ -28,9 +28,10 @@ export const GET = withApiHandler(async ({ req, appRole, requestId }) => {
 
   const { searchParams } = req.nextUrl
   const page = parseInt(searchParams.get('page') || '1', 10)
-  const limit = parseInt(searchParams.get('limit') || '20', 10)
+  const limit = parseInt(searchParams.get('limit') || '50', 10)
+  const q = searchParams.get('q') || undefined
 
-  const data = await CustomerService.listCustomers()
+  const data = await CustomerService.listCustomers(q)
   const total = data.length
   
   // Fake pagination based on the fetched data (since v1 needs page/limit)

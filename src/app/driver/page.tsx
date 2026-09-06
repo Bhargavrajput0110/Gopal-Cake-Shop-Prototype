@@ -12,8 +12,10 @@ import { WifiSquare, Wifi, Refresh, BoxTick, User, Shop, ArrowRight, TickCircle,
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import confetti from 'canvas-confetti'
+import { useOrders } from '@/context/OrderContext'
 
 export default function DriverDashboard() {
+  const { updateOrderStatus } = useOrders()
   const { data: session } = useSession()
   const { 
     tasks, 
@@ -132,10 +134,15 @@ export default function DriverDashboard() {
             body: JSON.stringify(payload)
           })
         } else {
-          await fetchClient(`/driver/deliveries/${realId}/status`, {
-            method: 'PATCH',
-            body: JSON.stringify(payload)
-          })
+          // Use real context method instead of raw fetch
+          if (newStatus === 'OUT_FOR_DELIVERY' || newStatus === 'DELIVERED') {
+            await updateOrderStatus(realId, newStatus as any, false, undefined, payload);
+          } else {
+            await fetchClient(`/driver/deliveries/${realId}/status`, {
+              method: 'PATCH',
+              body: JSON.stringify(payload)
+            })
+          }
         }
         queryClient.invalidateQueries({ queryKey: ['driver-tasks', activeDriver?.id] })
         setToastMessage(`Task successfully updated!`);
@@ -308,8 +315,8 @@ export default function DriverDashboard() {
       {/* Modals */}
       {modalType === 'DELIVERED' && activeTask && (
         <ProofOfDeliveryModal
-          expectedAmount={0}
-          paymentStatus={'PAID'}
+          expectedAmount={activeTask.pendingBalance || 0}
+          paymentStatus={activeTask.pendingBalance && activeTask.pendingBalance > 0 ? 'COD' : 'PAID'}
           onClose={() => setModalType(null)}
           onConfirm={(cash, notes) => processAction(activeTask, 'DELIVERED', { cashCollected: cash, notes })}
         />

@@ -25,9 +25,17 @@ const CheckoutSchema = z.object({
     quantity: z.number().int().min(1),
     weight: z.number().default(1),
     flavor: z.string().optional(),
-    messageOnCake: z.string().optional()
+    messageOnCake: z.string().optional(),
+    notes: z.string().optional(),
+    shape: z.string().optional(),
+    isCustomizable: z.boolean().optional(),
+    isPhotoCake: z.boolean().optional(),
+    printImage: z.string().optional(),
+    referenceImages: z.array(z.string()).optional(),
+    isCustom: z.boolean().optional(),
+    price: z.number().optional(),
   })).min(1, 'Cart is empty'),
-  paymentMethod: z.nativeEnum(PaymentMethod),
+  paymentMethod: z.nativeEnum(PaymentMethod).optional(),
   deliveryType: z.nativeEnum(DeliveryType),
   branchId: z.string(),
   deliveryDate: z.string(),
@@ -35,6 +43,7 @@ const CheckoutSchema = z.object({
   deliveryDistanceKm: z.number().optional(),
   deliveryLatitude: z.number().optional(),
   deliveryLongitude: z.number().optional(),
+  type: z.enum(['ORDER', 'QUOTE']).optional().default('ORDER'),
 })
 
 const handler = async (ctx: HandlerContext) => {
@@ -59,24 +68,29 @@ const handler = async (ctx: HandlerContext) => {
       quantity: item.quantity,
       weight: item.weight,
       flavor: item.flavor,
-      messageOnCake: item.messageOnCake
+      messageOnCake: item.messageOnCake,
+      notes: item.notes,
+      shape: item.shape,
+      referenceImages: item.referenceImages,
+      overridePrice: item.price,
     })),
     deliveryType: data.deliveryType,
     targetDate: data.deliveryDate,
     deliveryAddress: formattedAddress,
-    paymentMethod: data.paymentMethod,
+    paymentMethod: data.paymentMethod || PaymentMethod.CASH,
     paymentType: PaymentType.FULL, // Assuming FULL for website for now
     idempotencyKey: data.idempotencyKey,
     isFarDistance: data.isFarDistance,
     deliveryDistanceKm: data.deliveryDistanceKm,
     deliveryLatitude: data.deliveryLatitude,
-    deliveryLongitude: data.deliveryLongitude
+    deliveryLongitude: data.deliveryLongitude,
+    type: data.type
   }
 
-  // 3. Define Context (Website)
+  // 3. Create context and run Engine
   const context: CheckoutContext = {
     source: OrderSource.WEBSITE,
-    canOverridePrice: false,
+    canOverridePrice: true, // Strictly use frontend pricing per user instructions
     canOverrideDelivery: false,
     canAssignPriority: false
   }

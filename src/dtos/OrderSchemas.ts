@@ -22,12 +22,15 @@ export const PosCheckoutItemSchema = z.object({
   designName: z.string().optional(),
   designImageUrl: z.string().optional(),
   shape: z.string().optional(),
+  overridePrice: z.number().optional(),
   notes: z.string().optional(),
   boxCount: z.number().optional(),
   estimatedPrepMinutes: z.number().optional(),
   referenceImages: z.array(z.string()).optional(),
+  requiredVendors: z.array(z.string()).optional(),
   // Frontend might pass price for reference, but backend MUST recalculate
   frontendPrice: z.number().optional(), 
+  isCustom: z.boolean().optional(),
 })
 
 export const PosCheckoutPaymentSchema = z.object({
@@ -37,6 +40,8 @@ export const PosCheckoutPaymentSchema = z.object({
 
 export const PosCheckoutSchema = z.object({
   customerId: z.string(), // Walk-in customer ID if unassigned
+  customerName: z.string().optional(),
+  customerPhone: z.string().optional(),
   branchId: z.string().optional(), // Inferred from role, but DTO can accept it for explicit passing
   items: z.array(PosCheckoutItemSchema).min(1, 'Order must contain at least one item'),
   payments: z.array(PosCheckoutPaymentSchema).optional().default([]),
@@ -47,6 +52,18 @@ export const PosCheckoutSchema = z.object({
   isPriority: z.boolean().optional(),
   notes: z.string().optional(),
   idempotencyKey: z.string().optional(),
+  type: z.enum(['ORDER', 'QUOTE']).optional(),
+  deliveryType: z.enum(['PICKUP', 'DELIVERY']).optional().default('PICKUP'),
+  address: z.object({
+    house: z.string().optional(),
+    street: z.string().optional(),
+    area: z.string().optional(),
+    city: z.string().optional(),
+    pin: z.string().optional(),
+    landmark: z.string().optional(),
+  }).optional(),
+  deliveryDistanceKm: z.number().optional(),
+  isFarDistance: z.boolean().optional(),
 })
 
 export type CreateDraftOrderDTO = z.infer<typeof CreateDraftOrderSchema>

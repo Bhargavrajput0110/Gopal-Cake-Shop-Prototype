@@ -49,9 +49,20 @@ export function CartDrawer() {
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
                     <h3 className="font-bold text-sm leading-tight">{item.name}</h3>
-                    <button onClick={() => removeItem(item.cartItemId)} className="text-muted-foreground hover:text-destructive">
-                      <CloseSquare className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          setIsCartOpen(false);
+                          router.push(`/custom?edit=${item.cartItemId}`);
+                        }} 
+                        className="text-xs text-primary font-bold hover:underline uppercase tracking-wider"
+                      >
+                        Edit
+                      </button>
+                      <button onClick={() => removeItem(item.cartItemId)} className="text-muted-foreground hover:text-destructive">
+                        <CloseSquare className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                   {item.variant && <p className="text-xs text-muted-foreground mt-0.5">{item.variant}</p>}
                   {item.messageOnCake && <p className="text-xs text-primary mt-0.5 italic truncate">"{item.messageOnCake}"</p>}
@@ -62,7 +73,11 @@ export function CartDrawer() {
                       <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
                       <button onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)} className="p-1 hover:bg-muted"><Add className="w-4 h-4" /></button>
                     </div>
-                    <span className="font-black">₹{item.price * item.quantity}</span>
+                    {item.isCustom ? (
+                      <span className="font-bold text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">Price upon quote</span>
+                    ) : (
+                      <span className="font-black">₹{item.price * item.quantity}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -76,6 +91,11 @@ export function CartDrawer() {
               <span className="font-bold text-muted-foreground">Subtotal</span>
               <span className="font-black">₹{subtotal}</span>
             </div>
+            {items.some(i => i.isCustom) && (
+              <p className="text-xs text-muted-foreground mb-3 text-center italic">
+                *Final price for custom items will be provided via quote
+              </p>
+            )}
             <button 
               onClick={() => {
                 setIsCartOpen(false);
@@ -83,7 +103,7 @@ export function CartDrawer() {
               }} 
               className="w-full flex items-center justify-center bg-primary text-primary-foreground h-14 rounded-xl font-black text-lg hover:bg-primary/90 shadow-md"
             >
-              Proceed to Checkout
+              {items.some(i => i.isCustom) ? "Request Quote" : "Proceed to Checkout"}
             </button>
           </div>
         )}

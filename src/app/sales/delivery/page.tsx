@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Car, TickCircle, Location, Box, Danger } from "iconsax-react";
 import { useOrders } from "@/context/OrderContext";
 import { BackButton } from "@/components/ui/BackButton";
@@ -17,9 +18,12 @@ type DriverWorkload = {
 };
 
 export default function DeliveryCoordinationPage() {
+  const { data: session } = useSession();
+  const branchMap: Record<string, string> = { 'cmswuiita00011su3977ajl1z': 'Khanderao Branch', 'uma': 'Uma Branch', 'cmswuiiu000021su3kv1mr41f': 'Varasiya Branch', 'cmswuiiun00031su3vfrn9eq5': 'Ellora Branch' };
+  const currentBranch = branchMap[(session?.user as any)?.branchId] || "Your Branch";
+  
   const { orders, assignDriverToOrder } = useOrders();
   const [selectedRider, setSelectedRider] = useState<Record<string, string>>({});
-  const [currentBranch, setCurrentBranch] = useState("Khanderao Branch"); // Salesperson's active branch
   const [drivers, setDrivers] = useState<DriverWorkload[]>([]);
   const [isLoadingDrivers, setIsLoadingDrivers] = useState(true);
   const [assigningOrderId, setAssigningOrderId] = useState<string | null>(null);
@@ -78,22 +82,13 @@ export default function DeliveryCoordinationPage() {
           <div className="mb-2">
             <BackButton fallback="/sales" label="Back to Sales" variant="outline" size="sm" />
           </div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Car className="w-6 h-6 text-primary" /> Delivery Assignment ({currentBranch})
-          </h2>
-          <p className="text-muted-foreground text-sm">Assign ready cakes to riders (including cross-branch driver overrides during high load).</p>
+          <div className="flex justify-between items-center bg-card p-4 rounded-xl shadow-sm border border-border mt-6">
+            <h2 className="text-lg font-black tracking-tight flex items-center gap-2 text-foreground">
+              <Car className="w-6 h-6 text-primary" /> Delivery Assignment ({currentBranch})
+            </h2>
+          </div>
+          <p className="text-muted-foreground text-sm mt-2">Assign ready cakes to riders (including cross-branch driver overrides during high load).</p>
         </div>
-        
-        {/* Toggle active branch for testing purposes in prototype */}
-        <select 
-          value={currentBranch} 
-          onChange={(e) => setCurrentBranch(e.target.value)}
-          className="p-2 border rounded-lg text-sm bg-card text-foreground"
-        >
-          <option value="Khanderao Branch">Khanderao Branch</option>
-          <option value="Uma Branch">Uma Branch</option>
-          <option value="Varasiya Factory Outlet">Varasiya Factory Outlet</option>
-        </select>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

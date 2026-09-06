@@ -8,6 +8,7 @@ import { OrderProvider } from "@/context/OrderContext";
 import { CustomerAuthProvider } from "@/context/CustomerAuthContext";
 import { Preloader } from "@/components/layout/Preloader";
 import { CustomCursor } from "@/components/layout/CustomCursor";
+import { GlobalScrollDisabler } from "@/components/layout/GlobalScrollDisabler";
 import { Noise } from "@/components/layout/Noise";
 import { PWARegistration } from "@/components/PWARegistration";
 import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
@@ -107,6 +108,7 @@ export default function RootLayout({
                     {children}
                   </HeaderFooterWrapper>
                 </SmoothScroller>
+                <GlobalScrollDisabler />
               </OrderProvider>
             </CartProvider>
           </CustomerAuthProvider>

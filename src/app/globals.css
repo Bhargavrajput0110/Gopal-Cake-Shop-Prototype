@@ -900,7 +900,21 @@
 
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(200, 169, 126, 0.4); border-radius: 999px; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--brand-deep-rose);
+  border-radius: 4px;
+}
+
+/* Hide number input arrows globally */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
 
 .focus-ring { outline: none; transition: box-shadow 0.2s ease; }
 .focus-ring:focus-visible { box-shadow: 0 0 0 3px rgba(200, 169, 126, 0.5); }

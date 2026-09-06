@@ -38,7 +38,9 @@ export const PATCH = withApiHandler(async (ctx: HandlerContext) => {
   } else if (action === 'READY_FOR_PICKUP') {
     newStatus = 'READY_FOR_PICKUP';
     timelineAction = 'VENDOR_READY';
-    timelineNote = `Vendor marked item ready for pickup.`;
+    timelineNote = body.mediaUrl 
+      ? `Vendor marked item ready and uploaded deliverables. URL: ${body.mediaUrl}` 
+      : `Vendor marked item ready for pickup.`;
   } else {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   }

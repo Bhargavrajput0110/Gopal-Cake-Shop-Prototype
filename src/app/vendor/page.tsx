@@ -3,6 +3,11 @@ import { useEffect, useState } from "react";
 import { TickCircle, Refresh2, Gallery, Location, Calendar2, Danger, CloseSquare, Clock, ArrowRight, Colorfilter, Diagram, Camera, DocumentDownload, Maximize, CloudAdd } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BackButton } from "@/components/ui/BackButton";
+import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
+import { useSession } from "next-auth/react";
+import { authSignOut } from "@/lib/authUtils";
+import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 // Custom Hook for SLA Countdown
 const useSLA = (timeTarget: string | undefined, isCompleted: boolean) => {
@@ -50,6 +55,9 @@ const useSLA = (timeTarget: string | undefined, isCompleted: boolean) => {
 };
 
 export default function VendorTasks() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
   const [tasks, setTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -57,12 +65,22 @@ export default function VendorTasks() {
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'ACTIVE' | 'COMPLETED'>('ACTIVE');
 
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    } else if (session?.user) {
+      setActiveVendor({
+        id: session.user.id,
+        name: session.user.name || "Vendor Studio",
+        type: session.user.role || "Vendor Partner"
+      });
+    }
+  }, [session, status, router]);
+
   const fetchTasks = async () => {
     setIsLoading(true);
     try {
-      // In prototype, we use the activeVendor ID. In real app, the token handles this.
-      const url = activeVendor ? `/api/v1/vendor/tasks?vendorId=${activeVendor.id}` : `/api/v1/vendor/tasks`;
-      const res = await fetch(url);
+      const res = await fetch(`/api/v1/vendor/tasks`);
       const json = await res.json();
       
       if (json.success) {
@@ -96,20 +114,10 @@ export default function VendorTasks() {
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const vId = params.get('vendorId');
-      if (vId === 'VENDOR_ACRYLIC') setActiveVendor({ id: 'VENDOR_ACRYLIC', name: 'Creative Acrylics', type: 'Custom Toppers & MDF' });
-      else if (vId === 'VENDOR_FLORIST') setActiveVendor({ id: 'VENDOR_FLORIST', name: 'Sayaji Florists', type: 'Premium Botanicals' });
-      else if (vId === 'VENDOR_PHOTO') setActiveVendor({ id: 'VENDOR_PHOTO', name: 'Gopal Photography Studio', type: 'Product & Event Photography' });
-    }
-  }, []);
-
-  useEffect(() => {
     if (activeVendor) fetchTasks();
   }, [activeVendor]);
 
-  const updateTask = async (id: string, action: string) => {
+  const onUpdate = async (id: string, action: string, mediaUrl?: string) => {
     // Optimistic Update
     const originalTasks = [...tasks];
     let nextStatus = action === 'ACCEPTED' ? 'CHEF_ACCEPTED' : action;
@@ -121,7 +129,7 @@ export default function VendorTasks() {
       const res = await fetch(`/api/v1/vendor/tasks/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
+        body: JSON.stringify({ action, mediaUrl })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
@@ -140,79 +148,8 @@ export default function VendorTasks() {
     }
   };
 
-  if (isLoading) return <div className="flex justify-center items-center h-screen bg-gray-950"><Refresh2 className="animate-spin w-12 h-12 text-gray-500" /></div>;
-
-  // PREMIUM VENDOR LOGIN
-  if (!activeVendor) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex flex-col md:flex-row relative">
-        <div className="absolute top-6 left-6 z-[110]">
-          <BackButton fallback="/login" label="Exit to Staff Login" variant="ghost" className="text-white hover:text-gray-950 hover:bg-white" />
-        </div>
-        {/* Left: Branding */}
-        <div className="flex-1 p-12 flex flex-col justify-center relative overflow-hidden">
-          <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=1600')] bg-cover bg-center"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent"></div>
-          
-          <div className="relative z-10 max-w-lg">
-            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-md border border-white/20">
-              <Diagram className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="font-display text-5xl md:text-7xl font-black text-white leading-[1.1] mb-6">Partner<br/><span className="text-gray-500">Studio</span></h1>
-            <p className="font-editorial italic text-xl text-gray-400">Exclusive portal for Gopal Cake Shop's creative vendors and suppliers.</p>
-          </div>
-        </div>
-
-        {/* Right: Login Selection */}
-        <div className="flex-1 bg-gray-900 p-8 md:p-12 lg:p-24 flex flex-col justify-center">
-          <h2 className="font-ui text-[10px] uppercase tracking-widest font-black text-gray-500 mb-8">Select Your Studio</h2>
-          
-          <div className="space-y-4">
-            <button 
-              onClick={() => setActiveVendor({ id: 'VENDOR_ACRYLIC', name: 'Creative Acrylics', type: 'Custom Toppers & MDF' })}
-              className="w-full bg-gray-800 hover:bg-gray-800/80 border border-gray-700 hover:border-gray-500 transition-all p-6 rounded-3xl flex items-center gap-6 group"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
-                <Colorfilter className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-left">
-                <h3 className="font-display font-black text-2xl text-white group-hover:text-indigo-400 transition-colors">Creative Acrylics</h3>
-                <p className="font-ui text-[10px] uppercase tracking-widest font-bold text-gray-400 mt-1">Custom Toppers & MDF</p>
-              </div>
-              <ArrowRight className="w-6 h-6 text-gray-600 ml-auto group-hover:text-white transition-colors" />
-            </button>
-            
-            <button 
-              onClick={() => setActiveVendor({ id: 'VENDOR_FLORIST', name: 'Sayaji Florists', type: 'Premium Botanicals' })}
-              className="w-full bg-gray-800 hover:bg-gray-800/80 border border-gray-700 hover:border-gray-500 transition-all p-6 rounded-3xl flex items-center gap-6 group"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-rose-400 to-rose-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
-                <Gallery className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-left">
-                <h3 className="font-display font-black text-2xl text-white group-hover:text-rose-400 transition-colors">Sayaji Florists</h3>
-                <p className="font-ui text-[10px] uppercase tracking-widest font-bold text-gray-400 mt-1">Premium Botanicals</p>
-              </div>
-              <ArrowRight className="w-6 h-6 text-gray-600 ml-auto group-hover:text-white transition-colors" />
-            </button>
-            
-            <button 
-              onClick={() => setActiveVendor({ id: 'VENDOR_PHOTO', name: 'Gopal Photography Studio', type: 'Product & Event Photography' })}
-              className="w-full bg-gray-800 hover:bg-gray-800/80 border border-gray-700 hover:border-gray-500 transition-all p-6 rounded-3xl flex items-center gap-6 group"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
-                <Camera className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-left">
-                <h3 className="font-display font-black text-2xl text-white group-hover:text-blue-400 transition-colors">Gopal Photography Studio</h3>
-                <p className="font-ui text-[10px] uppercase tracking-widest font-bold text-gray-400 mt-1">Product & Event Photography</p>
-              </div>
-              <ArrowRight className="w-6 h-6 text-gray-600 ml-auto group-hover:text-white transition-colors" />
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  if (status === 'loading' || isLoading || !activeVendor) {
+    return <div className="flex justify-center items-center h-screen bg-gray-950"><Refresh2 className="animate-spin w-12 h-12 text-gray-500" /></div>;
   }
 
   const myTasks = tasks.filter(t => t.vendorId === activeVendor.id);
@@ -246,10 +183,9 @@ export default function VendorTasks() {
           </div>
           <button 
             onClick={() => {
-              setActiveVendor(null);
-              if (typeof window !== 'undefined') {
-                window.history.replaceState({}, '', '/vendor');
-              }
+              authSignOut("/login")
+              document.cookie = "e2e-bypass-auth=; path=/; max-age=0";
+              router.push("/login");
             }}
             className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full font-ui text-[9px] uppercase tracking-widest font-black transition-colors"
           >
@@ -324,7 +260,7 @@ export default function VendorTasks() {
                   btnAction={btnAction}
                   btnLabel={btnLabel}
                   btnColor={btnColor}
-                  onUpdate={updateTask}
+                  onUpdate={onUpdate}
                   onImageClick={setFullscreenImage}
                   isCompleted={task.status === 'COMPLETED'}
                   isPhotographer={activeVendor.id === 'VENDOR_PHOTO'}
@@ -473,24 +409,27 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
 
         {/* Photographers: Upload Work Dropzone */}
         {isPhotographer && !isCompleted && btnAction === 'READY_FOR_PICKUP' && (
-          <div className="mb-8 border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer group/upload">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 group-hover/upload:scale-110 transition-transform">
-              <CloudAdd className="w-8 h-8 text-indigo-500" />
-            </div>
-            <p className="font-display font-bold text-xl text-gray-900 mb-1">Upload Deliverables</p>
-            <p className="font-ui text-[10px] uppercase tracking-widest font-bold text-gray-500">Drag & Drop Photos Here (0 uploaded)</p>
+          <div className="mb-8 border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+            <p className="font-display font-bold text-xl text-gray-900 mb-4">Upload Deliverables</p>
+            <CloudinaryUploader 
+              onUploadSuccess={(urls) => onUpdate(task.id, 'READY_FOR_PICKUP', urls[0])}
+              maxFiles={1}
+              label="Upload Work"
+            />
           </div>
         )}
 
         {/* Action Bar */}
         <div className="mt-auto pt-6 border-t border-gray-100">
-          <button 
-            disabled={isCompleted}
-            onClick={() => onUpdate(task.id, btnAction)}
-            className={`w-full py-6 rounded-2xl font-ui text-[11px] uppercase tracking-widest font-black transition-transform ${!isCompleted && 'active:scale-[0.98]'} ${btnColor}`}
-          >
-            {btnLabel}
-          </button>
+          {(!isPhotographer || btnAction !== 'READY_FOR_PICKUP') && (
+            <button 
+              disabled={isCompleted}
+              onClick={() => onUpdate(task.id, btnAction)}
+              className={`w-full py-6 rounded-2xl font-ui text-[11px] uppercase tracking-widest font-black transition-transform ${!isCompleted && 'active:scale-[0.98]'} ${btnColor}`}
+            >
+              {btnLabel}
+            </button>
+          )}
         </div>
       </div>
     </motion.div>

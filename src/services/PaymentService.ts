@@ -95,7 +95,7 @@ export class PaymentService {
           eventVersion: '1.0',
           occurredAt: new Date(),
           correlationId: payment.id,
-          actorId: actorId || 'SYSTEM',
+          actorId: actorId || undefined,
           payload: { 
             aggregateId: orderId,
             causationId: 'processPayment',
@@ -120,7 +120,7 @@ export class PaymentService {
           eventVersion: '1.0',
           occurredAt: new Date(),
           correlationId: payment.id,
-          actorId: actorId || 'SYSTEM',
+          actorId: actorId || undefined,
           payload: { 
             aggregateId: orderId,
             causationId: 'processPayment',

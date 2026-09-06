@@ -8,17 +8,19 @@ const branches = [
   { id: 'elora', name: 'Elora', address: 'Elora, Vadodara', contactNumber: '' },
 ];
 
+import bcrypt from 'bcryptjs';
+
 const users = [
-  { id: 'usr_admin', name: 'Admin', role: 'admin', branchId: null, pin: '0000' },
-  { id: 'usr_manager_khm', name: 'Manager KHM', role: 'manager', branchId: 'khanderao', pin: '1111' },
-  { id: 'usr_sales_khm', name: 'Sales KHM', role: 'sales', branchId: 'khanderao', pin: '2222' },
-  { id: 'usr_chef_khm', name: 'Chef KHM', role: 'chef', branchId: 'khanderao', pin: '3333' },
-  { id: 'usr_driver_khm', name: 'Driver KHM', role: 'driver', branchId: 'khanderao', pin: '4444' },
-  { id: 'usr_sales_uma', name: 'Sales Uma', role: 'sales', branchId: 'uma', pin: '5555' },
-  { id: 'usr_chef_uma', name: 'Chef Uma', role: 'chef', branchId: 'uma', pin: '6666' },
-  { id: 'usr_vendor_photo', name: 'Vendor Photo', role: 'VENDOR_PHOTO', branchId: null, pin: '7777' },
-  { id: 'usr_vendor_florist', name: 'Vendor Florist', role: 'VENDOR_FLORIST', branchId: null, pin: '8888' },
-  { id: 'usr_vendor_acrylic', name: 'Vendor Acrylic', role: 'VENDOR_ACRYLIC', branchId: null, pin: '9999' },
+  { id: 'usr_admin', name: 'Admin', role: 'admin', branchId: null, passwordHash: bcrypt.hashSync('0000', 10) },
+  { id: 'usr_manager_khm', name: 'Manager KHM', role: 'manager', branchId: 'khanderao', passwordHash: bcrypt.hashSync('1111', 10) },
+  { id: 'usr_sales_khm', name: 'Sales KHM', role: 'sales', branchId: 'khanderao', passwordHash: bcrypt.hashSync('2222', 10) },
+  { id: 'usr_chef_khm', name: 'Chef KHM', role: 'chef', branchId: 'khanderao', passwordHash: bcrypt.hashSync('3333', 10) },
+  { id: 'usr_driver_khm', name: 'Driver KHM', role: 'driver', branchId: 'khanderao', passwordHash: bcrypt.hashSync('4444', 10) },
+  { id: 'usr_sales_uma', name: 'Sales Uma', role: 'sales', branchId: 'uma', passwordHash: bcrypt.hashSync('5555', 10) },
+  { id: 'usr_chef_uma', name: 'Chef Uma', role: 'chef', branchId: 'uma', passwordHash: bcrypt.hashSync('6666', 10) },
+  { id: 'usr_vendor_photo', name: 'Vendor Photo', role: 'VENDOR_PHOTO', branchId: null, passwordHash: bcrypt.hashSync('7777', 10) },
+  { id: 'usr_vendor_florist', name: 'Vendor Florist', role: 'VENDOR_FLORIST', branchId: null, passwordHash: bcrypt.hashSync('8888', 10) },
+  { id: 'usr_vendor_acrylic', name: 'Vendor Acrylic', role: 'VENDOR_ACRYLIC', branchId: null, passwordHash: bcrypt.hashSync('9999', 10) },
 ];
 
 const categories = [

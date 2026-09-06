@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { io, Socket } from "socket.io-client";
+import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, TickCircle, ArrowRight2, Card, Refresh2, Bag, Call, Location, Danger, ArrowLeft, DocumentText } from "iconsax-react";
 import Link from "next/link";
@@ -77,8 +77,6 @@ export default function OrderStatusPage() {
   };
 
   useEffect(() => {
-    let socketInstance: Socket | null = null;
-
     const fetchOrder = async () => {
       try {
         const res = await fetch(`/api/orders/${orderId}`);
@@ -95,18 +93,20 @@ export default function OrderStatusPage() {
 
     fetchOrder();
 
-    socketInstance = io(window.location.origin);
-    
-    socketInstance.emit("join_branch", "Khanderao Branch");
-
-    socketInstance.on("order_updated", (updatedOrder: Order) => {
-      if (updatedOrder.id === orderId) {
-        setOrder(updatedOrder);
-      }
-    });
+    // Subscribe to Supabase Realtime — refetch this specific order on any change
+    const channel = supabase
+      .channel(`order-${orderId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Order', filter: `id=eq.${orderId}` },
+        () => {
+          fetchOrder();
+        }
+      )
+      .subscribe();
 
     return () => {
-      if (socketInstance) socketInstance.disconnect();
+      supabase.removeChannel(channel);
     };
   }, [orderId]);
 

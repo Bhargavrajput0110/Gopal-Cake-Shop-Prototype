@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { OrderItemStatus } from '@prisma/client'
 import { OutboxService } from '@/lib/events/OutboxService'
 import { KitchenStateMachine } from '@/services/KitchenStateMachine'
+import { toBranchId } from '@/lib/branches'
 
 export async function PATCH(req: Request, context: { params: Promise<{ itemId: string }> }) {
   try {
@@ -22,7 +23,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ itemId: s
       if (!item) throw new Error('Item not found')
 
       const userBranchId = (session.user as any).branchId || 'khanderao'
-      if (session.user.role === 'CHEF' && item.order.branchId !== userBranchId) {
+      if (session.user.role === 'CHEF' && toBranchId(item.order.branchId) !== toBranchId(userBranchId)) {
         throw new Error('FORBIDDEN: You do not have permission to modify items from another branch')
       }
 

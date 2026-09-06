@@ -22,44 +22,69 @@ export function Hero() {
       ref={ref}
       className="relative w-full min-h-screen overflow-hidden flex flex-col pt-28 md:pt-36"
     >
-      {/* ── Video BG ── */}
-      <div className="absolute inset-0 z-0">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          poster="https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=2560&auto=format&fit=crop"
-          className="absolute inset-0 w-full h-full object-cover scale-105"
-          style={{ willChange: "transform" }}
-        >
-          <source
-            src="/hero-bg.mp4"
-            type="video/mp4"
+      {/* ── Video BG (Blended 3 Reels Panorama) ── */}
+      <div className="absolute inset-0 z-0 bg-black">
+        {/* Reel 1 (Left - Mobile & Desktop) */}
+        <div className="absolute left-0 top-0 bottom-0 w-full md:w-[40%]">
+          <video
+            key="hero-video-1"
+            src="https://res.cloudinary.com/dlxiy6aiq/video/upload/v1788199517/AQM9Inm1bmMqgSvwXR7hyWhekGAxwHeGAdfcJl2VK11H-REpvhuerjjmqXEewNu8bNeTQT6UfVFi5ydfrNne_p5H2k2M9tym2VKIGdQ_qtxv59.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover scale-105"
+            style={{ willChange: "transform" }}
           />
-        </video>
+        </div>
 
-        {/* Layer 1: Dark wash */}
+        {/* Reel 2 (Center - Desktop only) */}
+        <div className="absolute left-[30%] top-0 bottom-0 w-[40%] hidden md:block">
+          <video
+            key="hero-video-2"
+            src="https://res.cloudinary.com/dlxiy6aiq/video/upload/v1788199841/AQOHIt8uZ1_bH9jYzCiwBjGg4ptZXXI6m4kTonsE2CxvPYMCqNMj4YoMzDkEd2gffHdQZj8yPTR1ViT30oNyTIh3Zw2xK9SUtDFZqJo_xu8ojk.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover scale-105"
+            style={{ 
+              willChange: "transform",
+              maskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
+              WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)"
+            }}
+          />
+        </div>
+
+        {/* Reel 3 (Right - Desktop only) */}
+        <div className="absolute left-[60%] top-0 bottom-0 w-[40%] hidden md:block">
+          <video
+            key="hero-video-3"
+            src="https://res.cloudinary.com/dlxiy6aiq/video/upload/v1788200368/AQMloeSiiyrth-BpVCvrNtbiPKKhPh1_2q7v4eUzmZ7IUMs782jtizsW0WHITJap8etK4uYEIdLdr016Onbm1KsGEEOBragRV6LLFhA_1_dzohnj.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover scale-105"
+            style={{ 
+              willChange: "transform",
+              maskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
+              WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)"
+            }}
+          />
+        </div>
+
+        {/* Layer 1: Neutral dark wash */}
         <motion.div
           className="absolute inset-0"
-          style={{ opacity: overlayOpacity, backgroundColor: "#1C0F0A" }}
+          style={{ opacity: overlayOpacity, backgroundColor: "#000000" }}
         />
 
         {/* Layer 2: Strong left gradient for text contrast & hierarchy */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1C0F0A]/90 via-[#1C0F0A]/50 to-transparent w-full md:w-[80%]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent w-full md:w-[80%]" />
 
-        {/* Layer 3: Rose gradient bottom */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1C0F0A] via-[#1C0F0A]/40 to-transparent" />
-
-        {/* Layer 3: Vignette edges */}
-        <div className="absolute inset-0"
-          style={{
-            background: "radial-gradient(ellipse at center, transparent 50%, rgba(28,15,10,0.55) 100%)"
-          }}
-        />
-
-        {/* Layer 4: Champagne warm cast (subtle) */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#C8A97E]/5 to-transparent mix-blend-screen" />
+        {/* Layer 3: Bottom gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
       </div>
 
 
@@ -81,7 +106,7 @@ export function Hero() {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--brand-champagne)]"></span>
           </span>
           <span className="font-ui text-[11px] tracking-[0.2em] uppercase text-[var(--brand-champagne)] font-bold drop-shadow-sm">
-            Est. 1995 · Vadodara
+            Est. 1990 · Vadodara
           </span>
         </motion.div>
 

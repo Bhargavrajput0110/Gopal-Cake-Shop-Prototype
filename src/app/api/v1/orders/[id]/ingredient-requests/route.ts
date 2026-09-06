@@ -57,7 +57,7 @@ export const POST = withApiHandler(async ({ req, params, appRole, user }) => {
   });
 
   return NextResponse.json({ success: true, data: request });
-}, true);
+});
 
 export const PATCH = withApiHandler(async ({ req, params, appRole }) => {
   const { id: orderId } = params;
@@ -81,4 +81,4 @@ export const PATCH = withApiHandler(async ({ req, params, appRole }) => {
   });
 
   return NextResponse.json({ success: true, data: request });
-}, true);
+});

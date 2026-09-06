@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Box, TruckFast, TickCircle, Warning2, Logout, BoxSearch, Clock, BoxTick } from "iconsax-react";
 import NumberTicker from "@/components/magicui/NumberTicker";
 import { useSession } from "next-auth/react";
+import { authSignOut } from "@/lib/authUtils";
+import { signOut } from "next-auth/react";
 
 type SupplierType = { id: string; name: string; categories: string[] };
 
@@ -41,7 +43,7 @@ export default function SupplierDashboard() {
   }, [session]);
 
   const handleSignOut = () => {
-    document.cookie = "gopal_dummy_role=; path=/; max-age=0";
+    authSignOut("/login")
     document.cookie = "e2e-bypass-auth=; path=/; max-age=0";
     router.push("/login");
   };

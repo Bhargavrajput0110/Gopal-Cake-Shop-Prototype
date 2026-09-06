@@ -107,9 +107,9 @@ function SalesDashboardContent() {
       if (employeeId.includes("-ELR-")) return "elora";
       if (employeeId.includes("-WAS-")) return "varasiya";
     }
-    // Fallback to session branch
+    // Fallback to session branch - convert CUID to canonical short code
     if ((session?.user as any)?.branchId) {
-      return (session?.user as any).branchId;
+      return toBranchId((session?.user as any).branchId);
     }
     return "khanderao"; // Default
   });
@@ -121,7 +121,8 @@ function SalesDashboardContent() {
       else if (employeeId.includes("-ELR-")) setActiveBranch("elora");
       else if (employeeId.includes("-WAS-")) setActiveBranch("varasiya");
     } else if ((session?.user as any)?.branchId) {
-      setActiveBranch((session?.user as any).branchId);
+      // Convert real DB CUID to canonical short code
+      setActiveBranch(toBranchId((session?.user as any).branchId));
     }
   }, [employeeId, session?.user]);
 
@@ -183,70 +184,9 @@ function SalesDashboardContent() {
       }
     } catch (e: any) {
       if (e.name !== "AbortError") {
-        // Instead of showing a blank error screen, render demo orders so Sales staff can always access the page
-        console.warn("[Sales Orders] API unavailable (offline or DB not connected). Using demo data:", e.message);
-        setServerOrders([
-          {
-            id: "DEMO-001",
-            orderNumber: "#DEMO-001",
-            status: "NEW",
-            customerName: "Rahul Patel",
-            customerPhone: "+91 9876543210",
-            grandTotal: 1200,
-            pendingBalance: 600,
-            advancePaid: 600,
-            timeTarget: new Date(Date.now() + 3 * 3600 * 1000).toISOString(),
-            cakeImage: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400",
-            items: [{ name: "2kg Chocolate Truffle", qty: 1, weight: "2kg", notes: "Extra dark chocolate" }],
-            priorityLevel: "normal",
-            delayLevel: "on_time",
-            vendorTasks: [],
-            ingredientRequests: [],
-            customerInstructions: "Please write 'Happy Birthday Rahul' on the cake.",
-            isSurprise: false,
-            transferHistory: []
-          } as any,
-          {
-            id: "DEMO-002",
-            orderNumber: "#DEMO-002",
-            status: "WAITING_FOR_CHEF",
-            customerName: "Priya Sharma",
-            customerPhone: "+91 9123456789",
-            grandTotal: 2500,
-            pendingBalance: 0,
-            advancePaid: 2500,
-            timeTarget: new Date(Date.now() + 5 * 3600 * 1000).toISOString(),
-            cakeImage: "https://images.unsplash.com/photo-1535254973040-607b474cb50d?w=400",
-            items: [{ name: "3-Tier Wedding Cake", qty: 1, weight: "5kg" }],
-            priorityLevel: "high",
-            delayLevel: "on_time",
-            vendorTasks: [{ vendorType: "photo", status: "pending", vendorName: null, instructions: "Photo print" }],
-            ingredientRequests: [],
-            customerInstructions: "",
-            isSurprise: false,
-            transferHistory: []
-          } as any,
-          {
-            id: "DEMO-003",
-            orderNumber: "#DEMO-003",
-            status: "MAKING",
-            customerName: "Meera Joshi",
-            customerPhone: "+91 9988776655",
-            grandTotal: 800,
-            pendingBalance: 0,
-            advancePaid: 800,
-            timeTarget: new Date(Date.now() + 1.5 * 3600 * 1000).toISOString(),
-            cakeImage: "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=400",
-            items: [{ name: "Black Forest Classic", qty: 1, weight: "1kg" }],
-            priorityLevel: "normal",
-            delayLevel: "warning",
-            vendorTasks: [],
-            ingredientRequests: [{ itemName: "Fresh Cream", note: "Low stock", status: "pending" }],
-            customerInstructions: "",
-            isSurprise: true,
-            transferHistory: []
-          } as any
-        ]);
+        console.error("[Sales Orders] API error:", e.message);
+        setError(e.message || "Failed to load orders. Please refresh.");
+        setServerOrders([]);
         setTotalPages(1);
       }
     } finally {
@@ -439,7 +379,7 @@ function SalesDashboardContent() {
               <div className="p-2 bg-[#C5A059]/20 text-[#3E2723] rounded-full animate-pulse"><Notification className="w-6 h-6" /></div>
               <div className="flex-1">
                 <h4 className="font-black text-[#3E2723] text-sm">🎂 NEW ORDER ARRIVED!</h4>
-                <p className="text-sm font-bold text-[#C5A059] mt-0.5">{newOrderPopup.id}</p>
+                <p className="text-sm font-bold text-[#C5A059] mt-0.5">{newOrderPopup.orderNumber || newOrderPopup.id}</p>
                 <p className="text-xs font-medium text-foreground mt-1 truncate">{newOrderPopup.customerName}</p>
                 <p className="text-xs text-muted-foreground">
                   {newOrderPopup.items?.map((i: any) => i.name).join(", ")}
@@ -576,7 +516,8 @@ export default function OrderManagementPage() {
 
 function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWhatsApp, onMutated }: { order: Order; onViewTimeline: () => void; onEdit: () => void; onAssignVendor: () => void; onWhatsApp: (msg: string) => void; onMutated: () => void }) {
   const { updateOrderStatus, updateOrderFields, updateVendorTaskStatus } = useOrders();
-  const [selectedDiscount, setSelectedDiscount] = useState<number>(50);
+  const [quotePrice, setQuotePrice] = useState<number>(order.grandTotal || 0);
+  const [selectedDiscount, setSelectedDiscount] = useState<number>(0);
   const [submittingQuote, setSubmittingQuote] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
   
@@ -594,22 +535,43 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
   };
 
   const handleCollectPayment = async () => {
-    await updateOrderFields(order.id, { pendingBalance: 0, advancePaid: order.grandTotal });
-    // Note: If you want automated payment whatsapp, it needs to be configured in Outbox. 
-    // Leaving manual toast for now since Payment Received is not fully automated in backend yet.
-    onWhatsApp("Thank you! Your payment has been received and balance is settled. 🎉");
-    onMutated();
+    try {
+      const response = await fetch(`/api/v1/orders/${order.id}/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: order.pendingBalance, method: 'CASH' })
+      });
+      const data = await response.json();
+      if (!data.success) {
+        alert(data.error || "Failed to record payment");
+        return;
+      }
+      onWhatsApp("Thank you! Your payment has been received and balance is settled. 🍰");
+      onMutated();
+    } catch (e) {
+      console.error(e);
+      alert("Error recording payment");
+    }
   };
 
   const handleSendQuote = async () => {
     setSubmittingQuote(true);
     try {
-      await updateOrderStatus(order.id, "QUOTE_SENT", false, "Salesperson", { discount: selectedDiscount });
-      onWhatsApp(`Special discount of ₹${selectedDiscount} applied! Your new total is ₹${order.grandTotal - selectedDiscount}`);
+      const finalTotal = Math.max(0, quotePrice - selectedDiscount);
+      await updateOrderFields(order.id, { 
+        grandTotal: finalTotal,
+        pendingBalance: finalTotal - (order.advancePaid || 0)
+      });
+      await updateOrderStatus(order.id, "QUOTE_SENT", false, "Salesperson", { discount: selectedDiscount, basePrice: quotePrice });
+      
+      let msg = `Sent quote of ₹${finalTotal} to customer via WhatsApp.`;
+      if (selectedDiscount > 0) msg = `Sent quote of ₹${finalTotal} (included ₹${selectedDiscount} discount) to customer via WhatsApp.`;
+      
+      onWhatsApp(msg);
       onMutated();
     } catch (e) {
       console.error(e);
-      alert("Failed to apply quote discount");
+      alert("Failed to send quote");
     } finally {
       setSubmittingQuote(false);
     }
@@ -679,9 +641,24 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
             </div>
           )}
 
-          <div className="space-y-1">
+          <div className="space-y-2">
             {order.items.map((item,i)=>(
-              <p key={i} className="text-sm font-bold text-foreground">{item.qty}x {item.name || (item as any).productName}{item.weight&&<span className="text-muted-foreground font-normal"> ({item.weight})</span>}</p>
+              <div key={i} className="flex flex-col">
+                <p className="text-sm font-bold text-foreground">
+                  {item.qty}x {item.name || (item as any).productName}
+                  {item.weight&&<span className="text-muted-foreground font-normal"> ({item.weight})</span>}
+                  {(item as any).flavor && <span className="ml-1 text-xs text-amber-600 font-semibold">• {(item as any).flavor}</span>}
+                </p>
+                {(item as any).referenceImages && (item as any).referenceImages.length > 0 && (
+                  <div className="flex gap-2 mt-1">
+                    {(item as any).referenceImages.map((img: string, idx: number) => (
+                      <a key={idx} href={img} target="_blank" rel="noreferrer" className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 hover:bg-blue-100 flex items-center gap-1">
+                        🖼️ Ref Image {idx + 1}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
           {order.items.some(i=>i.notes) && (
@@ -745,25 +722,45 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
           {/* Bargain Negotiation Control Panel */}
           {order.status === "QUOTE_DRAFT" && (
             <div className="mt-4 p-3 bg-primary/5 rounded-xl border border-primary/20 space-y-3">
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest block">Negotiate Price & Discount</span>
+              <span className="text-[10px] font-black text-primary uppercase tracking-widest block">Send Quote to Customer</span>
+              
+              <div className="flex gap-2 items-center">
+                <span className="text-xs font-bold text-muted-foreground">Price: ₹</span>
+                <input 
+                  type="number"
+                  min="0"
+                  value={quotePrice || ''}
+                  onWheel={(e) => e.currentTarget.blur()}
+                  onKeyDown={(e) => {
+                    if (['-', '+', 'e', 'E', '.'].includes(e.key)) e.preventDefault();
+                  }}
+                  onChange={(e) => {
+                    const val = Math.max(0, parseInt(e.target.value) || 0);
+                    setQuotePrice(val);
+                  }}
+                  className="flex-1 bg-white border border-border rounded-md px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-primary outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="Enter custom cake price..."
+                />
+              </div>
+
               <div className="flex gap-2">
-                {[50, 100, 150, 200].map(amt => (
+                {[0, 50, 100, 150].map(amt => (
                   <button
                     key={amt}
                     type="button"
                     onClick={() => setSelectedDiscount(amt)}
                     className={`flex-1 py-1 rounded text-xs font-bold transition-all ${selectedDiscount === amt ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-white border border-border text-foreground hover:bg-secondary'}`}
                   >
-                    -₹{amt}
+                    {amt === 0 ? 'No Disc.' : `-₹${amt}`}
                   </button>
                 ))}
               </div>
               <button
-                disabled={submittingQuote}
+                disabled={submittingQuote || quotePrice <= 0}
                 onClick={handleSendQuote}
                 className="w-full bg-[#C5A059] text-white py-2 rounded-md text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
               >
-                Send Negotiated Quote (New Total: ₹{order.grandTotal - selectedDiscount})
+                Send Negotiated Quote (Final Total: ₹{Math.max(0, quotePrice - selectedDiscount)})
               </button>
             </div>
           )}

@@ -11,33 +11,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-// Hardcoded frontend taxonomy until backend is updated
-const CATEGORY_GROUPS = [
-  {
-    title: "By Recipient",
-    items: ["Mom Cake", "Women's Cake", "Dad Cake", "Men's Cake", "Boys Cake", "Girls Cake", "Wife Cake", "Boss Baby Cake"]
-  },
-  {
-    title: "Occasions & Events",
-    items: ["Wedding", "Baby Shower Cake", "Welcome Baby Cake", "1st Birthday Cake", "5th Birthday Cake", "13th Birthday Cake", "Anniversary Cake", "25th Anniversary Cake", "50th Anniversary Cake", "Engagement Cake", "Graduation Cake", "Corporate Cake"]
-  },
-  {
-    title: "Bento & Mini",
-    items: ["Bento Cake for Men", "Bento Cake for Women", "Bento Anniversary Cake", "Bento Couple Cake", "Bento Love Theme Cake"]
-  },
-  {
-    title: "Pop Culture & Characters",
-    items: ["Batman Cake", "Spider-Man Cake", "Avengers Cake", "Super Mario Cake", "Mickey Mouse Cake", "Harry Potter Cake", "Cocomelon Cake", "Lightning McQueen Cake", "Hot Wheels Cake", "JCB Cake", "Dinosaur Cake", "Astronaut Cake", "Jungle Cake", "K-Pop Demon Hunters Cake", "Unicorn Cake", "Teddy Cake"]
-  },
-  {
-    title: "Styles & Themes",
-    items: ["Photo Cake", "Fresh Flower Cake", "Rice Paper Cake", "Isomalt Cake", "King Cake", "Rainbow Cake", "Pinata Cake", "Bow Cake", "Top Forward Cake", "Levitating Cake", "Vintage Photo Cake", "Alcohol Bottle Theme Cake", "Evil Eye Cake"]
-  },
-  {
-    title: "Hobbies & Professions",
-    items: ["Cricket Cake", "Football Cake", "Doctor Cake", "Bike Cake", "Car Cake", "Army Cake"]
-  }
-];
+// Categories are fetched from /api/v1/public/categories
 
 import { QuickBuyForm } from "@/components/menu/QuickBuyForm";
 
@@ -196,8 +170,8 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
                   <QuickBuyForm
                     product={product}
                     isCustom={
-                      product.isCustom ||
-                      product.name.toLowerCase().includes('custom')
+                      !(Boolean(product.isPhotoCake) || product.name.toLowerCase().includes('photo') || (product.category?.name || "").toLowerCase().includes('photo')) &&
+                      (product.isCustom || product.name.toLowerCase().includes('custom'))
                     }
                     isPhotoCake={
                       Boolean(product.isPhotoCake) ||
@@ -220,8 +194,8 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
             <QuickBuyForm
               product={product}
               isCustom={
-                product.isCustom ||
-                product.name.toLowerCase().includes('custom')
+                !(Boolean(product.isPhotoCake) || product.name.toLowerCase().includes('photo') || (product.category?.name || "").toLowerCase().includes('photo')) &&
+                (product.isCustom || product.name.toLowerCase().includes('custom'))
               }
               isPhotoCake={
                 Boolean(product.isPhotoCake) ||
@@ -288,7 +262,7 @@ function MenuPageContent() {
     Promise.all([
       fetch("/api/v1/designs?limit=200").then(res => res.ok ? res.json() : { data: { items: [] } }).catch(() => ({ data: { items: [] } })),
       fetch("/api/v1/public/products?limit=200").then(res => res.ok ? res.json() : []).catch(() => []),
-      fetch("/api/v1/categories").then(res => res.ok ? res.json() : []).catch(() => [])
+      fetch("/api/v1/public/categories").then(res => res.ok ? res.json() : []).catch(() => [])
     ]).then(([designsRes, productsRes, categoriesRes]) => {
       // Process categories
       const fetchedCats = Array.isArray(categoriesRes) ? categoriesRes : (categoriesRes?.data || []);
@@ -329,7 +303,7 @@ function MenuPageContent() {
         }
         return {
           ...d,
-          isCustom: true,
+          isCustom: Boolean(d.isCustom) || (d.name || "").toLowerCase().includes("custom"),
           basePrice: computedPrice,
           hasMultipleOptions
         };
@@ -350,7 +324,13 @@ function MenuPageContent() {
   const filteredProducts = React.useMemo(() => {
     let result = products;
     if (activeCategory !== 'All') {
-      result = result.filter(p => p.category?.name === activeCategory || p.category?.slug === activeCategory || p.categories?.some((c: any) => c.category?.name === activeCategory || c.category?.slug === activeCategory));
+      const activeLower = activeCategory.toLowerCase();
+      result = result.filter(p => {
+        const hasCategory = p.category?.name === activeCategory || p.category?.slug === activeCategory || p.categories?.some((c: any) => c.category?.name === activeCategory || c.category?.slug === activeCategory);
+        const hasTag = p.tags?.some((t: string) => t.toLowerCase() === activeLower);
+        const hasOccasion = p.occasions?.some((o: string) => o.toLowerCase() === activeLower);
+        return hasCategory || hasTag || hasOccasion;
+      });
     }
     if (debouncedSearch) {
       const search = debouncedSearch.toLowerCase();

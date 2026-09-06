@@ -11,17 +11,18 @@ interface DriverTransitionButtonProps {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
   className?: string
   note?: string
+  proofUrl?: string
   reasonCode?: string
   onSuccessCallback?: () => void
 }
 
 export function DriverTransitionButton({ 
-  orderId, action, label, variant = "default", className = "", note, reasonCode, onSuccessCallback 
+  orderId, action, label, variant = "default", className = "", note, proofUrl, reasonCode, onSuccessCallback 
 }: DriverTransitionButtonProps) {
   const queryClient = useQueryClient()
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () => OrdersApiClient.transitionOrder(orderId, action, note),
+    mutationFn: () => OrdersApiClient.transitionOrder(orderId, action, note, proofUrl),
     onSuccess: () => {
       // Refresh driver orders
       queryClient.invalidateQueries({ queryKey: ['driver-orders'] })

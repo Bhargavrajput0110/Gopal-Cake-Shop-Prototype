@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
 }
 
@@ -8,48 +8,45 @@ datasource db {
 }
 
 model User {
-  id                 String              @id @default(cuid())
-  name               String
-  email              String?             @unique
-  username           String?             @unique
-  passwordHash       String
-  phone              String?             @unique
-  role               Role
-  branchId           String?
-  deliveryScope      String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  activatedAt        DateTime?
-  deactivatedAt      DateTime?
-  invitedAt          DateTime?
-  lastActivityAt     DateTime?
-  lastLoginAt        DateTime?
-  status             AccountStatus       @default(INVITED)
-  suspendedAt        DateTime?
-  auditLogs          AuditLog[]
-  inAppNotifs        InAppNotification[]
-  uploadedMedia      MediaAsset[]        @relation("MediaUploader")
-  handledOrders      Order[]             @relation("ChefOrders")
-  createdOrders      Order[]             @relation("CreatedOrders")
-  deliveredOrders    Order[]             @relation("DeliveryOrders")
-  assignedItems      OrderItem[]         @relation("AssignedChefItems")
-  vendorItems        OrderItem[]         @relation("AssignedVendorItems")
-  qcRecords          QCRecord[]          @relation("QCChecker")
-  updatedSettings    Settings[]          @relation("SettingsUpdater")
-  timelineEvents     Timeline[]
-  ledgerEntries      LedgerEntry[]       @relation("ActorLedgerEntries")
-  requestedTransfers BranchTransfer[]    @relation("TransferRequestedBy")
-  respondedTransfers BranchTransfer[]    @relation("TransferRespondedBy")
-
-  // New relations for V1 Production
-  vendorTasks         VendorTask[]         @relation("VendorTasks")
-  ingredientRequests  IngredientRequest[]  @relation("IngredientRequests")
-  deliveryAssignments DeliveryAssignment[] @relation("DeliveryPersonAssignments")
-  assignedDeliveries  DeliveryAssignment[] @relation("AssignedByDeliveries")
-
-  branch                 Branch?                 @relation("StaffBranch", fields: [branchId], references: [id])
-  pushSubscriptions      PushSubscription[]
+  id                     String                  @id @default(cuid())
+  name                   String
+  email                  String?                 @unique
+  username               String?                 @unique
+  passwordHash           String
+  phone                  String?                 @unique
+  role                   Role
+  branchId               String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  activatedAt            DateTime?
+  deactivatedAt          DateTime?
+  invitedAt              DateTime?
+  lastActivityAt         DateTime?
+  lastLoginAt            DateTime?
+  status                 AccountStatus           @default(INVITED)
+  suspendedAt            DateTime?
+  deliveryScope          String?
+  auditLogs              AuditLog[]
+  requestedTransfers     BranchTransfer[]        @relation("TransferRequestedBy")
+  respondedTransfers     BranchTransfer[]        @relation("TransferRespondedBy")
+  assignedDeliveries     DeliveryAssignment[]    @relation("AssignedByDeliveries")
+  deliveryAssignments    DeliveryAssignment[]    @relation("DeliveryPersonAssignments")
+  inAppNotifs            InAppNotification[]
+  ingredientRequests     IngredientRequest[]     @relation("IngredientRequests")
+  ledgerEntries          LedgerEntry[]           @relation("ActorLedgerEntries")
+  uploadedMedia          MediaAsset[]            @relation("MediaUploader")
   notificationPreference NotificationPreference?
+  handledOrders          Order[]                 @relation("ChefOrders")
+  createdOrders          Order[]                 @relation("CreatedOrders")
+  deliveredOrders        Order[]                 @relation("DeliveryOrders")
+  assignedItems          OrderItem[]             @relation("AssignedChefItems")
+  vendorItems            OrderItem[]             @relation("AssignedVendorItems")
+  pushSubscriptions      PushSubscription[]
+  qcRecords              QCRecord[]              @relation("QCChecker")
+  updatedSettings        Settings[]              @relation("SettingsUpdater")
+  timelineEvents         Timeline[]
+  branch                 Branch?                 @relation("StaffBranch", fields: [branchId], references: [id])
+  vendorTasks            VendorTask[]            @relation("VendorTasks")
 }
 
 model Customer {
@@ -82,12 +79,12 @@ model Branch {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   deliveryEnabled   Boolean          @default(true)
+  outgoingTransfers BranchTransfer[] @relation("OutgoingTransfers")
+  incomingTransfers BranchTransfer[] @relation("IncomingTransfers")
+  ledgerEntries     LedgerEntry[]    @relation("BranchLedgerEntries")
   orders            Order[]          @relation("BranchOrders")
   settings          Settings[]       @relation("BranchSettings")
   staff             User[]           @relation("StaffBranch")
-  ledgerEntries     LedgerEntry[]    @relation("BranchLedgerEntries")
-  outgoingTransfers BranchTransfer[] @relation("OutgoingTransfers")
-  incomingTransfers BranchTransfer[] @relation("IncomingTransfers")
 }
 
 model Order {
@@ -118,11 +115,15 @@ model Order {
   type                  OrderType              @default(ORDER)
   cashCollectedAmount   Decimal?
   deliveryFailureReason DeliveryFailureReason?
-  isFarDistance         Boolean                @default(false)
   deliveryDistanceKm    Float?
+  isFarDistance         Boolean                @default(false)
+  deliveryAssignedAt    DateTime?
   deliveryLatitude      Float?
   deliveryLongitude     Float?
-  deliveryAssignedAt    DateTime?
+  transfers             BranchTransfer[]       @relation("OrderTransfers")
+  deliveryAssignments   DeliveryAssignment[]
+  ingredientRequests    IngredientRequest[]
+  ledgerEntries         LedgerEntry[]
   notifications         NotificationLog[]
   branch                Branch                 @relation("BranchOrders", fields: [branchId], references: [id])
   chef                  User?                  @relation("ChefOrders", fields: [chefId], references: [id])
@@ -132,13 +133,9 @@ model Order {
   driver                User?                  @relation("DeliveryOrders", fields: [driverId], references: [id])
   items                 OrderItem[]
   payments              Payment[]
-  timeline              Timeline[]
-  ledgerEntries         LedgerEntry[]
-  transfers             BranchTransfer[]       @relation("OrderTransfers")
   review                Review?
+  timeline              Timeline[]
   vendorTasks           VendorTask[]
-  ingredientRequests    IngredientRequest[]
-  deliveryAssignments   DeliveryAssignment[]
 
   @@index([branchId, status])
   @@index([branchId, createdAt])
@@ -146,52 +143,51 @@ model Order {
 }
 
 model OrderItem {
-  id                   String          @id @default(cuid())
+  id                   String           @id @default(cuid())
   orderId              String
-  quantity             Int             @default(1)
+  quantity             Int              @default(1)
   weight               Float
   flavor               String?
   messageOnCake        String?
   price                Decimal
-  createdAt            DateTime        @default(now())
+  createdAt            DateTime         @default(now())
   image                String?
   productId            String?
   productName          String
-  tax                  Decimal         @default(0)
+  tax                  Decimal          @default(0)
   variant              String?
   assignedChefId       String?
-  boxCount             Int             @default(1)
+  boxCount             Int              @default(1)
   completedAt          DateTime?
   designCode           String?
   designId             String?
   designImageUrl       String?
   designName           String?
-  estimatedPrepMinutes Int             @default(0)
+  estimatedPrepMinutes Int              @default(0)
   notes                String?
   packedAt             DateTime?
   readyAt              DateTime?
-  sequenceNumber       Int             @default(1)
+  sequenceNumber       Int              @default(1)
   shape                String?
-  status               OrderItemStatus @default(PENDING)
-  isBlocked            Boolean         @default(false)
-  startedAt            DateTime?
-  qcAt                 DateTime?
+  status               OrderItemStatus  @default(PENDING)
+  updatedAt            DateTime         @updatedAt
   pauseReason          String?
   pausedAt             DateTime?
-  updatedAt            DateTime        @updatedAt
-  parentItemId         String?
+  isBlocked            Boolean          @default(false)
+  qcAt                 DateTime?
+  startedAt            DateTime?
   assignedVendorId     String?
-
-  parentItem     OrderItem?       @relation("OrderItemDependencies", fields: [parentItemId], references: [id])
-  childItems     OrderItem[]      @relation("OrderItemDependencies")
-  assignedVendor User?            @relation("AssignedVendorItems", fields: [assignedVendorId], references: [id])
-  assignedChef   User?            @relation("AssignedChefItems", fields: [assignedChefId], references: [id])
-  order          Order            @relation(fields: [orderId], references: [id])
-  product        Product?         @relation(fields: [productId], references: [id])
-  media          OrderItemMedia[]
-  qcLog          QCRecord[]
-  timeline       Timeline[]
-  kitchenNotes   KitchenNote[]
+  parentItemId         String?
+  kitchenNotes         KitchenNote[]
+  assignedChef         User?            @relation("AssignedChefItems", fields: [assignedChefId], references: [id])
+  assignedVendor       User?            @relation("AssignedVendorItems", fields: [assignedVendorId], references: [id])
+  order                Order            @relation(fields: [orderId], references: [id])
+  parentItem           OrderItem?       @relation("OrderItemDependencies", fields: [parentItemId], references: [id])
+  childItems           OrderItem[]      @relation("OrderItemDependencies")
+  product              Product?         @relation(fields: [productId], references: [id])
+  media                OrderItemMedia[]
+  qcLog                QCRecord[]
+  timeline             Timeline[]
 
   @@index([orderId])
 }
@@ -232,11 +228,9 @@ model QCRecord {
 model Product {
   id               String           @id @default(cuid())
   name             String
-  sku              String?          @unique
   description      String?
   basePrice        Decimal
   availableForSale Boolean          @default(true)
-  isCustomizable   Boolean          @default(false)
   thumbnail        String?
   mediumImage      String?
   largeImage       String?
@@ -247,6 +241,8 @@ model Product {
   updatedAt        DateTime         @updatedAt
   isArchived       Boolean          @default(false)
   weightVariants   Json?
+  sku              String?          @unique
+  isCustomizable   Boolean          @default(false)
   requiredVendors  Role[]
   orderItems       OrderItem[]
   category         Category?        @relation(fields: [categoryId], references: [id])
@@ -261,16 +257,16 @@ model Payment {
   type             PaymentType
   status           PaymentStatus @default(PENDING)
   transactionId    String?
-  provider         String        @default("MANUAL")
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  failureReason    String?
   gatewayOrderId   String?       @unique
   gatewayPaymentId String?       @unique
   gatewayRefundId  String?
   metadata         Json?
-  verifiedAt       DateTime?
+  provider         String        @default("MANUAL")
   refundedAt       DateTime?
-  failureReason    String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  verifiedAt       DateTime?
   order            Order         @relation(fields: [orderId], references: [id])
 
   @@index([orderId])
@@ -290,7 +286,6 @@ model WebhookEvent {
 model Timeline {
   id              String            @id @default(cuid())
   orderId         String
-  orderItemId     String?
   status          OrderStatus
   note            String?
   actorId         String?
@@ -305,6 +300,7 @@ model Timeline {
   reasonCode      String?
   role            String?
   systemGenerated Boolean           @default(false)
+  orderItemId     String?
   actor           User?             @relation(fields: [actorId], references: [id])
   order           Order             @relation(fields: [orderId], references: [id])
   orderItem       OrderItem?        @relation(fields: [orderItemId], references: [id])
@@ -327,18 +323,23 @@ model AuditLog {
 }
 
 model NotificationLog {
-  id           String             @id @default(cuid())
-  orderId      String?
-  recipient    String
-  channel      String
-  templateName String
-  status       NotificationStatus @default(PENDING)
-  retryCount   Int                @default(0)
-  errorMessage String?
-  sentAt       DateTime?
-  createdAt    DateTime           @default(now())
-  eventId      String?            @unique
-  order        Order?             @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  id                String             @id @default(cuid())
+  orderId           String?
+  recipient         String
+  channel           String
+  templateName      String
+  status            NotificationStatus @default(PENDING)
+  retryCount        Int                @default(0)
+  errorMessage      String?
+  sentAt            DateTime?
+  createdAt         DateTime           @default(now())
+  eventId           String?            @unique
+  mediaSourceUrl    String?
+  mediaType         String?
+  providerMediaId   String?
+  providerMessageId String?
+  templateVersion   String             @default("v1")
+  order             Order?             @relation(fields: [orderId], references: [id], onDelete: Restrict)
 }
 
 model Design {
@@ -347,7 +348,6 @@ model Design {
   name              String
   description       String?
   imageUrl          String
-  version           Int              @default(1)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   characters        String[]
@@ -365,9 +365,10 @@ model Design {
   labels            String[]
   recommendedTier   Int?
   status            String           @default("ACTIVE")
+  version           Int              @default(1)
   basePrice         Decimal?
-  weightConfig      Json?
   isPhotoCake       Boolean          @default(false)
+  weightConfig      Json?
   categories        DesignCategory[]
 }
 
@@ -450,15 +451,14 @@ model Outbox {
   actorId       String?
   payload       Json
   occurredAt    DateTime  @default(now())
-  status        String    @default("PENDING")
-  processedAt   DateTime?
   error         String?
   retryCount    Int       @default(0)
+  processedAt   DateTime?
+  status        String    @default("PENDING")
 }
 
 model InAppNotification {
   id          String    @id @default(cuid())
-  eventId     String?   @unique
   userId      String
   title       String
   message     String
@@ -466,9 +466,10 @@ model InAppNotification {
   isRead      Boolean   @default(false)
   isDismissed Boolean   @default(false)
   expiresAt   DateTime?
-  linkUrl     String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  eventId     String?   @unique
+  linkUrl     String?
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -514,6 +515,113 @@ model MediaAsset {
   uploadedBy   User?    @relation("MediaUploader", fields: [uploadedById], references: [id])
 }
 
+model BranchTransfer {
+  id             String         @id @default(cuid())
+  orderId        String
+  fromBranchId   String
+  toBranchId     String
+  status         TransferStatus @default(PENDING)
+  requestedBy    String
+  respondedBy    String?
+  transportedBy  String?
+  notes          String?
+  transferReason String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  receivedAt     DateTime?
+  fromBranch     Branch         @relation("OutgoingTransfers", fields: [fromBranchId], references: [id])
+  order          Order          @relation("OrderTransfers", fields: [orderId], references: [id])
+  actor          User           @relation("TransferRequestedBy", fields: [requestedBy], references: [id])
+  responder      User?          @relation("TransferRespondedBy", fields: [respondedBy], references: [id])
+  toBranch       Branch         @relation("IncomingTransfers", fields: [toBranchId], references: [id])
+
+  @@index([fromBranchId, status])
+  @@index([toBranchId, status])
+  @@index([orderId])
+  @@index([fromBranchId])
+  @@index([toBranchId])
+}
+
+model LedgerEntry {
+  id          String          @id @default(cuid())
+  orderId     String?
+  type        LedgerEntryType
+  amount      Decimal
+  currency    String          @default("INR")
+  method      PaymentMethod?
+  status      PaymentStatus
+  referenceId String?         @unique
+  actorId     String?
+  branchId    String?
+  metadata    Json?
+  notes       String?
+  createdAt   DateTime        @default(now())
+  actor       User?           @relation("ActorLedgerEntries", fields: [actorId], references: [id])
+  branch      Branch?         @relation("BranchLedgerEntries", fields: [branchId], references: [id])
+  order       Order?          @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([type])
+  @@index([branchId])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  orderId    String   @unique
+  customerId String
+  rating     Int
+  feedback   String?
+  photos     String[]
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  customer   Customer @relation(fields: [customerId], references: [id])
+  order      Order    @relation(fields: [orderId], references: [id])
+}
+
+model VendorTask {
+  id           String   @id @default(cuid())
+  orderId      String
+  vendorType   String
+  vendorId     String?
+  status       String   @default("PENDING")
+  instructions String
+  notes        Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  order        Order    @relation(fields: [orderId], references: [id])
+  vendor       User?    @relation("VendorTasks", fields: [vendorId], references: [id])
+}
+
+model IngredientRequest {
+  id            String   @id @default(cuid())
+  orderId       String
+  itemCode      String
+  itemName      String
+  qty           Float?
+  unit          String?
+  requestedById String
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  order         Order    @relation(fields: [orderId], references: [id])
+  requestedBy   User     @relation("IngredientRequests", fields: [requestedById], references: [id])
+}
+
+model DeliveryAssignment {
+  id               String    @id @default(cuid())
+  orderId          String
+  deliveryPersonId String
+  assignedByUserId String
+  assignedAt       DateTime  @default(now())
+  unassignedAt     DateTime?
+  status           String    @default("ACTIVE")
+  reason           String?
+  assignedBy       User      @relation("AssignedByDeliveries", fields: [assignedByUserId], references: [id])
+  deliveryPerson   User      @relation("DeliveryPersonAssignments", fields: [deliveryPersonId], references: [id])
+  order            Order     @relation(fields: [orderId], references: [id])
+}
+
 enum Role {
   ADMIN
   MANAGER
@@ -534,6 +642,12 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
   REFUNDED
+  QUOTE_DRAFT
+  QUOTE_SENT
+  QUOTE_APPROVED
+  QUOTE_EXPIRED
+  QUOTE_REJECTED
+  QUOTE_CONVERTED
   WAITING_FOR_CHEF
   CHEF_ACCEPTED
   MAKING
@@ -545,12 +659,6 @@ enum OrderStatus {
   ON_THE_WAY
   FAILED_DELIVERY
   COMPLETED
-  QUOTE_DRAFT
-  QUOTE_SENT
-  QUOTE_APPROVED
-  QUOTE_EXPIRED
-  QUOTE_REJECTED
-  QUOTE_CONVERTED
 }
 
 enum OrderType {
@@ -620,6 +728,10 @@ enum NotificationStatus {
   SENT
   FAILED
   RETRIED
+  SENDING
+  FAILED_RETRYABLE
+  FAILED_FINAL
+  UNKNOWN
 }
 
 enum NotificationType {
@@ -630,18 +742,16 @@ enum NotificationType {
 
 enum TimelineEventType {
   STATE_TRANSITION
-  TRANSFER_REQUESTED
-  TRANSFER_ACCEPTED
-  TRANSFER_REJECTED
-  TRANSFER_DISPATCHED
-  TRANSFER_RECEIVED
-
   ORDER_CREATED
   ADMIN_OVERRIDE
   SYSTEM_ACTION
   CANCELLATION
   FAILED_DELIVERY
-
+  TRANSFER_REQUESTED
+  TRANSFER_ACCEPTED
+  TRANSFER_REJECTED
+  TRANSFER_DISPATCHED
+  TRANSFER_RECEIVED
   PAYMENT_PENDING
   PAYMENT_CAPTURED
   PAYMENT_FAILED
@@ -672,123 +782,10 @@ enum TransferStatus {
   RECEIVED
 }
 
-model BranchTransfer {
-  id             String         @id @default(cuid())
-  orderId        String
-  fromBranchId   String
-  toBranchId     String
-  status         TransferStatus @default(PENDING)
-  requestedBy    String
-  respondedBy    String?
-  transportedBy  String?
-  notes          String?
-  transferReason String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  receivedAt     DateTime?
-
-  order      Order  @relation("OrderTransfers", fields: [orderId], references: [id])
-  fromBranch Branch @relation("OutgoingTransfers", fields: [fromBranchId], references: [id])
-  toBranch   Branch @relation("IncomingTransfers", fields: [toBranchId], references: [id])
-  actor      User   @relation("TransferRequestedBy", fields: [requestedBy], references: [id])
-  responder  User?  @relation("TransferRespondedBy", fields: [respondedBy], references: [id])
-
-  @@index([fromBranchId, status])
-  @@index([toBranchId, status])
-  @@index([orderId])
-  @@index([fromBranchId])
-  @@index([toBranchId])
-}
-
 enum LedgerEntryType {
   PAYMENT
   REFUND
   ADJUSTMENT
   WAIVER
   WRITE_OFF
-}
-
-model LedgerEntry {
-  id          String          @id @default(cuid())
-  orderId     String?
-  type        LedgerEntryType
-  amount      Decimal
-  currency    String          @default("INR")
-  method      PaymentMethod?
-  status      PaymentStatus
-  referenceId String?         @unique
-  actorId     String?
-  branchId    String?
-  metadata    Json?
-  notes       String?
-  createdAt   DateTime        @default(now())
-
-  order  Order?  @relation(fields: [orderId], references: [id])
-  actor  User?   @relation("ActorLedgerEntries", fields: [actorId], references: [id])
-  branch Branch? @relation("BranchLedgerEntries", fields: [branchId], references: [id])
-
-  @@index([orderId])
-  @@index([type])
-  @@index([branchId])
-}
-
-model Review {
-  id          String   @id @default(cuid())
-  orderId     String   @unique
-  customerId  String
-  rating      Int
-  feedback    String?
-  photos      String[]
-  status      String   @default("PENDING") // PENDING, APPROVED, HIDDEN
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  order       Order    @relation(fields: [orderId], references: [id])
-  customer    Customer @relation(fields: [customerId], references: [id])
-}
-
-model VendorTask {
-  id            String   @id @default(cuid())
-  orderId       String
-  vendorType    String   // FLORIST, ACRYLIC, PHOTO
-  vendorId      String?
-  status        String   @default("PENDING") // PENDING, ACCEPTED, IN_PROGRESS, READY
-  instructions  String
-  notes         Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  order         Order    @relation(fields: [orderId], references: [id])
-  vendor        User?    @relation("VendorTasks", fields: [vendorId], references: [id])
-}
-
-model IngredientRequest {
-  id            String   @id @default(cuid())
-  orderId       String
-  itemCode      String
-  itemName      String
-  qty           Float?
-  unit          String?
-  requestedById String
-  status        String   @default("PENDING") // PENDING, FULFILLED, RESOLVED, CANCELLED
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  order         Order    @relation(fields: [orderId], references: [id])
-  requestedBy   User     @relation("IngredientRequests", fields: [requestedById], references: [id])
-}
-
-model DeliveryAssignment {
-  id               String   @id @default(cuid())
-  orderId          String
-  deliveryPersonId String
-  assignedByUserId String
-  assignedAt       DateTime @default(now())
-  unassignedAt     DateTime?
-  status           String   @default("ACTIVE") // ACTIVE, REASSIGNED, UNASSIGNED
-  reason           String?
-
-  order            Order    @relation(fields: [orderId], references: [id])
-  deliveryPerson   User     @relation("DeliveryPersonAssignments", fields: [deliveryPersonId], references: [id])
-  assignedBy       User     @relation("AssignedByDeliveries", fields: [assignedByUserId], references: [id])
 }

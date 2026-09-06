@@ -1,5 +1,5 @@
 import { Role } from '@prisma/client'
-
+import { toBranchId } from '@/lib/branches'
 export const PERMISSIONS = {
   MANAGE_USERS: 'manage_users',
   MANAGE_ROLES: 'manage_roles',
@@ -194,7 +194,7 @@ export function hasPermission(
     }
 
     // If context was provided, user must match the context branch
-    if (contextBranchId && userBranchId !== contextBranchId) {
+    if (contextBranchId && toBranchId(userBranchId) !== toBranchId(contextBranchId)) {
       return false
     }
 

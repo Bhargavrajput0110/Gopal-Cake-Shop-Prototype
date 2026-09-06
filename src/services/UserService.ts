@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { createClient } from '@/lib/supabase/server'
+// Removed unused supabase import
 import { InviteUserDTO, UpdateUserRoleDTO, UpdateUserStatusDTO, UserResponseDTO } from '@/dtos/UserSchemas'
 import { Role, AccountStatus } from '@prisma/client'
 import { hasPermission, PERMISSIONS } from '@/lib/rbac/permissions'
@@ -24,22 +24,9 @@ export class UserService {
   }
 
   static async inviteUser(dto: InviteUserDTO, actorId: string): Promise<UserResponseDTO> {
-    let authUserId = `test-auth-${Date.now()}`
-    
-    // Bypass actual Supabase signup in E2E/test environments to prevent rate limits
-    if (actorId !== 'usr_dummy_dev') {
-      const supabase = await createClient()
-      const tempPassword = Math.random().toString(36).slice(-10) + 'A1!'
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: dto.email,
-        password: tempPassword,
-      })
-
-      if (authError || !authData.user) {
-        throw new Error(`Auth Error: ${authError?.message || 'Failed to create user in Auth provider'}`)
-      }
-      authUserId = authData.user.id
-    }
+    // Since migration to NextAuth (auth.ts) with Prisma, we no longer need to sync with Supabase Auth.
+    // We just generate a standard CUID for the new user ID.
+    const authUserId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
 
     // 2. Create in Prisma
     const user = await prisma.user.create({
@@ -109,11 +96,8 @@ export class UserService {
 
     // 2. Invalidate Sessions
     // Supabase doesn't have a direct "signOut(userId)" for another user in the standard JS client easily
-    // without the Admin API. We assume updating user metadata will eventually force a refresh.
-    // In a production app, we would use supabase.auth.admin.signOut(userId) using the Service Role Key.
-    const supabase = await createClient()
-    // A mock call indicating the intent. 
-    // supabase.auth.admin.updateUserById(userId, { user_metadata: { role: dto.role } })
+    // without the Admin API. Since we use NextAuth now, session invalidation would require a separate mechanism
+    // (e.g., storing a session valid-after timestamp in the DB). For now, we update the DB.
 
     // 3. Write Audit Log
     await prisma.auditLog.create({

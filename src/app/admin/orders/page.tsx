@@ -360,9 +360,108 @@ export default function LiveOrdersPage() {
           rowActions={rowActions}
           bulkActions={bulkActions}
           exportActions={{
-            onExportCSV: () => console.log("Exporting CSV..."),
-            onExportExcel: () => console.log("Exporting Excel..."),
-            onExportPDF: () => console.log("Exporting PDF..."),
+            onExportCSV: () => {
+              const headers = ["Order ID", "Order Type", "Customer", "Phone", "Branch", "Status", "Items", "Total Amount", "Paid", "Due", "Created At", "Target Time"];
+              const rows = filteredOrders.map(o => [
+                o.orderNumber || o.id,
+                o.orderType,
+                o.customerName,
+                o.customerPhone || '',
+                o.branch,
+                o.status,
+                o.items?.map(i => `${i.qty}x ${i.name}`).join('; '),
+                o.grandTotal,
+                o.advancePaid,
+                o.pendingBalance,
+                new Date(o.createdAt).toLocaleString(),
+                new Date(o.timeTarget).toLocaleString()
+              ]);
+              const csvContent = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.setAttribute("href", url);
+              link.setAttribute("download", `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            },
+            onExportExcel: () => {
+              const headers = ["Order ID", "Order Type", "Customer", "Phone", "Branch", "Status", "Items", "Total Amount", "Paid", "Due", "Created At", "Target Time"];
+              const rows = filteredOrders.map(o => [
+                o.orderNumber || o.id,
+                o.orderType,
+                o.customerName,
+                o.customerPhone || '',
+                o.branch,
+                o.status,
+                o.items?.map(i => `${i.qty}x ${i.name}`).join('; '),
+                o.grandTotal,
+                o.advancePaid,
+                o.pendingBalance,
+                new Date(o.createdAt).toLocaleString(),
+                new Date(o.timeTarget).toLocaleString()
+              ]);
+              const csvContent = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+              const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.setAttribute("href", url);
+              link.setAttribute("download", `orders_export_${new Date().toISOString().split('T')[0]}.xls`);
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            },
+            onExportPDF: () => {
+               const win = window.open('', '_blank');
+               if (!win) return;
+               
+               const headers = ["Order ID", "Customer", "Branch", "Status", "Total", "Due", "Target Time"];
+               const rows = filteredOrders.map(o => `
+                 <tr>
+                   <td>${o.orderNumber || o.id}</td>
+                   <td>${o.customerName}</td>
+                   <td>${o.branch}</td>
+                   <td>${o.status}</td>
+                   <td>₹${(o.grandTotal || 0).toFixed(2)}</td>
+                   <td>₹${(o.pendingBalance || 0).toFixed(2)}</td>
+                   <td>${new Date(o.timeTarget).toLocaleString()}</td>
+                 </tr>
+               `).join('');
+
+               win.document.write(`
+                 <html>
+                 <head>
+                   <title>Orders Export</title>
+                   <style>
+                     body { font-family: sans-serif; padding: 20px; }
+                     table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+                     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                     th { background-color: #f4f4f4; }
+                     @media print {
+                       button { display: none; }
+                     }
+                   </style>
+                 </head>
+                 <body>
+                   <h2>Orders Report</h2>
+                   <p>Generated on ${new Date().toLocaleString()}</p>
+                   <p>Total Records: ${filteredOrders.length}</p>
+                   <button onclick="window.print()">Print / Save as PDF</button>
+                   <table>
+                     <thead>
+                       <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                     </thead>
+                     <tbody>
+                       ${rows}
+                     </tbody>
+                   </table>
+                   <script>window.onload = () => window.print()</script>
+                 </body>
+                 </html>
+               `);
+               win.document.close();
+            },
           }}
           renderMobileCard={(order) => (
             <div className="p-4 space-y-3">

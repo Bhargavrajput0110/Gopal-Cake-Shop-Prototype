@@ -1,48 +1,70 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: Request, { params }: { params: Promise<{ orderId: string }> | { orderId: string } }) {
   try {
     const resolvedParams = await params;
     const { orderId } = resolvedParams;
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Fetch the actual order from Prisma with all relations
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        customer: true,
+        branch: true,
+        items: true,
+        payments: true,
+        timeline: {
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
 
-    // Return a rich mock order so the confirmation page renders successfully without errors
-    const mockOrder = {
-      id: orderId,
-      orderType: "pickup",
-      status: "WAITING_FOR_CHEF",
-      customerName: "Test User",
-      customerPhone: "9876543210",
-      branch: "Main Branch",
-      items: [
-        { name: "Custom Cake", qty: 1, weight: "1kg", flavour: "Pineapple" }
-      ],
-      subtotal: 1100,
-      discount: 0,
+    if (!order) {
+      return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
+    }
+
+    // Format the response to match what the frontend expects
+    const formattedOrder = {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      orderType: order.deliveryType.toLowerCase(),
+      status: order.status,
+      customerName: order.customer?.name || "Walk-in",
+      customerPhone: order.customer?.phone || "",
+      branch: order.branch?.name || "Main Branch",
+      items: order.items.map(item => ({
+        name: item.productName || item.designName || "Custom Cake",
+        qty: item.quantity,
+        weight: `${item.weight}kg`,
+        flavour: item.flavor || "Standard"
+      })),
+      subtotal: Number(order.subtotal),
+      discount: Number(order.discount),
       tax: 0,
-      deliveryCharge: 0,
-      grandTotal: 1100,
-      advancePaid: 1100,
-      pendingBalance: 0,
-      priorityLevel: "normal",
+      deliveryCharge: Number(order.deliveryCharge),
+      grandTotal: Number(order.totalAmount),
+      advancePaid: order.payments.reduce((acc, p) => acc + Number(p.amount), 0),
+      pendingBalance: Number(order.totalAmount) - order.payments.reduce((acc, p) => acc + Number(p.amount), 0),
+      priorityLevel: order.isPriority ? "high" : "normal",
       isSurprise: false,
-      timeTarget: new Date(Date.now() + 86400000).toISOString(),
-      createdAt: new Date().toISOString(),
-      timeline: [
-        { event: "Order Placed", actor: "Customer", timestamp: new Date().toISOString() }
-      ]
+      timeTarget: order.targetDate.toISOString(),
+      createdAt: order.createdAt.toISOString(),
+      timeline: order.timeline.map(t => ({
+        event: t.action,
+        actor: t.systemGenerated ? "System" : (t.actorId ? "Staff" : "Customer"),
+        timestamp: t.createdAt.toISOString()
+      }))
     };
 
     return NextResponse.json({
       success: true,
-      message: "Order fetched successfully (Mock)",
-      order: mockOrder
+      message: "Order fetched successfully",
+      order: formattedOrder
     }, { status: 200 });
 
   } catch (error) {
-    console.error("Mock API error:", error);
-    return NextResponse.json({ success: false, error: "Invalid request" }, { status: 400 });
+    console.error("Order fetch API error:", error);
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }

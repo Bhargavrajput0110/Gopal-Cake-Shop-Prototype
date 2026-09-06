@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { ArrowRight2 } from "iconsax-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { QuickBuyForm } from "@/components/menu/QuickBuyForm";
@@ -11,10 +11,50 @@ import { useCart } from "@/context/CartContext";
 
 const SKELETON_COUNT = 8;
 
+function TiltWrapper({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
+  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["7deg", "-7deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-7deg", "7deg"]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+      className={`relative ${className}`}
+    >
+      <div style={{ transform: "translateZ(30px)" }} className="absolute inset-0 z-10 pointer-events-none" />
+      {children}
+    </motion.div>
+  );
+}
+
 function ProductSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="w-full aspect-[3/4] rounded-3xl skeleton" />
+      <div className="w-full aspect-[4/5] rounded-3xl skeleton" />
       <div className="flex flex-col gap-2 px-1">
         <div className="h-5 w-3/4 rounded-full skeleton" />
         <div className="h-4 w-1/2 rounded-full skeleton" />
@@ -48,75 +88,78 @@ function FeaturedProductCard({ product }: { product: any }) {
           ease: [0.16, 1, 0.3, 1],
         }}
         className="group flex flex-col break-inside-avoid relative"
+        style={{ perspective: "1000px" }}
       >
-        {/* Image Container */}
-        <div
-          onClick={() => setIsOpen(true)}
-          className={`relative w-full ${aspectClass} rounded-[2rem] overflow-hidden bg-[var(--muted)] mb-4 block cursor-pointer`}
-          style={{ willChange: "transform" }}
-        >
-          {/* Image / Placeholder */}
-          {product.thumbnail || product.imageUrl ? (
-            <Image
-              src={product.thumbnail || product.imageUrl}
-              alt={product.name || "Cake"}
-              fill
-              unoptimized={true}
-              className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]"
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-[var(--muted)]">
-              <span className="font-editorial italic text-[var(--muted-foreground)] text-sm">
-                Arriving Soon
+        {/* Image Container with 3D Tilt */}
+        <TiltWrapper className="mb-4">
+          <div
+            onClick={() => setIsOpen(true)}
+            className={`relative w-full ${aspectClass} rounded-[2rem] overflow-hidden bg-[var(--muted)] block cursor-pointer`}
+            style={{ willChange: "transform", transform: "translateZ(20px)" }}
+          >
+            {/* Image / Placeholder */}
+            {product.thumbnail || product.imageUrl ? (
+              <Image
+                src={product.thumbnail || product.imageUrl}
+                alt={product.name || "Cake"}
+                fill
+                unoptimized={true}
+                className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-[var(--muted)]">
+                <span className="font-editorial italic text-[var(--muted-foreground)] text-sm">
+                  Arriving Soon
+                </span>
+              </div>
+            )}
+
+            {/* Dark hover overlay */}
+            <div className="absolute inset-0 bg-[var(--brand-chocolate)]/0 group-hover:bg-[var(--brand-chocolate)]/30 transition-colors duration-500" />
+
+            {/* Tag */}
+            <div className="absolute top-4 left-4 badge-glass text-[var(--brand-deep-rose)] flex items-center gap-1">
+              <svg
+                className="w-2.5 h-2.5"
+                viewBox="0 0 12 12"
+                fill="currentColor"
+              >
+                <path d="M6 0l1.5 4.5H12l-3.7 2.7 1.4 4.5L6 9.3 2.3 11.7l1.4-4.5L0 4.5h4.5z" />
+              </svg>
+              <span>Signature</span>
+            </div>
+
+            {/* Floating Quick Action */}
+            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] z-10">
+              <div className="w-10 h-10 rounded-full bg-[var(--brand-deep-rose)] text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {/* Hover text overlay */}
+            <div className="absolute inset-x-0 bottom-0 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] p-5 pb-6">
+              <span className="font-ui text-[11px] font-bold tracking-[0.1em] uppercase text-white/90">
+                Quick Order
               </span>
             </div>
-          )}
 
-          {/* Dark hover overlay */}
-          <div className="absolute inset-0 bg-[var(--brand-chocolate)]/0 group-hover:bg-[var(--brand-chocolate)]/30 transition-colors duration-500" />
-
-          {/* Tag */}
-          <div className="absolute top-4 left-4 badge-glass text-[var(--brand-deep-rose)] flex items-center gap-1">
-            <svg
-              className="w-2.5 h-2.5"
-              viewBox="0 0 12 12"
-              fill="currentColor"
-            >
-              <path d="M6 0l1.5 4.5H12l-3.7 2.7 1.4 4.5L6 9.3 2.3 11.7l1.4-4.5L0 4.5h4.5z" />
-            </svg>
-            <span>Signature</span>
+            {/* Inner shadow to soften edges */}
+            <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-[2rem] pointer-events-none" />
           </div>
-
-          {/* Floating Quick Action */}
-          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] z-10">
-            <div className="w-10 h-10 rounded-full bg-[var(--brand-deep-rose)] text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-            </div>
-          </div>
-
-          {/* Hover text overlay */}
-          <div className="absolute inset-x-0 bottom-0 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] p-5 pb-6">
-            <span className="font-ui text-[11px] font-bold tracking-[0.1em] uppercase text-white/90">
-              Quick Order
-            </span>
-          </div>
-
-          {/* Inner shadow to soften edges */}
-          <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-[2rem] pointer-events-none" />
-        </div>
+        </TiltWrapper>
 
         {/* Text info */}
         <div className="flex flex-col px-2 mt-3">
@@ -200,9 +243,14 @@ function FeaturedProductCard({ product }: { product: any }) {
         <QuickBuyForm
           product={product}
           isCustom={
-            product.isCustom || product.name.toLowerCase().includes("custom")
+            !(Boolean(product.isPhotoCake) || product.name.toLowerCase().includes('photo') || (product.category?.name || "").toLowerCase().includes('photo')) &&
+            (product.isCustom || product.name.toLowerCase().includes("custom"))
           }
-          isPhotoCake={false}
+          isPhotoCake={
+            Boolean(product.isPhotoCake) ||
+            product.name.toLowerCase().includes('photo') ||
+            (product.category?.name || "").toLowerCase().includes('photo')
+          }
           onClose={() => setIsOpen(false)}
         />
       </SheetContent>
@@ -310,7 +358,7 @@ export function FeaturedProducts() {
             return {
               ...d,
               thumbnail: thumb,
-              isCustom: true,
+              isCustom: Boolean(d.isCustom) || (d.name || "").toLowerCase().includes("custom"),
               name: d.name || "Custom Cake Design",
               basePrice: computedPrice || 600,
               hasMultipleOptions,

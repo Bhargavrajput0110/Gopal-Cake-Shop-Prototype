@@ -22,6 +22,7 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
   const [messageOnCake, setMessageOnCake] = React.useState(item?.messageOnCake || "")
   const [shape, setShape] = React.useState(item?.shape || "")
   const [boxCount, setBoxCount] = React.useState(item?.boxCount || 1)
+  const [requiredVendors, setRequiredVendors] = React.useState<string[]>(item?.requiredVendors || [])
   
   // Design Library state
   const [activeTab, setActiveTab] = React.useState<"config" | "design" | "reference">("config")
@@ -57,7 +58,8 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
       designName: selectedDesign?.name,
       designCode: selectedDesign?.code,
       designImageUrl: selectedDesign?.imageUrl,
-      referenceImages
+      referenceImages,
+      requiredVendors
     })
     onClose()
   }
@@ -156,6 +158,33 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
                 <label className="text-sm font-bold">Message on Cake</label>
                 <input type="text" placeholder="e.g. Happy Birthday Aarav" value={messageOnCake} onChange={e => setMessageOnCake(e.target.value)} className="w-full p-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
               </div>
+
+              {item.isCustomizable && (
+                <div className="space-y-2 pt-4 border-t border-border mt-4">
+                  <label className="text-sm font-bold">Required Vendors</label>
+                  <p className="text-xs text-muted-foreground mb-2">Check any external dependencies for this custom cake.</p>
+                  <div className="flex gap-4 flex-wrap">
+                    {[
+                      { id: "VENDOR_FLORIST", label: "Florist (Flowers)" },
+                      { id: "VENDOR_ACRYLIC", label: "Acrylic (Toppers)" },
+                      { id: "VENDOR_PHOTO", label: "Photo (Prints)" }
+                    ].map(v => (
+                      <label key={v.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={requiredVendors.includes(v.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) setRequiredVendors([...requiredVendors, v.id])
+                            else setRequiredVendors(requiredVendors.filter(id => id !== v.id))
+                          }}
+                          className="rounded border-input text-primary focus:ring-primary" 
+                        />
+                        {v.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

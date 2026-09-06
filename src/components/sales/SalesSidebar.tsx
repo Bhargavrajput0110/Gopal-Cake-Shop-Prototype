@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ClipboardText, Shop, Car, Card, AddCircle, Logout, Activity } from "iconsax-react";
+import { signOut } from "next-auth/react";
+import { authSignOut } from "@/lib/authUtils";
 
 export const navItems = [
   { name: "Command Center", href: "/sales", icon: Activity },
@@ -58,7 +60,7 @@ export function SalesSidebar() {
 
       <div className="p-6 border-t border-[#C8A97E]/10 shrink-0">
         <button 
-          onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
+          onClick={() => authSignOut("/login")}
           className="flex items-center gap-3 text-sm font-bold text-[#FAFAF8]/50 hover:text-rose-400 transition-colors w-full px-3 py-2 rounded-lg hover:bg-white/5 uppercase tracking-wider"
         >
           <Logout className="w-4 h-4 shrink-0" />

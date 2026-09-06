@@ -10,7 +10,8 @@ interface AppSidebarProps {
   config: AppConfig
 }
 
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
+import { authSignOut } from "@/lib/authUtils";
 
 export function AppSidebar({ config }: AppSidebarProps) {
   const pathname = usePathname()
@@ -27,12 +28,7 @@ export function AppSidebar({ config }: AppSidebarProps) {
       : pathname === href || pathname?.startsWith(href + "/")
 
   const handleSignOut = () => {
-    if (config.onSignOut) {
-      config.onSignOut()
-    } else {
-      document.cookie = "gopal_dummy_role=; path=/; max-age=0"
-      window.location.href = "/login"
-    }
+    authSignOut("/login")
   }
 
   return (

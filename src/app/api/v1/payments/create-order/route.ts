@@ -23,6 +23,7 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     console.error('Create Order Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    const errorMessage = error?.message || error?.error?.description || JSON.stringify(error) || 'Internal Server Error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

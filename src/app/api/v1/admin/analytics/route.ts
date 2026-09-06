@@ -23,7 +23,7 @@ export const GET = withApiHandler(async (ctx) => {
   // Base filter: exclude CANCELLED and DRAFT orders.
   const baseOrderWhere = {
     ...branchFilter,
-    createdAt: { gte: todayStart, lte: todayEnd },
+    targetDate: { gte: todayStart, lte: todayEnd },
     status: { notIn: ['CANCELLED', 'DRAFT'] as any }
   };
 

@@ -88,4 +88,4 @@ export const POST = withApiHandler(async (ctx: HandlerContext) => {
       orderId: order.id,
       orderNumber: order.orderNumber
     })
-}, true)
+}, false)

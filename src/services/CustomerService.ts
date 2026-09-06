@@ -2,8 +2,15 @@ import { prisma } from '@/lib/prisma'
 import { CustomerResponseDTO, CreateCustomerDTO } from '@/dtos/CustomerSchemas'
 
 export class CustomerService {
-  static async listCustomers(): Promise<CustomerResponseDTO[]> {
+  static async listCustomers(q?: string): Promise<CustomerResponseDTO[]> {
     const customers = await prisma.customer.findMany({
+      where: q ? {
+        OR: [
+          { name: { contains: q } },
+          { phone: { contains: q } },
+          { email: { contains: q } },
+        ]
+      } : undefined,
       orderBy: { createdAt: 'desc' },
     })
 

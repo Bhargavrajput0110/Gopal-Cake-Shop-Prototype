@@ -27,8 +27,13 @@ export type CartItem = {
   designImageUrl?: string;
   referenceImages?: string[];
   printImage?: string;
+  isCustom?: boolean;
   isPhotoCake?: boolean;
+  
+  // Custom Overrides
+  overridePrice?: number;
   isCustomizable?: boolean;
+  requiredVendors?: string[];
 };
 
 interface CartContextType {

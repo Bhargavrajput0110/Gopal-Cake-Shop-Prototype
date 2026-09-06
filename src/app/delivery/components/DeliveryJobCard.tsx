@@ -4,6 +4,7 @@ import { DriverTransitionButton } from './DriverTransitionButton'
 import { Call, Message, Location, Clock, Danger, ArrowDown2, TickCircle, Map1 } from "iconsax-react"
 import { useQueryClient } from '@tanstack/react-query'
 import { fetchClient } from '@/lib/api/client'
+import CloudinaryUploader from "@/components/ui/CloudinaryUploader"
 
 interface DeliveryJobCardProps {
   order: DriverOrderDTO
@@ -30,6 +31,7 @@ export function DeliveryJobCard({ order, isActiveRoute = false }: DeliveryJobCar
   const [cashCollected, setCashCollected] = React.useState(balanceDue === 0)
   const [isCollecting, setIsCollecting] = React.useState(false)
   const [showCashScreen, setShowCashScreen] = React.useState(false)
+  const [proofUrl, setProofUrl] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 60000)
@@ -213,7 +215,38 @@ export function DeliveryJobCard({ order, isActiveRoute = false }: DeliveryJobCar
                 COLLECT ₹{balanceDue.toFixed(0)}
               </button>
             ) : (
-              <DriverTransitionButton orderId={order.id} action="deliver" label="SWIPE TO DELIVER (Mock Tap)" className="w-full py-5 bg-emerald-600 text-white font-ui text-[12px] uppercase tracking-widest font-black rounded-2xl shadow-xl active:scale-95 transition-transform" />
+              <div className="flex flex-col gap-4 p-4 border border-emerald-100 bg-emerald-50 rounded-2xl">
+                {!proofUrl ? (
+                  <div className="space-y-3">
+                    <p className="font-ui text-xs font-black text-emerald-800 uppercase tracking-widest text-center">Step 1: Upload Proof of Delivery</p>
+                    <CloudinaryUploader 
+                      onUploadSuccess={(urls) => setProofUrl(urls[0])} 
+                      maxFiles={1} 
+                      label="Upload Proof Photo" 
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="font-ui text-xs font-black text-emerald-800 uppercase tracking-widest text-center">Step 2: Complete Delivery</p>
+                    <div className="relative w-full h-32 rounded-xl overflow-hidden border-2 border-emerald-500">
+                      <img src={proofUrl} alt="Delivery Proof" className="w-full h-full object-cover" />
+                      <button 
+                        onClick={() => setProofUrl(null)}
+                        className="absolute top-2 right-2 bg-rose-500 text-white p-1 rounded shadow"
+                      >
+                        Change
+                      </button>
+                    </div>
+                    <DriverTransitionButton 
+                      orderId={order.id} 
+                      action="deliver" 
+                      note={proofUrl}
+                      label="CONFIRM DELIVERY" 
+                      className="w-full py-5 bg-emerald-600 text-white font-ui text-[12px] uppercase tracking-widest font-black rounded-2xl shadow-xl active:scale-95 transition-transform" 
+                    />
+                  </div>
+                )}
+              </div>
             )}
             
             {/* Failure Report */}

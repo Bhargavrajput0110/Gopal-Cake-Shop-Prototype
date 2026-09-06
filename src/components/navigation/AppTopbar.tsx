@@ -1,11 +1,12 @@
 "use client"
 
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { SearchNormal1 } from "iconsax-react"
 import { cn } from "@/lib/utils"
 import { MobileNav } from "./MobileNav"
 import type { AppConfig } from "./navigation.types"
 import { NotificationBell } from "@/components/layout/NotificationBell"
+import { authSignOut } from "@/lib/authUtils";
 
 interface AppTopbarProps {
   config: AppConfig
@@ -72,7 +73,7 @@ export function AppTopbar({
                 {displayRole}
               </span>
             </span>
-            <button onClick={config.onSignOut || (() => { window.location.href = '/login' })} className="text-[9px] font-bold text-muted-foreground hover:text-rose-600 transition-colors uppercase tracking-[0.2em] cursor-pointer text-left w-max">
+            <button onClick={() => { authSignOut("/login") }} className="text-[9px] font-bold text-muted-foreground hover:text-rose-600 transition-colors uppercase tracking-[0.2em] cursor-pointer text-left w-max">
               Sign Out
             </button>
           </div>

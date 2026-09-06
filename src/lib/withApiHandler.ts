@@ -56,8 +56,8 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
     // Authentication (if not public)
     if (!isPublic) {
       const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co',
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy',
+        process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
         {
           cookies: {
             getAll() {
@@ -70,10 +70,6 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
         }
       )
       
-      const isTestBypassEnabled = process.env.ENABLE_TEST_BYPASS === 'true' || process.env.NODE_ENV !== 'production'
-      const hasBypassCookie = req.cookies.get('e2e-bypass-auth')?.value === 'true'
-      const dummyRole = req.cookies.get('gopal_dummy_role')?.value
-
       // 1. Try NextAuth session (used by UI login)
       let session = null
       try {
@@ -83,28 +79,13 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
       }
 
       if (session?.user) {
-        user = { id: session.user.id, email: session.user.email || null }
+        user = { 
+          id: session.user.id, 
+          email: session.user.email || null,
+          deliveryScope: (session.user as any).deliveryScope || null
+        }
         appRole = ((session.user as any).role as string)?.toUpperCase() as Role
         branchId = (session.user as any).branchId ? toBranchId((session.user as any).branchId) : 'khanderao'
-      } else if (process.env.NODE_ENV !== 'production' && dummyRole) {
-        // ⚠️  DEV/STAGING ONLY — prototype login bypass.
-        // SECURITY: This block is explicitly disabled in production (NODE_ENV === 'production').
-        // In production, only the NextAuth session path (above) or Supabase Auth (below) are valid.
-        // A production client cannot set gopal_dummy_role or gopal_delivery_scopes to escalate permissions.
-        const dummyUserId = req.cookies.get('gopal_dummy_user_id')?.value || 'usr_dummy_dev'
-        user = { id: dummyUserId, email: `dummy_${dummyRole.toLowerCase()}@example.com` }
-        appRole = dummyRole.toUpperCase() as Role
-        branchId = 'khanderao' // Map to main branch 'khanderao' instead of invalid 'b-001'
-        const dummyScopes = req.cookies.get('gopal_delivery_scopes')?.value
-        if (dummyScopes) {
-          deliveryScopes = dummyScopes.split(',').map(s => s.trim())
-        }
-      } else if ((isTestBypassEnabled && hasBypassCookie) || process.env.NODE_ENV === 'development') {
-        // Mock a system admin user for load tests and local dev prototypes
-        user = { id: 'usr_mock_loadtest', email: 'loadtest@example.com' }
-        appRole = Role.ADMIN
-        branchId = 'khanderao'
-        deliveryScopes = ['ALL']
       } else {
         // 2. Try Supabase Auth (used by mobile apps / external clients)
         const { data: authData } = await supabase.auth.getUser()
@@ -139,6 +120,8 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
               if (prismaUser.branchId) {
                 branchId = prismaUser.branchId
               }
+              (user as any).deliveryScope = prismaUser.deliveryScope
+              user.id = prismaUser.id
               
               if (prismaUser.status !== 'ACTIVE') {
                  LoggerService.warn(`Access Denied: Account Status ${prismaUser.status}`, { requestId, email: user.email })

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withApiHandler } from '@/lib/withApiHandler'
 import { prisma } from '@/lib/prisma'
 import { OrderStatus } from '@prisma/client'
+import { toBranchId } from '@/lib/branches'
 
 export const GET = withApiHandler(async (ctx) => {
   const { req, params, appRole, user, branchId, deliveryScopes } = ctx;
@@ -37,11 +38,11 @@ export const GET = withApiHandler(async (ctx) => {
     // Delivery staff can access if explicitly assigned
     const isExplicitlyAssigned = order.driverId === user.id;
 
-    let isSameBranch = branchId === order.branchId;
+    let isSameBranch = branchId === toBranchId(order.branchId);
     if (deliveryScopes && deliveryScopes.includes('ALL')) {
       isSameBranch = true;
     } else if (deliveryScopes && deliveryScopes.length > 0) {
-      isSameBranch = deliveryScopes.includes(order.branchId);
+      isSameBranch = deliveryScopes.includes(toBranchId(order.branchId));
     }
 
     if (!isExplicitlyAssigned && !isSameBranch && branchId !== 'ALL') {

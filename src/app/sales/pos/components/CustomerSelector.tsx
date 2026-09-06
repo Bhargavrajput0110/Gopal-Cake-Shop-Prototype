@@ -12,12 +12,9 @@ export function CustomerSelector() {
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ['customers-search', search],
     queryFn: async () => {
-      const res = await fetchClient<{ success: boolean, data: any[] }>('/customers')
-      const customersData = res.data || []
-      return customersData.filter(c => 
-        c.name.toLowerCase().includes(search.toLowerCase()) || 
-        c.phone?.includes(search)
-      ).slice(0, 5)
+      if (!search || search.length < 2) return [];
+      const res = await fetchClient<{ success: boolean, data: any[] }>(`/customers?q=${encodeURIComponent(search)}&limit=5`)
+      return res.data || []
     },
     enabled: search.length > 2 || isOpen,
   })

@@ -50,19 +50,11 @@ export default function AdminCategories() {
         }
       }
     } catch (error) {
-      console.warn("API failed, falling back to mock categories");
+      console.warn("API failed, unable to load categories", error);
+      setCategories([]);
     } finally {
       setIsLoading(false);
     }
-    
-    // Fallback Mock Data
-    setCategories([
-      { id: 'mock', categoryId: "cat-01", name: "Custom Wedding Cakes", displayOrder: 1, status: "active" },
-      { id: 'mock', categoryId: "cat-02", name: "Premium Pastries", displayOrder: 2, status: "active" },
-      { id: 'mock', categoryId: "cat-03", name: "Photo Cakes", displayOrder: 3, status: "active" },
-      { id: 'mock', categoryId: "cat-04", name: "Dry Cakes (Tea Time)", displayOrder: 4, status: "active" },
-      { id: 'mock', categoryId: "cat-05", name: "Seasonal / Festival", displayOrder: 5, status: "inactive" },
-    ]);
   };
 
   const filteredCategories = useMemo(() => {
@@ -98,7 +90,7 @@ export default function AdminCategories() {
       name: formData.name,
       displayOrder: Number(formData.displayOrder),
       status: formData.status,
-      ...( !editingCategory && { id: 'mock', categoryId: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') } )
+      ...( !editingCategory && { categoryId: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') } )
     };
     
     if (editingCategory && editingCategory.updatedAt) {
@@ -134,7 +126,7 @@ export default function AdminCategories() {
     }
   };
 
-  const confirmDelete = (id: 'mock', categoryId: string) => {
+  const confirmDelete = (id: string, categoryId: string) => {
     setItemToDelete(categoryId);
   };
 

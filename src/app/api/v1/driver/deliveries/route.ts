@@ -3,6 +3,9 @@ import { prisma as db } from '@/lib/prisma'
 import { withApiHandler } from '@/lib/withApiHandler'
 import { FinancialService } from '@/services/FinancialService'
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const GET = withApiHandler(async (ctx) => {
   const { appRole, user } = ctx
   const hasDeliveryScope = !!(user as any).deliveryScope;
@@ -158,6 +161,11 @@ export const GET = withApiHandler(async (ctx) => {
 
   // Sort payload by targetDate
   resolvedPayload.sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime());
+
+  console.log(`[API /driver/deliveries] driverId=${driverId} branchFilter=${JSON.stringify(branchFilter)} orders.length=${orders.length} resolvedPayload.length=${resolvedPayload.length}`);
+  if (orders.length > 0) {
+    console.log(`[API /driver/deliveries] First order status=${orders[0].status} assignedDriverId=${orders[0].driverId}`);
+  }
 
   return NextResponse.json({ success: true, data: resolvedPayload })
 })

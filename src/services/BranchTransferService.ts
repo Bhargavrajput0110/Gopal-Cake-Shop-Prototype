@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma, TransferStatus, TimelineEventType, OrderStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { toBranchId } from '@/lib/branches';
 import { TimelineService } from './TimelineService';
 
 export class BranchTransferService {
@@ -23,7 +24,7 @@ export class BranchTransferService {
         select: { branchId: true, status: true, orderNumber: true, targetDate: true }
       });
       if (!order) throw new Error('Order not found');
-      if (order.branchId !== params.fromBranchId) {
+      if (toBranchId(order.branchId) !== toBranchId(params.fromBranchId)) {
         throw new Error('Order does not belong to the source branch.');
       }
 
@@ -114,7 +115,7 @@ export class BranchTransferService {
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.branchTransfer.findUnique({ where: { id: params.transferId }, include: { order: true } });
       if (!transfer) throw new Error('Transfer not found');
-      if (transfer.toBranchId !== params.branchId) throw new Error('Only the target branch can accept a transfer.');
+      if (toBranchId(transfer.toBranchId) !== toBranchId(params.branchId)) throw new Error('Only the target branch can accept a transfer.');
       if (transfer.status !== 'PENDING') throw new Error(`Cannot accept transfer in status ${transfer.status}`);
 
       const updated = await tx.branchTransfer.update({
@@ -154,7 +155,7 @@ export class BranchTransferService {
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.branchTransfer.findUnique({ where: { id: params.transferId }, include: { order: true } });
       if (!transfer) throw new Error('Transfer not found');
-      if (transfer.toBranchId !== params.branchId) throw new Error('Only the target branch can reject a transfer.');
+      if (toBranchId(transfer.toBranchId) !== toBranchId(params.branchId)) throw new Error('Only the target branch can reject a transfer.');
       if (transfer.status !== 'PENDING') throw new Error(`Cannot reject transfer in status ${transfer.status}`);
 
       const updated = await tx.branchTransfer.update({
@@ -196,7 +197,7 @@ export class BranchTransferService {
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.branchTransfer.findUnique({ where: { id: params.transferId }, include: { order: true } });
       if (!transfer) throw new Error('Transfer not found');
-      if (transfer.fromBranchId !== params.branchId) throw new Error('Only the source branch can dispatch a transfer.');
+      if (toBranchId(transfer.fromBranchId) !== toBranchId(params.branchId)) throw new Error('Only the source branch can dispatch a transfer.');
       if (transfer.status !== 'ACCEPTED') throw new Error(`Cannot dispatch transfer in status ${transfer.status}. Must be ACCEPTED first.`);
 
       const updated = await tx.branchTransfer.update({
@@ -237,7 +238,7 @@ export class BranchTransferService {
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.branchTransfer.findUnique({ where: { id: params.transferId }, include: { order: true } });
       if (!transfer) throw new Error('Transfer not found');
-      if (transfer.toBranchId !== params.branchId) throw new Error('Only the target branch can receive a transfer.');
+      if (toBranchId(transfer.toBranchId) !== toBranchId(params.branchId)) throw new Error('Only the target branch can receive a transfer.');
       if (transfer.status !== 'IN_TRANSIT') throw new Error(`Cannot receive transfer in status ${transfer.status}. Must be IN_TRANSIT first.`);
 
       // 1. Update transfer status

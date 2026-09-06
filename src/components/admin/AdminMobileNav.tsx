@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HambergerMenu, CloseSquare, Logout, Home2 } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { signOut } from "next-auth/react";
 import { ADMIN_NAV_CONFIG } from "@/components/navigation/nav-configs";
 
 export function AdminMobileNav() {

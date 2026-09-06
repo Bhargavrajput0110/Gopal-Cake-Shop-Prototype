@@ -1,3 +1,5 @@
+import { signOut } from "next-auth/react";
+import { authSignOut } from "@/lib/authUtils";
 "use client"
 
 import { Location, Wallet, Logout } from "iconsax-react"
@@ -33,7 +35,7 @@ export default function DeliveryLayout({
           </button>
           <button
             onClick={() => {
-              document.cookie = "gopal_dummy_role=; path=/; max-age=0"
+              authSignOut("/login")
               window.location.href = "/login"
             }}
             className="flex flex-col items-center gap-1 text-muted-foreground hover:text-destructive transition-colors"

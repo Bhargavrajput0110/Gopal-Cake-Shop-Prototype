@@ -47,19 +47,7 @@ export default function POSPage() {
         console.warn("API failed for products");
       }
       
-      // Mock fallback — development only. NEVER in production.
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('[POS] Using mock product fallback — development mode only');
-        return [
-          { id: "prod-01", name: "2kg Chocolate Truffle Custom", price: 1200, categoryId: "cat-01", isCustomizable: true, imageUrl: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400" },
-          { id: "prod-02", name: "Butterscotch Pastry", price: 60, categoryId: "cat-02", isCustomizable: false, imageUrl: "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=400" },
-          { id: "prod-03", name: "3 Tier Wedding Cake", price: 5500, categoryId: "cat-01", isCustomizable: true, imageUrl: "https://images.unsplash.com/photo-1535254973040-607b474cb50d?w=400" },
-          { id: "prod-04", name: "Black Forest Classic", price: 450, categoryId: "cat-01", isCustomizable: true, imageUrl: "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=400" },
-          { id: "prod-05", name: "Paneer Puff", price: 30, categoryId: "cat-03", isCustomizable: false, imageUrl: "https://images.unsplash.com/photo-1601050690597-df0568a70950?w=400" },
-        ]
-      }
-      
-      // In production: throw so the UI shows a proper error instead of mock data
+      // In production and development: throw so the UI shows a proper error instead of mock data
       throw new Error('Product catalog unavailable. Check database connection.')
     }
   })
@@ -76,10 +64,25 @@ export default function POSPage() {
         if (filtered.length > 0) return filtered;
       } catch (e) {
         console.error("API failed for categories", e);
-        // Instead of throwing an error that might crash the boundary, we show an alert/toast and return empty state
         if (typeof window !== 'undefined') {
           alert("Unable to load product categories. Please contact the manager.");
         }
+        return [];
+      }
+    }
+  })
+
+  // Fetch Design Library cakes — these have real Cloudinary images
+  const { data: designs = [], isLoading: isLoadingDesigns } = useQuery({
+    queryKey: ['pos-designs'],
+    queryFn: async () => {
+      try {
+        const res = await fetchClient<any>('/designs?limit=100&status=ACTIVE')
+        const payload = res.data || res;
+        const items = payload.items || payload;
+        return (Array.isArray(items) ? items : []).filter((d: any) => d.imageUrl && d.status !== 'ARCHIVED');
+      } catch (e) {
+        console.warn('Failed to load designs', e);
         return [];
       }
     }
@@ -183,7 +186,7 @@ export default function POSPage() {
       <main className="flex-1 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden p-2 sm:p-6 gap-6 z-10 relative max-w-[1440px] mx-auto w-full pb-24 xl:pb-6">
         {/* Left Side: Product Grid / Form */}
         <div className="flex-1 w-full xl:h-full xl:min-w-[500px]">
-          <ProductGrid products={products} categories={categories} isLoading={isLoadingProducts || isLoadingCategories} />
+          <ProductGrid products={products} categories={categories} designs={designs} isLoading={isLoadingProducts || isLoadingCategories} />
         </div>
 
         {/* Right Side: Cart */}
@@ -198,6 +201,7 @@ export default function POSPage() {
           <PaymentDialog 
             onClose={() => setIsPaymentOpen(false)}
             onSuccess={handleCheckoutSuccess}
+            activeBranch={activeBranch}
           />
         )}
       </AnimatePresence>

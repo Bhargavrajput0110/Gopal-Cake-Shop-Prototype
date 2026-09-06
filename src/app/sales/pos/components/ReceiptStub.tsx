@@ -9,16 +9,24 @@ interface ReceiptStubProps {
 
 export function ReceiptStub({ orderId }: ReceiptStubProps) {
   // Fetch order details for the receipt
-  const { data: order, isLoading } = useQuery({
+  const { data: responseData, isLoading } = useQuery({
     queryKey: ['receipt', orderId],
     queryFn: () => fetchClient<any>(`/orders/${orderId}`)
   })
 
-  if (isLoading || !order) return null
+  if (isLoading || !responseData) return null
+
+  // The API returns { success: true, data: { ... } }
+  const order = responseData.data || responseData;
+
+  // If we still don't have an order object, don't crash
+  if (!order || !order.orderNumber) return null
 
   const handlePrint = () => {
     window.print()
   }
+
+  const parseNumber = (val: any) => Number(val || 0);
 
   return (
     <>
@@ -65,16 +73,16 @@ export function ReceiptStub({ orderId }: ReceiptStubProps) {
           </div>
           <div className="flex justify-between">
             <span>Placed:</span>
-            <span>{new Date(order.createdAt).toLocaleString()}</span>
+            <span>{order.createdAt ? new Date(order.createdAt).toLocaleString() : '-'}</span>
           </div>
           <div className="flex justify-between font-bold mt-1 pt-1 border-t border-black border-dashed">
             <span>Fulfillment:</span>
-            <span>{new Date(order.targetDate).toLocaleString()}</span>
+            <span>{order.targetDate ? new Date(order.targetDate).toLocaleString() : '-'}</span>
           </div>
           {order.customer && order.customer.name !== 'Walk-in' && order.customer.name !== 'walkin@gopalcakeshop.com' && (
             <div className="flex justify-between mt-1 pt-1 border-t border-black border-dashed">
               <span>Customer:</span>
-              <span>{order.customer.name} ({order.customer.phone})</span>
+              <span>{order.customer.name} {order.customer.phone ? `(${order.customer.phone})` : ''}</span>
             </div>
           )}
         </div>
@@ -84,11 +92,11 @@ export function ReceiptStub({ orderId }: ReceiptStubProps) {
             <span>Item</span>
             <span>Amt</span>
           </div>
-          {order.items?.map((item: any) => (
-            <div key={item.id} className="mb-2 text-xs">
+          {order.items?.map((item: any, idx: number) => (
+            <div key={item.id || idx} className="mb-2 text-xs">
               <div className="flex justify-between">
                 <span>{item.quantity}x {item.productName}</span>
-                <span>{(item.price * item.quantity).toFixed(2)}</span>
+                <span>{(parseNumber(item.price) * parseNumber(item.quantity)).toFixed(2)}</span>
               </div>
               <div className="pl-4 text-[10px] text-gray-600">
                 {item.weight}kg {item.flavor ? `| ${item.flavor}` : ''}
@@ -109,34 +117,40 @@ export function ReceiptStub({ orderId }: ReceiptStubProps) {
         <div className="border-t border-black py-2 text-xs space-y-1">
           <div className="flex justify-between">
             <span>Subtotal</span>
-            <span>{order.subtotal?.toFixed(2)}</span>
+            <span>{parseNumber(order.subtotal).toFixed(2)}</span>
           </div>
-          {((order.discount || 0) > 0) && (
+          {(parseNumber(order.deliveryCharge) > 0) && (
+            <div className="flex justify-between">
+              <span>Delivery Charge</span>
+              <span>{parseNumber(order.deliveryCharge).toFixed(2)}</span>
+            </div>
+          )}
+          {(parseNumber(order.discount) > 0) && (
             <div className="flex justify-between">
               <span>Discount</span>
-              <span>-{Number(order.discount).toFixed(2)}</span>
+              <span>-{parseNumber(order.discount).toFixed(2)}</span>
             </div>
           )}
           <div className="flex justify-between">
             <span>Tax</span>
-            <span>{(Number(order.totalAmount || 0) - Number(order.subtotal || 0) + Number(order.discount || 0)).toFixed(2)}</span>
+            <span>{(parseNumber(order.totalAmount) - parseNumber(order.subtotal) - parseNumber(order.deliveryCharge) + parseNumber(order.discount)).toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-base font-black mt-2 pt-2 border-t border-black">
             <span>TOTAL</span>
-            <span>₹{order.totalAmount?.toFixed(2)}</span>
+            <span>₹{parseNumber(order.totalAmount).toFixed(2)}</span>
           </div>
         </div>
         
-        {(order.paidAmount > 0 || order.advancePaid > 0) && (
+        {(parseNumber(order.paidAmount) > 0 || parseNumber(order.advancePaid) > 0) && (
           <div className="border-t border-black border-dashed mt-4 pt-2 text-xs">
             <div className="flex justify-between font-bold text-sm mb-1">
-              <span>Advance Paid</span>
-              <span>₹{(order.paidAmount || order.advancePaid || 0).toFixed(2)}</span>
+              <span>Paid</span>
+              <span>₹{(parseNumber(order.paidAmount) || parseNumber(order.advancePaid)).toFixed(2)}</span>
             </div>
-            {((order.pendingBalance || 0) > 0) && (
+            {(parseNumber(order.pendingBalance) > 0) && (
               <div className="flex justify-between font-black text-sm mt-1 bg-gray-100 p-1">
                 <span>BALANCE DUE</span>
-                <span>₹{(order.pendingBalance || 0).toFixed(2)}</span>
+                <span>₹{parseNumber(order.pendingBalance).toFixed(2)}</span>
               </div>
             )}
           </div>

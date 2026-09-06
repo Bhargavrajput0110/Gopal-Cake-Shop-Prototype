@@ -1,3 +1,8 @@
+/**
+ * ISOLATED_TEST_FIXTURE_ONLY
+ * WARNING: Do NOT use these accounts or orders for real E2E business logic tests. 
+ * These are dummy fixtures and must remain isolated from production data.
+ */
 import 'dotenv/config';
 import { PrismaClient, Role, OrderStatus, DeliveryType, PaymentMethod, PaymentType, PaymentStatus, NotificationStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';

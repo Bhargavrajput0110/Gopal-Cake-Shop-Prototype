@@ -65,7 +65,7 @@ export class WebhookProcessor {
               data: {
                 action: 'PAYMENT_CAPTURED',
                 reason: `Webhook payment captured: ${paymentEntity.id}`,
-                actorId: 'SYSTEM_WEBHOOK',
+                actorId: null,
                 tableName: 'Payment',
                 recordId: payment.id,
                 newValue: { status: 'SUCCESS', gatewayPaymentId: paymentEntity.id },
@@ -94,7 +94,7 @@ export class WebhookProcessor {
               data: {
                 action: 'PAYMENT_FAILED',
                 reason: `Webhook payment failed: ${paymentEntity.error_description || 'Unknown error'}`,
-                actorId: 'SYSTEM_WEBHOOK',
+                actorId: null,
                 tableName: 'Payment',
                 recordId: payment.id,
                 newValue: { status: 'FAILED' },

@@ -86,7 +86,7 @@ export class StorefrontEngine {
       return 150
     } else {
       const extraKm = Math.ceil(distanceKm - 10)
-      return 150 + extraKm * 10
+      return 150 + (extraKm * 10)
     }
   }
 
@@ -143,6 +143,7 @@ export class StorefrontEngine {
     // 2. Validate Items & Pricing
     const productIds = payload.items.map(i => i.productId)
     const products = await prisma.product.findMany({ where: { id: { in: productIds } } })
+    const designs = await prisma.design.findMany({ where: { id: { in: productIds } } })
     
     const allVendors = await prisma.user.findMany({
       where: { role: { in: ['VENDOR_FLORIST', 'VENDOR_PHOTO', 'VENDOR_ACRYLIC'] } }
@@ -151,14 +152,74 @@ export class StorefrontEngine {
     let subtotal = 0
     let totalTax = 0
     const orderItemsData = payload.items.map(item => {
-      const product = products.find(p => p.id === item.productId)
+      let product = products.find(p => p.id === item.productId)
+      const design = designs.find(d => d.id === item.productId)
+      
+      const isRealProduct = !!product;
+
+      // MOCK product for designs and custom cakes
+      if (!product && (design || item.designId || item.productId === 'custom-cake-studio' || item.productId.startsWith('custom-'))) {
+         product = {
+            id: item.productId,
+            name: design?.name || item.designName || 'Custom Cake',
+            basePrice: item.overridePrice || design?.basePrice || 0,
+            weightConfig: design?.weightConfig || null,
+            availableForSale: true,
+            isArchived: false,
+            thumbnail: design?.imageUrl || item.designImageUrl || null,
+            requiredVendors: item.requiredVendors || []
+         } as any
+      }
+
       if (!product || !product.availableForSale || product.isArchived) {
+        console.error('[StorefrontEngine] Product Validation Failed!', {
+          itemId: item.productId,
+          foundProduct: !!product,
+          availableForSale: product?.availableForSale,
+          isArchived: product?.isArchived,
+          cartItemContext: item
+        });
         throw new Error(`Product ${item.productId} is not available.`)
       }
 
-      // Base pricing logic (Weight multiplier)
-      // This is a simplified business rule: Base Price * Weight
-      let unitPrice = Number(product.basePrice) * item.weight
+      // Base pricing logic
+      let unitPrice = 0;
+      let usedWeightConfig = false;
+      
+      if ((product as any).weightConfig) {
+        try {
+          const wc: any = typeof (product as any).weightConfig === 'string' ? JSON.parse((product as any).weightConfig) : (product as any).weightConfig;
+          if (wc && typeof wc === 'object' && Object.keys(wc).length > 0) {
+            const weightKey = item.weight.toString();
+            if (wc[weightKey] && wc[weightKey].price) {
+              unitPrice = Number(wc[weightKey].price);
+              usedWeightConfig = true;
+            }
+          }
+        } catch(e) {}
+      }
+
+      if (!usedWeightConfig) {
+        // Tiered multiplier matching frontend
+        const basePricesByWeight: Record<string, number> = {
+          "0.25": 350, "0.5": 600, "0.75": 850, "1": 1100, "1.5": 1600,
+          "2": 2100, "2.5": 2600, "3": 3000, "3.5": 3500, "4": 4000,
+          "4.5": 4400, "5": 4800, "5.5": 5250, "6": 5700, "6.5": 6150,
+          "7": 6600, "7.5": 7000, "8": 7450, "8.5": 7900, "9": 8300,
+          "9.5": 8750, "10": 9200,
+        };
+        
+        let scale = 1;
+        const weightStr = item.weight.toString();
+        if (basePricesByWeight[weightStr]) {
+          scale = basePricesByWeight[weightStr] / 600; // 600 is the standard 0.5kg base
+        } else {
+          // Fallback linear scaling
+          scale = item.weight / 0.5;
+        }
+        
+        unitPrice = Number(product.basePrice) * scale;
+      }
 
       // Add flavour surcharge
       if (item.flavor) {
@@ -171,10 +232,16 @@ export class StorefrontEngine {
         unitPrice = item.overridePrice
       }
 
+      // If it's a Quote, line price should be 0 because the Sales team will set it later
+      if (payload.type === 'QUOTE') {
+        unitPrice = 0
+      }
+
       const lineTotal = unitPrice * item.quantity
       subtotal += lineTotal
       
-      const lineTax = (lineTotal * gstRate) / 100
+      // Calculate tax as INCLUSIVE (frontend prices already include tax)
+      const lineTax = (lineTotal * gstRate) / (100 + gstRate)
       totalTax += lineTax
 
       // Generate Child Items for Vendors if product requires them
@@ -194,7 +261,7 @@ export class StorefrontEngine {
       }
 
       return {
-        productId: product.id,
+        productId: isRealProduct ? product.id : undefined,
         productName: product.name,
         price: unitPrice,
         tax: lineTax,
@@ -203,10 +270,10 @@ export class StorefrontEngine {
         flavor: item.flavor,
         messageOnCake: item.messageOnCake,
         image: product.thumbnail,
-        designId: item.designId,
-        designCode: item.designCode,
-        designName: item.designName,
-        designImageUrl: item.designImageUrl,
+        designId: design ? design.id : item.designId,
+        designCode: design ? design.code : item.designCode,
+        designName: design ? design.name : item.designName,
+        designImageUrl: design ? design.imageUrl : item.designImageUrl,
         shape: item.shape,
         notes: item.notes,
         boxCount: item.boxCount || 1,
@@ -262,6 +329,11 @@ export class StorefrontEngine {
       }
     }
 
+    // Force delivery charge to 0 for Quotes
+    if (payload.type === 'QUOTE') {
+      deliveryCharge = 0
+    }
+
     // 4. Coupons & Discounts Calculation
     let discount = 0
     let couponId: string | undefined = undefined
@@ -293,8 +365,8 @@ export class StorefrontEngine {
       couponId = coupon.id
     }
 
-    // 5. Final Totals
-    const totalAmount = subtotal + totalTax + deliveryCharge - discount
+    // 5. Final Totals (Tax is inclusive, so we do not add totalTax to totalAmount)
+    const totalAmount = subtotal + deliveryCharge - discount
 
     // 6. Idempotency Check
     if (payload.idempotencyKey) {
@@ -314,11 +386,11 @@ export class StorefrontEngine {
           customerId: payload.customerId,
           branchId: branch.id,
           source: context.source,
-          createdById: (process.env.NODE_ENV === 'test' || process.env.IS_PLAYWRIGHT === 'true') && (context.createdById?.startsWith('mock-') || context.createdById?.includes('dummy') || context.createdById?.includes('loadtest')) ? null : context.createdById,
+          createdById: context.createdById,
           isPriority: context.canAssignPriority ? payload.isPriority : false,
           internalNotes: payload.internalNotes,
           type: payload.type || 'ORDER',
-          status: payload.type === 'QUOTE' ? OrderStatus.QUOTE_DRAFT : OrderStatus.NEW,
+          status: payload.type === 'QUOTE' ? OrderStatus.QUOTE_DRAFT : (context.source === 'POS' ? OrderStatus.WAITING_FOR_CHEF : OrderStatus.NEW),
           deliveryType: payload.deliveryType,
           targetDate: new Date(payload.targetDate),
           deliveryAddress: payload.deliveryAddress,
@@ -335,47 +407,73 @@ export class StorefrontEngine {
           items: {
             create: orderItemsData
           },
-          ...((payload.payments && payload.payments.length > 0) ? {
-            payments: {
-              create: payload.payments.map(p => ({
-                amount: p.amount,
-                method: p.method,
-                type: payload.paymentType,
-                status: 'SUCCESS'
-              }))
-            },
-            ledgerEntries: {
-              create: payload.payments.map(p => ({
-                amount: p.amount,
-                method: p.method,
-                type: 'PAYMENT',
-                status: 'SUCCESS',
-                actorId: context.createdById || 'SYSTEM',
-                branchId: branch.id,
-                notes: 'Initial payment at checkout'
-              }))
-            }
-          } : (payload.paymentType === 'FULL' ? {
-            payments: {
-              create: {
+          ...(() => {
+            // Helper to determine if a payment should be instantly marked SUCCESS (and get a ledger entry)
+            const getInitialStatus = (method: PaymentMethod): 'SUCCESS' | 'PENDING' => {
+              if (context.source === 'POS') {
+                if (method === 'CASH' || method === 'UPI' || method === 'CARD' || method === 'MANUAL') return 'SUCCESS';
+                // Online gateways remain pending until webhook confirms
+                return 'PENDING';
+              }
+              // Website, Admin, etc all start as pending
+              return 'PENDING';
+            };
+
+            if (payload.payments && payload.payments.length > 0) {
+              const paymentsData = payload.payments.map(p => {
+                const status = getInitialStatus(p.method);
+                return {
+                  amount: p.amount,
+                  method: p.method,
+                  type: payload.paymentType,
+                  status
+                };
+              });
+              
+              const ledgerEntriesData = paymentsData
+                .filter(p => p.status === 'SUCCESS')
+                .map(p => ({
+                  amount: p.amount,
+                  method: p.method,
+                  type: 'PAYMENT' as const,
+                  status: 'SUCCESS' as const,
+                  actorId: context.createdById || null,
+                  branchId: branch.id,
+                  notes: `Initial payment at ${context.source}`
+                }));
+
+              return {
+                payments: { create: paymentsData },
+                ...(ledgerEntriesData.length > 0 ? { ledgerEntries: { create: ledgerEntriesData } } : {})
+              };
+            } else if (payload.paymentType === 'FULL') {
+              const status = getInitialStatus(payload.paymentMethod);
+              const paymentsData = {
                 amount: totalAmount,
                 method: payload.paymentMethod,
-                type: 'FULL',
-                status: 'SUCCESS'
-              }
-            },
-            ledgerEntries: {
-              create: {
-                amount: totalAmount,
-                method: payload.paymentMethod,
-                type: 'PAYMENT',
-                status: 'SUCCESS',
-                actorId: context.createdById || 'SYSTEM',
-                branchId: branch.id,
-                notes: 'Full payment at checkout'
-              }
+                type: 'FULL' as const,
+                status
+              };
+
+              return {
+                payments: { create: paymentsData },
+                ...(status === 'SUCCESS' ? {
+                  ledgerEntries: {
+                    create: {
+                      amount: totalAmount,
+                      method: payload.paymentMethod,
+                      type: 'PAYMENT' as const,
+                      status: 'SUCCESS' as const,
+                      actorId: context.createdById || null,
+                      branchId: branch.id,
+                      notes: `Full payment at ${context.source}`
+                    }
+                  }
+                } : {})
+              };
             }
-          } : {}))
+            return {};
+          })()
         },
         include: { items: true, customer: true, branch: true, payments: true }
       })
@@ -389,13 +487,14 @@ export class StorefrontEngine {
       }
 
       // Record Timeline Event
+      const isQuote = payload.type === 'QUOTE';
       await tx.timeline.create({
         data: {
           orderId: newOrder.id,
-          action: 'CREATED_VIA_STOREFRONT',
+          action: isQuote ? 'QUOTE_CREATED' : 'CREATED_VIA_STOREFRONT',
           status: newOrder.status,
           nextState: newOrder.status,
-          note: `Order received via ${context.source}`,
+          note: isQuote ? `Quote generated via ${context.source}` : `Order received via ${context.source}`,
         }
       })
 
@@ -404,7 +503,7 @@ export class StorefrontEngine {
         data: {
           action: 'ORDER_CREATED',
           reason: `Order created via ${context.source}`,
-          actorId: context.createdById || 'SYSTEM',
+          actorId: context.createdById || null,
           tableName: 'Order',
           recordId: newOrder.id,
           newValue: { status: newOrder.status, totalAmount: newOrder.totalAmount },
@@ -433,7 +532,7 @@ export class StorefrontEngine {
 
     const io = (global as any).io;
     console.log('[DEBUG] StorefrontEngine io defined?', !!io);
-    if (io) {
+    if (io && payload.type !== 'QUOTE') {
       io.to(`branch_${order.branchId}`).emit('order_created');
       io.to('admin_global').emit('order_created');
 

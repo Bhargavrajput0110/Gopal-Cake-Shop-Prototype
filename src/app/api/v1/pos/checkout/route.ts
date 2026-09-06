@@ -17,31 +17,41 @@ const handler = async (ctx: HandlerContext) => {
   const data = PosCheckoutSchema.parse(body)
 
   // 1. Resolve Customer (Fast Track)
-  const customerId = data.customerId === 'walk-in' ? (await CustomerSearchService.resolveCustomer({ phone: '0000000000', name: 'Walk-in' })).id : data.customerId
+  let customerId = data.customerId;
+  if (customerId === 'walk-in' || (data.customerName && data.customerName !== 'Walk-in')) {
+    const resolved = await CustomerSearchService.resolveCustomer({ 
+      phone: data.customerPhone || '0000000000', 
+      name: data.customerName || 'Walk-in' 
+    });
+    customerId = resolved.id;
+  }
 
   const payload: CheckoutPayload = {
     customerId: customerId,
     branchId: data.branchId || 'default-branch',
     items: data.items,
-    deliveryType: DeliveryType.PICKUP,
+    deliveryType: data.deliveryType as DeliveryType,
+    deliveryAddress: data.deliveryType === 'DELIVERY' && data.address 
+      ? [data.address.house, data.address.street, data.address.area, data.address.city, data.address.pin, data.address.landmark].filter(Boolean).join(', ')
+      : undefined,
     targetDate: data.targetDate ? new Date(data.targetDate).toISOString() : new Date().toISOString(),
     paymentMethod: data.payments && data.payments.length > 0 ? (data.payments[0].method as PaymentMethod) : PaymentMethod.CASH,
     paymentType: data.paymentType === 'PARTIAL' ? PaymentType.ADVANCE : PaymentType.FULL,
     payments: data.payments.map(p => ({ method: p.method as PaymentMethod, amount: p.amount })),
     idempotencyKey: data.idempotencyKey || `pos-${Date.now()}`,
-    type: 'ORDER',
+    type: data.type || 'ORDER',
     couponCode: data.discountCode,
     overrideDiscount: data.overrideDiscount,
     isPriority: data.isPriority,
-    isFarDistance: body.isFarDistance,
-    deliveryDistanceKm: body.deliveryDistanceKm
+    isFarDistance: data.isFarDistance,
+    deliveryDistanceKm: data.deliveryDistanceKm
   }
 
   // 3. Define Context (POS)
   const context: CheckoutContext = {
     source: OrderSource.POS,
     createdById: user.id,
-    canOverridePrice: appRole === 'ADMIN', // Only admins using POS can override price
+    canOverridePrice: ['ADMIN', 'MANAGER', 'SALESPERSON'].includes(appRole), // POS allows salespeople to negotiate/set custom design prices
     canOverrideDelivery: false,
     canOverrideDiscount: ['ADMIN', 'MANAGER'].includes(appRole),
     canAssignPriority: true

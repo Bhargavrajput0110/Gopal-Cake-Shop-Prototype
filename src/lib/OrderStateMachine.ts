@@ -1,6 +1,18 @@
 export type OrderStatus =
   | 'DRAFT'
   | 'NEW'
+  | 'CONFIRMED'
+  | 'READY'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'REFUNDED'
+  | 'QUOTE_DRAFT'
+  | 'QUOTE_SENT'
+  | 'QUOTE_APPROVED'
+  | 'QUOTE_EXPIRED'
+  | 'QUOTE_REJECTED'
+  | 'QUOTE_CONVERTED'
   | 'WAITING_FOR_CHEF'
   | 'CHEF_ACCEPTED'
   | 'MAKING'
@@ -10,10 +22,8 @@ export type OrderStatus =
   | 'ASSIGNED_TO_DRIVER'
   | 'PICKED_UP'
   | 'ON_THE_WAY'
-  | 'DELIVERED'
   | 'FAILED_DELIVERY'
   | 'COMPLETED'
-  | 'CANCELLED'
 
 export type AppRole = 'CUSTOMER' | 'SALESPERSON' | 'CHEF' | 'DELIVERY' | 'MANAGER' | 'ADMIN'
 
@@ -34,6 +44,7 @@ export type TransitionAction =
   | 'complete'
   | 'cancel'
   | 'auto-queue'
+  | 'send-quote'
 
 export type TransitionConfig = {
   action: TransitionAction
@@ -46,6 +57,7 @@ export type TransitionConfig = {
 
 export const STATE_MACHINE: TransitionConfig[] = [
   { action: 'checkout', current: 'DRAFT', next: 'NEW', roles: ['CUSTOMER', 'SALESPERSON', 'MANAGER'] },
+  { action: 'send-quote', current: 'QUOTE_DRAFT', next: 'QUOTE_SENT', roles: ['SALESPERSON', 'MANAGER', 'ADMIN'] },
   { action: 'approve', current: 'NEW', next: 'WAITING_FOR_CHEF', roles: ['SALESPERSON', 'MANAGER', 'ADMIN'] },
   { action: 'chef-accept', current: 'WAITING_FOR_CHEF', next: 'CHEF_ACCEPTED', roles: ['CHEF', 'ADMIN'] },
   { action: 'start-making', current: 'CHEF_ACCEPTED', next: 'MAKING', roles: ['CHEF', 'ADMIN'] },

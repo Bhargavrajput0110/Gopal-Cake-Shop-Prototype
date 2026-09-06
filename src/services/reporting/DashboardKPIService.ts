@@ -43,6 +43,9 @@ export interface DashboardKPIs {
 
   // Branch ranking (populated only when branchId is null)
   branchRanking: { branchId: string; branchName: string; revenue: number }[];
+
+  // Finance
+  balanceDue: number;
 }
 
 const LATE_PRODUCTION_THRESHOLD_MINUTES = 60; // configurable in future
@@ -131,8 +134,8 @@ export class DashboardKPIService {
         id: true,
         status: true,
         totalAmount: true,
-        targetDate: true,
         items: { select: { productName: true, quantity: true, price: true } },
+        payments: { select: { amount: true, status: true } }
       },
     });
 
@@ -140,6 +143,7 @@ export class DashboardKPIService {
     let totalRevenue = 0;
     let revenueOrderCount = 0;
     let pendingOrders = 0;
+    let balanceDue = 0;
 
     const pendingStatuses = ['NEW', 'CONFIRMED', 'WAITING_FOR_CHEF', 'MAKING', 'DECORATING'];
 
@@ -148,6 +152,8 @@ export class DashboardKPIService {
       if (order.status !== 'CANCELLED' && order.status !== 'DRAFT') {
         totalRevenue += Number(order.totalAmount);
         revenueOrderCount++;
+        const paid = order.payments.filter(p => p.status === 'SUCCESS').reduce((sum, p) => sum + Number(p.amount), 0);
+        balanceDue += Math.max(Number(order.totalAmount) - paid, 0);
       }
       if (pendingStatuses.includes(order.status)) {
         pendingOrders++;
@@ -332,6 +338,7 @@ export class DashboardKPIService {
       averageQueueLength,
       topProducts,
       branchRanking,
+      balanceDue,
     };
   }
 }

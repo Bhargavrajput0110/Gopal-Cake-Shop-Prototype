@@ -3,23 +3,19 @@
 import React from "react";
 
 const TRUST_ITEMS = [
-  { icon: "⭐", text: "4.9 Rating — 50,000+ Reviews" },
-  { icon: "🎂", text: "100% Eggless — Always" },
-  { icon: "🏆", text: "Est. 1995 — 30 Years of Legacy" },
-  { icon: "🚀", text: "Same-Day Delivery Available" },
-  { icon: "🍫", text: "Belgian Chocolate Used" },
-  { icon: "🌿", text: "No Preservatives — Baked Fresh Daily" },
-  { icon: "📍", text: "4 Branches Across Vadodara" },
-  { icon: "🎨", text: "Custom Designs from ₹499" },
+  "100% EGGLESS",
+  "HANDCRAFTED IN VADODARA",
+  "PREMIUM INGREDIENTS",
+  "ESTABLISHED 1990",
+  "NO PRESERVATIVES",
 ];
 
-const TrackItem = ({ item }: { item: typeof TRUST_ITEMS[number] }) => (
-  <div className="flex items-center gap-3 px-8 shrink-0">
-    <span className="text-base">{item.icon}</span>
-    <span className="font-ui text-[11px] font-semibold tracking-[0.12em] uppercase text-white/80 whitespace-nowrap">
-      {item.text}
+const TrackItem = ({ text }: { text: string }) => (
+  <div className="flex items-center gap-6 px-6 shrink-0">
+    <span className="font-ui text-sm md:text-base font-medium tracking-[0.2em] text-[#C8A97E] whitespace-nowrap">
+      {text}
     </span>
-    <span className="w-1 h-1 rounded-full bg-[var(--brand-champagne)]/60 ml-2" />
+    <span className="text-[#C8A97E]/50 text-lg">✦</span>
   </div>
 );
 
@@ -42,8 +38,8 @@ export function TrustStrip() {
           className="flex animate-marquee-ltr"
           style={{ width: "max-content" }}
         >
-          {doubled.map((item, i) => (
-            <TrackItem key={i} item={item} />
+          {doubled.map((text, i) => (
+            <TrackItem key={i} text={text} />
           ))}
         </div>
       </div>

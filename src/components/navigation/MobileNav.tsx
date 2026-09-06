@@ -3,9 +3,11 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useSession, signOut } from "next-auth/react"
 import { HambergerMenu, CloseSquare, Logout, Home2 } from "iconsax-react"
 import { cn } from "@/lib/utils"
 import type { AppConfig } from "./navigation.types"
+import { authSignOut } from "@/lib/authUtils";
 
 interface MobileNavProps {
   config: AppConfig
@@ -14,6 +16,12 @@ interface MobileNavProps {
 export function MobileNav({ config }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const sessionObj = useSession ? useSession() : null
+  const session = sessionObj?.data
+
+  const displayName = session?.user?.name || config.user?.name || 'Staff'
+  const displayRole = (session?.user as any)?.role || config.user?.role || 'Staff'
+  const displayInitials = displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
 
   const isActive = (href: string) =>
     href === config.rootHref
@@ -21,13 +29,7 @@ export function MobileNav({ config }: MobileNavProps) {
       : pathname === href || pathname?.startsWith(href + "/")
 
   const handleSignOut = () => {
-    setIsOpen(false)
-    if (config.onSignOut) {
-      config.onSignOut()
-    } else {
-      document.cookie = "gopal_dummy_role=; path=/; max-age=0"
-      window.location.href = "/login"
-    }
+    authSignOut("/login")
   }
 
   return (

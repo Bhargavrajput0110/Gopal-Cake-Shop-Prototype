@@ -79,7 +79,7 @@ export default function NotFound() {
 
       {/* Est. tagline */}
       <p className="absolute bottom-8 text-[9px] tracking-[0.5em] uppercase text-[#C8A97E]/30">
-        Est. 1995 · Vadodara
+        Est. 1990 · Vadodara
       </p>
     </div>
   )

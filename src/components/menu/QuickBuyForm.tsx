@@ -11,8 +11,8 @@ import { NotificationToast } from '@/components/ui/NotificationToast';
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
 import { GalleryAdd } from "iconsax-react";
 
-export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake = false }: { product: any, onClose?: () => void, isCustom?: boolean, isPhotoCake?: boolean }) {
-  const { addItem } = useCart();
+export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake = false, editingCartItem }: { product: any, onClose?: () => void, isCustom?: boolean, isPhotoCake?: boolean, editingCartItem?: any }) {
+  const { addItem, updateItemConfig, setIsCartOpen } = useCart();
   const flavours = getActiveFlavours();
 
   useEffect(() => {
@@ -28,17 +28,22 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   let initialDefaultWeight = "500g";
   let wc: any = null;
   
+  // Parse weight utility
+  const parseWeight = (w: string) => {
+    if (!w) return 0;
+    const lower = String(w).toLowerCase();
+    if (lower.includes('kg')) return parseFloat(lower) || 0;
+    if (lower.includes('g')) return (parseFloat(lower) || 0) / 1000;
+    const num = parseFloat(lower);
+    if (!isNaN(num)) return num;
+    return 0;
+  };
+  
   if (product?.weightConfig) {
     try {
       wc = typeof product.weightConfig === 'string' ? JSON.parse(product.weightConfig) : product.weightConfig;
       if (wc && typeof wc === 'object' && Object.keys(wc).length > 0) {
         const keys = Object.keys(wc).map(Number).sort((a,b) => a-b);
-        initialAvailableWeights = keys.map(k => ({
-          value: k >= 1 ? (Number.isInteger(k) ? `${k}kg` : `${k}kg`) : `${k*1000}g`, // 1.5kg, 500g
-          label: k >= 1 ? `${k} kg` : `${k*1000} g`,
-          numValue: k,
-          price: wc[k]?.price || 0
-        }));
         // For keys like 1.5, we want value to be "1.5kg", for 0.5 we want "500g"
         initialAvailableWeights = keys.map(k => {
             const valStr = k >= 1 ? `${k}kg` : `${k*1000}g`;
@@ -52,15 +57,64 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       }
     } catch(e) {}
   }
+    
+  // Apply minimum weight filtering for products with minWeight (like Design Cakes)
+  const effectiveMinWeight = product?.minWeight || product?.recommendedWeight;
+  if (effectiveMinWeight) {
+    const minW = parseWeight(effectiveMinWeight);
+    if (minW > 0) {
+       initialAvailableWeights = initialAvailableWeights.filter((w: any) => parseWeight(w.value) >= minW);
+       if (initialAvailableWeights.length > 0) {
+           initialDefaultWeight = initialAvailableWeights[0].value;
+       }
+    }
+  }
+
+  const getInitialState = (key: string, fallback: any) => {
+    if (editingCartItem && editingCartItem[key] !== undefined) {
+      // Map variant to selectedWeight for backward compatibility if needed, but our cart saves variant
+      if (key === 'selectedWeight' && editingCartItem.variant) return editingCartItem.variant;
+      if (key === 'selectedFlavour' && editingCartItem.flavor) return editingCartItem.flavor;
+      return editingCartItem[key];
+    }
+    if (isCustom && typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem('gcs_custom_cake_draft');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed[key] !== undefined) return parsed[key];
+        }
+      } catch(e) {}
+    }
+    
+    return fallback;
+  };
 
   const [availableWeights, setAvailableWeights] = useState<any[]>(initialAvailableWeights);
-  const [selectedWeight, setSelectedWeight] = useState("");
-  const [selectedFlavour, setSelectedFlavour] = useState("");
-  const [messageOnCake, setMessageOnCake] = useState("");
-  const [notes, setNotes] = useState("");
+  const [selectedWeight, setSelectedWeight] = useState(() => getInitialState('selectedWeight', initialDefaultWeight));
+  const [selectedFlavour, setSelectedFlavour] = useState(() => getInitialState('selectedFlavour', ''));
+  const [messageOnCake, setMessageOnCake] = useState(() => getInitialState('messageOnCake', ''));
+  const [notes, setNotes] = useState(() => getInitialState('notes', ''));
   const [toast, setToast] = useState<{ id: string; title: string; message: string; variant: 'info' | 'success' | 'warning' } | null>(null);
-  const [referenceImages, setReferenceImages] = useState<string[]>([]);
+  const [referenceImages, setReferenceImages] = useState<string[]>(() => getInitialState('referenceImages', []));
   const [printImage, setPrintImage] = useState<string>("");
+  const [tierConfig, setTierConfig] = useState<string>("");
+  const [overridePrice, setOverridePrice] = useState<string>("");
+
+
+
+  useEffect(() => {
+    if (isCustom && typeof window !== 'undefined') {
+      const stateToSave = {
+        selectedWeight,
+        selectedFlavour,
+        messageOnCake,
+        notes,
+        referenceImages
+      };
+      sessionStorage.setItem('gcs_custom_cake_draft', JSON.stringify(stateToSave));
+    }
+  }, [isCustom, selectedWeight, selectedFlavour, messageOnCake, notes, referenceImages]);
 
   const handleFlavourChange = (val: string) => {
     setSelectedFlavour(val);
@@ -100,7 +154,11 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   const weightVal = parseFloat(selectedWeight || "0");
   const weightKg = (selectedWeight || "").toLowerCase().includes("kg") ? weightVal : ((selectedWeight || "").toLowerCase().includes("g") ? weightVal / 1000 : weightVal);
   const surcharge = selectedFlavour ? getFlavourSurcharge(selectedFlavour, weightKg) : 0;
-  const finalPrice = currentPrice + surcharge;
+  
+  let finalPrice = currentPrice + surcharge;
+  if (isCustom && overridePrice && !isNaN(Number(overridePrice))) {
+    finalPrice = Number(overridePrice);
+  }
 
   const handleAddToCart = () => {
     if (!selectedWeight) {
@@ -122,12 +180,12 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       return;
     }
 
-    addItem({
+    const itemPayload = {
       productId: product.id,
       name: product.name,
-      price: finalPrice,
+      price: (isCustom && product.id === 'custom-cake-studio' && !overridePrice) ? 0 : finalPrice,
       basePrice: product.basePrice || 600,
-      quantity: 1,
+      quantity: editingCartItem ? editingCartItem.quantity : 1,
       image: product.thumbnail || product.imageUrl || product.image,
       variant: selectedWeight,
       flavor: selectedFlavour,
@@ -135,8 +193,22 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       notes: notes.trim() || undefined,
       referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
       printImage: printImage || undefined,
-      isPhotoCake: isPhotoCake,
-    });
+      designId: product.designId,
+      isCustom: isCustom, // Flag to indicate this requires a quote
+    };
+
+    if (editingCartItem) {
+      updateItemConfig(editingCartItem.cartItemId, itemPayload);
+      setIsCartOpen(true);
+    } else {
+      addItem(itemPayload);
+    }
+    
+    // Clear draft if it was successfully added/updated
+    if (isCustom && typeof window !== 'undefined') {
+      sessionStorage.removeItem('gcs_custom_cake_draft');
+    }
+
     if (onClose) onClose();
   };
 
@@ -200,13 +272,14 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
             <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
               <GalleryAdd className="w-4 h-4 text-primary" />
               Photo for Edible Print
-              <span className="text-primary normal-case text-[10px]">Required</span>
+              <span className="text-primary normal-case text-[10px]">Required (Max 10)</span>
             </label>
             <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
               <CloudinaryUploader
-                maxFiles={1}
+                maxFiles={10}
                 folder="edible_prints"
-                onUploadSuccess={(urls) => setPrintImage(urls[0])}
+                existingImages={printImage ? printImage.split(',') : []}
+                onUploadSuccess={(urls) => setPrintImage(urls.join(','))}
               />
             </div>
           </div>
@@ -276,24 +349,32 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
             <p className="text-right text-[11px] text-muted-foreground">{notes.length}/300</p>
           </div>
 
-          {/* Reference Images for Custom Cakes */}
+          {/* Custom Cake Fields */}
           {isCustom && (
-            <div className="space-y-3">
-              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                <GalleryAdd className="w-4 h-4 text-primary" />
-                Reference Images
-                <span className="text-muted-foreground normal-case text-[10px]">(Optional - Max 3)</span>
-              </label>
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-                <CloudinaryUploader
-                  maxFiles={3}
-                  folder="custom_references"
-                  onUploadSuccess={(urls) => setReferenceImages(urls)}
-                />
-                {referenceImages.length > 0 && (
-                  <p className="text-xs text-emerald-600 font-bold mt-2">{referenceImages.length} image(s) uploaded</p>
-                )}
-              </div>
+            <div className="space-y-6 pt-2 border-t border-border/40">
+
+
+              {/* Reference Images (Hidden for Design Cakes since they already have a design) */}
+              {!(product.categoryId === 'design' || product.designId || product.category?.name === 'Design Cake') && (
+                <div className="space-y-3">
+                <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                  <GalleryAdd className="w-4 h-4 text-primary" />
+                  Reference Images
+                  <span className="text-muted-foreground normal-case text-[10px]">(Optional - Max 3)</span>
+                </label>
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                  <CloudinaryUploader
+                    maxFiles={3}
+                    folder="custom_references"
+                    existingImages={referenceImages}
+                    onUploadSuccess={(urls) => setReferenceImages(urls)}
+                  />
+                  {referenceImages.length > 0 && (
+                    <p className="text-xs text-emerald-600 font-bold mt-2">{referenceImages.length} image(s) uploaded</p>
+                  )}
+                </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -305,7 +386,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           onClick={handleAddToCart}
           className="w-full h-13 py-3 rounded-2xl bg-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/90 text-white font-ui font-bold text-sm tracking-widest uppercase shadow-lg shadow-[var(--brand-deep-rose)]/20 hover:-translate-y-1 transition-all"
         >
-          Add to Cart - ₹{finalPrice}
+          {editingCartItem ? "Update Item" : (isCustom && product.id === 'custom-cake-studio' && !overridePrice) ? "Add to Quote Request" : `Add to Cart - ₹${finalPrice}`}
         </Button>
       </div>
 

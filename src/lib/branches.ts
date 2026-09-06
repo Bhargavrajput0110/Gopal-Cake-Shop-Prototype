@@ -21,25 +21,25 @@ export const BRANCHES: Branch[] = [
     id: 'khanderao',
     displayName: 'Khanderao Branch',
     shortName: 'Khanderao',
-    aliases: ['Khanderao Market', 'Khanderao Branch (HQ)', 'Khanderao Branch'],
+    aliases: ['Khanderao Market', 'Khanderao Branch (HQ)', 'Khanderao Branch', 'cmswuiita00011su3977ajl1z'],
   },
   {
     id: 'elora',
     displayName: 'Ellora Park Branch',
     shortName: 'Ellora Park',
-    aliases: ['Elora Park Branch', 'Ellora Park', 'Ellora Park Branch'],
+    aliases: ['Elora Park Branch', 'Ellora Park', 'Ellora Park Branch', 'cmswuiiun00031su3vfrn9eq5'],
   },
   {
     id: 'uma',
     displayName: 'Uma Branch',
     shortName: 'Uma',
-    aliases: ['Uma Char Rasta', 'Uma Branch'],
+    aliases: ['Uma Char Rasta', 'Uma Branch', 'uma'],
   },
   {
     id: 'varasiya',
     displayName: 'Factory Warashiya',
     shortName: 'Varasiya',
-    aliases: ['Varasiya Factory Outlet', 'Factory Warashiya'],
+    aliases: ['Varasiya Factory Outlet', 'Factory Warashiya', 'cmswuiiu000021su3kv1mr41f'],
   },
 ];
 

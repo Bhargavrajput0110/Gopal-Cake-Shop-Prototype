@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { toBranchId } from '@/lib/branches'
 import { OrderStateMachine, TransitionAction, AppRole, OrderStatus } from '@/lib/OrderStateMachine'
 import { TimelineService } from '@/services/TimelineService'
 import { OrderNotificationService } from '@/services/notifications/OrderNotificationService'
@@ -28,9 +29,14 @@ export class OrderTransitionService {
       throw new Error('ORDER_NOT_FOUND')
     }
 
-    if (branchId && role !== 'ADMIN' && order.branchId !== branchId) {
-      console.log(`[FORBIDDEN] order.branchId: ${order.branchId}, user.branchId: ${branchId}, role: ${role}`)
-      throw new Error('FORBIDDEN')
+    // Allow cross-branch overrides for drivers if they are assigned to the order
+    if (branchId && role !== 'ADMIN' && toBranchId(order.branchId) !== toBranchId(branchId)) {
+      if (role === 'DELIVERY' && order.driverId === actorId) {
+        // Allow driver to transition their assigned order
+      } else {
+        console.log(`[FORBIDDEN] order.branchId: ${order.branchId}, user.branchId: ${branchId}, role: ${role}`)
+        throw new Error('FORBIDDEN')
+      }
     }
 
     const currentState = order.status as OrderStatus

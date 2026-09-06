@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { withApiHandler, HandlerContext } from '@/lib/withApiHandler'
 import { FinancialService } from '@/services/FinancialService'
 
+import { toBranchId } from '@/lib/branches'
+
 const handler = async (ctx: HandlerContext) => {
   const { id } = ctx.params
 
@@ -27,6 +29,10 @@ const handler = async (ctx: HandlerContext) => {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   }
 
+  if (ctx.appRole !== 'ADMIN' && ctx.branchId && toBranchId(order.branchId) !== toBranchId(ctx.branchId)) {
+    return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+  }
+
   const summary = await FinancialService.calculateFinancialSummary(order);
   
   const enrichedOrder = {
@@ -41,4 +47,4 @@ const handler = async (ctx: HandlerContext) => {
   return NextResponse.json({ success: true, data: enrichedOrder })
 }
 
-export const GET = withApiHandler(handler, true)
+export const GET = withApiHandler(handler, false)

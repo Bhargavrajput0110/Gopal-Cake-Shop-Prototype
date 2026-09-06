@@ -22,7 +22,7 @@ export default async function LoginPage() {
 
   const dbUsers = await prisma.user.findMany({
     where: {
-      role: { in: ['ADMIN', 'MANAGER', 'SALESPERSON', 'CHEF', 'DELIVERY'] },
+      role: { in: ['ADMIN', 'MANAGER', 'SALESPERSON', 'CHEF', 'DELIVERY', 'VENDOR_PHOTO', 'VENDOR_FLORIST', 'VENDOR_ACRYLIC'] },
       status: { not: 'SUSPENDED' }
     }
   });
@@ -35,6 +35,7 @@ export default async function LoginPage() {
     if (u.role === 'KITCHEN') mappedRole = 'chef'; // Helper chefs shown under Chef tab
     if (u.role === 'MANAGER') mappedRole = 'manager';
     if (u.role === 'ADMIN') mappedRole = 'admin';
+    if (u.role.startsWith('VENDOR_')) mappedRole = 'vendor';
 
     return {
       id: u.id,

@@ -44,7 +44,7 @@ export class SettingsService {
             action: 'UPDATE_SETTING',
             tableName: 'SETTINGS',
             recordId: updated.id,
-            actorId: (process.env.NODE_ENV === 'test' || process.env.IS_PLAYWRIGHT === 'true') && (actorId?.includes('mock') || actorId?.includes('dummy')) ? null : actorId,
+            actorId: actorId,
             newValue: JSON.parse(JSON.stringify(data))
           }
         })

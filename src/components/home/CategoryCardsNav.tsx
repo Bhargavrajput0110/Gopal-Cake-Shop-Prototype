@@ -9,18 +9,21 @@ export function CategoryCardsNav() {
       subtitle: "Daily baked bread & cakes",
       id: "fresh-bakes",
       imgUrl: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80",
+      comingSoon: true,
     },
     {
       title: "Signature Cakes",
       subtitle: "Our premium collection",
       id: "signature-cakes",
       imgUrl: "https://images.unsplash.com/photo-1535141192574-5d4897c12636?w=600&q=80",
+      comingSoon: false,
     },
     {
       title: "Fresh Florals",
       subtitle: "Beautiful bouquets",
       id: "fresh-florals",
       imgUrl: "https://images.unsplash.com/photo-1563241527-3004b7be0ffd?w=600&q=80",
+      comingSoon: true,
     }
   ];
 
@@ -45,12 +48,18 @@ export function CategoryCardsNav() {
         {cards.map((card, index) => (
           <motion.a
             key={card.id}
-            href={`#${card.id}`}
-            onClick={(e) => handleScroll(e, card.id)}
+            href={card.comingSoon ? "#" : `#${card.id}`}
+            onClick={(e) => {
+              if (card.comingSoon) {
+                e.preventDefault();
+                return;
+              }
+              handleScroll(e, card.id);
+            }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * index, duration: 0.5 }}
-            className="group relative h-28 sm:h-32 md:h-48 w-full rounded-2xl md:rounded-[2rem] overflow-hidden flex flex-col justify-end p-3 md:p-6 border border-[var(--border)] shadow-sm hover:shadow-md transition-shadow active:scale-[0.98]"
+            className={`group relative h-28 sm:h-32 md:h-48 w-full rounded-2xl md:rounded-[2rem] overflow-hidden flex flex-col justify-end p-3 md:p-6 border border-[var(--border)] shadow-sm transition-shadow active:scale-[0.98] ${card.comingSoon ? 'cursor-not-allowed opacity-80' : 'hover:shadow-md'}`}
           >
             {/* Background Image */}
             <div 
@@ -58,8 +67,15 @@ export function CategoryCardsNav() {
               style={{ backgroundImage: `url('${card.imgUrl}')` }}
             />
             {/* Dark Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            <div className={`absolute inset-0 bg-gradient-to-t ${card.comingSoon ? 'from-black via-black/60 to-black/30' : 'from-black/80 via-black/30 to-transparent'}`} />
             
+            {/* Coming Soon Badge */}
+            {card.comingSoon && (
+              <div className="absolute top-4 left-4 bg-primary text-white text-[9px] md:text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full z-20">
+                Coming Soon
+              </div>
+            )}
+
             {/* Content */}
             <div className="relative z-10 w-full flex flex-col md:flex-row items-center justify-center md:justify-between gap-1 md:gap-0 h-full text-center md:text-left">
               <div>

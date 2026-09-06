@@ -1,6 +1,28 @@
+/**
+ * NotificationDispatcher — V4 Architecture
+ *
+ * Dispatches a single notification rule to the appropriate channel.
+ *
+ * For WHATSAPP channel:
+ *  1. Idempotency check via NotificationLog.eventId (unique constraint)
+ *  2. SENDING lock (advisory)
+ *  3. Image upload if _img template selected
+ *  4. Meta Cloud API call via WhatsAppProvider
+ *  5. Granular status recording (SENT / FAILED_RETRYABLE / FAILED_FINAL / UNKNOWN)
+ *
+ * For IN_APP channel: existing in-app notification + web push logic is preserved.
+ * For PUSH channel: existing web push logic is preserved.
+ *
+ * The OutboxProcessor controls retry. This dispatcher does NOT retry itself.
+ * UNKNOWN outcomes are flagged but not auto-retried.
+ */
+
 import { prisma } from '@/lib/prisma';
 import { LoggerService } from '@/services/LoggerService';
 import webpush from 'web-push';
+import type { OrderNotificationData } from './NotificationDataAggregator';
+import { WhatsAppTemplateService, type NotificationType } from './WhatsAppTemplateService';
+import { createWhatsAppProvider } from './providers/WhatsAppProvider';
 
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
@@ -12,165 +34,297 @@ if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 
 export class NotificationDispatcher {
   /**
-   * Dispatches a notification via the specified channel.
-   * Note: We log the intention in NotificationLog or InAppNotification.
-   * If this function throws, the OutboxProcessor will mark it as FAILED and retry.
+   * Dispatch a single notification rule.
+   * Throws on unrecoverable errors so the OutboxProcessor can handle retry/DLQ.
    */
   static async dispatch(params: {
     eventId: string;
     orderId?: string;
     channel: 'WHATSAPP' | 'SMS' | 'PUSH' | 'IN_APP';
     recipientRole: string;
-    recipientId?: string; // Optional specific user ID
-    recipientPhone?: string; // Optional specific phone number
-    templateName: string;
+    recipientId?: string;
+    recipientPhone?: string;
+    templateName: string;   // NotificationType for WHATSAPP; label for IN_APP
     message?: string;
-    branchId?: string; // Used to broadcast to roles in a branch
+    branchId?: string;
+    /** Canonical DTO — required for WHATSAPP channel */
+    orderData?: OrderNotificationData;
+    /** Timestamp of the triggering event — used in templates that display completion time */
+    eventTimestamp?: Date;
   }) {
-    const { eventId, orderId, channel, recipientRole, recipientId, recipientPhone, templateName, message, branchId } = params;
+    const {
+      eventId,
+      orderId,
+      channel,
+      recipientRole,
+      recipientId,
+      recipientPhone,
+      templateName,
+      message,
+      branchId,
+      orderData,
+      eventTimestamp,
+    } = params;
 
-    // Build unique event ID per channel + role combination to guarantee channel isolation idempotency
+    // Build unique key per channel + role combination for idempotency
     const uniqueEventId = `${eventId}_${channel}_${recipientRole}_${recipientId || 'broadcast'}`;
 
     try {
+      // ── IN_APP ──────────────────────────────────────────────────────────────
       if (channel === 'IN_APP') {
-        // Resolve users to receive in-app notification
-        let targetUserIds: string[] = [];
+        await this.dispatchInApp({
+          uniqueEventId,
+          recipientId,
+          recipientRole,
+          branchId,
+          orderId,
+          templateName,
+          message,
+        });
+        return;
+      }
 
-        if (recipientId) {
-          targetUserIds = [recipientId];
-        } else if (branchId) {
-          // Broadcast to everyone in branch with that role
-          const users = await prisma.user.findMany({
-            where: { branchId, role: recipientRole as any }
-          });
-          targetUserIds = users.map(u => u.id);
-        } else {
-          // Broadcast globally to role
-          const users = await prisma.user.findMany({
-            where: { role: recipientRole as any }
-          });
-          targetUserIds = users.map(u => u.id);
+      // ── WHATSAPP ───────────────────────────────────────────────────────────
+      if (channel === 'WHATSAPP') {
+        const phone = recipientPhone;
+        if (!phone) {
+          LoggerService.warn(`[NotificationDispatcher] WHATSAPP skipped — no phone for role ${recipientRole}, event ${eventId}`);
+          return;
         }
 
-        if (targetUserIds.length > 0) {
-          // Because createMany doesn't return created records and we want idempotency, 
-          // we should ideally loop or handle constraints. But InAppNotification has eventId now.
-          // Since it's a 1-to-many relationship (1 event -> N users), we should append userId to eventId
-          for (const uid of targetUserIds) {
-            const userEventId = `${uniqueEventId}_${uid}`;
-            
-            // Check preferences
-            const pref = await prisma.notificationPreference.findUnique({ where: { userId: uid }});
-            if (pref && !pref.inAppEnabled) {
-               continue; // User opted out of all app notifications
-            }
+        if (!orderData) {
+          LoggerService.warn(`[NotificationDispatcher] WHATSAPP skipped — no orderData for event ${eventId}`);
+          return;
+        }
 
-            // Determine linkUrl
-            let linkUrl = undefined;
-            if (orderId) {
-              linkUrl = `/order/${orderId}`;
-            }
+        await this.dispatchWhatsApp({
+          uniqueEventId,
+          orderId,
+          phone,
+          notificationType: templateName as NotificationType,
+          orderData,
+          eventTimestamp,
+        });
+        return;
+      }
 
-            try {
-              const inApp = await prisma.inAppNotification.create({
-                data: {
-                  eventId: userEventId,
-                  userId: uid,
-                  title: templateName,
-                  message: message || `Update for order ${orderId}`,
-                  priority: 'NORMAL',
-                  linkUrl
-                }
-              });
-
-              // Also trigger Web Push if enabled
-              if (!pref || pref.pushEnabled) {
-                 const subs = await prisma.pushSubscription.findMany({ where: { userId: uid } });
-                 for (const sub of subs) {
-                   try {
-                     await webpush.sendNotification({
-                       endpoint: sub.endpoint,
-                       keys: { auth: sub.auth, p256dh: sub.p256dh }
-                     }, JSON.stringify({ 
-                       title: inApp.title, 
-                       body: inApp.message,
-                       url: linkUrl || '/'
-                     }));
-                   } catch (pushErr: any) {
-                     if (pushErr.statusCode === 404 || pushErr.statusCode === 410) {
-                        // Subscription expired or unsubscribed, clean it up
-                        await prisma.pushSubscription.delete({ where: { id: sub.id }});
-                     } else {
-                        LoggerService.warn(`[WebPush] Failed for sub ${sub.id}: ${pushErr.message}`);
-                     }
-                   }
-                 }
-              }
-
-            } catch (err: any) {
-              if (err.code !== 'P2002') throw err; // Ignore unique constraint violations (idempotency)
+      // ── PUSH (existing behaviour) ──────────────────────────────────────────
+      if (channel === 'PUSH' && recipientId) {
+        const subs = await prisma.pushSubscription.findMany({ where: { userId: recipientId } });
+        for (const sub of subs) {
+          try {
+            await webpush.sendNotification(
+              { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
+              JSON.stringify({ title: templateName, body: message || templateName, url: orderId ? `/order/${orderId}` : '/' })
+            );
+          } catch (pushErr: any) {
+            if (pushErr.statusCode === 404 || pushErr.statusCode === 410) {
+              await prisma.pushSubscription.delete({ where: { id: sub.id } });
+            } else {
+              LoggerService.warn(`[NotificationDispatcher] WebPush failed for sub ${sub.id}: ${pushErr.message}`);
             }
           }
-        }
-      } else {
-        // WHATSAPP / SMS → check if the integration is configured before attempting
-        let targetRecipient = recipientId || recipientRole;
-        if (channel === 'WHATSAPP' && recipientPhone) {
-          targetRecipient = recipientPhone;
-        }
-
-        // WhatsApp: attempt live Meta API call if token is configured, or mock
-        if (channel === 'WHATSAPP') {
-          // We need order details to format the template
-          let orderData = { id: orderId || 'unknown', customerName: 'Customer', branch: branchId || 'unknown' };
-          
-          if (orderId) {
-            const o = await prisma.order.findUnique({ 
-              where: { id: orderId }, 
-              select: { customer: { select: { name: true } }, branchId: true, deliveryType: true } 
-            });
-            if (o) {
-              orderData.customerName = o.customer?.name ?? 'Customer';
-              orderData.branch = o.branchId;
-              
-              if (templateName === 'READY_FOR_PICKUP' && o.deliveryType !== 'PICKUP') {
-                LoggerService.info(`[WhatsApp] Skipped READY_FOR_PICKUP because order is ${o.deliveryType}`);
-                return; // Skip sending "ready for pickup" if it's a delivery order
-              }
-            }
-          }
-          
-          const token = process.env.WHATSAPP_ACCESS_TOKEN;
-          if (token) {
-            // Use our dedicated lib function which handles real sending + local dev mocks
-            const { sendWhatsAppNotification } = await import('@/lib/whatsapp');
-            await sendWhatsAppNotification(targetRecipient, templateName as any, orderData);
-          } else {
-            LoggerService.info(`[WhatsApp] Skipped — WHATSAPP_ACCESS_TOKEN not configured. Template: ${templateName}, Recipient: ${targetRecipient}`);
-          }
-        }
-
-        try {
-          await prisma.notificationLog.create({
-            data: {
-              eventId: uniqueEventId,
-              orderId,
-              recipient: targetRecipient,
-              channel: channel,
-              templateName: templateName,
-              status: (process.env.WHATSAPP_API_TOKEN || channel !== 'WHATSAPP') ? 'SENT' : 'PENDING'
-            }
-          });
-          LoggerService.info(`[NotificationDispatcher] Logged ${channel} to ${targetRecipient}: ${templateName}`);
-        } catch (err: any) {
-          if (err.code !== 'P2002') throw err; // Ignore unique constraint violations (idempotency)
-          LoggerService.info(`[NotificationDispatcher] Idempotent skip for ${channel} to ${targetRecipient}: ${templateName}`);
         }
       }
     } catch (error) {
       LoggerService.error(`[NotificationDispatcher] Failed to dispatch ${channel} for event ${eventId}`, error);
-      throw error; // Let the Outbox processor retry
+      throw error; // Let OutboxProcessor handle retry
+    }
+  }
+
+  // ─── Private: WhatsApp dispatch ─────────────────────────────────────────────
+
+  private static async dispatchWhatsApp(params: {
+    uniqueEventId: string;
+    orderId?: string;
+    phone: string;
+    notificationType: NotificationType;
+    orderData: OrderNotificationData;
+    eventTimestamp?: Date;
+  }) {
+    const { uniqueEventId, orderId, phone, notificationType, orderData, eventTimestamp } = params;
+
+    // 1. Resolve template selection
+    const selection = WhatsAppTemplateService.resolve(notificationType, orderData, eventTimestamp);
+
+    // 2. Idempotency check — attempt to insert with PENDING status
+    let logId: string;
+    try {
+      const log = await prisma.notificationLog.create({
+        data: {
+          eventId: uniqueEventId,
+          orderId,
+          recipient: phone,
+          channel: 'WHATSAPP',
+          templateName: selection.templateName,
+          templateVersion: selection.templateVersion,
+          status: 'PENDING',
+        },
+      });
+      logId = log.id;
+    } catch (err: any) {
+      if (err.code === 'P2002') {
+        // Unique constraint — already processed or in progress
+        LoggerService.info(`[NotificationDispatcher] Idempotent skip — already logged: ${uniqueEventId}`);
+        return;
+      }
+      throw err;
+    }
+
+    // 3. Set SENDING lock to prevent concurrent duplicate dispatches
+    await prisma.notificationLog.update({
+      where: { id: logId },
+      data: { status: 'SENDING' },
+    });
+
+    // 4. Obtain WhatsApp provider
+    const provider = createWhatsAppProvider();
+    if (!provider) {
+      LoggerService.info(`[NotificationDispatcher] WHATSAPP skipped — credentials not configured. Template: ${selection.templateName}`);
+      await prisma.notificationLog.update({
+        where: { id: logId },
+        data: { status: 'FAILED_FINAL', errorMessage: 'WHATSAPP_ACCESS_TOKEN not configured' },
+      });
+      return;
+    }
+
+    // 5. Upload image if this is an _img template variant
+    let mediaId: string | undefined;
+    let providerMediaId: string | undefined;
+
+    if (selection.imageUrl) {
+      try {
+        const uploadResult = await provider.uploadMedia(selection.imageUrl);
+        mediaId = uploadResult.providerMediaId;
+        providerMediaId = uploadResult.providerMediaId;
+
+        // Record the media info immediately
+        await prisma.notificationLog.update({
+          where: { id: logId },
+          data: {
+            mediaType: selection.imageType === 'REFERENCE' ? 'REFERENCE_IMAGE' : 'PRODUCT_IMAGE',
+            mediaSourceUrl: selection.imageUrl,
+            providerMediaId,
+          },
+        });
+      } catch (uploadErr: any) {
+        LoggerService.error(`[NotificationDispatcher] Media upload failed — falling back to text-only`, uploadErr);
+        // Fallback: use text-only template (strip _img suffix)
+        selection.templateName = selection.templateName.replace('_img', '') as typeof selection.templateName;
+        mediaId = undefined;
+      }
+    }
+
+    // 6. Send the template
+    const result = await provider.sendTemplate({
+      phone,
+      templateName: selection.templateName,
+      templateVersion: selection.templateVersion,
+      language: selection.language,
+      variables: selection.variables,
+      mediaId,
+    });
+
+    // 7. Record outcome
+    if (result.success) {
+      await prisma.notificationLog.update({
+        where: { id: logId },
+        data: {
+          status: 'SENT',
+          sentAt: new Date(),
+          providerMessageId: result.providerMessageId,
+        },
+      });
+      LoggerService.info(`[NotificationDispatcher] SENT ${selection.templateName} to ${phone}. wamid=${result.providerMessageId}`);
+    } else if (result.retryable === true) {
+      await prisma.notificationLog.update({
+        where: { id: logId },
+        data: { status: 'FAILED_RETRYABLE', errorMessage: result.error, retryCount: { increment: 1 } },
+      });
+      // Throw so OutboxProcessor can retry this event (up to MAX_RETRIES)
+      throw new Error(`[WhatsApp] Retryable failure for ${selection.templateName}: ${result.error}`);
+    } else if (result.retryable === false) {
+      await prisma.notificationLog.update({
+        where: { id: logId },
+        data: { status: 'FAILED_FINAL', errorMessage: result.error },
+      });
+      LoggerService.error(`[NotificationDispatcher] FAILED_FINAL ${selection.templateName}: ${result.error}`);
+      // Do not throw — permanent failure should not cause infinite OutboxProcessor retries
+    } else {
+      // retryable === undefined → UNKNOWN (timeout / no response)
+      await prisma.notificationLog.update({
+        where: { id: logId },
+        data: { status: 'UNKNOWN', errorMessage: result.error || 'Provider timeout — outcome unknown' },
+      });
+      LoggerService.warn(`[NotificationDispatcher] UNKNOWN outcome for ${selection.templateName} to ${phone}. Manual review required.`);
+      // Do NOT throw — do not auto-retry UNKNOWN outcomes
+    }
+  }
+
+  // ─── Private: In-App dispatch ────────────────────────────────────────────────
+
+  private static async dispatchInApp(params: {
+    uniqueEventId: string;
+    recipientId?: string;
+    recipientRole: string;
+    branchId?: string;
+    orderId?: string;
+    templateName: string;
+    message?: string;
+  }) {
+    const { uniqueEventId, recipientId, recipientRole, branchId, orderId, templateName, message } = params;
+
+    let targetUserIds: string[] = [];
+
+    if (recipientId) {
+      targetUserIds = [recipientId];
+    } else if (branchId) {
+      const users = await prisma.user.findMany({ where: { branchId, role: recipientRole as any } });
+      targetUserIds = users.map((u) => u.id);
+    } else {
+      const users = await prisma.user.findMany({ where: { role: recipientRole as any } });
+      targetUserIds = users.map((u) => u.id);
+    }
+
+    const linkUrl = orderId ? `/order/${orderId}` : undefined;
+
+    for (const uid of targetUserIds) {
+      const userEventId = `${uniqueEventId}_${uid}`;
+
+      const pref = await prisma.notificationPreference.findUnique({ where: { userId: uid } });
+      if (pref && !pref.inAppEnabled) continue;
+
+      try {
+        const inApp = await prisma.inAppNotification.create({
+          data: {
+            eventId: userEventId,
+            userId: uid,
+            title: templateName,
+            message: message || `Update for order ${orderId}`,
+            priority: 'NORMAL',
+            linkUrl,
+          },
+        });
+
+        // Web push if enabled
+        if (!pref || pref.pushEnabled) {
+          const subs = await prisma.pushSubscription.findMany({ where: { userId: uid } });
+          for (const sub of subs) {
+            try {
+              await webpush.sendNotification(
+                { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
+                JSON.stringify({ title: inApp.title, body: inApp.message, url: linkUrl || '/' })
+              );
+            } catch (pushErr: any) {
+              if (pushErr.statusCode === 404 || pushErr.statusCode === 410) {
+                await prisma.pushSubscription.delete({ where: { id: sub.id } });
+              }
+            }
+          }
+        }
+      } catch (err: any) {
+        if (err.code !== 'P2002') throw err; // Ignore duplicate — idempotency
+      }
     }
   }
 }

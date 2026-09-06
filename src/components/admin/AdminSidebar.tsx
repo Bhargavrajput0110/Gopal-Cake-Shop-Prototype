@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logout } from "iconsax-react";
+import { signOut } from "next-auth/react";
 import { ADMIN_NAV_CONFIG } from "@/components/navigation/nav-configs";
+import { authSignOut } from "@/lib/authUtils";
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -64,7 +66,7 @@ export function AdminSidebar() {
           </div>
         </div>
         <button 
-          onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
+          onClick={() => authSignOut("/login")}
           className="flex items-center gap-3 text-sm font-semibold text-muted-foreground hover:text-destructive transition-colors w-full px-3 py-2 rounded-xl hover:bg-destructive/10"
         >
           <Logout className="w-4 h-4" />

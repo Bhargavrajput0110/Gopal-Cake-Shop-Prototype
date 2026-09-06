@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react"
 
 interface CartPanelProps {
   onCheckout: () => void
-  onSuccess?: (orderId: string) => void
+  onSuccess?: (orderId: string, isQuote?: boolean) => void
 }
 
 export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
@@ -21,20 +21,15 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
     setOverrideStatus(window.localStorage.getItem('overrideStatus'))
   }, [])
   
-  const tax = subtotal * 0.05 
-  const total = subtotal + tax
+  const tax = 0 // GST removed per user request
+  const total = subtotal
 
   const handleSaveQuote = async () => {
-    if (!(session?.user as any)?.branchId) {
-      alert("Staff account has no assigned branch.");
-      return;
-    }
-    
     setIsSavingQuote(true)
     try {
       const payload = {
         customerId: customerId || 'walk-in',
-        branchId: (session?.user as any).branchId,
+        branchId: (session?.user as any)?.branchId || 'uma',
         type: 'QUOTE' as const,
         items: cart.map(i => ({
           productId: i.productId,
@@ -50,17 +45,18 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
           notes: i.notes,
           boxCount: i.boxCount,
           referenceImages: i.referenceImages,
-          frontendPrice: i.price
+          frontendPrice: i.price,
+          overridePrice: i.price
         })),
         payments: [], 
         paymentType: 'FULL' as const,
         notes: "Generated via POS Quote Mode"
       }
-      const res = await OrdersApiClient.checkoutPos(payload)
-      if (onSuccess) onSuccess(res.id || `quote-${Math.floor(100000 + Math.random() * 900000)}`)
-    } catch (err) {
-      console.warn("Offline or mock product quote fallback active:", err)
-      if (onSuccess) onSuccess(`quote-${Math.floor(100000 + Math.random() * 900000)}`)
+      const res = await OrdersApiClient.checkoutPos(payload as any)
+      if (onSuccess) onSuccess((res as any).orderNumber || res.id, true)
+    } catch (err: any) {
+      console.error("Quote generation failed:", err)
+      alert("Failed to generate quote: " + err.message)
     } finally {
       setIsSavingQuote(false)
     }
@@ -170,10 +166,7 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
             <span>Subtotal</span>
             <span className="text-foreground">₹{subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between font-ui text-[11px] uppercase tracking-widest font-black text-muted-foreground">
-            <span>Tax (est. 5%)</span>
-            <span className="text-foreground">₹{tax.toFixed(2)}</span>
-          </div>
+          {/* Tax row removed */}
           <div className="flex justify-between pt-4 border-t border-border">
             <span className="font-display text-3xl font-black text-foreground">Total</span>
             <span className="font-display text-3xl font-black text-[var(--brand-deep-rose)]">₹{total.toFixed(2)}</span>

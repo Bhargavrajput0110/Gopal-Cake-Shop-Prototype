@@ -1,10 +1,12 @@
 "use client";
+import { signOut } from "next-auth/react";
 
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams, usePathname } from "next/navigation";
 import { HambergerMenu, CloseSquare, Logout, Home2, ArchiveBook, Play, TickCircle, Box } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { authSignOut } from "@/lib/authUtils";
 
 const navItems = [
   { name: "Incoming", href: "?tab=incoming", icon: Box, value: "incoming" },
@@ -73,7 +75,7 @@ export function ChefMobileNav() {
                 Back to Website
               </Link>
               <button 
-                onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
+                onClick={() => { authSignOut("/login") }}
                 className="flex items-center gap-3 p-3.5 rounded-xl font-bold text-rose-500 bg-rose-500/10 w-full hover:bg-rose-500/20 transition-colors"
               >
                 <Logout className="w-5 h-5 shrink-0" />
