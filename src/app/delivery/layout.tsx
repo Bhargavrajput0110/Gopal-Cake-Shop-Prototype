@@ -1,9 +1,9 @@
+"use client";
+
 import { signOut } from "next-auth/react";
 import { authSignOut } from "@/lib/authUtils";
-"use client"
-
-import { Location, Wallet, Logout } from "iconsax-react"
-import { AppTopbar, DELIVERY_NAV_CONFIG } from "@/components/navigation"
+import { Location, Wallet, Logout } from "iconsax-react";
+import { AppTopbar, DELIVERY_NAV_CONFIG } from "@/components/navigation";
 
 export default function DeliveryLayout({
   children,

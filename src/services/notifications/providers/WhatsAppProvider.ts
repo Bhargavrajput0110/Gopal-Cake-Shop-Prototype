@@ -168,14 +168,3 @@ export function createWhatsAppProvider(): WhatsAppProvider | null {
 
   return new WhatsAppProvider(token, phoneNumberId);
 }
- */
-export function createWhatsAppProvider(): WhatsAppProvider | null {
-  const token = process.env.WHATSAPP_ACCESS_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-
-  if (!token || !phoneNumberId) {
-    return null;
-  }
-
-  return new WhatsAppProvider(token, phoneNumberId);
-}
