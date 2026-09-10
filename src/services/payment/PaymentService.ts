@@ -86,7 +86,21 @@ export class PaymentService {
     
     const order = await prisma.order.findUnique({ where: { id: payment.orderId }});
     if (order) {
-      await TimelineAdapter.logPaymentSuccess(payment.orderId, order.status, `Payment Verified by Client`);
+      if (order.status === 'DRAFT') {
+        await prisma.order.update({
+          where: { id: payment.orderId },
+          data: { status: 'NEW' }
+        });
+        await TimelineAdapter.logPaymentSuccess(payment.orderId, 'NEW', `Payment Verified by Client`);
+        
+        const io = (global as any).io;
+        if (io) {
+          io.to(`branch_${order.branchId}`).emit('order_created');
+          io.to('admin_global').emit('order_created');
+        }
+      } else {
+        await TimelineAdapter.logPaymentSuccess(payment.orderId, order.status, `Payment Verified by Client`);
+      }
       await NotificationAdapter.sendPaymentSuccess(payment.orderId, order.customerId);
     }
 
@@ -163,11 +177,26 @@ export class PaymentService {
 
           await LedgerAdapter.recordPayment(payment.orderId, Number(payment.amount), payment.method, successfulAttempt.id);
           
+          let nextOrderStatus = payment.order.status;
+          if (payment.order.status === 'DRAFT') {
+            await prisma.order.update({
+              where: { id: payment.orderId },
+              data: { status: 'NEW' }
+            });
+            nextOrderStatus = 'NEW';
+            
+            const io = (global as any).io;
+            if (io) {
+              io.to(`branch_${payment.order.branchId}`).emit('order_created');
+              io.to('admin_global').emit('order_created');
+            }
+          }
+
           await TimelineAdapter.recordEvent(
             payment.orderId,
             'PAYMENT_CAPTURED',
             payment.order.status,
-            payment.order.status,
+            nextOrderStatus,
             `Payment automatically recovered by reconciliation job`
           );
 

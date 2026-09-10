@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { toBranchId } from '@/lib/branches'
-import { OrderStateMachine, TransitionAction, AppRole, OrderStatus } from '@/lib/OrderStateMachine'
+import { OrderStateMachine, TransitionAction, AppRole, OrderStatus, STATE_MACHINE } from '@/lib/OrderStateMachine'
 import { TimelineService } from '@/services/TimelineService'
 import { OrderNotificationService } from '@/services/notifications/OrderNotificationService'
 import { NotificationService } from '@/services/notifications/NotificationService'
@@ -41,6 +41,14 @@ export class OrderTransitionService {
     }
 
     const currentState = order.status as OrderStatus
+
+    // Idempotency check: if already in the target state for this action, just return success
+    const targetConfig = STATE_MACHINE.find((t: any) => t.action === action)
+    if (targetConfig && currentState === targetConfig.next) {
+      console.log(`[Idempotent] Order ${orderId} is already in state ${currentState} for action ${action}`)
+      return
+    }
+
     const config = OrderStateMachine.validate(action, currentState, appRole, order.deliveryType as any)
 
     if (config.requireReason && !note) {

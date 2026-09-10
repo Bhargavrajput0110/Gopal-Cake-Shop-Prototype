@@ -55,9 +55,3 @@ export interface NotificationProvider {
   uploadMedia(imageUrl: string): Promise<MediaUploadResult>;
 }
 
-/**
- * Upload an image to Meta's servers and return its media_id.
- * Required before sending IMAGE-header templates.
- */
-uploadMedia(imageUrl: string): Promise<MediaUploadResult>;
-}

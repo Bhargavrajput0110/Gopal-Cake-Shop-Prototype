@@ -60,7 +60,7 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
   } catch (error: any) {
     console.error('[Distance API] Error:', error)
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid parameters', details: error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid parameters', details: (error as any).errors }, { status: 400 })
     }
     return NextResponse.json({ error: error.message || 'Failed to calculate distance' }, { status: 500 })
   }

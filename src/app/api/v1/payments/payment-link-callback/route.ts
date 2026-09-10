@@ -52,6 +52,31 @@ export async function GET(req: Request) {
             },
           });
         }
+
+        // 4. Update order status from DRAFT to NEW since payment succeeded
+        if (payment.order.status === 'DRAFT') {
+          await prisma.order.update({
+            where: { id: orderId },
+            data: { status: 'NEW' }
+          });
+          
+          await prisma.timeline.create({
+            data: {
+              orderId,
+              action: 'PAYMENT_RECEIVED',
+              status: 'NEW',
+              nextState: 'NEW',
+              note: `Online payment received via Razorpay, order moved to NEW.`,
+            }
+          });
+          
+          // Emit socket event to notify Sales Desk
+          const io = (global as any).io;
+          if (io) {
+            io.to(`branch_${payment.order.branchId}`).emit('order_created');
+            io.to('admin_global').emit('order_created');
+          }
+        }
       } else {
         // Fallback: just mark by gateway ID if payment record not found
         await prisma.payment.updateMany({
