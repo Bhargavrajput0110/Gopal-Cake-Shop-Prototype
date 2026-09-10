@@ -141,8 +141,9 @@ export class WhatsAppTemplateService {
           // customer_name, order_id, order_date, order_details, message_on_cake,
           // special_instructions, order_total, amount_paid, payment_summary,
           // delivery_address, delivery_datetime
+          const hasImage = !!_meta.selectedImageUrl;
           return {
-            templateName: 'order_approved_delivery',
+            templateName: hasImage ? 'order_approved_delivery_img' : 'order_approved_delivery',
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
             variables: [
@@ -156,16 +157,19 @@ export class WhatsAppTemplateService {
               { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
               { name: 'delivery_datetime', text: fulfillment.deliveryDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl,
-            imageType: _meta.selectedImageType,
+            ...(hasImage && {
+              imageUrl: _meta.selectedImageUrl,
+              imageType: _meta.selectedImageType,
+            }),
           };
         } else {
           // order_approved_pickup — 12 variables:
           // customer_name, order_id, order_date, order_details, message_on_cake,
           // special_instructions, order_total, amount_paid, payment_summary,
           // store_name, store_address, pickup_datetime
+          const hasImage = !!_meta.selectedImageUrl;
           return {
-            templateName: 'order_approved_pickup',
+            templateName: hasImage ? 'order_approved_pickup_img' : 'order_approved_pickup',
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
             variables: [
@@ -180,8 +184,10 @@ export class WhatsAppTemplateService {
               { name: 'store_address', text: fulfillment.storeAddress ?? 'TBD' },
               { name: 'pickup_datetime', text: fulfillment.pickupDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl,
-            imageType: _meta.selectedImageType,
+            ...(hasImage && {
+              imageUrl: _meta.selectedImageUrl,
+              imageType: _meta.selectedImageType,
+            }),
           };
         }
       }

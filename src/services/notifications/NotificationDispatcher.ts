@@ -188,12 +188,9 @@ export class NotificationDispatcher {
       return;
     }
 
-    // 5. Upload image — use order's cake image if available, otherwise the shop logo
+    // 5. Upload image if this is an _img template variant
     let mediaId: string | undefined;
     let providerMediaId: string | undefined;
-
-    // Pre-uploaded Gopal Cake Shop logo — used when no order-specific image exists
-    const SHOP_LOGO_MEDIA_ID = process.env.WHATSAPP_FALLBACK_MEDIA_ID || '1237578198523828';
 
     if (selection.imageUrl) {
       try {
@@ -211,13 +208,11 @@ export class NotificationDispatcher {
           },
         });
       } catch (uploadErr: any) {
-        LoggerService.warn(`[NotificationDispatcher] Order image upload failed — using shop logo fallback`, uploadErr);
-        // Use pre-uploaded shop logo instead of failing completely
-        mediaId = SHOP_LOGO_MEDIA_ID;
+        LoggerService.error(`[NotificationDispatcher] Media upload failed — falling back to text-only`, uploadErr);
+        // Fallback: use text-only template (strip _img suffix)
+        selection.templateName = selection.templateName.replace('_img', '') as typeof selection.templateName;
+        mediaId = undefined;
       }
-    } else {
-      // No order image — use the shop logo (already uploaded, no network call needed)
-      mediaId = SHOP_LOGO_MEDIA_ID;
     }
 
     // 6. Send the template
