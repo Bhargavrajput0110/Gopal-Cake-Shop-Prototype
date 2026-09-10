@@ -104,7 +104,7 @@ export class WhatsAppTemplateService {
               { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
               { name: 'delivery_datetime', text: fulfillment.deliveryDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
+            imageUrl: _meta.selectedImageUrl,
             imageType: _meta.selectedImageType,
           };
         } else {
@@ -128,7 +128,7 @@ export class WhatsAppTemplateService {
               { name: 'store_address', text: fulfillment.storeAddress ?? 'TBD' },
               { name: 'pickup_datetime', text: fulfillment.pickupDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
+            imageUrl: _meta.selectedImageUrl,
             imageType: _meta.selectedImageType,
           };
         }
@@ -156,7 +156,7 @@ export class WhatsAppTemplateService {
               { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
               { name: 'delivery_datetime', text: fulfillment.deliveryDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
+            imageUrl: _meta.selectedImageUrl,
             imageType: _meta.selectedImageType,
           };
         } else {
@@ -180,7 +180,7 @@ export class WhatsAppTemplateService {
               { name: 'store_address', text: fulfillment.storeAddress ?? 'TBD' },
               { name: 'pickup_datetime', text: fulfillment.pickupDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
+            imageUrl: _meta.selectedImageUrl,
             imageType: _meta.selectedImageType,
           };
         }
@@ -206,7 +206,7 @@ export class WhatsAppTemplateService {
               { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
               { name: 'delivery_datetime', text: fulfillment.deliveryDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
+            imageUrl: _meta.selectedImageUrl,
           };
         } else {
           // order_ready_pickup — 10 variables:
@@ -227,7 +227,7 @@ export class WhatsAppTemplateService {
               { name: 'store_address', text: fulfillment.storeAddress ?? 'TBD' },
               { name: 'pickup_datetime', text: fulfillment.pickupDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
+            imageUrl: _meta.selectedImageUrl,
           };
         }
       }
@@ -251,7 +251,7 @@ export class WhatsAppTemplateService {
             { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
             { name: 'estimated_arrival', text: fulfillment.estimatedArrival ?? 'Shortly' },
           ],
-            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
+            imageUrl: _meta.selectedImageUrl,
         };
       }
 
@@ -274,7 +274,7 @@ export class WhatsAppTemplateService {
             { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'Your address' },
             { name: 'delivered_datetime', text: timestamp },
           ],
-            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
+            imageUrl: _meta.selectedImageUrl,
         };
       }
 
@@ -297,7 +297,7 @@ export class WhatsAppTemplateService {
             { name: 'store_name', text: fulfillment.storeName ?? 'Gopal Cake Shop' },
             { name: 'picked_up_datetime', text: timestamp },
           ],
-            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
+            imageUrl: _meta.selectedImageUrl,
         };
       }
 
@@ -315,7 +315,7 @@ export class WhatsAppTemplateService {
             { name: 'order_date', text: order.date },
             { name: 'order_details', text: order.items },
           ],
-            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
+            imageUrl: _meta.selectedImageUrl,
         };
       }
 
@@ -339,7 +339,7 @@ export class WhatsAppTemplateService {
             { name: 'payment_method', text: payment.paymentMethod },
             { name: 'order_details', text: order.items },
           ],
-            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
+            imageUrl: _meta.selectedImageUrl,
         };
       }
 
