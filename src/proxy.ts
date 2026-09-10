@@ -167,12 +167,7 @@ export default auth(function proxy(req: NextRequest) {
   const session = (req as any).auth;
 
   // ── 1. Route Protection ────────────────────────────────────────────────────
-
-  // Calculate actual base origin to bypass Render proxy header issues
-  const isProd = process.env.NODE_ENV === 'production';
-  const baseOrigin = isProd ? 'https://gopal-cake-shop-prototype.onrender.com' : 'http://localhost:3000';
-
-  // ── 1. Route Protection ────────────────────────────────────────────────────
+  const baseOrigin = req.nextUrl.origin;
 
   if (isPublicPath(pathname)) {
     // Anti-loop: authenticated users landing on /login → redirect to role home
