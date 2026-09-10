@@ -263,6 +263,23 @@ export class NotificationDispatcher {
 
   // ─── Private: In-App dispatch ────────────────────────────────────────────────
 
+  /**
+   * Maps virtual/shorthand role names from NotificationMatrix to actual Prisma Role enum values.
+   * The matrix uses short names for readability; Prisma requires exact enum values.
+   */
+  private static resolveRoleToPrismaEnum(role: string): string[] {
+    const map: Record<string, string[]> = {
+      'SALES': ['SALESPERSON'],
+      'SALESPERSON': ['SALESPERSON'],
+      'MANAGER': ['MANAGER'],
+      'ADMIN': ['ADMIN'],
+      'CHEF': ['CHEF'],
+      'DELIVERY': ['DELIVERY'],
+      'BRANCH_STAFF': ['SALESPERSON', 'MANAGER', 'CHEF', 'DELIVERY'],
+    };
+    return map[role] ?? [role];
+  }
+
   private static async dispatchInApp(params: {
     uniqueEventId: string;
     recipientId?: string;
@@ -277,13 +294,21 @@ export class NotificationDispatcher {
     let targetUserIds: string[] = [];
 
     if (recipientId) {
+      // DRIVER_ASSIGNEE — already a specific user ID passed as recipientId
       targetUserIds = [recipientId];
-    } else if (branchId) {
-      const users = await prisma.user.findMany({ where: { branchId, role: recipientRole as any } });
-      targetUserIds = users.map((u) => u.id);
     } else {
-      const users = await prisma.user.findMany({ where: { role: recipientRole as any } });
-      targetUserIds = users.map((u) => u.id);
+      const roles = this.resolveRoleToPrismaEnum(recipientRole);
+      if (branchId) {
+        const users = await prisma.user.findMany({
+          where: { branchId, role: { in: roles as any[] } },
+        });
+        targetUserIds = users.map((u) => u.id);
+      } else {
+        const users = await prisma.user.findMany({
+          where: { role: { in: roles as any[] } },
+        });
+        targetUserIds = users.map((u) => u.id);
+      }
     }
 
     const linkUrl = orderId ? `/order/${orderId}` : undefined;

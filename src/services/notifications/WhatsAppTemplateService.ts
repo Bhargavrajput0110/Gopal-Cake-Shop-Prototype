@@ -50,7 +50,7 @@ export interface TemplateSelection {
   templateName: WhatsAppTemplateName;
   templateVersion: string;
   language: string;
-  variables: string[];
+  variables: { name: string; text: string }[];
   /** If set, caller must upload this image and pass the media_id in the header */
   imageUrl?: string;
   imageType?: 'REFERENCE' | 'PRODUCT';
@@ -94,19 +94,17 @@ export class WhatsAppTemplateService {
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
             variables: [
-              customer.name,                               // {{1}} customer_name
-              order.displayId,                             // {{2}} order_id
-              order.date,                                  // {{3}} order_date
-              order.items,                                 // {{4}} order_details
-              customization.messageOnCake || 'None',                 // message_on_cake
-              customization.specialInstructions || 'None',           // special_instructions
-              payment.total,                               // {{7}} order_total
-              payment.amountPaid,                          // {{8}} amount_paid
-              payment.paymentSummary,                      // {{9}} payment_summary
-              fulfillment.deliveryAddress ?? 'TBD',        // {{10}} delivery_address
-              fulfillment.deliveryDateTime ?? 'TBD',       // {{11}} delivery_datetime
+              { name: 'customer_name', text: customer.name },
+              { name: 'order_id', text: order.displayId },
+              { name: 'order_date', text: order.date },
+              { name: 'order_details', text: order.items },
+              { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
+              { name: 'amount_paid', text: payment.amountPaid },
+              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
+              { name: 'delivery_datetime', text: fulfillment.deliveryDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl,
+            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
             imageType: _meta.selectedImageType,
           };
         } else {
@@ -119,20 +117,18 @@ export class WhatsAppTemplateService {
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
             variables: [
-              customer.name,                               // {{1}} customer_name
-              order.displayId,                             // {{2}} order_id
-              order.date,                                  // {{3}} order_date
-              order.items,                                 // {{4}} order_details
-              customization.messageOnCake || 'None',                 // message_on_cake
-              customization.specialInstructions || 'None',           // special_instructions
-              payment.total,                               // {{7}} order_total
-              payment.amountPaid,                          // {{8}} amount_paid
-              payment.paymentSummary,                      // {{9}} payment_summary
-              fulfillment.storeName ?? 'Gopal Cake Shop',  // {{10}} store_name
-              fulfillment.storeAddress ?? 'TBD',           // {{11}} store_address
-              fulfillment.pickupDateTime ?? 'TBD',         // {{12}} pickup_datetime
+              { name: 'customer_name', text: customer.name },
+              { name: 'order_id', text: order.displayId },
+              { name: 'order_date', text: order.date },
+              { name: 'order_details', text: order.items },
+              { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
+              { name: 'amount_paid', text: payment.amountPaid },
+              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'store_name', text: fulfillment.storeName ?? 'Gopal Cake Shop' },
+              { name: 'store_address', text: fulfillment.storeAddress ?? 'TBD' },
+              { name: 'pickup_datetime', text: fulfillment.pickupDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl,
+            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
             imageType: _meta.selectedImageType,
           };
         }
@@ -150,19 +146,17 @@ export class WhatsAppTemplateService {
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
             variables: [
-              customer.name,                               // {{1}} customer_name
-              order.displayId,                             // {{2}} order_id
-              order.date,                                  // {{3}} order_date
-              order.items,                                 // {{4}} order_details
-              customization.messageOnCake || 'None',                 // message_on_cake
-              customization.specialInstructions || 'None',           // special_instructions
-              payment.total,                               // {{7}} order_total
-              payment.amountPaid,                          // {{8}} amount_paid
-              payment.paymentSummary,                      // {{9}} payment_summary
-              fulfillment.deliveryAddress ?? 'TBD',        // {{10}} delivery_address
-              fulfillment.deliveryDateTime ?? 'TBD',       // {{11}} delivery_datetime
+              { name: 'customer_name', text: customer.name },
+              { name: 'order_id', text: order.displayId },
+              { name: 'order_date', text: order.date },
+              { name: 'order_details', text: order.items },
+              { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
+              { name: 'amount_paid', text: payment.amountPaid },
+              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
+              { name: 'delivery_datetime', text: fulfillment.deliveryDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl,
+            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
             imageType: _meta.selectedImageType,
           };
         } else {
@@ -175,20 +169,18 @@ export class WhatsAppTemplateService {
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
             variables: [
-              customer.name,                               // {{1}} customer_name
-              order.displayId,                             // {{2}} order_id
-              order.date,                                  // {{3}} order_date
-              order.items,                                 // {{4}} order_details
-              customization.messageOnCake || 'None',                 // message_on_cake
-              customization.specialInstructions || 'None',           // special_instructions
-              payment.total,                               // {{7}} order_total
-              payment.amountPaid,                          // {{8}} amount_paid
-              payment.paymentSummary,                      // {{9}} payment_summary
-              fulfillment.storeName ?? 'Gopal Cake Shop',  // {{10}} store_name
-              fulfillment.storeAddress ?? 'TBD',           // {{11}} store_address
-              fulfillment.pickupDateTime ?? 'TBD',         // {{12}} pickup_datetime
+              { name: 'customer_name', text: customer.name },
+              { name: 'order_id', text: order.displayId },
+              { name: 'order_date', text: order.date },
+              { name: 'order_details', text: order.items },
+              { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
+              { name: 'amount_paid', text: payment.amountPaid },
+              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'store_name', text: fulfillment.storeName ?? 'Gopal Cake Shop' },
+              { name: 'store_address', text: fulfillment.storeAddress ?? 'TBD' },
+              { name: 'pickup_datetime', text: fulfillment.pickupDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl,
+            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
             imageType: _meta.selectedImageType,
           };
         }
@@ -206,16 +198,15 @@ export class WhatsAppTemplateService {
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
             variables: [
-              customer.name,                               // {{1}} customer_name
-              order.displayId,                             // {{2}} order_id
-              order.items,                                 // {{3}} order_details
-              customization.messageOnCake || 'None',                 // message_on_cake
-              customization.specialInstructions || 'None',           // special_instructions
-              payment.total,                               // {{6}} order_total
-              payment.paymentSummary,                      // {{7}} payment_summary
-              fulfillment.deliveryAddress ?? 'TBD',        // {{8}} delivery_address
-              fulfillment.deliveryDateTime ?? 'TBD',       // {{9}} delivery_datetime
+              { name: 'customer_name', text: customer.name },
+              { name: 'order_id', text: order.displayId },
+              { name: 'order_details', text: order.items },
+              { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
+              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
+              { name: 'delivery_datetime', text: fulfillment.deliveryDateTime ?? 'TBD' },
             ],
+            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
           };
         } else {
           // order_ready_pickup — 10 variables:
@@ -227,17 +218,16 @@ export class WhatsAppTemplateService {
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
             variables: [
-              customer.name,                               // {{1}} customer_name
-              order.displayId,                             // {{2}} order_id
-              order.items,                                 // {{3}} order_details
-              customization.messageOnCake || 'None',                 // message_on_cake
-              customization.specialInstructions || 'None',           // special_instructions
-              payment.total,                               // {{6}} order_total
-              payment.paymentSummary,                      // {{7}} payment_summary
-              fulfillment.storeName ?? 'Gopal Cake Shop',  // {{8}} store_name
-              fulfillment.storeAddress ?? 'TBD',           // {{9}} store_address
-              fulfillment.pickupDateTime ?? 'TBD',         // {{10}} pickup_datetime
+              { name: 'customer_name', text: customer.name },
+              { name: 'order_id', text: order.displayId },
+              { name: 'order_details', text: order.items },
+              { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
+              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'store_name', text: fulfillment.storeName ?? 'Gopal Cake Shop' },
+              { name: 'store_address', text: fulfillment.storeAddress ?? 'TBD' },
+              { name: 'pickup_datetime', text: fulfillment.pickupDateTime ?? 'TBD' },
             ],
+            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
           };
         }
       }
@@ -253,16 +243,15 @@ export class WhatsAppTemplateService {
           templateVersion: TEMPLATE_VERSION,
           language: TEMPLATE_LANGUAGE,
           variables: [
-            customer.name,                               // {{1}} customer_name
-            order.displayId,                             // {{2}} order_id
-            order.items,                                 // {{3}} order_details
-            customization.messageOnCake || 'None',                 // message_on_cake
-            customization.specialInstructions || 'None',           // special_instructions
-            payment.total,                               // {{6}} order_total
-            payment.paymentSummary,                      // {{7}} payment_summary
-            fulfillment.deliveryAddress ?? 'TBD',        // {{8}} delivery_address
-            fulfillment.estimatedArrival ?? 'Shortly',   // {{9}} estimated_arrival
+            { name: 'customer_name', text: customer.name },
+            { name: 'order_id', text: order.displayId },
+            { name: 'order_details', text: order.items },
+            { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
+            { name: 'payment_summary', text: payment.paymentSummary },
+            { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
+            { name: 'estimated_arrival', text: fulfillment.estimatedArrival ?? 'Shortly' },
           ],
+            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
         };
       }
 
@@ -277,16 +266,15 @@ export class WhatsAppTemplateService {
           templateVersion: TEMPLATE_VERSION,
           language: TEMPLATE_LANGUAGE,
           variables: [
-            customer.name,                               // {{1}} customer_name
-            order.displayId,                             // {{2}} order_id
-            order.items,                                 // {{3}} order_details
-            customization.messageOnCake || 'None',                 // message_on_cake
-            customization.specialInstructions || 'None',           // special_instructions
-            payment.total,                               // {{6}} order_total
-            payment.paymentSummary,                      // {{7}} payment_summary
-            fulfillment.deliveryAddress ?? 'Your address', // {{8}} delivery_address
-            timestamp,                                   // {{9}} delivered_datetime
+            { name: 'customer_name', text: customer.name },
+            { name: 'order_id', text: order.displayId },
+            { name: 'order_details', text: order.items },
+            { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
+            { name: 'payment_summary', text: payment.paymentSummary },
+            { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'Your address' },
+            { name: 'delivered_datetime', text: timestamp },
           ],
+            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
         };
       }
 
@@ -301,16 +289,15 @@ export class WhatsAppTemplateService {
           templateVersion: TEMPLATE_VERSION,
           language: TEMPLATE_LANGUAGE,
           variables: [
-            customer.name,                               // {{1}} customer_name
-            order.displayId,                             // {{2}} order_id
-            order.items,                                 // {{3}} order_details
-            customization.messageOnCake || 'None',                 // message_on_cake
-            customization.specialInstructions || 'None',           // special_instructions
-            payment.total,                               // {{6}} order_total
-            payment.paymentSummary,                      // {{7}} payment_summary
-            fulfillment.storeName ?? 'Gopal Cake Shop',  // {{8}} store_name
-            timestamp,                                   // {{9}} picked_up_datetime
+            { name: 'customer_name', text: customer.name },
+            { name: 'order_id', text: order.displayId },
+            { name: 'order_details', text: order.items },
+            { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
+            { name: 'payment_summary', text: payment.paymentSummary },
+            { name: 'store_name', text: fulfillment.storeName ?? 'Gopal Cake Shop' },
+            { name: 'picked_up_datetime', text: timestamp },
           ],
+            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
         };
       }
 
@@ -323,11 +310,12 @@ export class WhatsAppTemplateService {
           templateVersion: TEMPLATE_VERSION,
           language: TEMPLATE_LANGUAGE,
           variables: [
-            customer.name,     // {{1}} customer_name
-            order.displayId,   // {{2}} order_id
-            order.date,        // {{3}} order_date
-            order.items,       // {{4}} order_details
+            { name: 'customer_name', text: customer.name },
+            { name: 'order_id', text: order.displayId },
+            { name: 'order_date', text: order.date },
+            { name: 'order_details', text: order.items },
           ],
+            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
         };
       }
 
@@ -341,16 +329,17 @@ export class WhatsAppTemplateService {
           templateVersion: TEMPLATE_VERSION,
           language: TEMPLATE_LANGUAGE,
           variables: [
-            customer.name,           // {{1}} customer_name
-            customer.name,           // {{2}} business_name (reuse customer name)
-            order.displayId,         // {{3}} order_id
-            order.date,              // {{4}} order_date
-            payment.total,           // {{5}} order_total
-            payment.amountPaid,      // {{6}} amount_paid
-            payment.balanceDue,      // {{7}} balance_due
-            payment.paymentMethod,   // {{8}} payment_method
-            order.items,             // {{9}} order_details
+            { name: 'customer_name', text: customer.name },
+            { name: 'business_name', text: customer.name },
+            { name: 'order_id', text: order.displayId },
+            { name: 'order_date', text: order.date },
+            { name: 'order_total', text: payment.total },
+            { name: 'amount_paid', text: payment.amountPaid },
+            { name: 'balance_due', text: payment.balanceDue },
+            { name: 'payment_method', text: payment.paymentMethod },
+            { name: 'order_details', text: order.items },
           ],
+            imageUrl: _meta.selectedImageUrl || 'https://bhargavrajput0110.github.io/Gopal-Cake-Shop-Prototype/logo.png',
         };
       }
 

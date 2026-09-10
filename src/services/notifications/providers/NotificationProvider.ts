@@ -15,8 +15,8 @@ export interface SendTemplateParams {
   templateVersion: string;
   /** BCP-47 language code (e.g. "en") */
   language: string;
-  /** Ordered variable values matching {{1}}, {{2}}, ... in the template body */
-  variables: string[];
+  /** Template text replacement variables (positional or named) */
+  variables: (string | { name: string; text: string })[];
   /** Pre-uploaded Meta media_id — only for IMAGE-header template variants */
   mediaId?: string;
 }

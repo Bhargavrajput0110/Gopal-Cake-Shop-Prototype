@@ -76,14 +76,28 @@ export class WhatsAppProvider implements NotificationProvider {
   async sendTemplate(params: SendTemplateParams): Promise<ProviderResult> {
     const { phone, templateName, language, variables, mediaId } = params;
 
-    // Normalise phone: strip non-digits, ensure no leading +
-    const formattedPhone = phone.replace(/\D/g, '');
+    // Normalise phone: strip non-digits, then ensure proper international format
+    // e.g. "0757584977" → "91757584977" (Indian mobile)
+    let formattedPhone = phone.replace(/\D/g, '');
+    // Remove leading 0 (Indian local format)
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = formattedPhone.slice(1);
+    }
+    // If 10-digit Indian number (starts with 6-9), prepend country code 91
+    if (formattedPhone.length === 10 && /^[6-9]/.test(formattedPhone)) {
+      formattedPhone = '91' + formattedPhone;
+    }
 
     // Build components array — body parameters always present
     const components: object[] = [
       {
         type: 'body',
-        parameters: variables.map((v) => ({ type: 'text', text: v })),
+        parameters: variables.map((v: any) => {
+          if (typeof v === 'object' && v !== null && 'name' in v) {
+            return { type: 'text', parameter_name: v.name, text: v.text };
+          }
+          return { type: 'text', text: v }; // Fallback for old templates
+        }),
       },
     ];
 
