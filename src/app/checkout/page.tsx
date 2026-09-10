@@ -2,6 +2,21 @@
 
 import Script from "next/script";
 declare global { interface Window { Razorpay: any } }
+
+// Dynamically load Razorpay SDK and resolve when ready
+function loadRazorpaySDK(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window !== 'undefined' && window.Razorpay) {
+      resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Razorpay SDK'));
+    document.body.appendChild(script);
+  });
+}
 import { BackButton } from "@/components/ui/BackButton";
 import { NotificationToast } from "@/components/ui/NotificationToast";
 import React, { useState, useEffect } from "react";
@@ -423,6 +438,20 @@ export default function CheckoutPage() {
         };
 
         setIsSubmitting(false); // Re-enable UI while modal is open
+
+        // Ensure SDK is loaded before opening
+        try {
+          await loadRazorpaySDK();
+        } catch (e) {
+          setToast({
+            id: Date.now().toString(),
+            title: "Payment Error",
+            message: "Could not load payment gateway. Please check your internet and try again.",
+            variant: "warning",
+          });
+          return;
+        }
+
         const rzp = new window.Razorpay(options);
         rzp.open();
         return; // Don't fall through
@@ -471,8 +500,6 @@ export default function CheckoutPage() {
 
   return (
     <>
-      {/* Load Razorpay Checkout SDK */}
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <div className="min-h-screen bg-background pb-32 lg:pb-16 relative">
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 pt-8">
           
