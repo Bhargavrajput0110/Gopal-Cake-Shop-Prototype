@@ -5,13 +5,32 @@ import { Box, Location, TickCircle, Reserve, Clock, Warning2, ArrowRight, Home2,
 import Link from 'next/link';
 import { BackButton } from '@/components/ui/BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCart } from '@/context/CartContext';
 
 export default function TrackOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { clearCart } = useCart();
   
   const resolvedParams = React.use(params);
+
+  // Clear cart when customer lands here after a Razorpay payment redirect
+  useEffect(() => {
+    try {
+      const pendingPayment = sessionStorage.getItem('gcs_pending_payment');
+      if (pendingPayment) {
+        const { trackingId } = JSON.parse(pendingPayment);
+        if (trackingId === resolvedParams.id) {
+          clearCart();
+          sessionStorage.removeItem('gcs_pending_payment');
+          sessionStorage.removeItem('gcs_custom_cake_draft');
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [resolvedParams.id]);
 
   useEffect(() => {
     try {

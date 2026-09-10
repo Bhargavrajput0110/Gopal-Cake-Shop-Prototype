@@ -270,39 +270,75 @@
    GLASSMORPHISM SYSTEM
    ───────────────────────────────────────────────────────────────────────────── */
 .glass {
-  background: rgba(253, 248, 242, 0.65);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  background: rgba(253, 248, 242, 0.95);
   border: 1px solid rgba(232, 213, 196, 0.4);
   box-shadow: 0 8px 32px rgba(28, 15, 10, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 .glass-dark {
-  background: rgba(42, 24, 16, 0.75);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: rgba(42, 24, 16, 0.95);
   border: 1px solid rgba(200, 169, 126, 0.15);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .glass-champagne {
-  background: rgba(200, 169, 126, 0.1);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  background: rgba(200, 169, 126, 0.4);
   border: 1px solid rgba(200, 169, 126, 0.3);
   box-shadow: 0 4px 20px rgba(200, 169, 126, 0.12), inset 0 1px 0 rgba(200, 169, 126, 0.15);
 }
 .glass-cream {
-  background: rgba(252, 249, 242, 0.7);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  background: rgba(252, 249, 242, 0.95);
   border: 1px solid rgba(200, 169, 126, 0.25);
   box-shadow: 0 4px 24px rgba(28, 15, 10, 0.06), inset 0 1px 0 rgba(255,255,255,0.8);
 }
 .glass-gold {
-  background: rgba(200, 169, 126, 0.12);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  background: rgba(200, 169, 126, 0.4);
   border: 1px solid rgba(200, 169, 126, 0.35);
   box-shadow: 0 4px 20px rgba(200, 169, 126, 0.15), inset 0 1px 0 rgba(200,169,126,0.2);
+}
+
+/* Enable high-fidelity GPU blurs only on tablets and desktops */
+@media (min-width: 768px) {
+  .glass {
+    background: rgba(253, 248, 242, 0.65);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+  }
+  .glass-dark {
+    background: rgba(42, 24, 16, 0.75);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+  .glass-champagne {
+    background: rgba(200, 169, 126, 0.1);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+  }
+  .glass-cream {
+    background: rgba(252, 249, 242, 0.7);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+  }
+  .glass-gold {
+    background: rgba(200, 169, 126, 0.12);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+  }
+}
+
+/* Globally disable ALL Tailwind backdrop blurs on mobile phones to hit 60fps */
+@media (max-width: 767px) {
+  .backdrop-blur,
+  [class*="backdrop-blur-"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  /* For highly transparent backgrounds that relied on blur for readability, boost their opacity slightly on mobile */
+  .bg-white\/10, .bg-white\/20, .bg-white\/40, .bg-white\/5 {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+  }
+  .bg-black\/40, .bg-black\/50, .bg-black\/60 {
+    background-color: rgba(0, 0, 0, 0.85) !important;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

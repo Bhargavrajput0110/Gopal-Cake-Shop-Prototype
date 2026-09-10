@@ -15,10 +15,7 @@ export class RazorpayProvider implements PaymentProvider {
   private keyId: string;
 
   constructor() {
-    let envKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    if (envKey === 'rzp_test_TKABJA4QOkGqvQ') {
-      envKey = 'rzp_test_dummy_key'; // Force dummy flow because this key is invalid
-    }
+    const envKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     this.keyId = envKey || 'rzp_test_dummy_key';
     const key_secret = process.env.RAZORPAY_KEY_SECRET;
 

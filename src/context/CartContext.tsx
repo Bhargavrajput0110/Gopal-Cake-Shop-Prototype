@@ -34,6 +34,9 @@ export type CartItem = {
   overridePrice?: number;
   isCustomizable?: boolean;
   requiredVendors?: string[];
+  
+  // Dynamic Limits
+  availableWeights?: { value: string; label: string; price?: number }[];
 };
 
 interface CartContextType {

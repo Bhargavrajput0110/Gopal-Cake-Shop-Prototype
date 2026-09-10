@@ -46,6 +46,23 @@ export default function CheckoutPage() {
     variant: "info" | "success" | "warning";
   } | null>(null);
 
+  // Show toast if customer was redirected back after a failed payment
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('payment_failed') === '1') {
+        setToast({
+          id: Date.now().toString(),
+          title: "Payment Failed",
+          message: "Your payment was not completed. Your cart is intact — please try again.",
+          variant: "warning",
+        });
+        // Clean the URL without reloading
+        window.history.replaceState({}, '', '/checkout');
+      }
+    }
+  }, []);
+
   // Fulfillment Type
   const [deliveryType, setDeliveryType] = useState<"DELIVERY" | "PICKUP">(
     "DELIVERY",
@@ -106,7 +123,16 @@ export default function CheckoutPage() {
     const newVariant = field === "variant" ? value : item.variant || "500g";
     const newFlavor = field === "flavor" ? value : item.flavor || "Classic";
     let itemBasePrice = item.basePrice || 600;
-    if (newVariant && basePrices[newVariant]) {
+    
+    if (field === "variant" && item.availableWeights) {
+      const selectedWeightOpt = item.availableWeights.find((w: any) => w.value === value);
+      if (selectedWeightOpt && selectedWeightOpt.price) {
+        itemBasePrice = selectedWeightOpt.price;
+      } else if (newVariant && basePrices[newVariant]) {
+        const scale = basePrices[newVariant] / basePrices["500g"];
+        itemBasePrice = Math.round(itemBasePrice * scale);
+      }
+    } else if (newVariant && basePrices[newVariant]) {
       const scale = basePrices[newVariant] / basePrices["500g"];
       itemBasePrice = Math.round(itemBasePrice * scale);
     }
@@ -190,18 +216,25 @@ export default function CheckoutPage() {
   const isQuoteRequest = items.some((item) => item.isCustom);
 
   const handleNextStep = () => {
-    if (currentStep === 1 && validateStep1()) setCurrentStep(2);
+    if (currentStep === 1 && validateStep1()) {
+      setCurrentStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     else if (currentStep === 2 && validateStep2()) {
       if (isQuoteRequest) {
         handlePlaceOrder();
       } else {
         setCurrentStep(3);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   };
 
   const handlePrevStep = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1);
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -308,109 +341,48 @@ export default function CheckoutPage() {
 
       if (paymentMethod === "ADVANCE_50" || paymentMethod === "ONLINE_100") {
         const paymentAmount = paymentMethod === "ADVANCE_50" ? finalGrandTotal / 2 : finalGrandTotal;
-        
-        const rzpRes = await fetch("/api/v1/payments/create-order", {
+
+        // Use server-side Razorpay Payment Link — no browser SDK needed
+        const rzpRes = await fetch("/api/v1/payments/create-payment-link", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId: createdOrderId, amount: paymentAmount, method: "RAZORPAY" })
+          body: JSON.stringify({
+            orderId: createdOrderId,
+            amount: paymentAmount,
+            trackingId,
+            customerName: formData.name,
+            customerPhone: formData.phone,
+            customerEmail: formData.email,
+          })
         });
-        
-        if (!rzpRes.ok) {
-          throw new Error("Failed to initialize payment gateway");
-        }
-        
-        const rzpData = await rzpRes.json();
-        
-        if (rzpData.data.gatewayOrder.id.startsWith('sim_order_')) {
-          // Simulated Flow bypasses Razorpay UI
-          const verifyRes = await fetch("/api/v1/payments/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              paymentId: rzpData.data.payment.id,
-              gatewayOrderId: rzpData.data.gatewayOrder.id,
-              gatewayPaymentId: `sim_pay_${Date.now()}`,
-              signature: "simulated_signature_bypass"
-            })
-          });
-          if (verifyRes.ok) {
-            clearCart();
-            router.push(`/track/${trackingId}`);
-          } else {
-            setToast({
-              id: Date.now().toString(),
-              title: "Payment Verification Failed",
-              message: "Simulated payment verification failed.",
-              variant: "warning",
-            });
-          }
-          setIsSubmitting(false);
-          return;
-        }
-        
-        const options = {
-          key: 'rzp_test_dummy_key',
-          amount: rzpData.data.gatewayOrder.amount,
-          currency: rzpData.data.gatewayOrder.currency,
-          name: "Gopal Cake Shop",
-          description: "Order Payment",
-          order_id: rzpData.data.gatewayOrder.id,
-          handler: async function (response: any) {
-            const verifyRes = await fetch("/api/v1/payments/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                paymentId: rzpData.data.payment.id,
-                gatewayOrderId: response.razorpay_order_id,
-                gatewayPaymentId: response.razorpay_payment_id,
-                signature: response.razorpay_signature
-              })
-            });
-            
-            if (verifyRes.ok) {
-              clearCart();
-              router.push(`/track/${trackingId}`);
-            } else {
-              setToast({
-                id: Date.now().toString(),
-                title: "Payment Verification Failed",
-                message: "Please contact support if amount was deducted.",
-                variant: "warning",
-              });
-              setIsSubmitting(false);
-            }
-          },
-          prefill: {
-            name: formData.name,
-            email: formData.email,
-            contact: formData.phone
-          },
-          theme: {
-            color: "#e11d48"
-          }
-        };
 
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on('payment.failed', function (response: any){
-          setToast({
-            id: Date.now().toString(),
-            title: "Payment Failed",
-            message: response.error.description || "Payment was not completed.",
-            variant: "warning",
-          });
-          setIsSubmitting(false);
-        });
-        rzp.open();
+        if (!rzpRes.ok) {
+          let backendError = "Failed to initialize payment gateway";
+          try {
+            const errorData = await rzpRes.json();
+            if (errorData.error) backendError = errorData.error;
+          } catch(e) {}
+          throw new Error(backendError);
+        }
+
+        const rzpData = await rzpRes.json();
+
+        // Store pending payment so the tracking page can clear the cart AFTER payment
+        // Do NOT clear cart here — customer may go back and we want to keep their cart
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem('gcs_pending_payment', JSON.stringify({ trackingId, orderId: createdOrderId }));
+        }
+        window.location.href = rzpData.paymentUrl;
       } else {
         clearCart();
         router.push(`/track/${trackingId}`);
       }
     } catch (err: any) {
-      console.error("Checkout Exception:", err);
+      console.error("Checkout Exception Details:", err);
       setToast({
         id: Date.now().toString(),
         title: "Checkout Exception",
-        message: "An unexpected error occurred. Please try again.",
+        message: err?.message || "An unexpected error occurred. Please try again.",
         variant: "warning",
       });
     } finally {
@@ -446,7 +418,6 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <div className="min-h-screen bg-background pb-32 lg:pb-16 relative">
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 pt-8">
           
@@ -512,15 +483,21 @@ export default function CheckoutPage() {
                         <div className="flex-1">
                           <h4 className="font-serif font-bold text-sm line-clamp-1 pr-4 mb-2">{item.name}</h4>
                           <div className="flex flex-wrap items-center gap-2">
-                            <select
-                              value={item.variant || "500g"}
-                              onChange={(e) => handleUpdateItem(item, "variant", e.target.value)}
-                              className="text-[10px] font-sans font-bold bg-background border border-primary/20 rounded px-2 py-1 focus:outline-none focus:border-primary text-muted-foreground uppercase tracking-wider cursor-pointer"
-                            >
-                              {WEIGHT_OPTIONS.map((w) => (
-                                <option key={w.value} value={w.value}>{w.label}</option>
-                              ))}
-                            </select>
+                            {item.availableWeights && item.availableWeights.length > 0 ? (
+                              <select
+                                value={item.variant || "500g"}
+                                onChange={(e) => handleUpdateItem(item, "variant", e.target.value)}
+                                className="text-[10px] font-sans font-bold bg-background border border-primary/20 rounded px-2 py-1 focus:outline-none focus:border-primary text-muted-foreground uppercase tracking-wider cursor-pointer"
+                              >
+                                {item.availableWeights.map((w: any) => (
+                                  <option key={w.value} value={w.value}>{w.label}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <div className="text-[10px] font-sans font-bold bg-muted/50 border border-primary/10 rounded px-2 py-1 text-muted-foreground uppercase tracking-wider">
+                                {item.variant || "500g"}
+                              </div>
+                            )}
                             <select
                               value={item.flavor || "Classic"}
                               onChange={(e) => handleUpdateItem(item, "flavor", e.target.value)}
@@ -574,9 +551,9 @@ export default function CheckoutPage() {
                 {currentStep === 1 && (
                   <motion.div 
                     key="step1"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     className="space-y-8"
                   >
                     <section className="bg-card border border-border/50 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
@@ -734,9 +711,9 @@ export default function CheckoutPage() {
                 {currentStep === 2 && (
                   <motion.div 
                     key="step2"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     className="space-y-8"
                   >
                     <section className="bg-card border border-border/50 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
@@ -804,9 +781,9 @@ export default function CheckoutPage() {
                 {currentStep === 3 && (
                   <motion.div 
                     key="step3"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     className="space-y-8"
                   >
                     <section className="bg-card border border-border/50 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">

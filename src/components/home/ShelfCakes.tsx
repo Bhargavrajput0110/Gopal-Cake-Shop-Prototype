@@ -138,6 +138,7 @@ function ShelfProductCard({ product }: { product: any }) {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    let availableWeights: { value: string, label: string, price?: number }[] = [];
                     let defaultVariant = "500g";
                     if (product.weightConfig) {
                       try {
@@ -146,6 +147,11 @@ function ShelfProductCard({ product }: { product: any }) {
                            const keys = Object.keys(wc).map(Number).sort((a,b) => a-b);
                            const k = keys[0];
                            defaultVariant = k >= 1 ? `${k}kg` : `${k*1000}g`;
+                           availableWeights = keys.map(k => ({
+                             value: k >= 1 ? `${k}kg` : `${k*1000}g`,
+                             label: k >= 1 ? `${k} kg` : `${k*1000} g`,
+                             price: wc[k]?.price || 0
+                           }));
                         }
                       } catch(err) {}
                     }
@@ -158,7 +164,8 @@ function ShelfProductCard({ product }: { product: any }) {
                       image: product.thumbnail || product.imageUrl || product.image,
                       variant: defaultVariant,
                       flavor: "Classic",
-                      isPhotoCake: false
+                      isPhotoCake: false,
+                      availableWeights: availableWeights.length > 0 ? availableWeights : undefined
                     });
                   }}
                   className="w-9 h-9 flex items-center justify-center bg-[var(--brand-deep-rose)] text-white hover:bg-[#8B2A53] transition-all rounded-full font-bold shadow-md shadow-[var(--brand-deep-rose)]/20"

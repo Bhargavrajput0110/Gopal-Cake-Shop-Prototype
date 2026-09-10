@@ -5,7 +5,7 @@
  * selects the correct Meta template name (including _img variant)
  * and builds the exact ordered variable array.
  *
- * All 11 approved Meta templates are mapped here.
+ * ALL variable arrays are verified against approved Meta templates.
  * Variable order must exactly match the Meta-approved template body.
  */
 
@@ -13,7 +13,7 @@ import type { OrderNotificationData } from './NotificationDataAggregator';
 
 // ─── Template registry ────────────────────────────────────────────────────────
 
-/** All 11 approved Meta template names */
+/** All approved Meta template names */
 export type WhatsAppTemplateName =
   | 'order_approved_delivery'
   | 'order_approved_delivery_img'
@@ -25,7 +25,9 @@ export type WhatsAppTemplateName =
   | 'order_delivered'
   | 'order_picked_up'
   | 'payment_balance_reminder'
-  | 'order_cancelled';
+  | 'order_cancelled'
+  | 'quote_created'
+  | 'quote_created_pickup';
 
 /** Notification types that map to templates */
 export type NotificationType =
@@ -35,7 +37,8 @@ export type NotificationType =
   | 'ORDER_DELIVERED'
   | 'ORDER_PICKED_UP'
   | 'ORDER_CANCELLED'
-  | 'PAYMENT_BALANCE_REMINDER';
+  | 'PAYMENT_BALANCE_REMINDER'
+  | 'QUOTE_CREATED';
 
 /** Template version — increment when resubmitting to Meta */
 export const TEMPLATE_VERSION = 'v1';
@@ -58,12 +61,6 @@ export interface TemplateSelection {
 export class WhatsAppTemplateService {
   /**
    * Resolves the correct template name and variables for a given notification type.
-   *
-   * IMAGE-header (_img) variants are selected when:
-   *   1. referenceImages[] is non-empty (use referenceImages[0])
-   *   2. OR productImages[] is non-empty (use productImages[0])
-   *
-   * Text-only variants are used when no image is available.
    */
   static resolve(
     type: NotificationType,
@@ -73,7 +70,6 @@ export class WhatsAppTemplateService {
   ): TemplateSelection {
     const { customer, order, customization, payment, fulfillment, _meta } = data;
     const isDelivery = fulfillment.type === 'DELIVERY';
-    const hasImage = !!_meta.selectedImageUrl;
 
     const timestamp = (eventTimestamp ?? new Date()).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -84,64 +80,114 @@ export class WhatsAppTemplateService {
     });
 
     switch (type) {
-      // ── ORDER_APPROVED ─────────────────────────────────────────────────────
-      case 'ORDER_APPROVED': {
+
+      // ── QUOTE_CREATED ───────────────────────────────────────────────────────
+      // Triggered when sales sends a quote to customer
+      case 'QUOTE_CREATED': {
         if (isDelivery) {
-          const templateName: WhatsAppTemplateName = hasImage
-            ? 'order_approved_delivery_img'
-            : 'order_approved_delivery';
-
-          // 13 variables: {{1}}–{{13}}
-          const variables = [
-            customer.name,                               // {{1}}
-            order.displayId,                             // {{2}}
-            order.date,                                  // {{3}}
-            order.items,                                 // {{4}}
-            customization.specialInstructions,           // {{5}}
-            customization.referenceDescription,          // {{6}}
-            payment.total,                               // {{7}}
-            payment.amountPaid,                          // {{8}}
-            payment.paymentMethod,                       // {{9}}
-            payment.paymentSummary,                      // {{10}}
-            fulfillment.deliveryAddress ?? 'TBD',        // {{11}}
-            fulfillment.deliveryDateTime ?? 'TBD',       // {{12}}
-          ];
-
+          // quote_created — 11 variables:
+          // customer_name, order_id, order_date, order_details, message_on_cake,
+          // special_instructions, order_total, amount_paid, payment_summary,
+          // delivery_address, delivery_datetime
           return {
-            templateName,
+            templateName: 'quote_created',
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
-            variables,
+            variables: [
+              customer.name,                               // {{1}} customer_name
+              order.displayId,                             // {{2}} order_id
+              order.date,                                  // {{3}} order_date
+              order.items,                                 // {{4}} order_details
+              customization.messageOnCake,                 // {{5}} message_on_cake
+              customization.specialInstructions,           // {{6}} special_instructions
+              payment.total,                               // {{7}} order_total
+              payment.amountPaid,                          // {{8}} amount_paid
+              payment.paymentSummary,                      // {{9}} payment_summary
+              fulfillment.deliveryAddress ?? 'TBD',        // {{10}} delivery_address
+              fulfillment.deliveryDateTime ?? 'TBD',       // {{11}} delivery_datetime
+            ],
             imageUrl: _meta.selectedImageUrl,
             imageType: _meta.selectedImageType,
           };
         } else {
-          const templateName: WhatsAppTemplateName = hasImage
-            ? 'order_approved_pickup_img'
-            : 'order_approved_pickup';
-
-          // 14 variables: {{1}}–{{14}}
-          const variables = [
-            customer.name,                               // {{1}}
-            order.displayId,                             // {{2}}
-            order.date,                                  // {{3}}
-            order.items,                                 // {{4}}
-            customization.specialInstructions,           // {{5}}
-            customization.referenceDescription,          // {{6}}
-            payment.total,                               // {{7}}
-            payment.amountPaid,                          // {{8}}
-            payment.paymentMethod,                       // {{9}}
-            payment.paymentSummary,                      // {{10}}
-            fulfillment.storeName ?? 'Store',            // {{11}}
-            fulfillment.storeAddress ?? 'Address TBD',  // {{12}}
-            fulfillment.pickupDateTime ?? 'TBD',         // {{13}}
-          ];
-
+          // quote_created_pickup — 12 variables:
+          // customer_name, order_id, order_date, order_details, message_on_cake,
+          // special_instructions, order_total, amount_paid, payment_summary,
+          // store_name, store_address, pickup_datetime
           return {
-            templateName,
+            templateName: 'quote_created_pickup',
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
-            variables,
+            variables: [
+              customer.name,                               // {{1}} customer_name
+              order.displayId,                             // {{2}} order_id
+              order.date,                                  // {{3}} order_date
+              order.items,                                 // {{4}} order_details
+              customization.messageOnCake,                 // {{5}} message_on_cake
+              customization.specialInstructions,           // {{6}} special_instructions
+              payment.total,                               // {{7}} order_total
+              payment.amountPaid,                          // {{8}} amount_paid
+              payment.paymentSummary,                      // {{9}} payment_summary
+              fulfillment.storeName ?? 'Gopal Cake Shop',  // {{10}} store_name
+              fulfillment.storeAddress ?? 'TBD',           // {{11}} store_address
+              fulfillment.pickupDateTime ?? 'TBD',         // {{12}} pickup_datetime
+            ],
+            imageUrl: _meta.selectedImageUrl,
+            imageType: _meta.selectedImageType,
+          };
+        }
+      }
+
+      // ── ORDER_APPROVED ─────────────────────────────────────────────────────
+      case 'ORDER_APPROVED': {
+        if (isDelivery) {
+          // order_approved_delivery — 11 variables:
+          // customer_name, order_id, order_date, order_details, message_on_cake,
+          // special_instructions, order_total, amount_paid, payment_summary,
+          // delivery_address, delivery_datetime
+          return {
+            templateName: 'order_approved_delivery',
+            templateVersion: TEMPLATE_VERSION,
+            language: TEMPLATE_LANGUAGE,
+            variables: [
+              customer.name,                               // {{1}} customer_name
+              order.displayId,                             // {{2}} order_id
+              order.date,                                  // {{3}} order_date
+              order.items,                                 // {{4}} order_details
+              customization.messageOnCake,                 // {{5}} message_on_cake
+              customization.specialInstructions,           // {{6}} special_instructions
+              payment.total,                               // {{7}} order_total
+              payment.amountPaid,                          // {{8}} amount_paid
+              payment.paymentSummary,                      // {{9}} payment_summary
+              fulfillment.deliveryAddress ?? 'TBD',        // {{10}} delivery_address
+              fulfillment.deliveryDateTime ?? 'TBD',       // {{11}} delivery_datetime
+            ],
+            imageUrl: _meta.selectedImageUrl,
+            imageType: _meta.selectedImageType,
+          };
+        } else {
+          // order_approved_pickup — 12 variables:
+          // customer_name, order_id, order_date, order_details, message_on_cake,
+          // special_instructions, order_total, amount_paid, payment_summary,
+          // store_name, store_address, pickup_datetime
+          return {
+            templateName: 'order_approved_pickup',
+            templateVersion: TEMPLATE_VERSION,
+            language: TEMPLATE_LANGUAGE,
+            variables: [
+              customer.name,                               // {{1}} customer_name
+              order.displayId,                             // {{2}} order_id
+              order.date,                                  // {{3}} order_date
+              order.items,                                 // {{4}} order_details
+              customization.messageOnCake,                 // {{5}} message_on_cake
+              customization.specialInstructions,           // {{6}} special_instructions
+              payment.total,                               // {{7}} order_total
+              payment.amountPaid,                          // {{8}} amount_paid
+              payment.paymentSummary,                      // {{9}} payment_summary
+              fulfillment.storeName ?? 'Gopal Cake Shop',  // {{10}} store_name
+              fulfillment.storeAddress ?? 'TBD',           // {{11}} store_address
+              fulfillment.pickupDateTime ?? 'TBD',         // {{12}} pickup_datetime
+            ],
             imageUrl: _meta.selectedImageUrl,
             imageType: _meta.selectedImageType,
           };
@@ -151,137 +197,159 @@ export class WhatsAppTemplateService {
       // ── ORDER_READY ────────────────────────────────────────────────────────
       case 'ORDER_READY': {
         if (isDelivery) {
-          // 10 variables
+          // order_ready_delivery — 9 variables:
+          // customer_name, order_id, order_details, message_on_cake,
+          // special_instructions, order_total, payment_summary,
+          // delivery_address, delivery_datetime
           return {
             templateName: 'order_ready_delivery',
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
             variables: [
-              customer.name,                             // {{1}}
-              order.displayId,                           // {{2}}
-              order.items,                               // {{3}}
-              customization.specialInstructions,         // {{4}}
-              payment.total,                             // {{5}}
-              payment.amountPaid,                        // {{6}}
-              payment.paymentSummary,                    // {{7}}
-              fulfillment.deliveryAddress ?? 'TBD',      // {{8}}
-              fulfillment.deliveryDateTime ?? 'TBD',     // {{9}}
+              customer.name,                               // {{1}} customer_name
+              order.displayId,                             // {{2}} order_id
+              order.items,                                 // {{3}} order_details
+              customization.messageOnCake,                 // {{4}} message_on_cake
+              customization.specialInstructions,           // {{5}} special_instructions
+              payment.total,                               // {{6}} order_total
+              payment.paymentSummary,                      // {{7}} payment_summary
+              fulfillment.deliveryAddress ?? 'TBD',        // {{8}} delivery_address
+              fulfillment.deliveryDateTime ?? 'TBD',       // {{9}} delivery_datetime
             ],
           };
         } else {
-          // 11 variables
+          // order_ready_pickup — 10 variables:
+          // customer_name, order_id, order_details, message_on_cake,
+          // special_instructions, order_total, payment_summary,
+          // store_name, store_address, pickup_datetime
           return {
             templateName: 'order_ready_pickup',
             templateVersion: TEMPLATE_VERSION,
             language: TEMPLATE_LANGUAGE,
             variables: [
-              customer.name,                             // {{1}}
-              order.displayId,                           // {{2}}
-              order.items,                               // {{3}}
-              customization.specialInstructions,         // {{4}}
-              payment.total,                             // {{5}}
-              payment.amountPaid,                        // {{6}}
-              payment.paymentSummary,                    // {{7}}
-              fulfillment.storeName ?? 'Store',          // {{8}}
-              fulfillment.storeAddress ?? 'Address TBD',// {{9}}
-              fulfillment.pickupDateTime ?? 'TBD',       // {{10}}
+              customer.name,                               // {{1}} customer_name
+              order.displayId,                             // {{2}} order_id
+              order.items,                                 // {{3}} order_details
+              customization.messageOnCake,                 // {{4}} message_on_cake
+              customization.specialInstructions,           // {{5}} special_instructions
+              payment.total,                               // {{6}} order_total
+              payment.paymentSummary,                      // {{7}} payment_summary
+              fulfillment.storeName ?? 'Gopal Cake Shop',  // {{8}} store_name
+              fulfillment.storeAddress ?? 'TBD',           // {{9}} store_address
+              fulfillment.pickupDateTime ?? 'TBD',         // {{10}} pickup_datetime
             ],
           };
         }
       }
 
       // ── OUT_FOR_DELIVERY ───────────────────────────────────────────────────
+      // order_out_for_delivery — 9 variables:
+      // customer_name, order_id, order_details, message_on_cake,
+      // special_instructions, order_total, payment_summary,
+      // delivery_address, estimated_arrival
       case 'OUT_FOR_DELIVERY': {
-        // 9 variables
         return {
           templateName: 'order_out_for_delivery',
           templateVersion: TEMPLATE_VERSION,
           language: TEMPLATE_LANGUAGE,
           variables: [
-            customer.name,                               // {{1}}
-            order.displayId,                             // {{2}}
-            order.items,                                 // {{3}}
-            payment.total,                               // {{4}}
-            payment.amountPaid,                          // {{5}}
-            payment.paymentSummary,                      // {{6}}
-            fulfillment.deliveryAddress ?? 'TBD',        // {{7}}
-            fulfillment.estimatedArrival ?? 'Shortly',   // {{8}}
+            customer.name,                               // {{1}} customer_name
+            order.displayId,                             // {{2}} order_id
+            order.items,                                 // {{3}} order_details
+            customization.messageOnCake,                 // {{4}} message_on_cake
+            customization.specialInstructions,           // {{5}} special_instructions
+            payment.total,                               // {{6}} order_total
+            payment.paymentSummary,                      // {{7}} payment_summary
+            fulfillment.deliveryAddress ?? 'TBD',        // {{8}} delivery_address
+            fulfillment.estimatedArrival ?? 'Shortly',   // {{9}} estimated_arrival
           ],
         };
       }
 
       // ── ORDER_DELIVERED ────────────────────────────────────────────────────
+      // order_delivered — 9 variables:
+      // customer_name, order_id, order_details, message_on_cake,
+      // special_instructions, order_total, payment_summary,
+      // delivery_address, delivered_datetime
       case 'ORDER_DELIVERED': {
-        // 9 variables
         return {
           templateName: 'order_delivered',
           templateVersion: TEMPLATE_VERSION,
           language: TEMPLATE_LANGUAGE,
           variables: [
-            customer.name,                               // {{1}}
-            order.displayId,                             // {{2}}
-            order.items,                                 // {{3}}
-            payment.total,                               // {{4}}
-            payment.amountPaid,                          // {{5}}
-            payment.paymentSummary,                      // {{6}}
-            fulfillment.deliveryAddress ?? 'Your address',// {{7}}
-            timestamp,                                    // {{8}} actual delivery time
+            customer.name,                               // {{1}} customer_name
+            order.displayId,                             // {{2}} order_id
+            order.items,                                 // {{3}} order_details
+            customization.messageOnCake,                 // {{4}} message_on_cake
+            customization.specialInstructions,           // {{5}} special_instructions
+            payment.total,                               // {{6}} order_total
+            payment.paymentSummary,                      // {{7}} payment_summary
+            fulfillment.deliveryAddress ?? 'Your address', // {{8}} delivery_address
+            timestamp,                                   // {{9}} delivered_datetime
           ],
         };
       }
 
       // ── ORDER_PICKED_UP ────────────────────────────────────────────────────
+      // order_picked_up — 9 variables:
+      // customer_name, order_id, order_details, message_on_cake,
+      // special_instructions, order_total, payment_summary,
+      // store_name, picked_up_datetime
       case 'ORDER_PICKED_UP': {
-        // 9 variables
         return {
           templateName: 'order_picked_up',
           templateVersion: TEMPLATE_VERSION,
           language: TEMPLATE_LANGUAGE,
           variables: [
-            customer.name,                               // {{1}}
-            order.displayId,                             // {{2}}
-            order.items,                                 // {{3}}
-            payment.total,                               // {{4}}
-            payment.amountPaid,                          // {{5}}
-            payment.paymentSummary,                      // {{6}}
-            fulfillment.storeName ?? 'Store',            // {{7}}
-            timestamp,                                    // {{8}} actual pickup time
+            customer.name,                               // {{1}} customer_name
+            order.displayId,                             // {{2}} order_id
+            order.items,                                 // {{3}} order_details
+            customization.messageOnCake,                 // {{4}} message_on_cake
+            customization.specialInstructions,           // {{5}} special_instructions
+            payment.total,                               // {{6}} order_total
+            payment.paymentSummary,                      // {{7}} payment_summary
+            fulfillment.storeName ?? 'Gopal Cake Shop',  // {{8}} store_name
+            timestamp,                                   // {{9}} picked_up_datetime
           ],
         };
       }
 
       // ── ORDER_CANCELLED ────────────────────────────────────────────────────
+      // order_cancelled — 4 variables:
+      // customer_name, order_id, order_date, order_details
       case 'ORDER_CANCELLED': {
-        // 5 variables
         return {
           templateName: 'order_cancelled',
           templateVersion: TEMPLATE_VERSION,
           language: TEMPLATE_LANGUAGE,
           variables: [
-            customer.name,     // {{1}}
-            order.displayId,   // {{2}}
-            order.date,        // {{3}}
-            order.items,       // {{4}}
+            customer.name,     // {{1}} customer_name
+            order.displayId,   // {{2}} order_id
+            order.date,        // {{3}} order_date
+            order.items,       // {{4}} order_details
           ],
         };
       }
 
       // ── PAYMENT_BALANCE_REMINDER ───────────────────────────────────────────
+      // payment_balance_reminder — 9 variables:
+      // customer_name, business_name (customer name used), order_id, order_date,
+      // order_total, amount_paid, balance_due, payment_method, order_details
       case 'PAYMENT_BALANCE_REMINDER': {
-        // 8 variables — only called when balanceDue > 0
         return {
           templateName: 'payment_balance_reminder',
           templateVersion: TEMPLATE_VERSION,
           language: TEMPLATE_LANGUAGE,
           variables: [
-            customer.name,           // {{1}}
-            order.displayId,         // {{2}}
-            payment.total,           // {{3}}
-            payment.amountPaid,      // {{4}}
-            payment.balanceDue,      // {{5}}
-            payment.paymentMethod,   // {{6}}
-            order.date,              // {{7}}
-            order.items,             // {{8}}
+            customer.name,           // {{1}} customer_name
+            customer.name,           // {{2}} business_name (reuse customer name)
+            order.displayId,         // {{3}} order_id
+            order.date,              // {{4}} order_date
+            payment.total,           // {{5}} order_total
+            payment.amountPaid,      // {{6}} amount_paid
+            payment.balanceDue,      // {{7}} balance_due
+            payment.paymentMethod,   // {{8}} payment_method
+            order.items,             // {{9}} order_details
           ],
         };
       }

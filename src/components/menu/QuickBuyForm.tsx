@@ -195,6 +195,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       printImage: printImage || undefined,
       designId: product.designId,
       isCustom: isCustom, // Flag to indicate this requires a quote
+      availableWeights: availableWeights.map((w: any) => ({ value: w.value, label: w.label, price: w.price })),
     };
 
     if (editingCartItem) {

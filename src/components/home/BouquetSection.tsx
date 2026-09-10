@@ -138,6 +138,7 @@ function BouquetProductCard({ product }: { product: any }) {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    let availableWeights: { value: string, label: string, price?: number }[] = [];
                     let defaultVariant = "Standard"; // default for non-cake if applicable
                     if (product.weightConfig) {
                       try {
@@ -146,6 +147,11 @@ function BouquetProductCard({ product }: { product: any }) {
                            const keys = Object.keys(wc).map(Number).sort((a,b) => a-b);
                            const k = keys[0];
                            defaultVariant = k >= 1 ? `${k}kg` : `${k*1000}g`;
+                           availableWeights = keys.map(k => ({
+                             value: k >= 1 ? `${k}kg` : `${k*1000}g`,
+                             label: k >= 1 ? `${k} kg` : `${k*1000} g`,
+                             price: wc[k]?.price || 0
+                           }));
                         }
                       } catch(err) {}
                     }
@@ -158,7 +164,8 @@ function BouquetProductCard({ product }: { product: any }) {
                       image: product.thumbnail || product.imageUrl || product.image,
                       variant: defaultVariant,
                       flavor: "Classic",
-                      isPhotoCake: false
+                      isPhotoCake: false,
+                      availableWeights: availableWeights.length > 0 ? availableWeights : undefined
                     });
                   }}
                   className="w-9 h-9 flex items-center justify-center bg-[#8B2A53] text-white hover:bg-[var(--brand-chocolate)] transition-all rounded-full font-bold shadow-md shadow-[var(--brand-deep-rose)]/20"

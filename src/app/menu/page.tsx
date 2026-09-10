@@ -133,6 +133,7 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    let availableWeights: { value: string, label: string, price?: number }[] = [];
                     let defaultVariant = "500g";
                     if (product.weightConfig) {
                       try {
@@ -141,6 +142,11 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
                            const keys = Object.keys(wc).map(Number).sort((a,b) => a-b);
                            const k = keys[0];
                            defaultVariant = k >= 1 ? `${k}kg` : `${k*1000}g`;
+                           availableWeights = keys.map(k => ({
+                             value: k >= 1 ? `${k}kg` : `${k*1000}g`,
+                             label: k >= 1 ? `${k} kg` : `${k*1000} g`,
+                             price: wc[k]?.price || 0
+                           }));
                         }
                       } catch(err) {}
                     }
@@ -153,7 +159,8 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
                       image: product.thumbnail || product.imageUrl || product.image,
                       variant: defaultVariant,
                       flavor: "Classic",
-                      isPhotoCake: false
+                      isPhotoCake: false,
+                      availableWeights: availableWeights.length > 0 ? availableWeights : undefined
                     });
                   }}
                   className="w-9 h-9 flex items-center justify-center bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all rounded-full font-bold shadow-sm"

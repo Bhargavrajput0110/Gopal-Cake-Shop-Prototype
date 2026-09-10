@@ -19,7 +19,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      data: result
+      data: result,
+      key: process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
     });
   } catch (error: any) {
     console.error('Create Order Error:', error);

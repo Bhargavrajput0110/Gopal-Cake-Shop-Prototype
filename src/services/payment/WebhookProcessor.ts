@@ -75,6 +75,34 @@ export class WebhookProcessor {
           }
         }
       } 
+      else if (payload.event === 'payment_link.paid') {
+        // Payment Link payment confirmed via webhook — safety net in case the
+        // callback redirect failed (customer closed browser after paying)
+        const plEntity = payload.payload?.payment_link?.entity;
+        const paymentId = payload.payload?.payment?.entity?.id;
+        const amount = plEntity?.amount_paid / 100; // paise → rupees
+        const orderId = plEntity?.notes?.orderId;
+
+        if (orderId && paymentId && amount > 0) {
+          // Mark payment record SUCCESS (idempotent)
+          await prisma.payment.updateMany({
+            where: { orderId, status: 'PENDING', provider: 'RAZORPAY' },
+            data: { gatewayPaymentId: paymentId, status: 'SUCCESS', verifiedAt: new Date() },
+          });
+
+          // Create LedgerEntry if not already created by callback
+          const existingLedger = await prisma.ledgerEntry.findUnique({
+            where: { referenceId: paymentId },
+          });
+          if (!existingLedger) {
+            const order = await prisma.order.findUnique({ where: { id: orderId } });
+            if (order) {
+              await LedgerAdapter.recordPayment(orderId, amount, 'RAZORPAY', paymentId);
+              await TimelineAdapter.logPaymentSuccess(orderId, order.status, `Payment Link paid (Webhook)`);
+            }
+          }
+        }
+      }
       else if (payload.event === 'payment.failed') {
         const paymentEntity = payload.payload.payment.entity;
         const gatewayOrderId = paymentEntity.order_id;

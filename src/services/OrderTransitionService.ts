@@ -3,6 +3,7 @@ import { toBranchId } from '@/lib/branches'
 import { OrderStateMachine, TransitionAction, AppRole, OrderStatus } from '@/lib/OrderStateMachine'
 import { TimelineService } from '@/services/TimelineService'
 import { OrderNotificationService } from '@/services/notifications/OrderNotificationService'
+import { NotificationService } from '@/services/notifications/NotificationService'
 
 export class OrderTransitionService {
   static async transitionState(params: {
@@ -153,5 +154,20 @@ export class OrderTransitionService {
       branchId: order.branchId,
       driverId: (order as any).driverId ?? null,
     }).catch(() => {/* already logged inside OrderNotificationService */})
+
+    // Fire WhatsApp and other channel notifications directly (no cron needed).
+    // We use the same NotificationService that the outbox would use, but call it inline.
+    NotificationService.handleTimelineEvent({
+      action,
+      orderId,
+      actorId,
+      branchId: order.branchId,
+      nextState,
+      orderNumber: order.orderNumber,
+      driverId: (order as any).driverId ?? null,
+      createdAt: new Date().toISOString(),
+    }, eventId).catch((err) => {
+      console.error(`[OrderTransitionService] WhatsApp notification failed for ${orderId}:`, err)
+    })
   }
 }

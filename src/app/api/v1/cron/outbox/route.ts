@@ -12,8 +12,15 @@ import { registerSubscribers } from '@/services/event-bus/EventSubscribers'
  */
 export async function POST(req: Request) {
   const secret = req.headers.get('x-cron-secret')
+  // Vercel Cron automatically sends Authorization: Bearer <CRON_SECRET>
+  const authHeader = req.headers.get('authorization')
+  const bearerToken = authHeader?.replace('Bearer ', '')
 
-  if (secret !== process.env.CRON_SECRET) {
+  const isAuthorized =
+    (process.env.CRON_SECRET && secret === process.env.CRON_SECRET) ||
+    (process.env.CRON_SECRET && bearerToken === process.env.CRON_SECRET)
+
+  if (!isAuthorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
