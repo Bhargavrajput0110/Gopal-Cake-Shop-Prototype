@@ -6,6 +6,8 @@
     "dev": "node server.js",
     "build": "npx prisma generate && npx prisma migrate deploy && next build",
     "postinstall": "prisma generate",
+    "prepare": "husky",
+    "typecheck": "tsc --noEmit",
     "start": "NODE_ENV=production node server.js",
     "lint": "next lint",
     "seed": "npx tsx scripts/seed.ts",
@@ -122,6 +124,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "eslint-plugin-storybook": "^10.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.1",
     "playwright": "^1.61.1",
     "prisma": "^7.8.0",
     "storybook": "^10.5.0",
@@ -130,5 +134,10 @@
     "typescript": "^5",
     "vite": "^8.1.4",
     "vitest": "^4.1.10"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx}": [
+      "tsc --noEmit --skipLibCheck"
+    ]
   }
 }

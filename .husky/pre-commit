@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+echo "🔍 Running TypeScript type-check before commit..."
+npx tsc --noEmit --skipLibCheck
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ TypeScript errors found! Fix them before committing."
+  echo "   Run: npm run typecheck"
+  echo ""
+  exit 1
+fi
+
+echo "✅ TypeScript check passed!"
