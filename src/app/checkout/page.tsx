@@ -1,6 +1,7 @@
 "use client";
 
 import Script from "next/script";
+declare global { interface Window { Razorpay: any } }
 import { BackButton } from "@/components/ui/BackButton";
 import { NotificationToast } from "@/components/ui/NotificationToast";
 import React, { useState, useEffect } from "react";
@@ -342,17 +343,14 @@ export default function CheckoutPage() {
       if (paymentMethod === "ADVANCE_50" || paymentMethod === "ONLINE_100") {
         const paymentAmount = paymentMethod === "ADVANCE_50" ? finalGrandTotal / 2 : finalGrandTotal;
 
-        // Use server-side Razorpay Payment Link — no browser SDK needed
-        const rzpRes = await fetch("/api/v1/payments/create-payment-link", {
+        // Create a Razorpay order on the server
+        const rzpRes = await fetch("/api/v1/payments/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderId: createdOrderId,
             amount: paymentAmount,
-            trackingId,
-            customerName: formData.name,
-            customerPhone: formData.phone,
-            customerEmail: formData.email,
+            method: "RAZORPAY",
           })
         });
 
@@ -366,13 +364,68 @@ export default function CheckoutPage() {
         }
 
         const rzpData = await rzpRes.json();
+        const { payment, gatewayOrder } = rzpData.data;
+        const keyId = rzpData.key;
 
         // Store pending payment so the tracking page can clear the cart AFTER payment
-        // Do NOT clear cart here — customer may go back and we want to keep their cart
         if (typeof window !== "undefined") {
           sessionStorage.setItem('gcs_pending_payment', JSON.stringify({ trackingId, orderId: createdOrderId }));
         }
-        window.location.href = rzpData.paymentUrl;
+
+        // Open Razorpay Checkout modal with customer info pre-filled
+        const options = {
+          key: keyId,
+          amount: Math.round(paymentAmount * 100),
+          currency: "INR",
+          name: "Gopal Cake Shop",
+          description: `Order #${data.orderNumber || createdOrderId}`,
+          image: "/logo.png",
+          order_id: gatewayOrder.id,
+          prefill: {
+            name: formData.name,
+            contact: `+91${formData.phone}`,
+            email: formData.email || undefined,
+          },
+          theme: { color: "#C2185B" },
+          modal: {
+            ondismiss: () => {
+              setIsSubmitting(false);
+              setToast({
+                id: Date.now().toString(),
+                title: "Payment Cancelled",
+                message: "Payment was not completed. Your cart is intact — try again when ready.",
+                variant: "warning",
+              });
+            },
+          },
+          handler: async (response: any) => {
+            // Verify payment on server
+            try {
+              await fetch("/api/v1/payments/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  paymentId: payment.id,
+                  gatewayOrderId: response.razorpay_order_id,
+                  gatewayPaymentId: response.razorpay_payment_id,
+                  signature: response.razorpay_signature,
+                }),
+              });
+            } catch (e) {
+              console.error("Payment verify error:", e);
+            }
+            clearCart();
+            if (typeof window !== "undefined") {
+              sessionStorage.removeItem('gcs_pending_payment');
+            }
+            router.push(`/track/${trackingId}`);
+          },
+        };
+
+        setIsSubmitting(false); // Re-enable UI while modal is open
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+        return; // Don't fall through
       } else {
         clearCart();
         router.push(`/track/${trackingId}`);
@@ -418,6 +471,8 @@ export default function CheckoutPage() {
 
   return (
     <>
+      {/* Load Razorpay Checkout SDK */}
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <div className="min-h-screen bg-background pb-32 lg:pb-16 relative">
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 pt-8">
           
