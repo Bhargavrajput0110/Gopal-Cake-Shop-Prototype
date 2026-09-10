@@ -390,9 +390,7 @@ export class StorefrontEngine {
           isPriority: context.canAssignPriority ? payload.isPriority : false,
           internalNotes: payload.internalNotes,
           type: payload.type || 'ORDER',
-          status: payload.type === 'QUOTE' ? OrderStatus.QUOTE_DRAFT 
-                : (context.source === 'POS' ? OrderStatus.WAITING_FOR_CHEF 
-                : ((payload.paymentMethod === 'RAZORPAY' || payload.paymentMethod === 'UPI' || payload.paymentMethod === 'CARD') ? OrderStatus.DRAFT : OrderStatus.NEW)),
+          status: payload.type === 'QUOTE' ? OrderStatus.QUOTE_DRAFT : (context.source === 'POS' ? OrderStatus.WAITING_FOR_CHEF : OrderStatus.NEW),
           deliveryType: payload.deliveryType,
           targetDate: new Date(payload.targetDate),
           deliveryAddress: payload.deliveryAddress,
