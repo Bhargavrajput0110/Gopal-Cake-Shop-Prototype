@@ -208,9 +208,7 @@ export class NotificationDispatcher {
           },
         });
       } catch (uploadErr: any) {
-        LoggerService.error(`[NotificationDispatcher] Media upload failed — falling back to text-only`, uploadErr);
-        // Fallback: use text-only template (strip _img suffix)
-        selection.templateName = selection.templateName.replace('_img', '') as typeof selection.templateName;
+        LoggerService.error(`[NotificationDispatcher] Media upload failed. Notification will likely fail if Meta template requires an image header.`, uploadErr);
         mediaId = undefined;
       }
     }
