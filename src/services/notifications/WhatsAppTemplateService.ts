@@ -98,8 +98,8 @@ export class WhatsAppTemplateService {
               order.displayId,                             // {{2}} order_id
               order.date,                                  // {{3}} order_date
               order.items,                                 // {{4}} order_details
-              customization.messageOnCake,                 // {{5}} message_on_cake
-              customization.specialInstructions,           // {{6}} special_instructions
+              customization.messageOnCake || 'None',                 // message_on_cake
+              customization.specialInstructions || 'None',           // special_instructions
               payment.total,                               // {{7}} order_total
               payment.amountPaid,                          // {{8}} amount_paid
               payment.paymentSummary,                      // {{9}} payment_summary
@@ -123,8 +123,8 @@ export class WhatsAppTemplateService {
               order.displayId,                             // {{2}} order_id
               order.date,                                  // {{3}} order_date
               order.items,                                 // {{4}} order_details
-              customization.messageOnCake,                 // {{5}} message_on_cake
-              customization.specialInstructions,           // {{6}} special_instructions
+              customization.messageOnCake || 'None',                 // message_on_cake
+              customization.specialInstructions || 'None',           // special_instructions
               payment.total,                               // {{7}} order_total
               payment.amountPaid,                          // {{8}} amount_paid
               payment.paymentSummary,                      // {{9}} payment_summary
@@ -154,8 +154,8 @@ export class WhatsAppTemplateService {
               order.displayId,                             // {{2}} order_id
               order.date,                                  // {{3}} order_date
               order.items,                                 // {{4}} order_details
-              customization.messageOnCake,                 // {{5}} message_on_cake
-              customization.specialInstructions,           // {{6}} special_instructions
+              customization.messageOnCake || 'None',                 // message_on_cake
+              customization.specialInstructions || 'None',           // special_instructions
               payment.total,                               // {{7}} order_total
               payment.amountPaid,                          // {{8}} amount_paid
               payment.paymentSummary,                      // {{9}} payment_summary
@@ -179,8 +179,8 @@ export class WhatsAppTemplateService {
               order.displayId,                             // {{2}} order_id
               order.date,                                  // {{3}} order_date
               order.items,                                 // {{4}} order_details
-              customization.messageOnCake,                 // {{5}} message_on_cake
-              customization.specialInstructions,           // {{6}} special_instructions
+              customization.messageOnCake || 'None',                 // message_on_cake
+              customization.specialInstructions || 'None',           // special_instructions
               payment.total,                               // {{7}} order_total
               payment.amountPaid,                          // {{8}} amount_paid
               payment.paymentSummary,                      // {{9}} payment_summary
@@ -209,8 +209,8 @@ export class WhatsAppTemplateService {
               customer.name,                               // {{1}} customer_name
               order.displayId,                             // {{2}} order_id
               order.items,                                 // {{3}} order_details
-              customization.messageOnCake,                 // {{4}} message_on_cake
-              customization.specialInstructions,           // {{5}} special_instructions
+              customization.messageOnCake || 'None',                 // message_on_cake
+              customization.specialInstructions || 'None',           // special_instructions
               payment.total,                               // {{6}} order_total
               payment.paymentSummary,                      // {{7}} payment_summary
               fulfillment.deliveryAddress ?? 'TBD',        // {{8}} delivery_address
@@ -230,8 +230,8 @@ export class WhatsAppTemplateService {
               customer.name,                               // {{1}} customer_name
               order.displayId,                             // {{2}} order_id
               order.items,                                 // {{3}} order_details
-              customization.messageOnCake,                 // {{4}} message_on_cake
-              customization.specialInstructions,           // {{5}} special_instructions
+              customization.messageOnCake || 'None',                 // message_on_cake
+              customization.specialInstructions || 'None',           // special_instructions
               payment.total,                               // {{6}} order_total
               payment.paymentSummary,                      // {{7}} payment_summary
               fulfillment.storeName ?? 'Gopal Cake Shop',  // {{8}} store_name
@@ -256,8 +256,8 @@ export class WhatsAppTemplateService {
             customer.name,                               // {{1}} customer_name
             order.displayId,                             // {{2}} order_id
             order.items,                                 // {{3}} order_details
-            customization.messageOnCake,                 // {{4}} message_on_cake
-            customization.specialInstructions,           // {{5}} special_instructions
+            customization.messageOnCake || 'None',                 // message_on_cake
+            customization.specialInstructions || 'None',           // special_instructions
             payment.total,                               // {{6}} order_total
             payment.paymentSummary,                      // {{7}} payment_summary
             fulfillment.deliveryAddress ?? 'TBD',        // {{8}} delivery_address
@@ -280,8 +280,8 @@ export class WhatsAppTemplateService {
             customer.name,                               // {{1}} customer_name
             order.displayId,                             // {{2}} order_id
             order.items,                                 // {{3}} order_details
-            customization.messageOnCake,                 // {{4}} message_on_cake
-            customization.specialInstructions,           // {{5}} special_instructions
+            customization.messageOnCake || 'None',                 // message_on_cake
+            customization.specialInstructions || 'None',           // special_instructions
             payment.total,                               // {{6}} order_total
             payment.paymentSummary,                      // {{7}} payment_summary
             fulfillment.deliveryAddress ?? 'Your address', // {{8}} delivery_address
@@ -304,8 +304,8 @@ export class WhatsAppTemplateService {
             customer.name,                               // {{1}} customer_name
             order.displayId,                             // {{2}} order_id
             order.items,                                 // {{3}} order_details
-            customization.messageOnCake,                 // {{4}} message_on_cake
-            customization.specialInstructions,           // {{5}} special_instructions
+            customization.messageOnCake || 'None',                 // message_on_cake
+            customization.specialInstructions || 'None',           // special_instructions
             payment.total,                               // {{6}} order_total
             payment.paymentSummary,                      // {{7}} payment_summary
             fulfillment.storeName ?? 'Gopal Cake Shop',  // {{8}} store_name
