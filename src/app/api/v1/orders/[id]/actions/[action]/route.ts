@@ -35,17 +35,13 @@ export const POST = withApiHandler(async ({ req, params, appRole, branchId, user
     reasonCode: parsed.reasonCode
   })
 
-  // Immediately process the outbox in the background (fire-and-forget).
-  // This sends notifications instantly instead of waiting for the cron job.
-  // The cron is a safety net for retries — this makes the happy path instant.
+  // Await the outbox processor so Vercel Serverless doesn't freeze the execution context
+  // before the WhatsApp message HTTP requests can finish.
   try {
     registerSubscribers()
-    // Don't await — let it run after the response is sent
-    outboxProcessor.poll().catch((err) => {
-      console.error('[Actions] Background outbox poll failed:', err?.message)
-    })
-  } catch (e) {
-    // Never block the response for notification failures
+    await outboxProcessor.poll()
+  } catch (e: any) {
+    console.error('[Actions] Background outbox poll failed:', e?.message)
   }
 
   return NextResponse.json({
