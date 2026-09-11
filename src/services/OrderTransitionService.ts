@@ -153,29 +153,33 @@ export class OrderTransitionService {
       io.to('admin_global').emit('order_updated');
     }
 
-    // Fire-and-forget: dispatch in-app notifications to relevant staff roles.
-    // Never awaited so a notification failure can never block the order state machine.
-    OrderNotificationService.notify({
-      action,
-      orderId,
-      orderNumber: order.orderNumber,
-      branchId: order.branchId,
-      driverId: (order as any).driverId ?? null,
-    }).catch(() => {/* already logged inside OrderNotificationService */})
+    // Await notifications so Vercel Serverless doesn't freeze the execution context
+    // before the HTTP requests can finish.
+    try {
+      await OrderNotificationService.notify({
+        action,
+        orderId,
+        orderNumber: order.orderNumber,
+        branchId: order.branchId,
+        driverId: (order as any).driverId ?? null,
+      })
+    } catch (err) {
+      console.error(`[OrderTransitionService] In-app notification failed for ${orderId}:`, err)
+    }
 
-    // Fire WhatsApp and other channel notifications directly (no cron needed).
-    // We use the same NotificationService that the outbox would use, but call it inline.
-    NotificationService.handleTimelineEvent({
-      action,
-      orderId,
-      actorId,
-      branchId: order.branchId,
-      nextState,
-      orderNumber: order.orderNumber,
-      driverId: (order as any).driverId ?? null,
-      createdAt: new Date().toISOString(),
-    }, eventId).catch((err) => {
+    try {
+      await NotificationService.handleTimelineEvent({
+        action,
+        orderId,
+        actorId,
+        branchId: order.branchId,
+        nextState,
+        orderNumber: order.orderNumber,
+        driverId: (order as any).driverId ?? null,
+        createdAt: new Date().toISOString(),
+      }, eventId)
+    } catch (err) {
       console.error(`[OrderTransitionService] WhatsApp notification failed for ${orderId}:`, err)
-    })
+    }
   }
 }
