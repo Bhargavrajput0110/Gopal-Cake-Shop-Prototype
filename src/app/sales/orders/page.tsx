@@ -699,9 +699,16 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
                 <p className="text-[10px] text-muted-foreground">{order.customerPhone}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Payment</p>
-                <p className="text-xs font-bold text-foreground">Total: ₹{order.grandTotal} &middot; Pending: <span className="text-destructive">₹{order.pendingBalance}</span></p>
-                {order.pendingBalance>0 && <p className="text-[10px] text-rose-600 font-bold">Pending: ₹{order.pendingBalance}</p>}
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Payment Summary</p>
+                <div className="flex flex-col items-end gap-0.5">
+                  <p className="text-[11px] font-bold text-muted-foreground">Total: ₹{order.grandTotal}</p>
+                  <p className="text-[11px] font-bold text-emerald-600">Advance: ₹{order.advancePaid || (order.grandTotal - order.pendingBalance)}</p>
+                  {order.pendingBalance > 0 ? (
+                    <p className="text-xs font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded mt-0.5">To Collect: ₹{order.pendingBalance}</p>
+                  ) : (
+                    <p className="text-xs font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mt-0.5">Fully Paid</p>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/30 p-2 rounded-lg">
