@@ -24,17 +24,15 @@ export const authConfig = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      const publicOrigin = process.env.NODE_ENV === "production" 
-        ? 'https://gopal-cake-shop-prototype.onrender.com' 
-        : 'http://localhost:3000';
-      if (url.startsWith("/")) return `${publicOrigin}${url}`;
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allows callback URLs on the same origin
       try {
-        const u = new URL(url);
-        if (u.origin === publicOrigin || u.hostname.includes('onrender.com')) {
+        if (new URL(url).origin === baseUrl) {
           return url;
         }
       } catch (e) {}
-      return publicOrigin;
+      return baseUrl;
     },
     async jwt({ token, user }) {
       if (user) {
