@@ -546,7 +546,15 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
         alert(data.error || "Failed to record payment");
         return;
       }
-      onWhatsApp("Thank you! Your payment has been received and balance is settled. 🍰");
+
+      let handedOver = false;
+      // Auto-handover if this is a pickup order that is ready
+      if (order.orderType === 'pickup' && order.status === 'READY_FOR_PICKUP') {
+        await updateOrderStatus(order.id, "COMPLETED");
+        handedOver = true;
+      }
+
+      onWhatsApp(handedOver ? "Thank you! Your payment is received and your order is handed over. 🍰" : "Thank you! Your payment has been received and balance is settled. 🍰");
       onMutated();
     } catch (e) {
       console.error(e);
@@ -777,7 +785,12 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
                 <Gift className="w-4 h-4 md:w-3.5 md:h-3.5" /> Collect ₹{order.pendingBalance}
               </button>
             )}
-            {order.pendingBalance === 0 && order.status !== "NEW" && canEdit && (
+            {order.pendingBalance === 0 && order.status === "READY_FOR_PICKUP" && order.orderType === "pickup" && (
+              <button onClick={() => { updateOrderStatus(order.id, "COMPLETED"); onMutated(); }} className="flex-1 bg-[#C5A059] text-white px-3 py-3 md:py-2 rounded-xl md:rounded-md text-sm md:text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
+                <TickCircle className="w-4 h-4 md:w-3.5 md:h-3.5" /> Handover
+              </button>
+            )}
+            {order.pendingBalance === 0 && order.status !== "NEW" && order.status !== "READY_FOR_PICKUP" && canEdit && (
               <button onClick={onAssignVendor} className="flex-1 bg-purple-500 text-white px-3 py-3 md:py-2 rounded-xl md:rounded-md text-sm md:text-xs font-bold hover:bg-purple-600 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95 md:hidden">
                 <Reserve className="w-4 h-4" /> Assign Partner
               </button>
