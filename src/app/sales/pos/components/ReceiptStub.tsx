@@ -59,14 +59,15 @@ export function ReceiptStub({ orderId }: ReceiptStubProps) {
 
       {/* Hidden Print Section - Optimized for 80mm thermal receipt printer */}
       <div id="receipt-stub" className="hidden print:block w-[80mm] bg-white text-black p-4 text-sm font-mono z-[9999]">
-        <div className="text-center mb-4">
-          <h1 className="text-xl font-black uppercase">Gopal Cake Shop</h1>
-          <p className="text-xs">123 Bakery Lane, City</p>
-          <p className="text-xs">Ph: +91 9876543210</p>
-          <p className="text-xs mt-1">GSTIN: 27ABCDE1234F1Z5</p>
+        <div className="text-center mb-4 border-b border-black pb-3">
+          <h1 className="text-xl font-black uppercase tracking-wider">Gopal Cake Shop</h1>
+          <p className="text-xs font-bold">{order.branch?.name ? `${order.branch.name} Branch` : "Uma Char Rasta Branch"}</p>
+          <p className="text-xs">{order.branch?.address || "Waghodia Road, Vadodara, Gujarat"}</p>
+          <p className="text-xs">Ph: {order.branch?.phone ? `+91 ${order.branch.phone}` : "+91 9898616894"}</p>
+          <p className="text-[10px] mt-1 text-gray-700">GSTIN: 24AAAFG0000A1Z2</p>
         </div>
 
-        <div className="border-t border-b border-black border-dashed py-2 mb-4 text-xs">
+        <div className="border-b border-black border-dashed pb-2 mb-3 text-xs space-y-1">
           <div className="flex justify-between">
             <span>Order No:</span>
             <span className="font-bold">{order.orderNumber}</span>
@@ -75,14 +76,38 @@ export function ReceiptStub({ orderId }: ReceiptStubProps) {
             <span>Placed:</span>
             <span>{order.createdAt ? new Date(order.createdAt).toLocaleString() : '-'}</span>
           </div>
-          <div className="flex justify-between font-bold mt-1 pt-1 border-t border-black border-dashed">
+          <div className="flex justify-between font-bold pt-1 border-t border-black border-dashed">
             <span>Fulfillment:</span>
+            <span>{order.deliveryType === 'DELIVERY' ? 'HOME DELIVERY 🚗' : 'STORE PICKUP 🏬'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Target Date:</span>
             <span>{order.targetDate ? new Date(order.targetDate).toLocaleString() : '-'}</span>
           </div>
-          {order.customer && order.customer.name !== 'Walk-in' && order.customer.name !== 'walkin@gopalcakeshop.com' && (
-            <div className="flex justify-between mt-1 pt-1 border-t border-black border-dashed">
-              <span>Customer:</span>
-              <span>{order.customer.name} {order.customer.phone ? `(${order.customer.phone})` : ''}</span>
+          
+          {/* Customer Details */}
+          {order.customer && (
+            <div className="pt-1 mt-1 border-t border-black border-dashed">
+              <div className="flex justify-between">
+                <span>Customer:</span>
+                <span className="font-bold">{order.customer.name || 'Walk-in'}</span>
+              </div>
+              {order.customer.phone && (
+                <div className="flex justify-between">
+                  <span>Phone:</span>
+                  <span>{order.customer.phone}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Delivery Address (if Delivery order) */}
+          {(order.deliveryType === 'DELIVERY' || order.deliveryAddress || order.customer?.address) && (
+            <div className="pt-1 mt-1 border-t border-black border-dashed">
+              <span className="font-bold uppercase text-[10px] block">Deliver To:</span>
+              <p className="font-bold text-xs leading-snug mt-0.5">
+                {order.deliveryAddress || order.customer?.address || 'Address on file'}
+              </p>
             </div>
           )}
         </div>

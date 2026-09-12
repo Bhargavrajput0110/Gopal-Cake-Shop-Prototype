@@ -16,6 +16,7 @@ const handler = async (ctx: HandlerContext) => {
     where: { id },
     include: {
       customer: true,
+      branch: true,
       ledgerEntries: true,
       items: {
         include: {
