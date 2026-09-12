@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef, Component, ErrorInfo, ReactNode } from "react";
-import { Refresh2, Location, SearchNormal } from "iconsax-react";
-import { APIProvider, Map, AdvancedMarker, Pin, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
+import { Refresh2, Location, SearchNormal, TickCircle } from "iconsax-react";
+import { APIProvider, Map, AdvancedMarker, Pin, useMap } from "@vis.gl/react-google-maps";
 
 class MapErrorBoundary extends Component<{ children: ReactNode, fallback: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode, fallback: ReactNode }) {
@@ -58,83 +58,144 @@ interface GoogleAddressPickerProps {
   onLocationSelected?: (lat: number, lng: number) => void;
 }
 
+async function performSmartAddressSearch(query: string): Promise<any[]> {
+  const q = query.trim();
+  if (!q || q.length < 2) return [];
+
+  try {
+    const apiRes = await fetch(`/api/v1/address-search?q=${encodeURIComponent(q)}`).catch(() => null);
+    if (apiRes && apiRes.ok) {
+      const apiData = await apiRes.json().catch(() => null);
+      if (apiData && Array.isArray(apiData.results)) {
+        return apiData.results;
+      }
+    }
+  } catch (_e) {}
+
+  return [];
+}
+
 function PlacesAutocomplete({
-  onPlaceSelect,
   value,
-  onChange
+  onChange,
+  onSelectAddress
 }: {
-  onPlaceSelect: (place: google.maps.places.PlaceResult | null) => void;
   value: string;
   onChange: (val: string) => void;
+  onSelectAddress: (item: any) => void;
 }) {
-  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
-  const places = useMapsLibrary('places');
-  const [autocompleteService, setAutocompleteService] = useState<google.maps.places.AutocompleteService | null>(null);
-  const [placesService, setPlacesService] = useState<google.maps.places.PlacesService | null>(null);
+  const [results, setResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!places) return;
-    setAutocompleteService(new places.AutocompleteService());
-    setPlacesService(new places.PlacesService(document.createElement('div')));
-  }, [places]);
-
-  useEffect(() => {
-    if (!autocompleteService || !value.trim()) {
-      setPredictions([]);
+    if (!value || value.trim().length < 2) {
+      setResults([]);
+      setIsSearching(false);
       return;
     }
 
-    autocompleteService.getPlacePredictions({
-      input: value,
-      componentRestrictions: { country: "in" },
-      // Optional: Bias to Vadodara bounds
-      locationBias: {
-        north: 22.45,
-        south: 22.15,
-        east: 73.35,
-        west: 73.05
-      }
-    }, (results) => {
-      setPredictions(results || []);
-    });
-  }, [value, autocompleteService]);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
 
-  const handleSelect = (placeId: string) => {
-    if (!placesService) return;
-    placesService.getDetails({
-      placeId,
-      fields: ['geometry', 'name', 'formatted_address']
-    }, (place, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK) {
-        onPlaceSelect(place);
-        onChange(place?.formatted_address || place?.name || "");
-        setPredictions([]);
+    setIsSearching(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const searchRes = await performSmartAddressSearch(value);
+        setResults(searchRes);
+      } catch (_e) {
+        setResults([]);
+      } finally {
+        setIsSearching(false);
       }
-    });
+    }, 250);
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [value]);
+
+  const handleItemClick = (item: any) => {
+    onSelectAddress(item);
+    setIsOpen(false);
   };
 
+  const handleUseTypedText = () => {
+    onSelectAddress({
+      name: value,
+      display_name: `${value}, Vadodara`,
+      lat: 22.3072,
+      lon: 73.1812,
+    });
+    setIsOpen(false);
+  };
+
+  const showMenu = isOpen && value.trim().length >= 2;
+
   return (
-    <div className="relative z-50 group">
-      <SearchNormal className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-[var(--brand-deep-rose)] transition-colors" />
+    <div className="relative z-[200] group">
+      <SearchNormal className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-[var(--brand-deep-rose)] transition-colors z-[51]" />
       <input
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Search society, building, or area..."
-        className="w-full pl-11 pr-4 py-3.5 rounded-xl border-2 border-primary/30 bg-transparent focus:border-[var(--brand-deep-rose)] focus:ring-0 text-base font-serif transition-colors relative z-50 outline-none"
+        onFocus={() => setIsOpen(true)}
+        onChange={(e) => {
+          setIsOpen(true);
+          onChange(e.target.value);
+        }}
+        placeholder="Search society, building, street, or area..."
+        className="w-full pl-11 pr-10 py-3.5 rounded-xl border-2 border-primary/30 bg-white focus:border-[var(--brand-deep-rose)] focus:ring-0 text-base font-serif transition-colors relative z-[200] outline-none text-foreground placeholder:text-muted-foreground shadow-sm"
       />
-      {predictions.length > 0 && (
-        <div className="absolute z-[100] w-full mt-1 bg-card border border-border rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
-          {predictions.map((p) => (
-            <button
-              key={p.place_id}
-              onClick={() => handleSelect(p.place_id)}
-              className="w-full text-left px-4 py-3 text-sm hover:bg-secondary border-b border-border/50 last:border-0 transition-colors flex flex-col"
-            >
-              <span className="font-bold text-foreground">{p.structured_formatting.main_text}</span>
-              <span className="text-xs text-muted-foreground">{p.structured_formatting.secondary_text}</span>
-            </button>
-          ))}
+      {isSearching && (
+        <Refresh2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-[var(--brand-deep-rose)] z-[201]" />
+      )}
+
+      {showMenu && (
+        <div className="absolute z-[300] w-full mt-1 bg-white border border-border/80 rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto divide-y divide-border/40">
+          
+          {/* 1-Tap Option: Use exact typed text as location */}
+          <button
+            type="button"
+            onClick={handleUseTypedText}
+            className="w-full text-left px-4 py-3 text-sm bg-rose-50/90 hover:bg-rose-100 transition-colors flex items-center justify-between group cursor-pointer border-b border-rose-200"
+          >
+            <div className="flex flex-col">
+              <span className="font-bold text-[var(--brand-deep-rose)] text-xs uppercase tracking-wider">
+                ✨ Use as Delivery Location
+              </span>
+              <span className="font-serif font-bold text-foreground line-clamp-1">
+                "{value}"
+              </span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-widest bg-[var(--brand-deep-rose)] text-white px-2 py-1 rounded-md shrink-0">
+              Select
+            </span>
+          </button>
+
+          {isSearching && results.length === 0 && (
+            <div className="p-4 text-xs text-muted-foreground font-serif flex items-center justify-center gap-2">
+              <Refresh2 className="w-3.5 h-3.5 animate-spin text-[var(--brand-deep-rose)]" />
+              Searching matching locations in Vadodara...
+            </div>
+          )}
+
+          {results.map((item, idx) => {
+            const mainText = item.name || item.display_name.split(',')[0];
+            const secText = item.display_name;
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleItemClick(item)}
+                className="w-full text-left px-4 py-3 text-sm hover:bg-rose-50/80 transition-colors flex flex-col group cursor-pointer"
+              >
+                <span className="font-bold text-foreground group-hover:text-[var(--brand-deep-rose)] flex items-center gap-1.5">
+                  📍 {mainText}
+                </span>
+                <span className="text-xs text-muted-foreground line-clamp-1">{secText}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -202,7 +263,7 @@ function InnerMap({
 export function GoogleAddressPicker(props: GoogleAddressPickerProps) {
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [isMapOpen, setIsMapOpen] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
   const [searchInputValue, setSearchInputValue] = useState("");
   const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyA1j9ak9yeJsRfWA9vq5rQcDZvPayNCd2s";
 
@@ -211,7 +272,6 @@ export function GoogleAddressPicker(props: GoogleAddressPickerProps) {
     if (!selectedLocation) return;
     props.onCalculating(true);
 
-    // Fallback to Haversine distance (straight line * 1.3 urban routing factor)
     const distances = branchLocations.map(branch => {
       const rawDist = getDistanceFromLatLonInKm(selectedLocation.lat, selectedLocation.lng, branch.coords[1], branch.coords[0]);
       return { branch: branch.name, distanceKm: Number((rawDist * 1.3).toFixed(1)) };
@@ -221,12 +281,21 @@ export function GoogleAddressPicker(props: GoogleAddressPickerProps) {
     props.onCalculating(false);
   }, [selectedLocation]);
 
+  const handleSelectAddress = (item: any) => {
+    const latNum = parseFloat(item.lat);
+    const lngNum = parseFloat(item.lon);
+    setSelectedLocation({ lat: latNum, lng: lngNum });
+    setSearchInputValue(item.display_name);
+    props.onAddressChange(item.display_name);
+    if (props.onLocationSelected) props.onLocationSelected(latNum, lngNum);
+  };
+
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
       return;
     }
-    setIsSearching(true);
+    setIsDetecting(true);
     navigator.geolocation.getCurrentPosition(async (position) => {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
@@ -235,6 +304,7 @@ export function GoogleAddressPicker(props: GoogleAddressPickerProps) {
 
       setSearchInputValue("Locating your exact address...");
 
+      let foundAddr = false;
       try {
         const response = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`);
         const data = await response.json();
@@ -243,108 +313,90 @@ export function GoogleAddressPicker(props: GoogleAddressPickerProps) {
           const addr = data.results[0].formatted_address;
           setSearchInputValue(addr);
           props.onAddressChange(addr);
-        } else {
-          console.error("Geocoding failed:", data);
-          setSearchInputValue("Current Location (GPS)");
-          props.onAddressChange("Current Location (GPS)");
-          if (data.error_message) {
-            alert("Google Maps Error: " + data.error_message + "\n\nPlease ensure the 'Geocoding API' is enabled in your Google Cloud Console.");
-          }
+          foundAddr = true;
         }
       } catch (err) {
-        console.error("Geocoding fetch failed:", err);
+        console.error("Google Geocoding fetch failed:", err);
+      }
+
+      if (!foundAddr) {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          const data = await res.json();
+          if (data.display_name) {
+            setSearchInputValue(data.display_name);
+            props.onAddressChange(data.display_name);
+            foundAddr = true;
+          }
+        } catch (_e) {}
+      }
+
+      if (!foundAddr) {
         setSearchInputValue("Current Location (GPS)");
         props.onAddressChange("Current Location (GPS)");
       }
-      setIsSearching(false);
+      setIsDetecting(false);
     }, (err) => {
-      setIsSearching(false);
+      setIsDetecting(false);
       console.error("GPS Error:", err);
-      alert("Unable to retrieve your location. Check your browser permissions or ensure location services are enabled on your device.");
+      alert("Unable to retrieve location. Check your browser permissions.");
     }, { timeout: 10000, enableHighAccuracy: true });
   };
 
-  if (!API_KEY) {
-    return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
-        <strong>Google Maps API Key Missing</strong>
-        <p>Please add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your .env file.</p>
-      </div>
-    );
-  }
-
   return (
-    <MapErrorBoundary fallback={
-      <div className="p-6 bg-orange-50 border border-orange-200 rounded-xl text-orange-800 text-sm shadow-sm">
-        <strong className="text-base block mb-2 text-orange-900">⚠️ Map Blocked By Browser Extension</strong>
-        <p>Google Maps could not load because an extension in your browser (like an AdBlocker, Brave Shields, or Privacy Badger) blocked it.</p>
-        <p className="mt-2 font-semibold">To fix this, please disable your adblocker for localhost and refresh the page.</p>
+    <div className="space-y-4">
+      <div className="space-y-2 relative">
+        <label className="text-sm font-bold text-foreground flex items-center justify-between">
+          <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Delivery Location *</span>
+          <button
+            type="button"
+            onClick={() => setIsMapOpen(!isMapOpen)}
+            className="text-[10px] text-[var(--brand-deep-rose)] font-bold uppercase tracking-widest bg-[var(--brand-deep-rose)]/10 px-3 py-1.5 rounded-md hover:bg-[var(--brand-deep-rose)]/20 transition-colors"
+          >
+            {isMapOpen ? "Close Map" : "Adjust on Map"}
+          </button>
+        </label>
+
+        {/* 100% Standalone Autocomplete Input & Recommendation Menu */}
+        <PlacesAutocomplete
+          value={searchInputValue}
+          onChange={(val) => {
+            setSearchInputValue(val);
+            props.onAddressChange(val);
+          }}
+          onSelectAddress={handleSelectAddress}
+        />
+
+        <button
+          type="button"
+          onClick={handleDetectLocation}
+          className="flex items-center gap-2 text-[11px] font-sans font-bold text-[var(--brand-deep-rose)] hover:text-[var(--brand-deep-rose)]/80 transition-colors uppercase tracking-widest mt-1 cursor-pointer"
+        >
+          {isDetecting ? <Refresh2 className="w-4 h-4 animate-spin" /> : (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 11c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm0 0c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2zm0 0V3m0 18v-8M3 12h8m10 0h-8" />
+            </svg>
+          )}
+          Detect my current location
+        </button>
       </div>
-    }>
-      <APIProvider apiKey={API_KEY}>
-        <div className="space-y-4">
-          <div className="space-y-2 relative">
-            <label className="text-sm font-bold text-foreground flex items-center justify-between">
-              <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Delivery Location *</span>
-              <button
-                type="button"
-                onClick={() => setIsMapOpen(!isMapOpen)}
-                className="text-[10px] text-[var(--brand-deep-rose)] font-bold uppercase tracking-widest bg-[var(--brand-deep-rose)]/10 px-3 py-1.5 rounded-md hover:bg-[var(--brand-deep-rose)]/20 transition-colors"
-              >
-                {isMapOpen ? "Close Map" : "Adjust on Map"}
-              </button>
-            </label>
 
-            <Map
-              defaultZoom={13}
-              defaultCenter={{ lat: 22.3072, lng: 73.1812 }}
-              disableDefaultUI={true}
-              style={{ display: 'none' }}
-            />
-
-            <PlacesAutocomplete
-              value={searchInputValue}
-              onChange={(val) => {
-                setSearchInputValue(val);
-                props.onAddressChange(val);
-              }}
-              onPlaceSelect={(place) => {
-                if (place?.geometry?.location) {
-                  const lat = place.geometry.location.lat();
-                  const lng = place.geometry.location.lng();
-                  setSelectedLocation({ lat, lng });
-                  const addr = place.formatted_address || place.name || "";
-                  setSearchInputValue(addr);
-                  props.onAddressChange(addr);
-                  if (props.onLocationSelected) props.onLocationSelected(lat, lng);
-                }
-              }}
-            />
-
-            <button
-              type="button"
-              onClick={handleDetectLocation}
-              className="flex items-center gap-2 text-[11px] font-sans font-bold text-[var(--brand-deep-rose)] hover:text-[var(--brand-deep-rose)]/80 transition-colors uppercase tracking-widest mt-1"
-            >
-              {isSearching ? <Refresh2 className="w-4 h-4 animate-spin" /> : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 11c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm0 0c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2zm0 0V3m0 18v-8M3 12h8m10 0h-8" />
-                </svg>
-              )}
-              Detect my current location
-            </button>
+      {isMapOpen && (
+        <MapErrorBoundary fallback={
+          <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl text-orange-800 text-xs">
+            Map preview restricted by browser extension. Address search above is fully active.
           </div>
-
-          {isMapOpen && (
+        }>
+          <APIProvider apiKey={API_KEY}>
             <InnerMap
               selectedLocation={selectedLocation}
               setSelectedLocation={setSelectedLocation}
               onAddressChange={props.onAddressChange}
               onLocationSelected={props.onLocationSelected}
             />
-          )}
-        </div>
-      </APIProvider>
-    </MapErrorBoundary>
+          </APIProvider>
+        </MapErrorBoundary>
+      )}
+    </div>
   );
 }

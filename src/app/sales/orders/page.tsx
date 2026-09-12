@@ -547,12 +547,8 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
         return;
       }
 
-      let handedOver = false;
-      // Auto-handover if this is a pickup order that is ready
-      if (order.orderType === 'pickup' && order.status === 'READY_FOR_PICKUP') {
-        await updateOrderStatus(order.id, "COMPLETED");
-        handedOver = true;
-      }
+      let handedOver = data.handedOver === true;
+      // Note: Auto-handover is now securely handled on the backend to avoid stale UI state bugs.
 
       onWhatsApp(handedOver ? "Thank you! Your payment is received and your order is handed over. 🍰" : "Thank you! Your payment has been received and balance is settled. 🍰");
       onMutated();
@@ -788,8 +784,14 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
               </button>
             )}
             {order.pendingBalance > 0 && order.status !== "NEW" && (
-              <button onClick={handleCollectPayment} className="flex-1 bg-amber-500 text-white px-3 py-3 md:py-2 rounded-xl md:rounded-md text-sm md:text-xs font-bold hover:bg-amber-600 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
-                <Gift className="w-4 h-4 md:w-3.5 md:h-3.5" /> Collect ₹{order.pendingBalance}
+              <button onClick={handleCollectPayment} className="flex-1 bg-amber-500 text-white px-3 py-3 md:py-2 rounded-xl md:rounded-md text-sm md:text-xs font-bold hover:bg-amber-600 flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-1.5 shadow-sm transition-transform active:scale-95">
+                <div className="flex items-center gap-1.5">
+                  <Gift className="w-4 h-4 md:w-3.5 md:h-3.5" /> 
+                  <span>Collect ₹{order.pendingBalance}</span>
+                </div>
+                {order.advancePaid > 0 && (
+                  <span className="text-[10px] opacity-90 font-medium">(Total: ₹{order.grandTotal})</span>
+                )}
               </button>
             )}
             {order.pendingBalance === 0 && order.status === "READY_FOR_PICKUP" && order.orderType === "pickup" && (

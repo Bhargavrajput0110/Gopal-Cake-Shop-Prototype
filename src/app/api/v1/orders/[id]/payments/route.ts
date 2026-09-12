@@ -3,6 +3,7 @@ import { withApiHandler } from '@/lib/withApiHandler'
 import { prisma as db } from '@/lib/prisma'
 import { FinancialService } from '@/services/FinancialService'
 import { Role, LedgerEntryType } from '@prisma/client'
+import { OrderTransitionService } from '@/services/OrderTransitionService'
 
 import { toBranchId } from '@/lib/branches'
 
@@ -48,5 +49,25 @@ export const POST = withApiHandler(async (ctx) => {
     role: ctx.appRole as Role
   })
 
-  return NextResponse.json({ success: true, data: payment })
+  // Auto-handover logic on the backend to avoid frontend stale state issues
+  let handedOver = false;
+  if (order.deliveryType === 'PICKUP' && order.status === 'READY_FOR_PICKUP') {
+    const newSummary = await FinancialService.calculateFinancialSummary(order.id);
+    if (newSummary.outstandingAmount === 0) {
+      try {
+        await OrderTransitionService.transitionState({
+          orderId: id,
+          action: 'complete',
+          actorId: ctx.user?.id || 'SYSTEM',
+          appRole: ctx.appRole as any,
+          branchId: ctx.branchId,
+        });
+        handedOver = true;
+      } catch (err: any) {
+        console.error('[Payments] Auto-handover failed:', err.message);
+      }
+    }
+  }
+
+  return NextResponse.json({ success: true, data: payment, handedOver })
 })
