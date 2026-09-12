@@ -27,9 +27,20 @@ export class NotificationService {
   static async handleTimelineEvent(payload: any, eventId: string) {
     const { action, orderId, actorId, branchId, nextState } = payload;
 
-    const rules = NotificationMatrix[action];
+    let effectiveAction = action;
+    if (action === 'DRIVER_UPDATE' || action === 'DRIVER_STATUS_UPDATE') {
+      if (nextState === 'ON_THE_WAY' || nextState === 'OUT_FOR_DELIVERY') {
+        effectiveAction = 'on-the-way';
+      } else if (nextState === 'DELIVERED') {
+        effectiveAction = 'deliver';
+      } else if (nextState === 'FAILED_DELIVERY') {
+        effectiveAction = 'fail-delivery';
+      }
+    }
+
+    const rules = NotificationMatrix[effectiveAction] || NotificationMatrix[action];
     if (!rules || rules.length === 0) {
-      LoggerService.info(`[NotificationService] No rules for action: ${action}`);
+      LoggerService.info(`[NotificationService] No rules for action: ${action} (effective: ${effectiveAction})`);
       return;
     }
 

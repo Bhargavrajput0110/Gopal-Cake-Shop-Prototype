@@ -25,11 +25,15 @@ import { WhatsAppTemplateService, type NotificationType } from './WhatsAppTempla
 import { createWhatsAppProvider } from './providers/WhatsAppProvider';
 
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(
-    'mailto:admin@bakeryos.com',
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
+  try {
+    webpush.setVapidDetails(
+      'mailto:admin@bakeryos.com',
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+  } catch (e: any) {
+    console.warn('[NotificationDispatcher] VAPID push disabled:', e?.message || e);
+  }
 }
 
 export class NotificationDispatcher {
