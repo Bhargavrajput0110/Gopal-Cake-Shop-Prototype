@@ -22,6 +22,7 @@ export type OrderStatus =
   | "ASSIGNED_TO_DRIVER" 
   | "PICKED_UP" 
   | "ON_THE_WAY" 
+  | "OUT_FOR_DELIVERY"
   | "DELIVERED" 
   | "FAILED_DELIVERY"
   | "COMPLETED"
@@ -241,9 +242,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       MAKING:           'start-making',
       DECORATING:       'start-decorating',
       READY_FOR_PICKUP: 'ready',
+      PENDING_ASSIGNMENT: 'auto-queue',
       ASSIGNED_TO_DRIVER: 'assign-driver',
       PICKED_UP:        'pick-up',
       ON_THE_WAY:       'on-the-way',
+      OUT_FOR_DELIVERY: 'on-the-way',
       DELIVERED:        'deliver',
       COMPLETED:        'complete',
       CANCELLED:        'cancel',

@@ -66,10 +66,10 @@ export const STATE_MACHINE: TransitionConfig[] = [
   
   // Delivery Flow
   { action: 'auto-queue', current: 'READY_FOR_PICKUP', next: 'PENDING_ASSIGNMENT', roles: ['ADMIN'], allowedDeliveryTypes: ['DELIVERY'] }, // System internal action
-  { action: 'assign-driver', current: 'PENDING_ASSIGNMENT', next: 'ASSIGNED_TO_DRIVER', roles: ['DELIVERY', 'ADMIN'], allowedDeliveryTypes: ['DELIVERY'] },
-  { action: 'pick-up', current: 'ASSIGNED_TO_DRIVER', next: 'PICKED_UP', roles: ['DELIVERY', 'ADMIN'], allowedDeliveryTypes: ['DELIVERY'] },
-  { action: 'on-the-way', current: 'PICKED_UP', next: 'ON_THE_WAY', roles: ['DELIVERY', 'ADMIN'], allowedDeliveryTypes: ['DELIVERY'] },
-  { action: 'deliver', current: 'ON_THE_WAY', next: 'DELIVERED', roles: ['DELIVERY', 'ADMIN'], allowedDeliveryTypes: ['DELIVERY'] },
+  { action: 'assign-driver', current: ['PENDING_ASSIGNMENT', 'READY_FOR_PICKUP', 'ASSIGNED_TO_DRIVER'], next: 'ASSIGNED_TO_DRIVER', roles: ['DELIVERY', 'ADMIN', 'MANAGER'], allowedDeliveryTypes: ['DELIVERY'] },
+  { action: 'pick-up', current: ['ASSIGNED_TO_DRIVER', 'READY_FOR_PICKUP', 'PENDING_ASSIGNMENT'], next: 'PICKED_UP', roles: ['DELIVERY', 'ADMIN', 'MANAGER'], allowedDeliveryTypes: ['DELIVERY'] },
+  { action: 'on-the-way', current: ['PICKED_UP', 'ASSIGNED_TO_DRIVER', 'READY_FOR_PICKUP', 'PENDING_ASSIGNMENT', 'OUT_FOR_DELIVERY', 'ON_THE_WAY'], next: 'ON_THE_WAY', roles: ['DELIVERY', 'ADMIN', 'MANAGER'], allowedDeliveryTypes: ['DELIVERY'] },
+  { action: 'deliver', current: ['ON_THE_WAY', 'OUT_FOR_DELIVERY', 'PICKED_UP', 'ASSIGNED_TO_DRIVER', 'READY_FOR_PICKUP'], next: 'DELIVERED', roles: ['DELIVERY', 'ADMIN', 'MANAGER'], allowedDeliveryTypes: ['DELIVERY'] },
   { action: 'fail-delivery', current: ['PICKED_UP', 'ON_THE_WAY'], next: 'FAILED_DELIVERY', roles: ['DELIVERY', 'ADMIN'], requireReason: true, allowedDeliveryTypes: ['DELIVERY'] },
   { action: 'complete', current: 'DELIVERED', next: 'COMPLETED', roles: ['SALESPERSON', 'MANAGER', 'ADMIN'], allowedDeliveryTypes: ['DELIVERY'] }, // System will also trigger this if automated
   

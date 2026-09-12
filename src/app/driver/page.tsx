@@ -134,8 +134,8 @@ export default function DriverDashboard() {
             body: JSON.stringify(payload)
           })
         } else {
-          // Use real context method instead of raw fetch
-          if (newStatus === 'OUT_FOR_DELIVERY' || newStatus === 'DELIVERED') {
+          // Use real context method to trigger state machine & WhatsApp outbox events
+          if (['OUT_FOR_DELIVERY', 'ON_THE_WAY', 'PICKED_UP', 'DELIVERED'].includes(newStatus)) {
             await updateOrderStatus(realId, newStatus as any, false, undefined, payload);
           } else {
             await fetchClient(`/driver/deliveries/${realId}/status`, {
