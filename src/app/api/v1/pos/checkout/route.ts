@@ -16,15 +16,28 @@ const handler = async (ctx: HandlerContext) => {
   const body = await req.json()
   const data = PosCheckoutSchema.parse(body)
 
-  // 1. Resolve Customer (Fast Track)
-  let customerId = data.customerId;
-  if (customerId === 'walk-in' || (data.customerName && data.customerName !== 'Walk-in')) {
-    const resolved = await CustomerSearchService.resolveCustomer({ 
-      phone: data.customerPhone || '0000000000', 
-      name: data.customerName || 'Walk-in' 
-    });
-    customerId = resolved.id;
+  // Enforce Mandatory Customer Details
+  if (!data.customerName || data.customerName.trim().length < 2) {
+    return errorResponse('Customer Full Name is required to place a POS order', 'VALIDATION_ERROR', 400, [], requestId)
   }
+  const cleanPhone = (data.customerPhone || '').replace(/\D/g, '')
+  if (cleanPhone.length !== 10) {
+    return errorResponse('Valid 10-digit Customer Phone Number is required to place a POS order', 'VALIDATION_ERROR', 400, [], requestId)
+  }
+
+  // Enforce Mandatory Delivery Address
+  if (data.deliveryType === 'DELIVERY') {
+    if (!data.address || !data.address.house?.trim() || !data.address.street?.trim()) {
+      return errorResponse('House/Flat No. and Delivery Location are required for delivery orders', 'VALIDATION_ERROR', 400, [], requestId)
+    }
+  }
+
+  // 1. Resolve Customer (Fast Track)
+  const resolved = await CustomerSearchService.resolveCustomer({ 
+    phone: cleanPhone, 
+    name: data.customerName.trim() 
+  });
+  const customerId = resolved.id;
 
   const payload: CheckoutPayload = {
     customerId: customerId,

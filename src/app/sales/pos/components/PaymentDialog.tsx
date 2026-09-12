@@ -92,16 +92,39 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
 
 
   const handleCheckout = async () => {
-    setIsSubmitting(true)
     setCheckoutError(null)
+    
+    // Strict Validation: Customer Name & Phone
+    if (!customer.name || customer.name.trim().length < 2) {
+      setCheckoutError("Customer Full Name is required to place a POS order.")
+      return
+    }
+    if (!customer.phone || customer.phone.replace(/\D/g, '').length !== 10) {
+      setCheckoutError("Valid 10-digit Customer Phone Number is required to place a POS order.")
+      return
+    }
+
+    // Strict Validation: Delivery Address
+    if (orderType === 'DELIVERY') {
+      if (!address.house || !address.house.trim()) {
+        setCheckoutError("House / Flat No. is required for Home Delivery orders.")
+        return
+      }
+      if (!address.street || !address.street.trim()) {
+        setCheckoutError("Delivery Location / Street address is required for Home Delivery orders.")
+        return
+      }
+    }
+
+    setIsSubmitting(true)
     
     try {
       const targetDateISO = new Date(`${targetDate}T${targetTime}:00`).toISOString()
       
       const payload = {
         customerId: 'walk-in',
-        customerName: customer.name || undefined,
-        customerPhone: customer.phone || undefined,
+        customerName: customer.name.trim(),
+        customerPhone: customer.phone.trim(),
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -221,11 +244,11 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                 <h3 className="font-serif text-xl font-bold border-b border-border/40 pb-2 flex items-center gap-2"><User className="w-5 h-5 text-primary"/> Customer Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Full Name</label>
+                    <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Full Name *</label>
                     <input type="text" value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif transition-colors placeholder:text-foreground/20" placeholder="e.g. Rahul Patel" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Phone</label>
+                    <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Phone Number (10 digits) *</label>
                     <input type="tel" value={customer.phone} onChange={e => {
                       const val = e.target.value.replace(/\D/g, '').slice(0, 10);
                       setCustomer({...customer, phone: val});
@@ -241,7 +264,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                   
                   <div className="space-y-4 relative z-50">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">House / Flat No.</label>
+                      <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">House / Flat No. *</label>
                       <input type="text" value={address.house} onChange={e => setAddress({...address, house: e.target.value})} className="w-full bg-transparent border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-0 py-2 text-lg font-serif transition-colors" />
                     </div>
                     
