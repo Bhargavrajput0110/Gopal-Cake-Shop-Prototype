@@ -86,28 +86,36 @@ export default function AnalyticsPage() {
     );
   }
 
-  const { kpis, liveOrders, pendingBalances } = data;
-  const trendData = kpis?.revenueTrend?.length ? kpis.revenueTrend : [
-    { date: 'Mon', revenue: 0 }, { date: 'Tue', revenue: 0 }, { date: 'Wed', revenue: 0 }
-  ];
+  // The API returns flat data — map all fields directly from `data`
+  const totalSales = Number(data?.totalSales ?? data?.todaysSales ?? 0);
+  const totalOrders = Number(data?.totalOrders ?? data?.ordersToday ?? 0);
+  const pendingOrdersCount = Number(data?.pendingOrders ?? 0);
+  const avgOrderValue = Number(data?.summary?.averageOrderValue ?? (totalOrders > 0 ? totalSales / totalOrders : 0));
+  const completionRate = totalOrders > 0
+    ? Math.round(((totalOrders - pendingOrdersCount) / totalOrders) * 100)
+    : 100;
 
-  // We map branch rankings if any
-  const branchMetrics = kpis?.branchRanking || [];
+  const trendData = (data?.revenueTrend?.length ? data.revenueTrend : [
+    { date: 'Mon', revenue: 0 }, { date: 'Tue', revenue: 0 }, { date: 'Wed', revenue: 0 }
+  ]);
+
+  // Branch rankings — not returned by current analytics API, so default to empty
+  const branchMetrics: any[] = data?.branchRanking || [];
   
-  // Replace mock sourceData with actual Sales by Category from API
+  // Sales by Category
   const sourceData = data?.salesByCategory?.length > 0 
-    ? data.salesByCategory.map((c: any) => ({ name: c.categoryName, value: c.revenue }))
+    ? data.salesByCategory.map((c: any) => ({ name: c.categoryName || c.name, value: Number(c.revenue ?? 0) }))
     : [{ name: 'No Data', value: 1 }];
 
-  const topProducts = kpis?.topProducts || [];
+  // Top products come from salesByProduct in this API
+  const topProducts = (data?.salesByProduct || data?.kpis?.topProducts || []).map((p: any) => ({
+    productName: p.productName ?? p.name,
+    count: p.count ?? p.qty ?? 0,
+    revenue: Number(p.revenue ?? 0)
+  }));
 
-  const filteredLiveOrders = liveOrders || [];
-  const filteredPendingBalances = pendingBalances || [];
-  
-  const totalSales = kpis?.todaysSales || 0;
-  const totalOrders = kpis?.ordersToday || 0;
-  const completionRate = totalOrders > 0 ? Math.round(((totalOrders - kpis?.pendingOrders) / totalOrders) * 100) : 100;
-  const avgOrderValue = kpis?.averageOrderValue || 0;
+  const filteredLiveOrders: any[] = data?.liveOrders || [];
+  const filteredPendingBalances: any[] = data?.pendingBalances || [];
 
   return (
     <div className="p-6 md:p-10 max-w-[1600px] mx-auto space-y-8 font-sans bg-[var(--background)] min-h-screen">
@@ -450,7 +458,7 @@ export default function AnalyticsPage() {
             <h3 className="font-display text-xl font-bold text-[var(--foreground)] mb-6 flex items-center justify-between">
               <span className="flex items-center gap-2"><ReceiptItem className="w-5 h-5 text-rose-600" /> Pending Accounts (Delivered)</span>
               <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                ₹{filteredPendingBalances.reduce((acc: number, curr: any) => acc + curr.pending, 0).toLocaleString()} Due
+                ₹{filteredPendingBalances.reduce((acc: number, curr: any) => acc + Number(curr.balanceDue ?? curr.pending ?? 0), 0).toLocaleString()} Due
               </span>
             </h3>
 
@@ -460,15 +468,15 @@ export default function AnalyticsPage() {
                   <p className="text-rose-500 font-bold text-sm">No pending balances for this branch.</p>
                 </div>
               ) : (
-                filteredPendingBalances.map((bal: any) => (
-                  <div key={bal.id} className="p-4 rounded-xl border border-rose-100 bg-white hover:shadow-md hover:border-rose-300 transition-all">
+                filteredPendingBalances.map((bal: any, idx: number) => (
+                  <div key={bal.orderNumber || idx} className="p-4 rounded-xl border border-rose-100 bg-white hover:shadow-md hover:border-rose-300 transition-all">
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
-                          {bal.customer} 
-                          <span className="font-ui text-[9px] font-bold bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100">{bal.branch}</span>
+                          {bal.customerName || bal.customer || 'Customer'} 
+                          <span className="font-ui text-[9px] font-bold bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100">{bal.branchName || bal.branch}</span>
                         </h4>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">Order {bal.id} • Delivered: {bal.deliveredOn}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">Order {bal.orderNumber || bal.id}</p>
                       </div>
                       <button className="bg-rose-600 hover:bg-rose-700 text-white font-ui text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors">
                         Collect
@@ -478,15 +486,15 @@ export default function AnalyticsPage() {
                     <div className="grid grid-cols-3 gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100 text-center">
                       <div>
                         <span className="block text-[9px] font-bold text-gray-500 uppercase tracking-wider">Total</span>
-                        <span className="text-xs font-black text-gray-700">₹{bal.total.toLocaleString()}</span>
+                        <span className="text-xs font-black text-gray-700">₹{Number(bal.totalAmount ?? bal.total ?? 0).toLocaleString()}</span>
                       </div>
                       <div className="border-l border-gray-200">
                         <span className="block text-[9px] font-bold text-gray-500 uppercase tracking-wider">Paid</span>
-                        <span className="text-xs font-black text-emerald-600">₹{bal.paid.toLocaleString()}</span>
+                        <span className="text-xs font-black text-emerald-600">₹{Number(bal.paidAmount ?? bal.paid ?? 0).toLocaleString()}</span>
                       </div>
                       <div className="border-l border-rose-200 bg-rose-50/50 rounded-r">
                         <span className="block text-[9px] font-bold text-rose-600 uppercase tracking-wider">Pending</span>
-                        <span className="text-xs font-black text-rose-600">₹{bal.pending.toLocaleString()}</span>
+                        <span className="text-xs font-black text-rose-600">₹{Number(bal.balanceDue ?? bal.pending ?? 0).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
