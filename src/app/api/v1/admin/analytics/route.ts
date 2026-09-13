@@ -1,63 +1,173 @@
 import { NextResponse } from 'next/server';
 import { withApiHandler } from '@/lib/withApiHandler';
 import { prisma } from '@/lib/prisma';
-import { startOfDay, endOfDay } from 'date-fns';
+import { startOfDay, endOfDay, subDays, format } from 'date-fns';
+import { toBranchId } from '@/lib/branches';
+import { FinancialService } from '@/services/FinancialService';
 
 export const GET = withApiHandler(async (ctx) => {
   const { appRole, req } = ctx;
 
-  // 1. Require ADMIN authorization, reject unauthorized users with 403.
-  if (appRole !== 'ADMIN') {
+  // Require ADMIN or MANAGER authorization
+  if (appRole !== 'ADMIN' && appRole !== 'MANAGER') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const branchId = req.nextUrl.searchParams.get('branchId') || undefined;
+  const rawBranchParam = req.nextUrl.searchParams.get('branchId');
   const dateParam = req.nextUrl.searchParams.get('date');
   const targetDate = dateParam ? new Date(dateParam) : new Date();
   
   const todayStart = startOfDay(targetDate);
   const todayEnd = endOfDay(targetDate);
 
-  const branchFilter = branchId ? { branchId } : {};
+  // Branch filter condition (supports canonical branch ID, display names, and raw aliases)
+  let branchWhere: any = {};
+  if (rawBranchParam && rawBranchParam.toLowerCase() !== 'all') {
+    const canonical = toBranchId(rawBranchParam);
+    branchWhere = {
+      OR: [
+        { branchId: rawBranchParam },
+        { branchId: canonical },
+        { branchId: { contains: rawBranchParam, mode: 'insensitive' } },
+        { branch: { name: { contains: rawBranchParam, mode: 'insensitive' } } }
+      ]
+    };
+  }
 
-  // Base filter: exclude CANCELLED and DRAFT orders.
+  // Base filter for date query
+  const dateWhere = {
+    OR: [
+      { createdAt: { gte: todayStart, lte: todayEnd } },
+      { targetDate: { gte: todayStart, lte: todayEnd } }
+    ]
+  };
+
   const baseOrderWhere = {
-    ...branchFilter,
-    targetDate: { gte: todayStart, lte: todayEnd },
+    ...branchWhere,
+    ...dateWhere,
     status: { notIn: ['CANCELLED', 'DRAFT'] as any }
   };
 
   try {
-    // 2. Database-side Prisma aggregation for totals
-    const orderAgg = await prisma.order.aggregate({
+    // 1. Fetch orders for selected date to compute sales & orders Today
+    const ordersTodayList = await prisma.order.findMany({
       where: baseOrderWhere,
-      _count: { id: true },
-      _sum: { totalAmount: true }
-    });
-
-    const ordersToday = orderAgg._count.id;
-    const todaysSales = Number(orderAgg._sum.totalAmount || 0);
-    const averageOrderValue = ordersToday > 0 ? todaysSales / ordersToday : 0;
-
-    const pendingOrders = await prisma.order.count({
-      where: {
-        ...baseOrderWhere,
-        status: { in: ['NEW', 'CONFIRMED', 'WAITING_FOR_CHEF', 'MAKING', 'DECORATING', 'READY', 'OUT_FOR_DELIVERY'] as any }
+      include: {
+        customer: { select: { name: true, phone: true } },
+        branch: { select: { name: true } },
+        ledgerEntries: true,
+        payments: true
       }
     });
 
-    // 3. Sales by Product & Category using single efficient DB query
+    const ordersToday = ordersTodayList.length;
+    const todaysSales = ordersTodayList.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    const averageOrderValue = ordersToday > 0 ? todaysSales / ordersToday : 0;
+
+    // 2. Fetch ALL branch orders for status breakdown & pending balance calculations
+    const allBranchOrders = await prisma.order.findMany({
+      where: {
+        ...branchWhere,
+        status: { notIn: ['CANCELLED', 'DRAFT'] as any }
+      },
+      include: {
+        customer: { select: { name: true, phone: true } },
+        branch: { select: { name: true } },
+        ledgerEntries: true,
+        payments: true
+      }
+    });
+
+    const ordersByStatus: Record<string, number> = {
+      NEW: 0,
+      WAITING_FOR_CHEF: 0,
+      CHEF_ACCEPTED: 0,
+      MAKING: 0,
+      DECORATING: 0,
+      READY_FOR_PICKUP: 0,
+      PENDING_ASSIGNMENT: 0,
+      ASSIGNED_TO_DRIVER: 0,
+      PICKED_UP: 0,
+      ON_THE_WAY: 0,
+      OUT_FOR_DELIVERY: 0,
+      DELIVERED: 0,
+      COMPLETED: 0,
+      CANCELLED: 0
+    };
+
+    allBranchOrders.forEach(o => {
+      if (ordersByStatus[o.status] !== undefined) {
+        ordersByStatus[o.status]++;
+      } else {
+        ordersByStatus[o.status] = 1;
+      }
+    });
+
+    const pendingOrders = (ordersByStatus.NEW || 0) + 
+                          (ordersByStatus.WAITING_FOR_CHEF || 0) + 
+                          (ordersByStatus.CHEF_ACCEPTED || 0) + 
+                          (ordersByStatus.MAKING || 0) + 
+                          (ordersByStatus.DECORATING || 0) + 
+                          (ordersByStatus.READY_FOR_PICKUP || 0) + 
+                          (ordersByStatus.ON_THE_WAY || 0);
+
+    const averageQueueLength = (ordersByStatus.WAITING_FOR_CHEF || 0) + 
+                               (ordersByStatus.CHEF_ACCEPTED || 0) + 
+                               (ordersByStatus.MAKING || 0) + 
+                               (ordersByStatus.DECORATING || 0);
+
+    // 3. Compute Total Balance Due & Outstanding Orders List
+    let balanceDue = 0;
+    const pendingBalancesList: any[] = [];
+
+    for (const o of allBranchOrders) {
+      if (o.status !== 'COMPLETED' && o.status !== 'CANCELLED') {
+        const finSummary = await FinancialService.calculateFinancialSummary(o);
+        if (finSummary.outstandingAmount > 0) {
+          balanceDue += finSummary.outstandingAmount;
+          pendingBalancesList.push({
+            orderNumber: o.orderNumber || o.id.slice(0, 8),
+            customerName: o.customer?.name || 'Customer',
+            customerPhone: o.customer?.phone || 'N/A',
+            branchName: o.branch?.name || o.branchId || 'Store',
+            totalAmount: finSummary.totalAmount,
+            paidAmount: finSummary.paidAmount,
+            balanceDue: finSummary.outstandingAmount
+          });
+        }
+      }
+    }
+
+    // 4. Compute 7-Day Revenue Trend
+    const revenueTrend: { date: string; revenue: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = subDays(todayEnd, i);
+      const dStart = startOfDay(d);
+      const dEnd = endOfDay(d);
+      
+      const dayAgg = await prisma.order.aggregate({
+        where: {
+          ...branchWhere,
+          createdAt: { gte: dStart, lte: dEnd },
+          status: { notIn: ['CANCELLED', 'DRAFT'] as any }
+        },
+        _sum: { totalAmount: true }
+      });
+      
+      revenueTrend.push({
+        date: format(d, 'yyyy-MM-dd'),
+        revenue: Number(dayAgg._sum.totalAmount || 0)
+      });
+    }
+
+    // 5. Sales by Product & Category
     const orderItems = await prisma.orderItem.findMany({
       where: { order: baseOrderWhere },
       select: {
         productName: true,
         quantity: true,
         price: true,
-        product: {
-          select: {
-            category: { select: { name: true } }
-          }
-        }
+        product: { select: { category: { select: { name: true } } } }
       }
     });
 
@@ -65,21 +175,13 @@ export const GET = withApiHandler(async (ctx) => {
     const categoryMap: Record<string, { count: number; revenue: number }> = {};
 
     for (const item of orderItems) {
-      // Assuming price is unit price, revenue = unit price * quantity
       const rev = Number(item.price) * item.quantity;
-      
-      // Product mapping
-      if (!productMap[item.productName]) {
-        productMap[item.productName] = { count: 0, revenue: 0 };
-      }
+      if (!productMap[item.productName]) productMap[item.productName] = { count: 0, revenue: 0 };
       productMap[item.productName].count += item.quantity;
       productMap[item.productName].revenue += rev;
 
-      // Category mapping
-      const catName = item.product?.category?.name || 'Uncategorized';
-      if (!categoryMap[catName]) {
-        categoryMap[catName] = { count: 0, revenue: 0 };
-      }
+      const catName = item.product?.category?.name || 'General';
+      if (!categoryMap[catName]) categoryMap[catName] = { count: 0, revenue: 0 };
       categoryMap[catName].count += item.quantity;
       categoryMap[catName].revenue += rev;
     }
@@ -87,92 +189,52 @@ export const GET = withApiHandler(async (ctx) => {
     const salesByProduct = Object.entries(productMap)
       .map(([productName, data]) => ({ productName, ...data }))
       .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 10); // top 10
+      .slice(0, 10);
 
     const salesByCategory = Object.entries(categoryMap)
       .map(([categoryName, data]) => ({ categoryName, ...data }))
       .sort((a, b) => b.revenue - a.revenue);
 
-    // 4. Branch Ranking (if all branches)
-    let branchRanking: any[] = [];
-    if (!branchId) {
-      const branchAgg = await prisma.order.groupBy({
-        by: ['branchId'],
-        where: baseOrderWhere,
-        _sum: { totalAmount: true },
-        _count: { id: true }
-      });
-      const branches = await prisma.branch.findMany({ select: { id: true, name: true } });
-      branchRanking = branchAgg.map(b => ({
-        branchId: b.branchId,
-        branchName: branches.find(br => br.id === b.branchId)?.name || 'Unknown',
-        revenue: Number(b._sum.totalAmount || 0),
-        totalOrders: b._count.id
-      })).sort((a, b) => b.revenue - a.revenue);
-    }
+    // 6. Return response with root properties AND nested summary
+    const responsePayload = {
+      todaysSales,
+      ordersToday,
+      pendingOrders,
+      ordersByStatus,
+      averageQueueLength,
+      lateOrdersCount: 0,
+      balanceDue,
+      pendingBalances: pendingBalancesList,
+      revenueTrend,
+      salesByProduct,
+      salesByCategory,
 
-    // 5. Live Orders (UI needs this)
-    const liveOrdersData = await prisma.order.findMany({
-      where: {
-        ...branchFilter,
-        status: { notIn: ['DRAFT', 'COMPLETED', 'DELIVERED', 'CANCELLED', 'REFUNDED'] as any },
+      summary: {
+        todaysSales,
+        ordersToday,
+        pendingOrders,
+        averageOrderValue,
+        totalBalanceDue: balanceDue
       },
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        totalAmount: true,
-        createdAt: true,
-        type: true,
-        branch: { select: { name: true } },
-        customer: { select: { name: true } }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 20
-    });
+      kpis: {
+        todaysSales,
+        ordersToday,
+        pendingOrders,
+        averageOrderValue,
+        topProducts: salesByProduct,
+      }
+    };
 
-    const liveOrders = liveOrdersData.map(o => {
-      const diffMinutes = Math.floor((new Date().getTime() - o.createdAt.getTime()) / 60000);
-      return {
-        id: o.orderNumber,
-        customer: o.customer?.name || 'Unknown',
-        branch: o.branch?.name || 'Unknown',
-        type: o.type,
-        status: o.status,
-        amount: Number(o.totalAmount),
-        time: diffMinutes < 60 ? `${diffMinutes} mins ago` : `${Math.floor(diffMinutes / 60)} hr ago`
-      };
-    });
-
-    // Return structured data
     return NextResponse.json({
       success: true,
-      data: {
-        summary: {
-          todaysSales,
-          ordersToday,
-          pendingOrders,
-          averageOrderValue
-        },
-        kpis: { // Preserved for UI compatibility until UI is updated
-          todaysSales,
-          ordersToday,
-          pendingOrders,
-          averageOrderValue,
-          topProducts: salesByProduct,
-          branchRanking
-        },
-        salesByProduct,
-        salesByCategory,
-        liveOrders,
-        pendingBalances: [] // Preserved for UI compatibility
-      },
+      data: responsePayload,
       meta: {
         dateFiltered: todayStart.toISOString()
       }
     });
 
   } catch (err: any) {
+    console.error('[Admin Analytics] Error:', err);
     return NextResponse.json({ success: false, error: err.message || String(err) }, { status: 500 });
   }
 });
