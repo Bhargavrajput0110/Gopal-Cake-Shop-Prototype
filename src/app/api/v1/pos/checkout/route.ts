@@ -16,21 +16,15 @@ const handler = async (ctx: HandlerContext) => {
   const body = await req.json()
   const data = PosCheckoutSchema.parse(body)
 
-  // Enforce Mandatory Customer Details (Quotes permit walk-in defaults)
-  const isQuote = data.type === 'QUOTE'
-  let customerName = data.customerName?.trim() || ''
-  let cleanPhone = (data.customerPhone || '').replace(/\D/g, '')
+  // Provide smart fallbacks for customer details
+  let customerName = (data.customerName || '').trim()
+  if (customerName.length < 2) {
+    customerName = 'Walk-in Customer'
+  }
 
-  if (isQuote) {
-    if (customerName.length < 2) customerName = 'Walk-in Quote'
-    if (cleanPhone.length !== 10) cleanPhone = '9999999999'
-  } else {
-    if (!customerName || customerName.length < 2) {
-      return errorResponse('Customer Full Name is required to place a POS order', 'VALIDATION_ERROR', 400, [], requestId)
-    }
-    if (cleanPhone.length !== 10) {
-      return errorResponse('Valid 10-digit Customer Phone Number is required to place a POS order', 'VALIDATION_ERROR', 400, [], requestId)
-    }
+  let cleanPhone = (data.customerPhone || '').replace(/\D/g, '')
+  if (cleanPhone.length !== 10) {
+    cleanPhone = '9999999999'
   }
 
   // Enforce Mandatory Delivery Address

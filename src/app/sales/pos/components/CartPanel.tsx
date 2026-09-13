@@ -29,7 +29,7 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
     try {
       const payload = {
         customerId: customerId || 'walk-in',
-        customerName: 'Walk-in Quote',
+        customerName: 'Walk-in Customer',
         customerPhone: '9999999999',
         branchId: (session?.user as any)?.branchId || 'uma',
         type: 'QUOTE' as const,
@@ -55,11 +55,11 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
         notes: "Generated via POS Quote Mode"
       }
       const res = await OrdersApiClient.checkoutPos(payload as any)
-      if (onSuccess) onSuccess((res as any).orderNumber || res.id, true)
+      if (onSuccess) onSuccess((res as any).orderNumber || (res as any).orderId || res.id, true)
     } catch (err: any) {
       console.error("Quote generation failed:", err)
-      const errorMsg = err?.message || err?.error || "Unknown server error";
-      alert("Failed to generate quote: " + errorMsg);
+      const msg = err?.message || err?.error?.message || (typeof err === 'string' ? err : 'Server returned an error');
+      alert("Failed to generate quote: " + msg)
     } finally {
       setIsSavingQuote(false)
     }
