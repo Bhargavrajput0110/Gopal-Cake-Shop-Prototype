@@ -162,16 +162,26 @@ export const STRAWBERRY_FUSION_FLAVOURS: Flavour[] = [
   { id: "strawberry-blueberry", name: "Strawberry Blueberry", category: "winter_exclusive", isActive: false, surchargePerHalfKg: 0 },
 ];
 
-// Master list — all flavours combined
-export const ALL_FLAVOURS: Flavour[] = [
+// Helper: Sort flavours (Free flavours first, then price ascending, then alphabetical)
+export function sortFlavours(flavours: Flavour[]): Flavour[] {
+  return [...flavours].sort((a, b) => {
+    if (a.surchargePerHalfKg !== b.surchargePerHalfKg) {
+      return a.surchargePerHalfKg - b.surchargePerHalfKg;
+    }
+    return a.name.localeCompare(b.name);
+  });
+}
+
+// Master list — all flavours combined (sorted by price ascending, free first)
+export const ALL_FLAVOURS: Flavour[] = sortFlavours([
   ...REGULAR_FLAVOURS,
   ...MANGO_FUSION_FLAVOURS,
   ...STRAWBERRY_FUSION_FLAVOURS,
-];
+]);
 
-// Helper: Get only active flavours (for storefront display)
+// Helper: Get only active flavours (for storefront display, sorted by price ascending, free first)
 export function getActiveFlavours(): Flavour[] {
-  return ALL_FLAVOURS.filter((f) => f.isActive);
+  return sortFlavours(ALL_FLAVOURS.filter((f) => f.isActive));
 }
 
 // Helper: Get surcharge for a specific flavour and weight
