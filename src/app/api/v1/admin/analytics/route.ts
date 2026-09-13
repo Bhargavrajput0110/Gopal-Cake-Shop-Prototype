@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { withApiHandler } from '@/lib/withApiHandler';
 import { prisma } from '@/lib/prisma';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
-import { toBranchId } from '@/lib/branches';
+import { toBranchId, BRANCHES } from '@/lib/branches';
 import { FinancialService } from '@/services/FinancialService';
 
 export const GET = withApiHandler(async (ctx) => {
@@ -20,14 +20,16 @@ export const GET = withApiHandler(async (ctx) => {
   const todayStart = startOfDay(targetDate);
   const todayEnd = endOfDay(targetDate);
 
-  // Branch filter condition (supports canonical branch ID, display names, and raw aliases)
-  let branchWhere: any = {};
+  // Helper to build branch filter safely without key collision
+  let branchCondition: any = null;
   if (rawBranchParam && rawBranchParam.toLowerCase() !== 'all') {
     const canonical = toBranchId(rawBranchParam);
-    branchWhere = {
+    const targetBranchObj = BRANCHES.find(b => b.id === canonical || b.shortName.toLowerCase() === rawBranchParam.toLowerCase());
+    const allAliases = targetBranchObj ? [targetBranchObj.id, targetBranchObj.displayName, ...targetBranchObj.aliases] : [rawBranchParam, canonical];
+    
+    branchCondition = {
       OR: [
-        { branchId: rawBranchParam },
-        { branchId: canonical },
+        { branchId: { in: allAliases } },
         { branchId: { contains: rawBranchParam, mode: 'insensitive' } },
         { branch: { name: { contains: rawBranchParam, mode: 'insensitive' } } }
       ]
@@ -35,17 +37,29 @@ export const GET = withApiHandler(async (ctx) => {
   }
 
   // Base filter for date query
-  const dateWhere = {
+  const dateCondition = {
     OR: [
       { createdAt: { gte: todayStart, lte: todayEnd } },
       { targetDate: { gte: todayStart, lte: todayEnd } }
     ]
   };
 
+  const baseWhereConditions: any[] = [
+    { status: { notIn: ['CANCELLED', 'DRAFT'] as any } }
+  ];
+
+  if (branchCondition) {
+    baseWhereConditions.push(branchCondition);
+  }
+
+  const dateWhereConditions = [...baseWhereConditions, dateCondition];
+
   const baseOrderWhere = {
-    ...branchWhere,
-    ...dateWhere,
-    status: { notIn: ['CANCELLED', 'DRAFT'] as any }
+    AND: dateWhereConditions
+  };
+
+  const allBranchOrderWhere = {
+    AND: baseWhereConditions
   };
 
   try {
@@ -66,10 +80,7 @@ export const GET = withApiHandler(async (ctx) => {
 
     // 2. Fetch ALL branch orders for status breakdown & pending balance calculations
     const allBranchOrders = await prisma.order.findMany({
-      where: {
-        ...branchWhere,
-        status: { notIn: ['CANCELLED', 'DRAFT'] as any }
-      },
+      where: allBranchOrderWhere,
       include: {
         customer: { select: { name: true, phone: true } },
         branch: { select: { name: true } },
@@ -145,12 +156,15 @@ export const GET = withApiHandler(async (ctx) => {
       const dStart = startOfDay(d);
       const dEnd = endOfDay(d);
       
+      const dayWhereConditions = [...baseWhereConditions, {
+        OR: [
+          { createdAt: { gte: dStart, lte: dEnd } },
+          { targetDate: { gte: dStart, lte: dEnd } }
+        ]
+      }];
+
       const dayAgg = await prisma.order.aggregate({
-        where: {
-          ...branchWhere,
-          createdAt: { gte: dStart, lte: dEnd },
-          status: { notIn: ['CANCELLED', 'DRAFT'] as any }
-        },
+        where: { AND: dayWhereConditions },
         _sum: { totalAmount: true }
       });
       
