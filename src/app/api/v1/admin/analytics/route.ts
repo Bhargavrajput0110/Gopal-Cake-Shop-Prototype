@@ -16,18 +16,31 @@ export const GET = withApiHandler(async (ctx) => {
   const rawBranchParam = req.nextUrl.searchParams.get('branchId');
   const dateParam = req.nextUrl.searchParams.get('date');
 
-  // Branch filter condition (supports canonical branch ID, display names, and raw aliases)
+  // Unified branch filter resolution across all aliases & CUIDs
   let branchCondition: any = null;
   if (rawBranchParam && rawBranchParam.toLowerCase() !== 'all') {
+    const BRANCH_CUID_MAP: Record<string, string[]> = {
+      'elora': ['elora', 'cmswuiiun00031su3vfrn9eq5', 'Ellora Park', 'Ellora Park Branch', 'Elora Park Branch'],
+      'khanderao': ['khanderao', 'cmswuiita00011su3977ajl1z', 'Khanderao Market', 'Khanderao Branch', 'Market Branch', 'KHD'],
+      'varasiya': ['varasiya', 'warasiya', 'cmswuiiu000021su3kv1mr41f', 'Factory Warasiya', 'Varasiya Factory Outlet', 'WARASIYA'],
+      'uma': ['uma', 'Uma Branch', 'Uma Char Rasta', 'UMA'],
+    };
+
     const canonical = toBranchId(rawBranchParam);
     const targetBranchObj = BRANCHES.find(b => b.id === canonical || b.shortName.toLowerCase() === rawBranchParam.toLowerCase());
-    const allAliases = targetBranchObj ? [targetBranchObj.id, targetBranchObj.displayName, ...targetBranchObj.aliases] : [rawBranchParam, canonical];
-    
+    const idsToMatch = Array.from(new Set([
+      canonical,
+      rawBranchParam,
+      ...(BRANCH_CUID_MAP[canonical] || []),
+      ...(targetBranchObj ? [targetBranchObj.id, targetBranchObj.displayName, ...targetBranchObj.aliases] : [])
+    ]));
+
     branchCondition = {
       OR: [
-        { branchId: { in: allAliases } },
+        { branchId: { in: idsToMatch } },
         { branchId: { contains: rawBranchParam, mode: 'insensitive' } },
-        { branch: { name: { contains: rawBranchParam, mode: 'insensitive' } } }
+        { branch: { name: { contains: rawBranchParam, mode: 'insensitive' } } },
+        { branch: { code: { contains: rawBranchParam, mode: 'insensitive' } } }
       ]
     };
   }

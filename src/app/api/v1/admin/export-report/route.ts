@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withApiHandler } from '@/lib/withApiHandler';
 import { prisma } from '@/lib/prisma';
 import { endOfDay, startOfDay } from 'date-fns';
+import { toBranchId } from '@/lib/branches';
 
 /**
  * GET /api/v1/admin/export-report?upToDate=YYYY-MM-DD&branchId=xxx
@@ -24,10 +25,31 @@ export const GET = withApiHandler(async (ctx) => {
   const upToDate = upToDateParam ? endOfDay(new Date(upToDateParam)) : endOfDay(new Date());
   const fromDate = fromDateParam ? startOfDay(new Date(fromDateParam)) : undefined;
 
-  const branchFilter = branchId ? { branchId } : {};
+  let branchFilter: any = {};
+  if (branchId && branchId.toLowerCase() !== 'all') {
+    const BRANCH_CUID_MAP: Record<string, string[]> = {
+      'elora': ['elora', 'cmswuiiun00031su3vfrn9eq5', 'Ellora Park', 'Ellora Park Branch', 'Elora Park Branch'],
+      'khanderao': ['khanderao', 'cmswuiita00011su3977ajl1z', 'Khanderao Market', 'Khanderao Branch', 'Market Branch', 'KHD'],
+      'varasiya': ['varasiya', 'warasiya', 'cmswuiiu000021su3kv1mr41f', 'Factory Warasiya', 'Varasiya Factory Outlet', 'WARASIYA'],
+      'uma': ['uma', 'Uma Branch', 'Uma Char Rasta', 'UMA'],
+    };
+    const canonical = toBranchId(branchId);
+    const idsToMatch = Array.from(new Set([
+      canonical,
+      branchId,
+      ...(BRANCH_CUID_MAP[canonical] || [])
+    ]));
+    branchFilter = {
+      OR: [
+        { branchId: { in: idsToMatch } },
+        { branchId: { contains: branchId, mode: 'insensitive' } },
+        { branch: { name: { contains: branchId, mode: 'insensitive' } } }
+      ]
+    };
+  }
 
   const baseWhere: any = {
-    ...branchFilter,
+    ...(branchFilter.OR ? branchFilter : {}),
     createdAt: {
       ...(fromDate ? { gte: fromDate } : {}),
       lte: upToDate,

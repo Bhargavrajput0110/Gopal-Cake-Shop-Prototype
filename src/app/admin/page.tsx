@@ -300,16 +300,16 @@ ${ d.pendingBalances.length > 0 ? `
         </div>
 
         {/* Filter Bar */}
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 pb-4 print:hidden">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-2 print:hidden bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-[var(--border)] shadow-sm">
           {/* Branch Filter Tabs */}
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar w-full md:w-auto">
             {branches.map(branch => (
               <button
                 key={branch}
                 onClick={() => setSelectedBranch(branch)}
-                className={`px-6 py-3 rounded-full font-ui text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                className={`px-5 py-2.5 rounded-full font-ui text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                   selectedBranch === branch 
-                    ? 'bg-[var(--foreground)] text-[var(--background)] shadow-md' 
+                    ? 'bg-[#3E2723] text-white shadow-md' 
                     : 'bg-white border border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]'
                 }`}
               >
@@ -318,14 +318,12 @@ ${ d.pendingBalances.length > 0 ? `
             ))}
           </div>
 
-          <div className="hidden md:block h-8 w-px bg-[var(--border)] mx-2"></div>
-          
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setDashboardDate('')}
               className={`px-4 py-2.5 rounded-xl font-ui text-xs font-bold uppercase tracking-wider transition-all ${
                 dashboardDate === ''
-                  ? 'bg-[#3E2723] text-white shadow-sm'
+                  ? 'bg-[#C5A059] text-[#3E2723] shadow-md font-black'
                   : 'bg-white border border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]'
               }`}
             >
@@ -335,7 +333,7 @@ ${ d.pendingBalances.length > 0 ? `
               onClick={() => setDashboardDate(new Date().toISOString().split('T')[0])}
               className={`px-4 py-2.5 rounded-xl font-ui text-xs font-bold uppercase tracking-wider transition-all ${
                 dashboardDate === new Date().toISOString().split('T')[0]
-                  ? 'bg-[#3E2723] text-white shadow-sm'
+                  ? 'bg-[#C5A059] text-[#3E2723] shadow-md font-black'
                   : 'bg-white border border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]'
               }`}
             >
@@ -345,11 +343,47 @@ ${ d.pendingBalances.length > 0 ? `
               type="date" 
               value={dashboardDate} 
               onChange={(e) => setDashboardDate(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-[var(--border)] bg-white/80 hover:bg-white text-sm font-bold font-ui text-[var(--foreground)] shadow-sm focus:ring-2 focus:ring-[var(--brand-champagne)] focus:outline-none transition-all"
+              className="px-4 py-2 rounded-xl border border-[var(--border)] bg-white text-xs font-bold font-ui text-[var(--foreground)] shadow-sm focus:ring-2 focus:ring-[#C5A059] focus:outline-none transition-all"
               title="Select date to view historical metrics"
             />
           </div>
         </div>
+
+        {/* Filter Summary Banner */}
+        <div className="flex items-center justify-between bg-amber-50/80 border border-amber-200/80 px-4 py-2.5 rounded-xl text-xs font-bold text-amber-900 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span>
+              Scope: <strong className="uppercase font-black text-[#3E2723]">{selectedBranch} Branch</strong> &bull; Date Range: <strong className="font-black text-[#3E2723]">{dashboardDate ? dashboardDate : 'All Time (Historical)'}</strong>
+            </span>
+          </div>
+          {apiData && (
+            <span className="text-[11px] font-black uppercase tracking-wider bg-white/80 px-2.5 py-0.5 rounded-md border border-amber-300/50">
+              {apiData.totalOrders ?? 0} {apiData.totalOrders === 1 ? 'Order' : 'Orders'} Found
+            </span>
+          )}
+        </div>
+
+        {/* Zero Results Help Alert */}
+        {apiData && apiData.totalOrders === 0 && (
+          <div className="p-4 bg-blue-50/90 border border-blue-200 rounded-2xl flex items-center justify-between text-xs text-blue-900 font-medium shadow-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-base">ℹ️</span>
+              <span>
+                No orders recorded for <strong>{selectedBranch} Branch</strong> {dashboardDate ? `on ${dashboardDate}` : 'in database'}. 
+                {dashboardDate ? " Click 'All Time' to view historical orders for this branch." : " Switch branch to 'All' or 'Uma' to view active orders."}
+              </span>
+            </div>
+            {dashboardDate && (
+              <button 
+                onClick={() => setDashboardDate('')}
+                className="ml-3 px-3 py-1 bg-blue-600 text-white rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-blue-700 shrink-0"
+              >
+                Clear Date Filter
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Balance Due Card (Clickable) */}
         <div 
