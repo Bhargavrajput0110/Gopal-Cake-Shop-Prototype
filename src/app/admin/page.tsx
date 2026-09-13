@@ -482,20 +482,32 @@ ${ d.pendingBalances.length > 0 ? `
 
       {/* Balance Due Modal */}
       {isBalanceModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2rem] w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden border border-border">
-            <div className="p-6 border-b border-border flex justify-between items-center bg-gray-50">
+        <div 
+          onClick={() => setIsBalanceModalOpen(false)}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-[2rem] w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-border"
+          >
+            <div className="p-6 border-b border-border flex justify-between items-center bg-rose-50/50">
               <div>
-                <h3 className="font-display text-2xl font-bold">Outstanding Balances</h3>
-                <p className="text-xs font-ui uppercase tracking-wider text-muted-foreground font-bold mt-1">Total: ₹14,500</p>
+                <h3 className="font-display text-2xl font-black text-[#3E2723]">Outstanding Balances</h3>
+                <p className="text-xs font-ui uppercase tracking-wider text-rose-600 font-bold mt-1">
+                  Total Dues: ₹{kpis.balanceDue.toLocaleString()}
+                </p>
               </div>
-              <button onClick={() => setIsBalanceModalOpen(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                <CloseCircle className="w-6 h-6 text-gray-500" />
+              <button 
+                onClick={() => setIsBalanceModalOpen(false)} 
+                className="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-100 text-gray-800 font-bold rounded-xl shadow-sm text-xs font-ui uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95"
+              >
+                <CloseCircle className="w-4 h-4 text-rose-600" />
+                <span>Close / Back</span>
               </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
               {apiData?.pendingBalances?.length ? apiData.pendingBalances.map((item: any, idx: number) => (
-                <div key={idx} className="flex justify-between items-center p-4 border border-border rounded-xl hover:bg-gray-50">
+                <div key={idx} className="flex justify-between items-center p-4 border border-border rounded-2xl hover:bg-gray-50 transition-colors">
                   <div>
                     <span className="font-bold font-ui text-[10px] uppercase tracking-wider text-[var(--brand-deep-rose)]">{item.orderNumber}</span>
                     <h4 className="font-bold text-sm mt-0.5">{item.customerName || 'Unknown Customer'}</h4>
@@ -503,12 +515,23 @@ ${ d.pendingBalances.length > 0 ? `
                   </div>
                   <div className="text-right">
                     <span className="font-display font-bold text-lg text-rose-600">₹{item.balanceDue.toLocaleString()}</span>
-                    <a href={`/sales/pos`} className="block mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--brand-champagne)] hover:underline">Go to POS</a>
+                    <a href={`/sales/orders`} className="block mt-1 text-[10px] font-bold uppercase tracking-wider text-[#C5A059] hover:underline">View Order &rarr;</a>
                   </div>
                 </div>
               )) : (
-                <div className="text-center py-10 text-muted-foreground font-ui">No outstanding balances found.</div>
+                <div className="text-center py-12 text-muted-foreground font-ui">
+                  <TickCircle className="w-10 h-10 mx-auto mb-2 text-emerald-500" />
+                  <p className="font-bold text-sm">No outstanding balances found.</p>
+                </div>
               )}
+            </div>
+            <div className="p-4 border-t border-border bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setIsBalanceModalOpen(false)}
+                className="px-6 py-2.5 bg-[#3E2723] text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-[#3E2723]/90 transition-transform active:scale-95"
+              >
+                &larr; Back to Dashboard
+              </button>
             </div>
           </div>
         </div>
