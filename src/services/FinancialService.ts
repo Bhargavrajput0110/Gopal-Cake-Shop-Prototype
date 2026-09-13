@@ -116,7 +116,7 @@ export class FinancialService {
     if (typeof orderOrId === 'string') {
       order = await prisma.order.findUnique({
         where: { id: orderOrId },
-        include: { ledgerEntries: true }
+        include: { ledgerEntries: true, payments: true }
       });
       if (!order) {
         throw new Error(`Order ${orderOrId} not found`);
@@ -135,28 +135,41 @@ export class FinancialService {
     let waivedAmount = 0;
     let writeOffAmount = 0;
 
-    order.ledgerEntries.forEach((entry: LedgerEntry) => {
-      if (entry.status === 'SUCCESS') {
-        const amount = Number(entry.amount);
-        switch (entry.type) {
-          case 'PAYMENT':
-            paidAmount += amount;
-            break;
-          case 'REFUND':
-            refundedAmount += amount;
-            // A refund conceptually lowers the net paid amount, 
-            // so we subtract it from paidAmount to represent "net cash currently held"
-            paidAmount -= amount; 
-            break;
-          case 'WAIVER':
-            waivedAmount += amount;
-            break;
-          case 'WRITE_OFF':
-            writeOffAmount += amount;
-            break;
+    if (order.ledgerEntries && Array.isArray(order.ledgerEntries)) {
+      order.ledgerEntries.forEach((entry: LedgerEntry) => {
+        if (entry.status === 'SUCCESS') {
+          const amount = Number(entry.amount);
+          switch (entry.type) {
+            case 'PAYMENT':
+              paidAmount += amount;
+              break;
+            case 'REFUND':
+              refundedAmount += amount;
+              // A refund conceptually lowers the net paid amount, 
+              // so we subtract it from paidAmount to represent "net cash currently held"
+              paidAmount -= amount; 
+              break;
+            case 'WAIVER':
+              waivedAmount += amount;
+              break;
+            case 'WRITE_OFF':
+              writeOffAmount += amount;
+              break;
+          }
         }
-      }
-    });
+      });
+    }
+
+    if (order.payments && Array.isArray(order.payments)) {
+      order.payments.forEach((p: any) => {
+        if (p.status === 'SUCCESS') {
+          const inLedger = order.ledgerEntries?.some((l: any) => l.referenceId === p.id || l.referenceId === p.gatewayPaymentId);
+          if (!inLedger) {
+            paidAmount += Number(p.amount);
+          }
+        }
+      });
+    }
 
     // Ensure we don't have a negative paid amount theoretically
     if (paidAmount < 0) paidAmount = 0;

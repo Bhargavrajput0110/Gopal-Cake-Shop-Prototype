@@ -520,6 +520,7 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
   const [selectedDiscount, setSelectedDiscount] = useState<number>(0);
   const [submittingQuote, setSubmittingQuote] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
+  const [isHandingOver, setIsHandingOver] = useState(false);
   
   // Reusable intent-based animation layer
   const animation = useOrderTransitionAnimation(order.id, order.status);
@@ -527,6 +528,20 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
 
   const isLocked = ["CHEF_ACCEPTED","MAKING","DECORATING","READY_FOR_PICKUP","PENDING_ASSIGNMENT","ASSIGNED_TO_DRIVER","PICKED_UP","ON_THE_WAY","DELIVERED"].includes(order.status);
   const canEdit = !isLocked;
+
+  const handleHandover = async () => {
+    if (isHandingOver) return;
+    setIsHandingOver(true);
+    try {
+      await updateOrderStatus(order.id, "COMPLETED");
+      onMutated();
+    } catch (e: any) {
+      console.error("[Handover] Error:", e);
+      alert(e?.message || "Failed to process handover");
+    } finally {
+      setIsHandingOver(false);
+    }
+  };
 
   const handleApprove = async () => {
     await updateOrderStatus(order.id,"WAITING_FOR_CHEF");
@@ -794,9 +809,22 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
                 )}
               </button>
             )}
-            {order.pendingBalance === 0 && order.status === "READY_FOR_PICKUP" && order.orderType === "pickup" && (
-              <button onClick={() => { updateOrderStatus(order.id, "COMPLETED"); onMutated(); }} className="flex-1 bg-[#C5A059] text-white px-3 py-3 md:py-2 rounded-xl md:rounded-md text-sm md:text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
-                <TickCircle className="w-4 h-4 md:w-3.5 md:h-3.5" /> Handover
+            {order.pendingBalance === 0 && order.status === "READY_FOR_PICKUP" && (order.orderType === "pickup" || (order as any).deliveryType === "PICKUP") && (
+              <button 
+                disabled={isHandingOver}
+                onClick={handleHandover} 
+                className="flex-1 bg-[#C5A059] text-white px-3 py-3 md:py-2 rounded-xl md:rounded-md text-sm md:text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95 disabled:opacity-50"
+              >
+                {isHandingOver ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Handing over...</span>
+                  </>
+                ) : (
+                  <>
+                    <TickCircle className="w-4 h-4 md:w-3.5 md:h-3.5" /> Handover
+                  </>
+                )}
               </button>
             )}
             {order.pendingBalance === 0 && order.status !== "NEW" && order.status !== "READY_FOR_PICKUP" && canEdit && (

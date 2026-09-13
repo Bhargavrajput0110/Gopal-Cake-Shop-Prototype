@@ -10,6 +10,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { LoggerService } from '@/services/LoggerService';
+import { FinancialService } from '@/services/FinancialService';
 
 // ─── Canonical DTO ────────────────────────────────────────────────────────────
 
@@ -94,6 +95,9 @@ export class NotificationDataAggregator {
             media: true,  // OrderItemMedia — includes REFERENCE type images
           },
         },
+        ledgerEntries: {
+          where: { status: 'SUCCESS' },
+        },
         payments: {
           where: { status: 'SUCCESS' },
         },
@@ -157,18 +161,16 @@ export class NotificationDataAggregator {
       : undefined;
 
     // ── Payment ───────────────────────────────────────────────────────────────
-    const totalNum = Number(order.totalAmount.toString());
-    const paidNum = order.payments.reduce(
-      (sum, p) => sum + Number(p.amount.toString()),
-      0
-    );
-    const balanceNum = Math.max(totalNum - paidNum, 0);
+    const summary = await FinancialService.calculateFinancialSummary(order);
+    const totalNum = summary.totalAmount;
+    const paidNum = summary.paidAmount;
+    const balanceNum = summary.outstandingAmount;
 
     const total = Math.round(totalNum).toString();
     const amountPaid = Math.round(paidNum).toString();
     const balanceDue = Math.round(balanceNum).toString();
     const paymentMethod =
-      order.payments[0]?.method?.toString() || 'N/A';
+      order.ledgerEntries[0]?.method?.toString() || order.payments[0]?.method?.toString() || 'CASH';
 
     const paymentSummary =
       balanceNum === 0
