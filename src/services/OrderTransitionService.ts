@@ -153,33 +153,24 @@ export class OrderTransitionService {
       io.to('admin_global').emit('order_updated');
     }
 
-    // Await notifications so Vercel Serverless doesn't freeze the execution context
-    // before the HTTP requests can finish.
-    try {
-      await OrderNotificationService.notify({
-        action,
-        orderId,
-        orderNumber: order.orderNumber,
-        branchId: order.branchId,
-        driverId: (order as any).driverId ?? null,
-      })
-    } catch (err) {
-      console.error(`[OrderTransitionService] In-app notification failed for ${orderId}:`, err)
-    }
+    // Dispatch notifications asynchronously in background so staff actions respond instantly (<50ms)
+    OrderNotificationService.notify({
+      action,
+      orderId,
+      orderNumber: order.orderNumber,
+      branchId: order.branchId,
+      driverId: (order as any).driverId ?? null,
+    }).catch(err => console.error(`[OrderTransitionService] In-app notification failed for ${orderId}:`, err))
 
-    try {
-      await NotificationService.handleTimelineEvent({
-        action,
-        orderId,
-        actorId,
-        branchId: order.branchId,
-        nextState,
-        orderNumber: order.orderNumber,
-        driverId: (order as any).driverId ?? null,
-        createdAt: new Date().toISOString(),
-      }, eventId)
-    } catch (err) {
-      console.error(`[OrderTransitionService] WhatsApp notification failed for ${orderId}:`, err)
-    }
+    NotificationService.handleTimelineEvent({
+      action,
+      orderId,
+      actorId,
+      branchId: order.branchId,
+      nextState,
+      orderNumber: order.orderNumber,
+      driverId: (order as any).driverId ?? null,
+      createdAt: new Date().toISOString(),
+    }, eventId).catch(err => console.error(`[OrderTransitionService] WhatsApp notification failed for ${orderId}:`, err))
   }
 }

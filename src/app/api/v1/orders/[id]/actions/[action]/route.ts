@@ -35,13 +35,12 @@ export const POST = withApiHandler(async ({ req, params, appRole, branchId, user
     reasonCode: parsed.reasonCode
   })
 
-  // Await the outbox processor so Vercel Serverless doesn't freeze the execution context
-  // before the WhatsApp message HTTP requests can finish.
+  // Trigger outbox polling in background so API response returns instantly (<50ms)
   try {
     registerSubscribers()
-    await outboxProcessor.poll()
+    outboxProcessor.poll().catch(e => console.error('[Actions] Background outbox poll failed:', e?.message))
   } catch (e: any) {
-    console.error('[Actions] Background outbox poll failed:', e?.message)
+    console.error('[Actions] Background outbox trigger failed:', e?.message)
   }
 
   return NextResponse.json({
