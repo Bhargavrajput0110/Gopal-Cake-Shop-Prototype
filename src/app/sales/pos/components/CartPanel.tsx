@@ -29,6 +29,8 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
     try {
       const payload = {
         customerId: customerId || 'walk-in',
+        customerName: 'Walk-in Quote',
+        customerPhone: '9999999999',
         branchId: (session?.user as any)?.branchId || 'uma',
         type: 'QUOTE' as const,
         items: cart.map(i => ({
@@ -56,7 +58,8 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
       if (onSuccess) onSuccess((res as any).orderNumber || res.id, true)
     } catch (err: any) {
       console.error("Quote generation failed:", err)
-      alert("Failed to generate quote: " + err.message)
+      const errorMsg = err?.message || err?.error || "Unknown server error";
+      alert("Failed to generate quote: " + errorMsg);
     } finally {
       setIsSavingQuote(false)
     }

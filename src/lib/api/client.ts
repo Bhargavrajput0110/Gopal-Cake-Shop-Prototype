@@ -37,9 +37,19 @@ export async function fetchClient<T>(endpoint: string, options: RequestInit = {}
   }
 
   if (!response.ok) {
-    // Parse the standardized error schema from withApiHandler
-    const errMessage = data?.error?.message || data?.error || response.statusText;
-    const errCode = data?.error?.code || 'UNKNOWN_ERROR';
+    // Parse standardized error schema from withApiHandler or direct API responses
+    let errMessage = data?.message || data?.error?.message || (typeof data?.error === 'string' ? data.error : undefined);
+    
+    if (Array.isArray(data?.details) && data.details.length > 0) {
+      const detailMsgs = data.details.map((d: any) => d.message || `${d.field}: invalid`).join(', ');
+      errMessage = errMessage ? `${errMessage}: ${detailMsgs}` : detailMsgs;
+    }
+    
+    if (!errMessage) {
+      errMessage = response.statusText || `Request failed with status ${response.status}`;
+    }
+    
+    const errCode = data?.code || data?.error?.code || 'UNKNOWN_ERROR';
     throw new ApiClientError(errMessage, response.status, data, errCode);
   }
 

@@ -16,13 +16,21 @@ const handler = async (ctx: HandlerContext) => {
   const body = await req.json()
   const data = PosCheckoutSchema.parse(body)
 
-  // Enforce Mandatory Customer Details
-  if (!data.customerName || data.customerName.trim().length < 2) {
-    return errorResponse('Customer Full Name is required to place a POS order', 'VALIDATION_ERROR', 400, [], requestId)
-  }
-  const cleanPhone = (data.customerPhone || '').replace(/\D/g, '')
-  if (cleanPhone.length !== 10) {
-    return errorResponse('Valid 10-digit Customer Phone Number is required to place a POS order', 'VALIDATION_ERROR', 400, [], requestId)
+  // Enforce Mandatory Customer Details (Quotes permit walk-in defaults)
+  const isQuote = data.type === 'QUOTE'
+  let customerName = data.customerName?.trim() || ''
+  let cleanPhone = (data.customerPhone || '').replace(/\D/g, '')
+
+  if (isQuote) {
+    if (customerName.length < 2) customerName = 'Walk-in Quote'
+    if (cleanPhone.length !== 10) cleanPhone = '9999999999'
+  } else {
+    if (!customerName || customerName.length < 2) {
+      return errorResponse('Customer Full Name is required to place a POS order', 'VALIDATION_ERROR', 400, [], requestId)
+    }
+    if (cleanPhone.length !== 10) {
+      return errorResponse('Valid 10-digit Customer Phone Number is required to place a POS order', 'VALIDATION_ERROR', 400, [], requestId)
+    }
   }
 
   // Enforce Mandatory Delivery Address
@@ -35,7 +43,7 @@ const handler = async (ctx: HandlerContext) => {
   // 1. Resolve Customer (Fast Track)
   const resolved = await CustomerSearchService.resolveCustomer({ 
     phone: cleanPhone, 
-    name: data.customerName.trim() 
+    name: customerName 
   });
   const customerId = resolved.id;
 
