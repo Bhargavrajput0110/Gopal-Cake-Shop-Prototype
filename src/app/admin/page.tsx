@@ -75,15 +75,19 @@ export default function OwnerDashboard() {
   const [exportBranch, setExportBranch] = useState('All')
   const [isExporting, setIsExporting] = useState(false)
   const [apiData, setApiData] = useState<any>(null);
-  const [dashboardDate, setDashboardDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [dashboardDate, setDashboardDate] = useState<string>('')
   const branches = ['All', 'Khanderao', 'Uma', 'Warasiya', 'Ellora']
 
   useEffect(() => {
-    let url = `/api/v1/admin/analytics?date=${dashboardDate}`;
+    const params = new URLSearchParams();
+    if (dashboardDate) params.set('date', dashboardDate);
     if (selectedBranch !== 'All') {
       const bMap: any = { 'Khanderao': 'khanderao', 'Uma': 'uma', 'Warasiya': 'varasiya', 'Ellora': 'elora' };
-      url += `&branchId=${bMap[selectedBranch]}`;
+      params.set('branchId', bMap[selectedBranch] || selectedBranch);
     }
+    const query = params.toString();
+    const url = `/api/v1/admin/analytics${query ? `?${query}` : ''}`;
+
     fetch(url)
       .then(r => r.json())
       .then(data => {
@@ -237,20 +241,20 @@ ${ d.pendingBalances.length > 0 ? `
   }
 
   const kpis = {
-    todaysSales: apiData?.todaysSales || 0,
-    totalOrders: apiData?.ordersToday || 0,
-    pendingOrders: apiData?.pendingOrders || 0,
-    completedOrders: (apiData?.ordersByStatus?.COMPLETED || 0) + (apiData?.ordersByStatus?.DELIVERED || 0),
-    readyOrders: apiData?.ordersByStatus?.READY_FOR_PICKUP || 0,
-    activeOrdersPreparing: apiData?.averageQueueLength || 0,
-    pendingDelivery: apiData?.ordersByStatus?.READY_FOR_PICKUP || 0,
-    activeDeliveries: apiData?.ordersByStatus?.ON_THE_WAY || 0,
-    delayedOrders: apiData?.lateOrdersCount || 0,
+    todaysSales: apiData?.todaysSales ?? apiData?.totalSales ?? 0,
+    totalOrders: apiData?.totalOrders ?? apiData?.ordersToday ?? 0,
+    completedOrders: apiData?.completedOrders ?? ((apiData?.ordersByStatus?.COMPLETED || 0) + (apiData?.ordersByStatus?.DELIVERED || 0)),
+    pendingOrders: apiData?.pendingOrders ?? 0,
+    readyOrders: apiData?.readyOrders ?? (apiData?.ordersByStatus?.READY_FOR_PICKUP || 0),
+    activeOrdersPreparing: apiData?.averageQueueLength ?? 0,
+    pendingDelivery: apiData?.pendingDelivery ?? 0,
+    activeDeliveries: apiData?.activeDeliveries ?? (apiData?.ordersByStatus?.ON_THE_WAY || 0),
+    delayedOrders: apiData?.lateOrdersCount ?? 0,
     unverifiedOrders: 0,
     pendingSwap: 0,
     missingIngredients: 0,
     vendorNotes: 0,
-    balanceDue: apiData?.balanceDue || 0,
+    balanceDue: apiData?.balanceDue ?? 0,
     revenueTrend: apiData?.revenueTrend || [],
     averageProductionTimeMinutes: apiData?.averageProductionTimeMinutes || 0
   }
@@ -316,13 +320,35 @@ ${ d.pendingBalances.length > 0 ? `
 
           <div className="hidden md:block h-8 w-px bg-[var(--border)] mx-2"></div>
           
-          <input 
-            type="date" 
-            value={dashboardDate} 
-            onChange={(e) => setDashboardDate(e.target.value)}
-            className="px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 hover:bg-white text-sm font-bold font-ui text-[var(--foreground)] shadow-sm focus:ring-2 focus:ring-[var(--brand-champagne)] focus:outline-none transition-all"
-            title="Select date to view historical metrics"
-          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDashboardDate('')}
+              className={`px-4 py-2.5 rounded-xl font-ui text-xs font-bold uppercase tracking-wider transition-all ${
+                dashboardDate === ''
+                  ? 'bg-[#3E2723] text-white shadow-sm'
+                  : 'bg-white border border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]'
+              }`}
+            >
+              All Time
+            </button>
+            <button
+              onClick={() => setDashboardDate(new Date().toISOString().split('T')[0])}
+              className={`px-4 py-2.5 rounded-xl font-ui text-xs font-bold uppercase tracking-wider transition-all ${
+                dashboardDate === new Date().toISOString().split('T')[0]
+                  ? 'bg-[#3E2723] text-white shadow-sm'
+                  : 'bg-white border border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]'
+              }`}
+            >
+              Today
+            </button>
+            <input 
+              type="date" 
+              value={dashboardDate} 
+              onChange={(e) => setDashboardDate(e.target.value)}
+              className="px-4 py-2.5 rounded-xl border border-[var(--border)] bg-white/80 hover:bg-white text-sm font-bold font-ui text-[var(--foreground)] shadow-sm focus:ring-2 focus:ring-[var(--brand-champagne)] focus:outline-none transition-all"
+              title="Select date to view historical metrics"
+            />
+          </div>
         </div>
 
         {/* Balance Due Card (Clickable) */}

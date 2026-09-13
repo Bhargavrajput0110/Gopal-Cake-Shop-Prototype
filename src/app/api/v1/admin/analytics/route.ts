@@ -15,12 +15,8 @@ export const GET = withApiHandler(async (ctx) => {
 
   const rawBranchParam = req.nextUrl.searchParams.get('branchId');
   const dateParam = req.nextUrl.searchParams.get('date');
-  const targetDate = dateParam ? new Date(dateParam) : new Date();
-  
-  const todayStart = startOfDay(targetDate);
-  const todayEnd = endOfDay(targetDate);
 
-  // Helper to build branch filter safely without key collision
+  // Branch filter condition (supports canonical branch ID, display names, and raw aliases)
   let branchCondition: any = null;
   if (rawBranchParam && rawBranchParam.toLowerCase() !== 'all') {
     const canonical = toBranchId(rawBranchParam);
@@ -36,13 +32,20 @@ export const GET = withApiHandler(async (ctx) => {
     };
   }
 
-  // Base filter for date query
-  const dateCondition = {
-    OR: [
-      { createdAt: { gte: todayStart, lte: todayEnd } },
-      { targetDate: { gte: todayStart, lte: todayEnd } }
-    ]
-  };
+  // Date filter condition (optional)
+  let dateCondition: any = null;
+  let targetDate: Date | null = null;
+  if (dateParam && dateParam.trim() !== '') {
+    targetDate = new Date(dateParam);
+    const todayStart = startOfDay(targetDate);
+    const todayEnd = endOfDay(targetDate);
+    dateCondition = {
+      OR: [
+        { createdAt: { gte: todayStart, lte: todayEnd } },
+        { targetDate: { gte: todayStart, lte: todayEnd } }
+      ]
+    };
+  }
 
   const baseWhereConditions: any[] = [
     { status: { notIn: ['CANCELLED', 'DRAFT'] as any } }
@@ -52,19 +55,17 @@ export const GET = withApiHandler(async (ctx) => {
     baseWhereConditions.push(branchCondition);
   }
 
-  const dateWhereConditions = [...baseWhereConditions, dateCondition];
+  if (dateCondition) {
+    baseWhereConditions.push(dateCondition);
+  }
 
   const baseOrderWhere = {
-    AND: dateWhereConditions
-  };
-
-  const allBranchOrderWhere = {
     AND: baseWhereConditions
   };
 
   try {
-    // 1. Fetch orders for selected date to compute sales & orders Today
-    const ordersTodayList = await prisma.order.findMany({
+    // 1. Fetch ALL matching orders under the exact same scope/filter
+    const ordersList = await prisma.order.findMany({
       where: baseOrderWhere,
       include: {
         customer: { select: { name: true, phone: true } },
@@ -74,20 +75,9 @@ export const GET = withApiHandler(async (ctx) => {
       }
     });
 
-    const ordersToday = ordersTodayList.length;
-    const todaysSales = ordersTodayList.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
-    const averageOrderValue = ordersToday > 0 ? todaysSales / ordersToday : 0;
-
-    // 2. Fetch ALL branch orders for status breakdown & pending balance calculations
-    const allBranchOrders = await prisma.order.findMany({
-      where: allBranchOrderWhere,
-      include: {
-        customer: { select: { name: true, phone: true } },
-        branch: { select: { name: true } },
-        ledgerEntries: true,
-        payments: true
-      }
-    });
+    const totalOrders = ordersList.length;
+    const totalSales = ordersList.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
 
     const ordersByStatus: Record<string, number> = {
       NEW: 0,
@@ -106,7 +96,7 @@ export const GET = withApiHandler(async (ctx) => {
       CANCELLED: 0
     };
 
-    allBranchOrders.forEach(o => {
+    ordersList.forEach(o => {
       if (ordersByStatus[o.status] !== undefined) {
         ordersByStatus[o.status]++;
       } else {
@@ -114,24 +104,33 @@ export const GET = withApiHandler(async (ctx) => {
       }
     });
 
+    const completedOrders = (ordersByStatus.COMPLETED || 0) + (ordersByStatus.DELIVERED || 0);
+
     const pendingOrders = (ordersByStatus.NEW || 0) + 
                           (ordersByStatus.WAITING_FOR_CHEF || 0) + 
                           (ordersByStatus.CHEF_ACCEPTED || 0) + 
                           (ordersByStatus.MAKING || 0) + 
                           (ordersByStatus.DECORATING || 0) + 
                           (ordersByStatus.READY_FOR_PICKUP || 0) + 
-                          (ordersByStatus.ON_THE_WAY || 0);
+                          (ordersByStatus.PENDING_ASSIGNMENT || 0) + 
+                          (ordersByStatus.ASSIGNED_TO_DRIVER || 0) + 
+                          (ordersByStatus.PICKED_UP || 0) + 
+                          (ordersByStatus.ON_THE_WAY || 0) + 
+                          (ordersByStatus.OUT_FOR_DELIVERY || 0);
 
+    const readyOrders = (ordersByStatus.READY_FOR_PICKUP || 0);
+    const pendingDelivery = (ordersByStatus.PENDING_ASSIGNMENT || 0) + (ordersByStatus.ASSIGNED_TO_DRIVER || 0);
+    const activeDeliveries = (ordersByStatus.PICKED_UP || 0) + (ordersByStatus.ON_THE_WAY || 0) + (ordersByStatus.OUT_FOR_DELIVERY || 0);
     const averageQueueLength = (ordersByStatus.WAITING_FOR_CHEF || 0) + 
                                (ordersByStatus.CHEF_ACCEPTED || 0) + 
                                (ordersByStatus.MAKING || 0) + 
                                (ordersByStatus.DECORATING || 0);
 
-    // 3. Compute Total Balance Due & Outstanding Orders List
+    // 2. Compute Balance Due & Outstanding Orders List under exact same scope
     let balanceDue = 0;
     const pendingBalancesList: any[] = [];
 
-    for (const o of allBranchOrders) {
+    for (const o of ordersList) {
       if (o.status !== 'COMPLETED' && o.status !== 'CANCELLED') {
         const finSummary = await FinancialService.calculateFinancialSummary(o);
         if (finSummary.outstandingAmount > 0) {
@@ -149,19 +148,24 @@ export const GET = withApiHandler(async (ctx) => {
       }
     }
 
-    // 4. Compute 7-Day Revenue Trend
+    // 3. 7-Day Revenue Trend
+    const endDate = targetDate ? endOfDay(targetDate) : endOfDay(new Date());
     const revenueTrend: { date: string; revenue: number }[] = [];
     for (let i = 6; i >= 0; i--) {
-      const d = subDays(todayEnd, i);
+      const d = subDays(endDate, i);
       const dStart = startOfDay(d);
       const dEnd = endOfDay(d);
       
-      const dayWhereConditions = [...baseWhereConditions, {
-        OR: [
-          { createdAt: { gte: dStart, lte: dEnd } },
-          { targetDate: { gte: dStart, lte: dEnd } }
-        ]
-      }];
+      const dayWhereConditions: any[] = [
+        { status: { notIn: ['CANCELLED', 'DRAFT'] as any } },
+        {
+          OR: [
+            { createdAt: { gte: dStart, lte: dEnd } },
+            { targetDate: { gte: dStart, lte: dEnd } }
+          ]
+        }
+      ];
+      if (branchCondition) dayWhereConditions.push(branchCondition);
 
       const dayAgg = await prisma.order.aggregate({
         where: { AND: dayWhereConditions },
@@ -174,7 +178,7 @@ export const GET = withApiHandler(async (ctx) => {
       });
     }
 
-    // 5. Sales by Product & Category
+    // 4. Sales by Product & Category
     const orderItems = await prisma.orderItem.findMany({
       where: { order: baseOrderWhere },
       select: {
@@ -209,11 +213,16 @@ export const GET = withApiHandler(async (ctx) => {
       .map(([categoryName, data]) => ({ categoryName, ...data }))
       .sort((a, b) => b.revenue - a.revenue);
 
-    // 6. Return response with root properties AND nested summary
     const responsePayload = {
-      todaysSales,
-      ordersToday,
+      todaysSales: totalSales,
+      totalSales,
+      ordersToday: totalOrders,
+      totalOrders,
+      completedOrders,
       pendingOrders,
+      readyOrders,
+      pendingDelivery,
+      activeDeliveries,
       ordersByStatus,
       averageQueueLength,
       lateOrdersCount: 0,
@@ -224,15 +233,15 @@ export const GET = withApiHandler(async (ctx) => {
       salesByCategory,
 
       summary: {
-        todaysSales,
-        ordersToday,
+        todaysSales: totalSales,
+        ordersToday: totalOrders,
         pendingOrders,
         averageOrderValue,
         totalBalanceDue: balanceDue
       },
       kpis: {
-        todaysSales,
-        ordersToday,
+        todaysSales: totalSales,
+        ordersToday: totalOrders,
         pendingOrders,
         averageOrderValue,
         topProducts: salesByProduct,
@@ -243,7 +252,7 @@ export const GET = withApiHandler(async (ctx) => {
       success: true,
       data: responsePayload,
       meta: {
-        dateFiltered: todayStart.toISOString()
+        dateFiltered: dateParam || 'ALL_TIME'
       }
     });
 
