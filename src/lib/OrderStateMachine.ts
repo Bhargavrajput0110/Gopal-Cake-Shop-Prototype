@@ -71,13 +71,13 @@ export const STATE_MACHINE: TransitionConfig[] = [
   { action: 'on-the-way', current: ['PICKED_UP', 'ASSIGNED_TO_DRIVER', 'READY_FOR_PICKUP', 'PENDING_ASSIGNMENT', 'OUT_FOR_DELIVERY', 'ON_THE_WAY'], next: 'ON_THE_WAY', roles: ['DELIVERY', 'ADMIN', 'MANAGER'], allowedDeliveryTypes: ['DELIVERY'] },
   { action: 'deliver', current: ['ON_THE_WAY', 'OUT_FOR_DELIVERY', 'PICKED_UP', 'ASSIGNED_TO_DRIVER', 'READY_FOR_PICKUP'], next: 'DELIVERED', roles: ['DELIVERY', 'ADMIN', 'MANAGER'], allowedDeliveryTypes: ['DELIVERY'] },
   { action: 'fail-delivery', current: ['PICKED_UP', 'ON_THE_WAY'], next: 'FAILED_DELIVERY', roles: ['DELIVERY', 'ADMIN'], requireReason: true, allowedDeliveryTypes: ['DELIVERY'] },
-  { action: 'complete', current: 'DELIVERED', next: 'COMPLETED', roles: ['SALESPERSON', 'MANAGER', 'ADMIN'], allowedDeliveryTypes: ['DELIVERY'] }, // System will also trigger this if automated
+  { action: 'complete', current: 'DELIVERED', next: 'COMPLETED', roles: ['SALESPERSON', 'MANAGER', 'ADMIN', 'CHEF', 'DELIVERY'], allowedDeliveryTypes: ['DELIVERY'] }, // System will also trigger this if automated
   
   // Failure Recovery
   { action: 'assign-driver', current: 'FAILED_DELIVERY', next: 'ASSIGNED_TO_DRIVER', roles: ['DELIVERY', 'ADMIN', 'MANAGER', 'SALESPERSON'], allowedDeliveryTypes: ['DELIVERY'] },
 
   // Pickup Flow
-  { action: 'complete', current: 'READY_FOR_PICKUP', next: 'COMPLETED', roles: ['SALESPERSON', 'MANAGER', 'ADMIN'], allowedDeliveryTypes: ['PICKUP'] },
+  { action: 'complete', current: 'READY_FOR_PICKUP', next: 'COMPLETED', roles: ['SALESPERSON', 'MANAGER', 'ADMIN', 'CHEF'], allowedDeliveryTypes: ['PICKUP'] },
   
   // Cancellation Flow
   { action: 'cancel', current: ['NEW', 'WAITING_FOR_CHEF', 'READY_FOR_PICKUP'], next: 'CANCELLED', roles: ['SALESPERSON', 'MANAGER', 'ADMIN'], requireReason: true },
