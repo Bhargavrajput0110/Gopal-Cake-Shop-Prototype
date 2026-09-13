@@ -373,8 +373,8 @@ function SalesDashboardContent() {
       {/* New Order Popup — real data from Supabase */}
       <AnimatePresence>
         {newOrderPopup && (
-          <motion.div key="new-order-popup" initial={{opacity:0,scale:0.8,y:50}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:0.8,y:50}}
-            className="fixed bottom-24 right-6 w-80 bg-white/95 backdrop-blur-xl border-2 border-[#C5A059] shadow-2xl rounded-2xl p-4 z-50">
+          <motion.div key="new-order-popup" initial={{opacity:0,scale:0.8,y:-20}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:0.8,y:-20}}
+            className="fixed top-16 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-24 sm:top-auto sm:w-80 bg-white/95 backdrop-blur-xl border-2 border-[#C5A059] shadow-2xl rounded-2xl p-4 z-50">
             <div className="flex items-start gap-3">
               <div className="p-2 bg-[#C5A059]/20 text-[#3E2723] rounded-full animate-pulse"><Notification className="w-6 h-6" /></div>
               <div className="flex-1">
@@ -394,7 +394,7 @@ function SalesDashboardContent() {
                       params.set("page", "1");
                       router.push(`${pathname}?${params.toString()}`, { scroll: false });
                     }}
-                    className="flex-1 bg-[#3E2723] text-white text-xs font-bold py-2 rounded-lg hover:bg-[#3E2723]/90 transition-transform active:scale-95"
+                    className="flex-1 bg-[#3E2723] text-white text-xs font-bold py-2 rounded-lg hover:bg-[#3E2723]/90 transition-transform active:scale-95 shadow-sm"
                   >
                     View Details
                   </button>
@@ -521,6 +521,7 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
   const [submittingQuote, setSubmittingQuote] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
   const [isHandingOver, setIsHandingOver] = useState(false);
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
   
   // Reusable intent-based animation layer
   const animation = useOrderTransitionAnimation(order.id, order.status);
@@ -545,7 +546,6 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
 
   const handleApprove = async () => {
     await updateOrderStatus(order.id,"WAITING_FOR_CHEF");
-    // Removed manual onWhatsApp("..."); now handled via automated Socket event
     onMutated();
   };
 
@@ -563,7 +563,6 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
       }
 
       let handedOver = data.handedOver === true;
-      // Note: Auto-handover is now securely handled on the backend to avoid stale UI state bugs.
 
       onWhatsApp(handedOver ? "Thank you! Your payment is received and your order is handed over. 🍰" : "Thank you! Your payment has been received and balance is settled. 🍰");
       onMutated();
@@ -611,318 +610,349 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
     return s.replace(/_/g," ");
   };
 
-  const pendingVendorTasks = order.vendorTasks?.filter(vt => vt.status === 'pending') || [];
+  const cakeImageUrl = order.cakeImage || "https://images.unsplash.com/photo-1562777717-b6c338435d72?auto=format&fit=crop&q=80&w=600&h=600";
 
   return (
-    <motion.div layout initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.95}}
-      className={`bg-white/80 backdrop-blur-md border border-[#C5A059]/20 rounded-xl shadow-sm overflow-hidden flex flex-col md:flex-row group transition-all duration-300 relative ${animationClass ? animationClass : 'hover:border-[#C5A059]/50 hover:shadow-md'}`}>
+    <>
+      <motion.div layout initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.95}}
+        className={`bg-white backdrop-blur-md border border-[#C5A059]/20 rounded-2xl shadow-md overflow-hidden flex flex-col md:flex-row group transition-all duration-300 relative ${animationClass ? animationClass : 'hover:border-[#C5A059]/50 hover:shadow-lg'}`}>
 
-      <div className="w-full h-24 md:w-44 md:h-auto bg-secondary/30 shrink-0 relative flex items-center justify-center border-b md:border-b-0 md:border-r border-[#C5A059]/10">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={order.cakeImage||"https://images.unsplash.com/photo-1562777717-b6c338435d72?auto=format&fit=crop&q=80&w=200&h=200"} alt="Cake" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
-        {order.isSurprise && (
-          <div className="absolute bottom-2 right-2 bg-purple-500/90 text-white backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md">
-            <Gift className="w-2.5 h-2.5" /> Surprise
-          </div>
-        )}
-      </div>
-
-      <div className="p-5 flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <h3 className="text-xl font-serif font-black text-[#3E2723]">{order.orderNumber || order.id}</h3>
-            <span className="bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">
-              {statusLabel(order.status)}
-            </span>
-            {order.delayLevel==="delayed" && <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest flex items-center gap-1 animate-pulse"><Warning2 className="w-2.5 h-2.5"/>Delayed</span>}
-            {order.delayLevel==="warning" && <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest flex items-center gap-1"><Warning2 className="w-2.5 h-2.5"/>Issue</span>}
-            {isLocked && <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest flex items-center gap-1"><Lock1 className="w-2.5 h-2.5"/>Locked</span>}
-            {(order as any).transferHistory && (order as any).transferHistory.length > 0 && (
-              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm">
-                Transferred
-              </span>
-            )}
-          </div>
+        {/* Large Prominent Cake Image Section (Zomato/Blinkit Partner Style) */}
+        <div 
+          onClick={() => setIsImageZoomed(true)}
+          className="w-full h-56 sm:h-64 md:w-52 md:h-auto bg-slate-900 shrink-0 relative cursor-pointer overflow-hidden group/img border-b md:border-b-0 md:border-r border-[#C5A059]/10"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={cakeImageUrl} 
+            alt="Cake preview" 
+            className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500" 
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
           
-          {/* Transfer History View */}
-          {(order as any).transferHistory && (order as any).transferHistory.length > 0 && (
-            <div className="mb-3 p-2.5 bg-emerald-50/30 border border-emerald-100 rounded-lg flex items-center gap-2 overflow-x-auto hide-scrollbar shadow-[inset_0_1px_4px_rgba(0,0,0,0.02)]">
-              <span className="text-[9px] font-black text-emerald-600/70 uppercase tracking-widest shrink-0">Branch Ops:</span>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-emerald-900 shrink-0">{toBranchShortName((order as any).transferHistory[0].from)}</span>
-                {(order as any).transferHistory.map((th: any, i: number) => (
-                  <span key={i} className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-emerald-300 text-[10px] font-black">➔</span>
-                    <span className="text-xs font-bold text-emerald-900">{th.to}</span>
-                  </span>
-                ))}
-              </div>
+          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+            <span className="bg-black/60 backdrop-blur-md text-white px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+              🔍 Tap to Zoom
+            </span>
+          </div>
+
+          {order.isSurprise && (
+            <div className="absolute top-2 right-2 bg-purple-600/90 text-white backdrop-blur-md px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md">
+              <Gift className="w-3 h-3" /> Surprise
             </div>
           )}
 
-          <div className="space-y-2">
-            {order.items.map((item,i)=>(
-              <div key={i} className="flex flex-col">
-                <p className="text-sm font-bold text-foreground">
-                  {item.qty}x {item.name || (item as any).productName}
-                  {item.weight&&<span className="text-muted-foreground font-normal"> ({item.weight})</span>}
-                  {(item as any).flavor && <span className="ml-1 text-xs text-amber-600 font-semibold">• {(item as any).flavor}</span>}
-                </p>
-                {(item as any).referenceImages && (item as any).referenceImages.length > 0 && (
-                  <div className="flex gap-2 mt-1">
-                    {(item as any).referenceImages.map((img: string, idx: number) => (
-                      <a key={idx} href={img} target="_blank" rel="noreferrer" className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 hover:bg-blue-100 flex items-center gap-1">
-                        🖼️ Ref Image {idx + 1}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+          {/* Quick Cake Spec Bar overlaid on photo bottom */}
+          <div className="absolute bottom-2 left-2 right-2 text-white text-xs font-bold bg-black/50 backdrop-blur-md px-2.5 py-1.5 rounded-lg flex items-center justify-between">
+            <span className="truncate">{order.items[0]?.name || "Custom Cake"}</span>
+            {order.items[0]?.weight && <span className="bg-[#C5A059] text-white text-[10px] font-black px-1.5 py-0.5 rounded ml-1 shrink-0">{order.items[0].weight}</span>}
           </div>
-          {order.items.some(i=>i.notes) && (
-            <div className="mt-2.5 p-2 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-xs font-bold italic">
-              Note: &quot;{order.items.find(i=>i.notes)?.notes}&quot;
+        </div>
+
+        <div className="p-4 sm:p-5 flex-1 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <h3 className="text-xl sm:text-2xl font-serif font-black text-[#3E2723]">{order.orderNumber || order.id}</h3>
+              <span className="bg-[#C5A059]/10 text-[#3E2723] border border-[#C5A059]/30 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-2xs">
+                {statusLabel(order.status)}
+              </span>
+              {order.delayLevel==="delayed" && <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1 animate-pulse"><Warning2 className="w-3 h-3"/>Delayed</span>}
+              {order.delayLevel==="warning" && <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><Warning2 className="w-3 h-3"/>Issue</span>}
+              {isLocked && <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><Lock1 className="w-3 h-3"/>Locked</span>}
             </div>
-          )}
-          {order.customerInstructions && (
-            <div className="mt-2.5 p-2 bg-blue-50 border border-blue-200 rounded-md text-blue-900 text-xs font-bold italic">
-              Instructions: &quot;{order.customerInstructions}&quot;
-            </div>
-          )}
-          {/* Ingredient Requests */}
-          {(order.ingredientRequests||[]).some(r=>r.status==="pending") && (
-            <div className="mt-2.5 p-2 bg-rose-50 border border-rose-200 rounded-md">
-              <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">Ingredient Requests from Kitchen</p>
-              {order.ingredientRequests?.filter(r=>r.status==="pending").map((r: any,i: number)=>(
-                <p key={i} className="text-xs font-bold text-rose-800">&bull; {r.itemName}{r.note?` (${r.note})`:""}</p>
+            
+            {/* Transfer History View */}
+            {(order as any).transferHistory && (order as any).transferHistory.length > 0 && (
+              <div className="mb-3 p-2 bg-emerald-50/50 border border-emerald-200 rounded-lg flex items-center gap-2 overflow-x-auto hide-scrollbar">
+                <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest shrink-0">Branch Ops:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-emerald-900 shrink-0">{toBranchShortName((order as any).transferHistory[0].from)}</span>
+                  {(order as any).transferHistory.map((th: any, i: number) => (
+                    <span key={i} className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-emerald-400 text-[10px] font-black">➔</span>
+                      <span className="text-xs font-bold text-emerald-900">{th.to}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {order.items.map((item,i)=>(
+                <div key={i} className="flex flex-col">
+                  <p className="text-sm font-black text-gray-900">
+                    {item.qty}x {item.name || (item as any).productName}
+                    {item.weight&&<span className="text-muted-foreground font-semibold"> ({item.weight})</span>}
+                    {(item as any).flavor && <span className="ml-1 text-xs text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">• {(item as any).flavor}</span>}
+                  </p>
+                  {(item as any).referenceImages && (item as any).referenceImages.length > 0 && (
+                    <div className="flex gap-2 mt-1 flex-wrap">
+                      {(item as any).referenceImages.map((img: string, idx: number) => (
+                        <a key={idx} href={img} target="_blank" rel="noreferrer" className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 hover:bg-blue-100 flex items-center gap-1">
+                          🖼️ Ref Image {idx + 1}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
-          )}
-        </div>
-
-        <div className="flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Customer</p>
-                <p className="text-xs font-bold text-foreground">{order.customerName}</p>
-                <p className="text-[10px] text-muted-foreground">{order.customerPhone}</p>
+            {order.items.some(i=>i.notes) && (
+              <div className="mt-2.5 p-2.5 bg-amber-50 border border-amber-300/60 rounded-xl text-amber-950 text-xs font-bold">
+                <span className="text-[10px] font-black uppercase text-amber-700 block mb-0.5">Cake Customization Note:</span>
+                &quot;{order.items.find(i=>i.notes)?.notes}&quot;
               </div>
-              <div className="text-right">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Payment Summary</p>
-                <div className="flex flex-col items-end gap-0.5">
-                  <p className="text-[11px] font-bold text-muted-foreground">Total: ₹{order.grandTotal}</p>
-                  <p className="text-[11px] font-bold text-emerald-600">Advance: ₹{order.advancePaid || (order.grandTotal - order.pendingBalance)}</p>
-                  {order.pendingBalance > 0 ? (
-                    <p className="text-xs font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded mt-0.5">To Collect: ₹{order.pendingBalance}</p>
+            )}
+            {order.customerInstructions && (
+              <div className="mt-2.5 p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-950 text-xs font-bold">
+                <span className="text-[10px] font-black uppercase text-blue-700 block mb-0.5">Delivery Instructions:</span>
+                &quot;{order.customerInstructions}&quot;
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start mb-3 bg-secondary/20 p-3 rounded-xl border border-black/5">
+                <div>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">Customer</p>
+                  <p className="text-sm font-black text-gray-900">{order.customerName}</p>
+                  <a href={`tel:${order.customerPhone}`} className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mt-0.5">
+                    <Call className="w-3 h-3 text-blue-600" /> {order.customerPhone}
+                  </a>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">Payment</p>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <p className="text-xs font-bold text-muted-foreground">Total: ₹{order.grandTotal}</p>
+                    {order.pendingBalance > 0 ? (
+                      <p className="text-xs font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded-md mt-0.5">Due: ₹{order.pendingBalance}</p>
+                    ) : (
+                      <p className="text-xs font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md mt-0.5">Paid Full</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-slate-700 bg-slate-100 p-2.5 rounded-xl border border-slate-200 font-bold">
+                <Clock className="w-4 h-4 text-[#C5A059] shrink-0" />
+                <span suppressHydrationWarning>Due: {new Date(order.timeTarget).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",hour12:true})}</span>
+              </div>
+            </div>
+
+            {/* Bargain Negotiation Control Panel */}
+            {order.status === "QUOTE_DRAFT" && (
+              <div className="mt-4 p-3 bg-primary/5 rounded-xl border border-primary/20 space-y-3">
+                <span className="text-[10px] font-black text-primary uppercase tracking-widest block">Send Quote to Customer</span>
+                
+                <div className="flex gap-2 items-center">
+                  <span className="text-xs font-bold text-muted-foreground">Price: ₹</span>
+                  <input 
+                    type="number"
+                    min="0"
+                    value={quotePrice || ''}
+                    onWheel={(e) => e.currentTarget.blur()}
+                    onKeyDown={(e) => {
+                      if (['-', '+', 'e', 'E', '.'].includes(e.key)) e.preventDefault();
+                    }}
+                    onChange={(e) => {
+                      const val = Math.max(0, parseInt(e.target.value) || 0);
+                      setQuotePrice(val);
+                    }}
+                    className="flex-1 bg-white border border-border rounded-md px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
+                    placeholder="Enter custom cake price..."
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  {[0, 50, 100, 150].map(amt => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setSelectedDiscount(amt)}
+                      className={`flex-1 py-1 rounded text-xs font-bold transition-all ${selectedDiscount === amt ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-white border border-border text-foreground hover:bg-secondary'}`}
+                    >
+                      {amt === 0 ? 'No Disc.' : `-₹${amt}`}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  disabled={submittingQuote || quotePrice <= 0}
+                  onClick={handleSendQuote}
+                  className="w-full bg-[#C5A059] text-white py-2 rounded-md text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  Send Negotiated Quote (Final Total: ₹{Math.max(0, quotePrice - selectedDiscount)})
+                </button>
+              </div>
+            )}
+
+            {/* Zomato / Blinkit Partner Style 1-Tap Action Bar */}
+            <div className="mt-4 pt-3 border-t border-gray-200 flex flex-wrap gap-2 items-center">
+              {/* Primary Workflow Button */}
+              {order.status==="NEW" && (
+                <button onClick={handleApprove} className="flex-1 min-w-[120px] bg-emerald-600 text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
+                  <TickCircle className="w-5 h-5" /> Approve
+                </button>
+              )}
+              {order.pendingBalance > 0 && order.status !== "NEW" && (
+                <button onClick={handleCollectPayment} className="flex-1 min-w-[140px] bg-amber-500 text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-amber-600 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
+                  <Gift className="w-5 h-5" /> Collect ₹{order.pendingBalance}
+                </button>
+              )}
+              {order.pendingBalance === 0 && order.status === "READY_FOR_PICKUP" && (order.orderType === "pickup" || (order as any).deliveryType === "PICKUP") && (
+                <button 
+                  disabled={isHandingOver}
+                  onClick={handleHandover} 
+                  className="flex-1 min-w-[130px] bg-[#3E2723] text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-[#2c1c19] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform disabled:opacity-50"
+                >
+                  {isHandingOver ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Handing over...</span>
+                    </>
                   ) : (
-                    <p className="text-xs font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mt-0.5">Fully Paid</p>
+                    <>
+                      <TickCircle className="w-5 h-5 text-[#C5A059]" /> Handover Cake
+                    </>
                   )}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/30 p-2 rounded-lg">
-              <Clock className="w-3.5 h-3.5 shrink-0" />
-              <span className="font-bold" suppressHydrationWarning>Due: {new Date(order.timeTarget).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",hour12:true})}</span>
-            </div>
-            {order.vendorTasks && order.vendorTasks.length>0 && (
-              <div className="mt-2 flex gap-1 flex-wrap">
-                {order.vendorTasks.map((vt,i) => {
-                  const labelMap = {
-                    pending: "Pending",
-                    accepted: "Assigned",
-                    in_progress: "In Progress",
-                    ready: "✓ Ready"
-                  };
-                  return (
-                    <span key={i} className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border flex items-center gap-1 ${vt.status==="ready"?"bg-emerald-50 text-emerald-700 border-emerald-200": vt.status === "accepted" ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-[#C5A059]/10 text-[#C5A059] border-[#C5A059]/20"}`}>
-                      <Reserve className="w-2.5 h-2.5" />{vt.vendorType} - {vt.vendorName ? `${vt.vendorName} (${labelMap[vt.status]})` : labelMap[vt.status]}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                </button>
+              )}
 
-          {/* Bargain Negotiation Control Panel */}
-          {order.status === "QUOTE_DRAFT" && (
-            <div className="mt-4 p-3 bg-primary/5 rounded-xl border border-primary/20 space-y-3">
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest block">Send Quote to Customer</span>
-              
-              <div className="flex gap-2 items-center">
-                <span className="text-xs font-bold text-muted-foreground">Price: ₹</span>
-                <input 
-                  type="number"
-                  min="0"
-                  value={quotePrice || ''}
-                  onWheel={(e) => e.currentTarget.blur()}
-                  onKeyDown={(e) => {
-                    if (['-', '+', 'e', 'E', '.'].includes(e.key)) e.preventDefault();
-                  }}
-                  onChange={(e) => {
-                    const val = Math.max(0, parseInt(e.target.value) || 0);
-                    setQuotePrice(val);
-                  }}
-                  className="flex-1 bg-white border border-border rounded-md px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-primary outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  placeholder="Enter custom cake price..."
-                />
-              </div>
-
-              <div className="flex gap-2">
-                {[0, 50, 100, 150].map(amt => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setSelectedDiscount(amt)}
-                    className={`flex-1 py-1 rounded text-xs font-bold transition-all ${selectedDiscount === amt ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-white border border-border text-foreground hover:bg-secondary'}`}
-                  >
-                    {amt === 0 ? 'No Disc.' : `-₹${amt}`}
-                  </button>
-                ))}
-              </div>
-              <button
-                disabled={submittingQuote || quotePrice <= 0}
-                onClick={handleSendQuote}
-                className="w-full bg-[#C5A059] text-white py-2 rounded-md text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+              {/* Quick Call & WhatsApp Buttons on Mobile Phone */}
+              <a 
+                href={`tel:${order.customerPhone}`}
+                className="md:hidden p-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl font-black flex items-center justify-center active:scale-95 shadow-sm"
+                title="Call Customer"
               >
-                Send Negotiated Quote (Final Total: ₹{Math.max(0, quotePrice - selectedDiscount)})
-              </button>
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className="mt-4 flex gap-2 pt-3 border-t border-border relative z-10 items-center">
-            {order.status==="NEW" && (
-              <button onClick={handleApprove} className="flex-1 bg-emerald-500 text-white px-3 py-3 md:py-2 rounded-xl md:rounded-md text-sm md:text-xs font-bold hover:bg-emerald-600 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
-                <TickCircle className="w-4 h-4 md:w-3.5 md:h-3.5" /> Approve
-              </button>
-            )}
-            {order.pendingBalance > 0 && order.status !== "NEW" && (
-              <button onClick={handleCollectPayment} className="flex-1 bg-amber-500 text-white px-3 py-3 md:py-2 rounded-xl md:rounded-md text-sm md:text-xs font-bold hover:bg-amber-600 flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-1.5 shadow-sm transition-transform active:scale-95">
-                <div className="flex items-center gap-1.5">
-                  <Gift className="w-4 h-4 md:w-3.5 md:h-3.5" /> 
-                  <span>Collect ₹{order.pendingBalance}</span>
-                </div>
-                {order.advancePaid > 0 && (
-                  <span className="text-[10px] opacity-90 font-medium">(Total: ₹{order.grandTotal})</span>
-                )}
-              </button>
-            )}
-            {order.pendingBalance === 0 && order.status === "READY_FOR_PICKUP" && (order.orderType === "pickup" || (order as any).deliveryType === "PICKUP") && (
+                <Call className="w-5 h-5" />
+              </a>
               <button 
-                disabled={isHandingOver}
-                onClick={handleHandover} 
-                className="flex-1 bg-[#C5A059] text-white px-3 py-3 md:py-2 rounded-xl md:rounded-md text-sm md:text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95 disabled:opacity-50"
+                onClick={() => {
+                  const cleanPhone = order.customerPhone.replace(/\D/g, "");
+                  const waUrl = `https://wa.me/91${cleanPhone}?text=Hi%20${encodeURIComponent(order.customerName.split(' ')[0])},%20regarding%20your%20Gopal%20Cakes%20order%20${encodeURIComponent(order.orderNumber || order.id)}:`;
+                  window.open(waUrl, "_blank");
+                  onWhatsApp(`Opened WhatsApp for ${order.customerPhone}`);
+                }}
+                className="md:hidden p-3 bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 rounded-xl font-black flex items-center justify-center active:scale-95 shadow-sm"
+                title="WhatsApp Customer"
               >
-                {isHandingOver ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Handing over...</span>
-                  </>
-                ) : (
-                  <>
-                    <TickCircle className="w-4 h-4 md:w-3.5 md:h-3.5" /> Handover
-                  </>
-                )}
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               </button>
-            )}
-            {order.pendingBalance === 0 && order.status !== "NEW" && order.status !== "READY_FOR_PICKUP" && canEdit && (
-              <button onClick={onAssignVendor} className="flex-1 bg-purple-500 text-white px-3 py-3 md:py-2 rounded-xl md:rounded-md text-sm md:text-xs font-bold hover:bg-purple-600 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95 md:hidden">
-                <Reserve className="w-4 h-4" /> Assign Partner
+              
+              {/* Desktop Secondary Buttons */}
+              <div className="hidden md:flex gap-2 flex-1">
+                 {canEdit && (
+                   <button onClick={onAssignVendor} className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-purple-700 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
+                     <Reserve className="w-3.5 h-3.5" /> Assign Vendor
+                   </button>
+                 )}
+                 {canEdit && (
+                   <button onClick={onEdit} className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
+                     <Edit2 className="w-3.5 h-3.5" /> Edit Order
+                   </button>
+                 )}
+                 <button onClick={onViewTimeline} className="px-3 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors shadow-sm">
+                   <Clock className="w-3.5 h-3.5 text-[#C5A059]" /> Timeline
+                 </button>
+                 <a href={`tel:${order.customerPhone}`} className="px-3 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors shadow-sm">
+                   <Call className="w-3.5 h-3.5 text-blue-600" /> Call
+                 </a>
+                 <button 
+                   onClick={() => {
+                     const cleanPhone = order.customerPhone.replace(/\D/g, "");
+                     const waUrl = `https://wa.me/91${cleanPhone}?text=Hi%20${encodeURIComponent(order.customerName.split(' ')[0])},%20regarding%20your%20Gopal%20Cakes%20order%20${encodeURIComponent(order.orderNumber || order.id)}:`;
+                     window.open(waUrl, "_blank");
+                     onWhatsApp(`Opened WhatsApp for ${order.customerPhone}`);
+                   }} 
+                   className="px-3 py-2 bg-[#25D366] text-white rounded-lg text-xs font-bold hover:bg-[#128C7E] flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                 >
+                   WhatsApp
+                 </button>
+              </div>
+
+              {/* Mobile Menu for Edit / Timeline / Vendor */}
+              <button onClick={() => setShowMoreActions(true)} className="md:hidden px-3 py-3 bg-gray-100 text-gray-800 rounded-xl font-bold flex items-center justify-center transition-colors active:scale-95 shadow-sm border border-gray-200">
+                 <span className="text-xl leading-none -mt-1 font-serif">&#8942;</span>
               </button>
-            )}
-            
-            {/* Desktop: Show all secondary buttons */}
-            <div className="hidden md:flex gap-2 flex-1">
-               {canEdit && (
-                 <button onClick={onAssignVendor} className="flex-1 bg-purple-500 text-white px-3 py-2 rounded-md text-xs font-bold hover:bg-purple-600 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
-                   <Reserve className="w-3.5 h-3.5" /> Assign Vendor
-                 </button>
-               )}
-               {canEdit && (
-                 <button onClick={onEdit} className="flex-1 bg-blue-500 text-white px-3 py-2 rounded-md text-xs font-bold hover:bg-blue-600 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
-                   <Edit2 className="w-3.5 h-3.5" /> Edit Order
-                 </button>
-               )}
-               <button onClick={onViewTimeline} className="px-3 py-2 bg-white border border-border text-foreground rounded-md text-xs font-bold hover:bg-secondary flex items-center justify-center gap-1.5 transition-colors shadow-sm">
-                 <Clock className="w-3.5 h-3.5 text-[#C5A059]" /> Timeline
-               </button>
-               <button onClick={()=>onWhatsApp(`Hi ${order.customerName.split(' ')[0]}, this is Gopal Cakes calling...`)} className="px-3 py-2 bg-white border border-border text-foreground rounded-md text-xs font-bold hover:bg-secondary flex items-center justify-center gap-1.5 transition-colors shadow-sm">
-                 <Call className="w-3.5 h-3.5 text-[#C5A059]" /> Call
-               </button>
-               <button onClick={()=>onWhatsApp(`WhatsApp sent to customer: ${order.customerPhone}`)} className="px-3 py-2 bg-[#25D366] text-white rounded-md text-xs font-bold hover:bg-[#128C7E] flex items-center justify-center gap-1.5 transition-colors shadow-sm">
-                 WhatsApp
-               </button>
             </div>
 
-            {/* Mobile: More Actions Button */}
-            <button onClick={() => setShowMoreActions(true)} className="md:hidden aspect-square px-3 py-3 bg-white text-gray-700 rounded-xl font-bold flex items-center justify-center transition-colors active:scale-95 shadow-sm border border-gray-200">
-               <span className="text-xl leading-none -mt-1 font-serif">&#8942;</span>
-            </button>
+            {/* Mobile Bottom Sheet for More Actions */}
+            <AnimatePresence>
+              {showMoreActions && (
+                <>
+                  <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setShowMoreActions(false)} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] md:hidden" />
+                  <motion.div initial={{y:"100%"}} animate={{y:0}} exit={{y:"100%"}} transition={{type:"spring", bounce:0, duration:0.4}} className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 pb-safe pt-4 z-[160] md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.15)] flex flex-col gap-3">
+                    <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
+                    <h4 className="text-center font-black text-[#3E2723] font-serif text-xl mb-4">Order Actions: {order.orderNumber || order.id}</h4>
+                    
+                    {canEdit && (
+                      <button onClick={() => { setShowMoreActions(false); onEdit(); }} className="w-full bg-blue-50 text-blue-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-blue-200 active:scale-95 transition-transform text-left">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0"><Edit2 className="w-5 h-5 text-blue-600" /></div>
+                        <div>
+                          <div className="text-sm font-black">Edit Order Details</div>
+                          <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Modify items, prices & customer info</div>
+                        </div>
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button onClick={() => { setShowMoreActions(false); onAssignVendor(); }} className="w-full bg-purple-50 text-purple-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-purple-200 active:scale-95 transition-transform text-left">
+                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0"><Reserve className="w-5 h-5 text-purple-600" /></div>
+                        <div>
+                          <div className="text-sm font-black">Assign Vendor Partner</div>
+                          <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Assign photo prints, flowers or toppers</div>
+                        </div>
+                      </button>
+                    )}
+                    <button onClick={() => { setShowMoreActions(false); onViewTimeline(); }} className="w-full bg-orange-50 text-orange-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-orange-200 active:scale-95 transition-transform text-left">
+                      <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0"><Clock className="w-5 h-5 text-orange-600" /></div>
+                      <div>
+                        <div className="text-sm font-black">View Order Timeline</div>
+                        <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Track status changes & kitchen events</div>
+                      </div>
+                    </button>
+                    <a href={`tel:${order.customerPhone}`} onClick={() => setShowMoreActions(false)} className="w-full bg-emerald-50 text-emerald-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-emerald-200 active:scale-95 transition-transform text-left">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0"><Call className="w-5 h-5 text-emerald-600" /></div>
+                      <div>
+                        <div className="text-sm font-black">Call Customer</div>
+                        <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">{order.customerPhone}</div>
+                      </div>
+                    </a>
+                    
+                    <button onClick={() => setShowMoreActions(false)} className="w-full mt-2 py-4 rounded-2xl font-black text-gray-600 bg-gray-100 active:scale-95 transition-transform">
+                      Close Menu
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
-
-          {/* Mobile Bottom Sheet for More Actions */}
-          <AnimatePresence>
-            {showMoreActions && (
-              <>
-                <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setShowMoreActions(false)} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[150] md:hidden" />
-                <motion.div initial={{y:"100%"}} animate={{y:0}} exit={{y:"100%"}} transition={{type:"spring", bounce:0, duration:0.4}} className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 pb-safe pt-4 z-[160] md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col gap-3">
-                  <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
-                  <h4 className="text-center font-black text-[#3E2723] font-serif text-xl mb-4">Order {order.id} Actions</h4>
-                  
-                  {canEdit && (
-                    <button onClick={() => { setShowMoreActions(false); onEdit(); }} className="w-full bg-blue-50 text-blue-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-blue-200 active:scale-95 transition-transform text-left">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0"><Edit2 className="w-5 h-5 text-blue-600" /></div>
-                      <div>
-                        <div className="text-sm">Edit Order Details</div>
-                        <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Modify items & info</div>
-                      </div>
-                    </button>
-                  )}
-                  {canEdit && (
-                    <button onClick={() => { setShowMoreActions(false); onAssignVendor(); }} className="w-full bg-purple-50 text-purple-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-purple-200 active:scale-95 transition-transform text-left">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0"><Reserve className="w-5 h-5 text-purple-600" /></div>
-                      <div>
-                        <div className="text-sm">Assign Vendor Partner</div>
-                        <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Select fulfillment partners</div>
-                      </div>
-                    </button>
-                  )}
-                  <button onClick={() => { setShowMoreActions(false); onViewTimeline(); }} className="w-full bg-orange-50 text-orange-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-orange-200 active:scale-95 transition-transform text-left">
-                    <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0"><Clock className="w-5 h-5 text-orange-600" /></div>
-                    <div>
-                      <div className="text-sm">View Order Timeline</div>
-                      <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Track order history</div>
-                    </div>
-                  </button>
-                  <button onClick={() => { setShowMoreActions(false); onWhatsApp(`Hi ${order.customerName.split(' ')[0]}, this is Gopal Cakes calling...`); }} className="w-full bg-emerald-50 text-emerald-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-emerald-200 active:scale-95 transition-transform text-left">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0"><Call className="w-5 h-5 text-emerald-600" /></div>
-                    <div>
-                      <div className="text-sm">Call Customer</div>
-                      <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">{order.customerPhone}</div>
-                    </div>
-                  </button>
-                  <button onClick={() => { setShowMoreActions(false); onWhatsApp(`WhatsApp sent to customer: ${order.customerPhone}`); }} className="w-full bg-[#25D366]/10 text-[#128C7E] py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-[#25D366]/30 active:scale-95 transition-transform text-left">
-                    <div className="w-10 h-10 rounded-full bg-[#25D366]/20 flex items-center justify-center shrink-0">
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                    </div>
-                    <div>
-                      <div className="text-sm">Send WhatsApp</div>
-                      <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">{order.customerPhone}</div>
-                    </div>
-                  </button>
-                  
-                  <button onClick={() => setShowMoreActions(false)} className="w-full mt-2 py-4 rounded-2xl font-bold text-gray-500 bg-gray-50 active:scale-95 transition-transform">
-                    Cancel
-                  </button>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+
+      {/* Fullscreen Cake Image Zoom Modal */}
+      <AnimatePresence>
+        {isImageZoomed && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={() => setIsImageZoomed(false)} className="fixed inset-0 bg-black/90 backdrop-blur-md z-[300] flex flex-col items-center justify-center p-4">
+            <button onClick={() => setIsImageZoomed(false)} className="absolute top-6 right-6 text-white bg-white/20 p-3 rounded-full hover:bg-white/30 transition-all">
+              <CloseSquare className="w-6 h-6" />
+            </button>
+            <div className="max-w-3xl max-h-[85vh] overflow-hidden rounded-2xl border-2 border-white/20 shadow-2xl relative" onClick={e => e.stopPropagation()}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={cakeImageUrl} alt="Full cake view" className="w-full h-full object-contain max-h-[80vh]" />
+              <div className="bg-black/80 text-white p-4 flex justify-between items-center text-sm font-bold">
+                <div>
+                  <p className="text-base text-[#C5A059] font-serif">{order.orderNumber || order.id}</p>
+                  <p className="text-xs text-gray-300">{order.items[0]?.name} ({order.items[0]?.weight})</p>
+                </div>
+                <button onClick={() => setIsImageZoomed(false)} className="px-4 py-2 bg-[#C5A059] text-white rounded-lg text-xs font-bold hover:bg-[#b08c48]">
+                  Close View
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
