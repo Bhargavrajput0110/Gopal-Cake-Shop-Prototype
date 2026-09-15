@@ -11,19 +11,14 @@ import { BackButton } from "@/components/ui/BackButton";
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
+import { toBranchId, toBranchShortName } from "@/lib/branches";
+
 const BRANCHES = [
   { id: "B_KHM", name: "Khanderao Market", shortName: "Khanderao" },
   { id: "B_UMA", name: "Uma Char Rasta", shortName: "Uma" },
   { id: "B_VAR", name: "Varasiya Ring Road", shortName: "Varasiya" },
   { id: "B_ELL", name: "Ellora Park", shortName: "Ellora" }
 ] as const;
-
-type BranchId = typeof BRANCHES[number]["id"];
-
-function toBranchShortName(id: string) {
-  const b = BRANCHES.find(x => x.id === id);
-  return b ? b.shortName : id.replace("B_", "");
-}
 
 export default function BranchTransferPage() {
   const { orders } = useOrders(); // To get local orders that can be transferred
@@ -38,7 +33,11 @@ export default function BranchTransferPage() {
   const { data: outgoing, mutate: mutateOutgoing } = useSWR(`/api/v1/transfers?mode=outgoing`, fetcher);
 
   // Local Orders that can be transferred
-  const activeOrders = orders.filter(o => o.branch === activeBranch);
+  const activeOrders = orders.filter(o => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (o.orderNumber || o.id).toLowerCase().includes(q) || (o.customerName || '').toLowerCase().includes(q);
+  });
 
   return (
     <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} className="space-y-6 min-h-[calc(100vh-8rem)] flex flex-col pb-12">
@@ -87,7 +86,7 @@ export default function BranchTransferPage() {
 
       <div className="space-y-4 flex-1">
         {activeTab === 'local' && activeOrders.map(order => (
-           <LocalOrderCard key={order.id} order={order} activeBranch={activeBranch} onTransfer={() => mutateOutgoing()} />
+           <LocalOrderCard key={order.id} order={order} activeBranch={activeBranch} onTransfer={() => { mutateOutgoing(); setActiveTab("outgoing"); }} />
         ))}
         {activeTab === 'outgoing' && outgoing?.map((t: any) => (
            <TransferCard key={t.id} transfer={t} type="outgoing" mutate={() => mutateOutgoing()} />
@@ -96,8 +95,8 @@ export default function BranchTransferPage() {
            <TransferCard key={t.id} transfer={t} type="incoming" mutate={() => mutateIncoming()} />
         ))}
         {((activeTab === 'local' && activeOrders.length === 0) || 
-          (activeTab === 'outgoing' && outgoing?.length === 0) || 
-          (activeTab === 'incoming' && incoming?.length === 0)) && (
+          (activeTab === 'outgoing' && (!outgoing || outgoing.length === 0)) || 
+          (activeTab === 'incoming' && (!incoming || incoming.length === 0))) && (
           <div className="flex flex-col items-center justify-center h-48 bg-white/50 border border-dashed border-[#C5A059]/30 rounded-xl">
             <ArrowSwapHorizontal className="w-8 h-8 text-[#C5A059]/40 mb-2" />
             <p className="text-muted-foreground font-bold text-sm uppercase tracking-widest">No {activeTab} records found</p>
@@ -126,14 +125,24 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
 
   const handleInitiate = async () => {
     setLoading(true);
-    await fetch('/api/v1/transfers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-branch-id': activeBranch },
-      body: JSON.stringify({ orderId: order.id, toBranchId: transferTarget, reason: 'Manual route', newTargetDate })
-    });
-    setLoading(false);
-    setShowModal(false);
-    onTransfer();
+    try {
+      const res = await fetch('/api/v1/transfers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-branch-id': activeBranch },
+        body: JSON.stringify({ orderId: order.id, toBranchId: transferTarget, reason: 'Manual route', newTargetDate })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || data.error || 'Failed to initiate transfer');
+      } else {
+        setShowModal(false);
+        onTransfer();
+      }
+    } catch (err: any) {
+      alert('Error initiating transfer: ' + (err?.message || 'Server error'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -242,16 +251,24 @@ function TransferCard({ transfer, type, mutate }: any) {
 
   const handleAction = async (action: string) => {
     setLoading(true);
-    // Mock headers based on type to simulate correct active branch
-    const mockBranchId = type === 'incoming' ? transfer.toBranchId : transfer.fromBranchId;
-    
-    await fetch(`/api/v1/transfers/${transfer.id}/${action}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'x-branch-id': mockBranchId },
-      body: JSON.stringify({ notes: `Performed ${action} from UI` })
-    });
-    mutate();
-    setLoading(false);
+    try {
+      const mockBranchId = type === 'incoming' ? transfer.toBranchId : transfer.fromBranchId;
+      const res = await fetch(`/api/v1/transfers/${transfer.id}/${action}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-branch-id': mockBranchId },
+        body: JSON.stringify({ notes: `Performed ${action} from UI` })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || data.error || `Failed to ${action} transfer`);
+      } else {
+        mutate();
+      }
+    } catch (err: any) {
+      alert(`Error during ${action}: ` + (err?.message || 'Server error'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusColor = (s: string) => {
