@@ -39,11 +39,14 @@ export class BranchTransferService {
         throw new Error('An active transfer already exists for this order.');
       }
 
+      const canonicalFromBranch = toBranchId(params.fromBranchId);
+      const canonicalToBranch = toBranchId(params.toBranchId);
+
       const transfer = await tx.branchTransfer.create({
         data: {
           orderId: params.orderId,
-          fromBranchId: params.fromBranchId,
-          toBranchId: params.toBranchId,
+          fromBranchId: canonicalFromBranch,
+          toBranchId: canonicalToBranch,
           status: 'PENDING',
           requestedBy: params.requestedBy,
           transferReason: params.reason,
