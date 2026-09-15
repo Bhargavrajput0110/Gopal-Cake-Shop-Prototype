@@ -123,7 +123,7 @@ export function Navbar() {
                   alt="Gopal Cake Shop"
                   width={48}
                   height={48}
-                  className="h-11 w-11 object-contain transition-transform duration-300 group-hover:scale-105 mix-blend-multiply dark:mix-blend-normal"
+                  className="h-11 w-11 object-contain transition-transform duration-300 group-hover:scale-105"
                   priority
                 />
                 <div className="flex flex-col leading-none">
@@ -329,7 +329,7 @@ export function Navbar() {
                     alt="Gopal Cake Shop"
                     width={52}
                     height={52}
-                    className="h-12 w-12 object-contain mix-blend-multiply"
+                    className="h-12 w-12 object-contain"
                   />
                   <div className="flex flex-col">
                     <span className="font-display italic font-bold text-xl text-[var(--foreground)]">Gopal</span>
