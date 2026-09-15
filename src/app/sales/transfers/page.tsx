@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { useOrders } from "@/context/OrderContext";
@@ -111,6 +112,11 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
   const [showModal, setShowModal] = useState(false);
   const [transferTarget, setTransferTarget] = useState<string>("B_VAR");
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Timeline adjustment logic
   const originalDate = new Date(order.targetDate || new Date().toISOString());
@@ -136,10 +142,11 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
         <div className="flex items-center gap-2 mb-2">
           <h3 className="text-lg font-serif font-black text-[#3E2723]">{order.orderNumber || order.id}</h3>
           <span className="bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">
-            {order.status.replace(/_/g," ")}
+            {order.status ? order.status.replace(/_/g," ") : "PENDING"}
           </span>
         </div>
-        <p className="text-sm font-bold text-foreground mb-1">{order.customerName}</p>
+        <p className="text-sm font-bold text-foreground mb-1">{order.customerName || 'Walk-in Customer'}</p>
+        <p className="text-xs text-muted-foreground">Pickup: {order.pickupTime ? new Date(order.pickupTime).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }) : 'ASAP'}</p>
       </div>
       <div className="shrink-0 pt-2 md:pt-0">
         <button onClick={() => setShowModal(true)} className="w-full md:w-auto px-6 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-sm font-bold hover:bg-emerald-100 flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95">
@@ -147,30 +154,32 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
         </button>
       </div>
 
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 overflow-y-auto"
-            onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
-          >
-            {/* Centering wrapper — min-h ensures it fills screen so click-outside works */}
-            <div className="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-6">
+      {/* Portal: renders directly on body, escaping framer-motion transform context */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {showModal && (
+            <motion.div
+              key="transfer-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+              onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+            >
               <motion.div
-                initial={{ y: 60, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 60, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                className="bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl shadow-xl relative"
+                initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative my-auto"
+                style={{ maxHeight: 'calc(100vh - 4rem)', overflowY: 'auto' }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Drag handle (mobile only) */}
-                <div className="flex justify-center pt-3 pb-1 sm:hidden">
-                  <div className="w-10 h-1 rounded-full bg-gray-200" />
-                </div>
-
                 <div className="p-6">
-                  <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+                  >
                     <CloseSquare className="w-5 h-5" />
                   </button>
 
@@ -182,7 +191,7 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
                   <select
                     value={transferTarget}
                     onChange={e => setTransferTarget(e.target.value)}
-                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold mb-4"
+                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold mb-4 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
                     {BRANCHES.filter(b => b.id !== activeBranch).map(b =>
                       <option key={b.id} value={b.id}>{b.name}</option>
@@ -194,7 +203,9 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
                     type="datetime-local"
                     value={newTargetDate}
                     onChange={e => setNewTargetDate(e.target.value)}
-                    className={`w-full bg-white border rounded-lg px-3 py-2 text-sm font-bold mb-1 ${isTimeDelayed ? 'border-red-500' : 'border-gray-200'}`}
+                    className={`w-full bg-white border rounded-lg px-3 py-2 text-sm font-bold mb-1 focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
+                      isTimeDelayed ? 'border-red-500' : 'border-gray-200'
+                    }`}
                   />
                   <div className="h-6 mb-4">
                     {isTimeDelayed ? (
@@ -211,16 +222,17 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
                   <button
                     disabled={loading || isTimeDelayed}
                     onClick={handleInitiate}
-                    className="w-full py-3 bg-emerald-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50"
+                    className="w-full py-3 bg-emerald-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-md hover:shadow-lg"
                   >
                     {loading ? 'Sending...' : 'Confirm Transfer'}
                   </button>
                 </div>
               </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   );
 }
