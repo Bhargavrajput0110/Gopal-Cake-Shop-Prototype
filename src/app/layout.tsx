@@ -31,52 +31,86 @@ const dmSans = DM_Sans({
   preload: true,
 });
 
-
 export const metadata: Metadata = {
   title: {
-    default: "Gopal Bakery — Premium Custom Cakes in Vadodara",
-    template: "%s | Gopal Bakery",
+    default: "Gopal Cake Shop — Premium Custom Cakes in Vadodara",
+    template: "%s | Gopal Cake Shop",
   },
-  description: "Gopal Bakery crafts premium custom cakes for every celebration in Vadodara. Order birthday cakes, wedding cakes, photo cakes & more with same-day delivery.",
-  keywords: ["custom cakes Vadodara", "birthday cakes Vadodara", "wedding cakes", "photo cakes", "Gopal Bakery", "cake shop Vadodara", "designer cakes", "order cake online"],
-  authors: [{ name: "Gopal Bakery" }],
-  creator: "Gopal Bakery",
-  publisher: "Gopal Bakery",
+  description:
+    "Gopal Cake Shop crafts premium custom cakes for every celebration in Vadodara. Order birthday cakes, wedding cakes, photo cakes & more with same-day delivery. 100% eggless. Est. 1990.",
+  keywords: [
+    "custom cakes Vadodara",
+    "birthday cakes Vadodara",
+    "wedding cakes Vadodara",
+    "photo cakes Vadodara",
+    "Gopal Cake Shop",
+    "Gopal Cake Shop Vadodara",
+    "eggless cakes Vadodara",
+    "cake shop Vadodara",
+    "designer cakes",
+    "order cake online Vadodara",
+    "bento cake Vadodara",
+    "anniversary cake Vadodara",
+    "same day cake delivery Vadodara",
+    "cake delivery Vadodara",
+  ],
+  authors: [{ name: "Gopal Cake Shop" }],
+  creator: "Gopal Cake Shop",
+  publisher: "Gopal Cake Shop",
   manifest: "/manifest.json",
-  metadataBase: new URL("https://gopalbakery.in"),
+  metadataBase: new URL("https://gopalcakeshop.com"),
+  alternates: {
+    canonical: "https://gopalcakeshop.com",
+  },
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://gopalbakery.in",
-    siteName: "Gopal Bakery",
-    title: "Gopal Bakery — Premium Custom Cakes in Vadodara",
-    description: "Order premium custom cakes for birthdays, weddings & special occasions. Fresh, handcrafted with love. Delivery across Vadodara.",
+    url: "https://gopalcakeshop.com",
+    siteName: "Gopal Cake Shop",
+    title: "Gopal Cake Shop — Premium Custom Cakes in Vadodara",
+    description:
+      "Order premium custom cakes for birthdays, weddings & special occasions. Fresh, 100% eggless, handcrafted with love. Same-day delivery across Vadodara.",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Gopal Bakery — Premium Custom Cakes",
+        alt: "Gopal Cake Shop — Premium Custom Cakes in Vadodara",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Gopal Bakery — Premium Custom Cakes in Vadodara",
-    description: "Order premium custom cakes for birthdays, weddings & special occasions.",
+    title: "Gopal Cake Shop — Premium Custom Cakes in Vadodara",
+    description:
+      "Order premium custom cakes for birthdays, weddings & special occasions. 100% eggless. Same-day delivery across Vadodara.",
     images: ["/og-image.jpg"],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Gopal Bakery",
+    title: "Gopal Cake Shop",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
     apple: "/icon-192x192.png",
+    shortcut: "/favicon.ico",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
-
 
 export const viewport: Viewport = {
   themeColor: "#38251E",

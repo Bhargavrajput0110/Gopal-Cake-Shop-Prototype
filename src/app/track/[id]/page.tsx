@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Box, Location, TickCircle, Reserve, Clock, Warning2, ArrowRight, Home2, Receipt21, Star1, Map } from "iconsax-react";
+import { Box, Location, TickCircle, Reserve, Clock, Warning2, Home2, Receipt21, Whatsapp } from "iconsax-react";
 import Link from 'next/link';
 import { BackButton } from '@/components/ui/BackButton';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 
 export default function TrackOrderPage({ params }: { params: Promise<{ id: string }> }) {
@@ -33,17 +33,6 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
   }, [resolvedParams.id]);
 
   useEffect(() => {
-    try {
-      const cached = window.localStorage.getItem(`order_${resolvedParams.id}`);
-      if (cached) {
-        setOrder(JSON.parse(cached));
-        setLoading(false);
-        return;
-      }
-    } catch (e) {
-      console.warn("localStorage read failed", e);
-    }
-
     fetch(`/api/v1/public/orders/${resolvedParams.id}`)
       .then(res => {
         if (!res.ok) throw new Error('Order not found');
@@ -53,21 +42,8 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
         setOrder(data);
         setLoading(false);
       })
-      .catch(err => {
-        // Guarantee customer sees an engaging order tracking status even during testing or offline demos!
-        setOrder({
-          id: resolvedParams.id,
-          orderNumber: resolvedParams.id,
-          status: "Received • Kitchen Informed",
-          totalAmount: 1200,
-          timeTarget: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
-          items: [
-            { productName: "Gopal Special Custom Order", quantity: 1, variant: "Standard" }
-          ],
-          timeline: [
-            { status: "Received", createdAt: new Date().toISOString() }
-          ]
-        });
+      .catch(() => {
+        setError('We could not find this order. Please check your link.');
         setLoading(false);
       });
   }, [resolvedParams.id]);
@@ -111,17 +87,39 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
   const isDelivered = currentStage === 4;
 
   const stages = [
-    { title: "Confirmed", subtitle: "We've received it", icon: Clock },
-    { title: "Preparing", subtitle: "Chef is baking", icon: Reserve },
-    { title: "Ready", subtitle: "Awaiting dispatch", icon: Box },
-    { title: "On The Way", subtitle: "Out for delivery", icon: Location },
-    { title: "Delivered", subtitle: "Enjoy your cake!", icon: TickCircle },
+    { title: "Confirmed",  subtitle: "We've received it",  icon: Clock },
+    { title: "Preparing",  subtitle: "Chef is baking",     icon: Reserve },
+    { title: "Ready",      subtitle: "Awaiting dispatch",  icon: Box },
+    { title: "On The Way", subtitle: "Out for delivery",   icon: Location },
+    { title: "Delivered",  subtitle: "Enjoy your cake!",   icon: TickCircle },
   ];
 
   const getStageTimestamp = (stageIndex: number) => {
     if (!order.timeline || !Array.isArray(order.timeline)) return null;
     const event = order.timeline.find((t: any) => getStageIndex(t.status) === stageIndex);
     return event ? event.createdAt : null;
+  };
+
+  const fmt = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
+
+  const handleShareWhatsApp = () => {
+    const lines = [
+      `🎂 *Gopal Cake Shop — Order Receipt*`,
+      `Order #${order.orderNumber}`,
+      ``,
+      ...(order.items || []).map((i: any) =>
+        `• ${i.productName}${i.variant ? ` (${i.variant})` : ''} × ${i.quantity} — ${fmt((i.price || 0) * i.quantity)}`
+      ),
+      ``,
+      order.deliveryCharge > 0 ? `Delivery: ${fmt(order.deliveryCharge)}` : null,
+      order.discount > 0 ? `Discount: -${fmt(order.discount)}` : null,
+      `*Total: ${fmt(order.totalAmount)}*`,
+      order.totalPaid > 0 ? `Paid: ${fmt(order.totalPaid)}` : null,
+      order.balanceDue > 0 ? `Balance Due (pay on ${order.deliveryType === 'PICKUP' ? 'pickup' : 'delivery'}): *${fmt(order.balanceDue)}*` : `✅ Fully Paid`,
+      ``,
+      `Track your order: ${typeof window !== 'undefined' ? window.location.href : ''}`,
+    ].filter(Boolean).join('\n');
+    window.open(`https://wa.me/?text=${encodeURIComponent(lines)}`, '_blank');
   };
 
   return (
@@ -142,10 +140,15 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
           </Link>
         </header>
 
+        {/* Order Number + ETA */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center">
           <p className="font-ui text-[10px] uppercase tracking-[0.3em] font-black text-amber-500 mb-3">Order Tracking</p>
-          <h1 className="font-display font-black text-4xl md:text-5xl tracking-tight mb-2">#{order.orderNumber || order.id.split('-').pop()}</h1>
-          <p className="font-editorial italic text-gray-400 text-lg">ETA: {order.timeTarget ? new Date(order.timeTarget).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Today'}</p>
+          <h1 className="font-display font-black text-4xl md:text-5xl tracking-tight mb-2">#{order.orderNumber}</h1>
+          <p className="font-editorial italic text-gray-400 text-lg">
+            {order.timeTarget
+              ? `Due: ${new Date(order.timeTarget).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at ${new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              : 'Today'}
+          </p>
         </motion.div>
 
         {/* Live Status Hero */}
@@ -155,21 +158,17 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
           transition={{ delay: 0.1 }}
           className="relative bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 mb-10 overflow-hidden text-center"
         >
-          {/* Animated Glow Behind Icon */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-amber-500/20 rounded-full blur-[60px]"></div>
-          
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-amber-500/20 rounded-full blur-[60px]" />
           <div className="relative z-10 flex flex-col items-center">
             <motion.div 
-              animate={{ 
-                scale: [1, 1.05, 1],
-                rotate: isDelivered ? [0, 5, -5, 0] : 0
-              }} 
+              animate={{ scale: [1, 1.05, 1], rotate: isDelivered ? [0, 5, -5, 0] : 0 }} 
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mb-6 shadow-2xl ${isDelivered ? 'bg-emerald-500 text-white' : 'bg-gradient-to-tr from-amber-500 to-amber-300 text-amber-950'}`}
+              className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mb-6 shadow-2xl ${
+                isDelivered ? 'bg-emerald-500 text-white' : 'bg-gradient-to-tr from-amber-500 to-amber-300 text-amber-950'
+              }`}
             >
               {React.createElement(stages[currentStage]?.icon || Warning2, { className: "w-12 h-12", variant: "Bold" })}
             </motion.div>
-            
             <h2 className="font-display font-black text-3xl mb-2">{order.status}</h2>
             <p className="font-ui text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">
               {isDelivered ? 'Delivered successfully' : 'Live updates active'}
@@ -185,26 +184,29 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
           className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 mb-10"
         >
           <div className="relative">
-            {/* Connecting Line */}
             <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/10" />
             <div 
               className="absolute left-6 top-0 w-0.5 bg-gradient-to-b from-amber-400 to-emerald-400 transition-all duration-1000"
               style={{ height: `${(currentStage / (stages.length - 1)) * 100}%` }}
             />
-
             <div className="space-y-10">
               {stages.map((stage, idx) => {
                 const isActive = idx === currentStage;
                 const isPast = idx < currentStage;
                 const timestamp = getStageTimestamp(idx);
-                
                 return (
                   <div key={idx} className="relative flex items-center gap-6 z-10">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-[#050505] transition-all duration-500 ${isActive ? 'bg-amber-400 text-amber-950 scale-110 shadow-[0_0_20px_rgba(251,191,36,0.4)]' : isPast ? 'bg-emerald-500 text-white' : 'bg-white/10 text-gray-500'}`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-[#050505] transition-all duration-500 ${
+                      isActive ? 'bg-amber-400 text-amber-950 scale-110 shadow-[0_0_20px_rgba(251,191,36,0.4)]'
+                      : isPast ? 'bg-emerald-500 text-white'
+                      : 'bg-white/10 text-gray-500'
+                    }`}>
                       <stage.icon className="w-5 h-5" variant={isActive || isPast ? "Bold" : "Outline"} />
                     </div>
                     <div>
-                      <h3 className={`font-display font-black text-xl mb-0.5 transition-colors ${isActive ? 'text-amber-400' : isPast ? 'text-white' : 'text-gray-500'}`}>{stage.title}</h3>
+                      <h3 className={`font-display font-black text-xl mb-0.5 transition-colors ${
+                        isActive ? 'text-amber-400' : isPast ? 'text-white' : 'text-gray-500'
+                      }`}>{stage.title}</h3>
                       <p className="font-ui text-[9px] uppercase tracking-[0.2em] font-bold text-gray-500">{stage.subtitle}</p>
                       {timestamp && (
                         <p className="font-editorial text-xs text-gray-400 mt-1 italic">
@@ -219,52 +221,172 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
           </div>
         </motion.div>
 
-        {/* Order Details */}
+        {/* ── CUSTOMER BILL ──────────────────────────────────────────── */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.3 }}
-          className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden"
+          className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden mb-6"
         >
-          <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
-            <h3 className="font-ui text-[10px] uppercase tracking-[0.2em] font-black flex items-center gap-2">
-              <Receipt21 className="w-4 h-4 text-amber-400" /> Order Summary
-            </h3>
-            <span className="font-display font-black text-xl">₹{order.totalAmount}</span>
+          {/* Bill header */}
+          <div className="p-6 border-b border-white/10 bg-white/[0.03] flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Receipt21 className="w-5 h-5 text-amber-400" />
+              <div>
+                <h3 className="font-ui text-[10px] uppercase tracking-[0.2em] font-black text-white">Your Bill</h3>
+                <p className="font-editorial text-xs italic text-gray-500 mt-0.5">
+                  Gopal Cake Shop • Order #{order.orderNumber}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleShareWhatsApp}
+              className="flex items-center gap-2 px-4 py-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 rounded-full text-[#25D366] font-ui text-[9px] uppercase tracking-[0.15em] font-black transition-colors"
+            >
+              <Whatsapp className="w-4 h-4" />
+              Share
+            </button>
           </div>
-          <div className="p-6 space-y-4">
+
+          {/* Line items */}
+          <div className="p-6 space-y-5">
             {order.items?.map((item: any, idx: number) => (
-              <div key={idx} className="flex gap-4 items-center">
-                <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-                  {item.image ? (
+              <div key={idx} className="flex gap-4 items-start">
+                {item.image ? (
+                  <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 overflow-hidden shrink-0">
                     <img src={item.image} alt={item.productName} className="w-full h-full object-cover" />
-                  ) : (
-                    <Box className="w-6 h-6 text-gray-600" />
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 shrink-0 flex items-center justify-center">
+                    <Box className="w-5 h-5 text-gray-600" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-white truncate text-lg leading-tight">{item.productName}</h4>
-                  <p className="font-ui text-[9px] uppercase tracking-[0.2em] font-bold text-gray-500 mt-1">Qty: {item.quantity} {item.variant ? `• ${item.variant}` : ''}</p>
+                  <div className="flex justify-between items-start gap-2">
+                    <h4 className="font-bold text-white text-sm leading-tight">{item.productName}</h4>
+                    <span className="font-display font-black text-base text-white shrink-0">
+                      {fmt((item.price || 0) * item.quantity)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    {item.variant && <span className="font-ui text-[9px] uppercase tracking-wider font-bold text-gray-500">{item.variant}</span>}
+                    {item.flavor && <span className="font-ui text-[9px] uppercase tracking-wider font-bold text-gray-500">• {item.flavor}</span>}
+                    <span className="font-ui text-[9px] uppercase tracking-wider font-bold text-gray-500">• Qty {item.quantity}</span>
+                    {item.quantity > 1 && item.price > 0 && (
+                      <span className="font-editorial text-[10px] italic text-gray-600">{fmt(item.price)} each</span>
+                    )}
+                  </div>
+                  {item.messageOnCake && (
+                    <p className="mt-1 font-editorial italic text-[11px] text-amber-400/70">✏️ &ldquo;{item.messageOnCake}&rdquo;</p>
+                  )}
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Totals breakdown */}
+          <div className="border-t border-white/10 p-6 space-y-3">
+            <div className="flex justify-between">
+              <span className="font-ui text-[10px] uppercase tracking-wider font-bold text-gray-400">Subtotal</span>
+              <span className="font-display font-bold text-gray-300">{fmt(order.subtotal ?? order.totalAmount)}</span>
+            </div>
+
+            {(order.deliveryCharge ?? 0) > 0 && (
+              <div className="flex justify-between">
+                <span className="font-ui text-[10px] uppercase tracking-wider font-bold text-gray-400">Delivery Charge</span>
+                <span className="font-display font-bold text-gray-300">{fmt(order.deliveryCharge)}</span>
+              </div>
+            )}
+
+            {order.deliveryType === 'PICKUP' && (order.deliveryCharge ?? 0) === 0 && (
+              <div className="flex justify-between">
+                <span className="font-ui text-[10px] uppercase tracking-wider font-bold text-gray-400">Delivery</span>
+                <span className="font-display font-bold text-emerald-400">Free (Self Pickup)</span>
+              </div>
+            )}
+
+            {(order.discount ?? 0) > 0 && (
+              <div className="flex justify-between">
+                <span className="font-ui text-[10px] uppercase tracking-wider font-bold text-emerald-400">Discount</span>
+                <span className="font-display font-bold text-emerald-400">-{fmt(order.discount)}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center pt-4 border-t border-white/10">
+              <span className="font-ui text-[11px] uppercase tracking-[0.2em] font-black text-white">Grand Total</span>
+              <span className="font-display font-black text-2xl text-amber-400">{fmt(order.totalAmount)}</span>
+            </div>
+          </div>
+
+          {/* Payment status */}
+          <div className="border-t border-white/10 bg-white/[0.02] p-6 space-y-3">
+            <p className="font-ui text-[9px] uppercase tracking-[0.2em] font-black text-gray-500 mb-1">Payment Status</p>
+
+            {(order.payments || []).map((p: any, idx: number) => (
+              <div key={idx} className="flex justify-between items-center">
+                <div>
+                  <span className="font-ui text-[10px] uppercase tracking-wider font-bold text-gray-300">
+                    {p.type === 'ADVANCE' ? '50% Advance' : p.type === 'FULL' ? 'Full Payment' : 'Amount'} Paid
+                  </span>
+                  {p.paidAt && (
+                    <span className="ml-2 font-editorial italic text-[10px] text-gray-600">
+                      {new Date(p.paidAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+                <span className="font-display font-bold text-emerald-400">{fmt(p.amount)}</span>
+              </div>
+            ))}
+
+            {(order.balanceDue ?? 0) > 0 ? (
+              <div className="flex justify-between items-center pt-4 border-t border-white/10">
+                <div>
+                  <p className="font-ui text-[10px] uppercase tracking-[0.15em] font-black text-amber-400">Balance Due</p>
+                  <p className="font-editorial italic text-[10px] text-gray-500 mt-0.5">
+                    Payable {order.deliveryType === 'PICKUP' ? 'at pickup' : 'on delivery'} — cash or UPI
+                  </p>
+                </div>
+                <span className="font-display font-black text-xl text-amber-400">{fmt(order.balanceDue)}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 pt-4 border-t border-white/10">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                  <TickCircle className="w-4 h-4 text-emerald-400" variant="Bold" />
+                </div>
+                <div>
+                  <p className="font-ui text-[10px] uppercase tracking-[0.15em] font-black text-emerald-400">Fully Paid</p>
+                  <p className="font-editorial italic text-[10px] text-gray-500">No balance due — thank you!</p>
+                </div>
+              </div>
+            )}
+          </div>
         </motion.div>
 
-        {/* Support Section */}
+        {/* Support CTA */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.4 }}
-          className="mt-8 flex justify-center"
+          className="flex flex-col items-center gap-3"
         >
-          <button className="px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full font-ui text-[9px] uppercase tracking-[0.2em] font-black text-gray-300 transition-colors flex items-center gap-2">
+          <Link
+            href="/orders"
+            className="px-6 py-4 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-full font-ui text-[9px] uppercase tracking-[0.2em] font-black text-amber-400 transition-colors flex items-center gap-2"
+          >
+            <Receipt21 className="w-4 h-4" />
+            View All My Orders
+          </Link>
+          <a
+            href="https://wa.me/919712632132"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full font-ui text-[9px] uppercase tracking-[0.2em] font-black text-gray-300 transition-colors flex items-center gap-2"
+          >
             Need Help? Contact Store
-          </button>
+          </a>
         </motion.div>
 
       </div>
     </div>
   );
 }
-

@@ -34,22 +34,39 @@ export class PaymentService {
     if (!order) throw new Error('Order not found');
 
     const gatewayOrder = await this.provider.createOrder({
-      amount: amount * 100, // Converting to paise
+      amount: Math.round(amount * 100), // Converting to paise
       currency: 'INR',
       receipt: order.orderNumber
     });
 
-    const payment = await this.repo.createPayment({
-      orderId,
-      amount,
-      method,
-      type: 'FULL',
-      status: PaymentStatus.PENDING,
-      provider: 'RAZORPAY',
-      gatewayOrderId: gatewayOrder.id
+    const isAdvance = amount < Number(order.totalAmount) - 0.01;
+    const paymentType = isAdvance ? PaymentStatus.PENDING && ('ADVANCE' as const) : ('FULL' as const);
+
+    const existingPending = await prisma.payment.findFirst({
+      where: { orderId, status: PaymentStatus.PENDING }
     });
 
-    await TimelineAdapter.recordEvent(orderId, 'PAYMENT_PENDING', order.status, order.status, 'Payment Link Created');
+    let payment;
+    if (existingPending) {
+      payment = await this.repo.updatePayment(existingPending.id, {
+        amount,
+        type: paymentType as any,
+        provider: 'RAZORPAY',
+        gatewayOrderId: gatewayOrder.id
+      });
+    } else {
+      payment = await this.repo.createPayment({
+        orderId,
+        amount,
+        method: method || 'RAZORPAY',
+        type: paymentType as any,
+        status: PaymentStatus.PENDING,
+        provider: 'RAZORPAY',
+        gatewayOrderId: gatewayOrder.id
+      });
+    }
+
+    await TimelineAdapter.recordEvent(orderId, 'PAYMENT_PENDING', order.status, order.status, 'Razorpay Order Created');
 
     return { payment, gatewayOrder };
   }
@@ -230,22 +247,32 @@ export class PaymentService {
               failureReason: 'Reconciliation timeout expired with no successful payments'
             });
 
-            // Also cancel the order since the online payment failed and timed out
-            await prisma.order.update({
-              where: { id: payment.orderId },
-              data: {
-                status: 'CANCELLED',
-                internalNotes: 'Auto-cancelled due to payment timeout'
-              }
+            // Check if order has ANY successful payment or ledger entry before cancelling!
+            const hasSuccessfulPayment = await prisma.payment.findFirst({
+              where: { orderId: payment.orderId, status: PaymentStatus.SUCCESS }
+            });
+            const hasSuccessfulLedger = await prisma.ledgerEntry.findFirst({
+              where: { orderId: payment.orderId, status: 'SUCCESS' }
             });
 
-            await TimelineAdapter.recordEvent(
-              payment.orderId,
-              'PAYMENT_FAILED',
-              payment.order.status,
-              'CANCELLED',
-              `Payment failed after retry window expired. Order auto-cancelled.`
-            );
+            if (!hasSuccessfulPayment && !hasSuccessfulLedger && payment.order.status !== 'CANCELLED') {
+              // Also cancel the order since the online payment failed and timed out with no payments received
+              await prisma.order.update({
+                where: { id: payment.orderId },
+                data: {
+                  status: 'CANCELLED',
+                  internalNotes: 'Auto-cancelled due to payment timeout'
+                }
+              });
+
+              await TimelineAdapter.recordEvent(
+                payment.orderId,
+                'PAYMENT_FAILED',
+                payment.order.status,
+                'CANCELLED',
+                `Payment failed after retry window expired. Order auto-cancelled.`
+              );
+            }
             
             summary.failed++;
           } else {

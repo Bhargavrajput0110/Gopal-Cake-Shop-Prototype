@@ -10,9 +10,56 @@ import { CategoryCardsNav } from "@/components/home/CategoryCardsNav";
 import { Suspense } from "react";
 import { PageColorWrapper } from "@/components/home/PageColorWrapper";
 
+const LOCAL_BUSINESS_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Bakery",
+  name: "Gopal Cake Shop",
+  alternateName: "Gopal Cakes Vadodara",
+  url: "https://gopalcakeshop.com",
+  logo: "https://gopalcakeshop.com/logo.png",
+  image: "https://gopalcakeshop.com/og-image.jpg",
+  description:
+    "Gopal Cake Shop crafts premium custom cakes for every celebration in Vadodara. 100% eggless, same-day delivery. Est. 1990.",
+  telephone: "+91-97126-32132",
+  priceRange: "₹₹",
+  servesCuisine: "Bakery",
+  hasMap: "https://maps.google.com/?q=Gopal+Cake+Shop+Vadodara",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "Khanderao Market",
+    addressLocality: "Vadodara",
+    addressRegion: "Gujarat",
+    postalCode: "390001",
+    addressCountry: "IN",
+  },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 22.3072,
+    longitude: 73.1812,
+  },
+  openingHoursSpecification: [
+    {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      opens: "09:00",
+      closes: "21:00",
+    },
+  ],
+  sameAs: [
+    "https://www.instagram.com/gopalcakeshop",
+    "https://www.facebook.com/gopalcakeshop",
+  ],
+  foundingDate: "1990",
+};
+
 export default function Home() {
   return (
     <PageColorWrapper>
+      {/* JSON-LD Structured Data for Google rich results */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(LOCAL_BUSINESS_JSON_LD) }}
+      />
       {/* Hero — full viewport cinematic */}
       <Suspense
         fallback={

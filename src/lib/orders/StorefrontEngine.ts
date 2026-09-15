@@ -299,8 +299,9 @@ export class StorefrontEngine {
       if (context.canOverrideDelivery && payload.overrideDeliveryCharge !== undefined) {
         deliveryCharge = payload.overrideDeliveryCharge
       } else {
-        // Try to calculate the real distance, then apply tiered pricing
-        if (payload.deliveryAddress && branch.address) {
+        // Try to calculate the real distance, then apply tiered pricing.
+        // Skip the API call if the browser already sent a valid distance (saves ~1-2s on each checkout).
+        if (calculatedDistanceKm === undefined && payload.deliveryAddress && branch.address) {
           try {
             const distanceProvider = DistanceFactory.getProvider();
             const distanceResult = await distanceProvider.calculateDistance(branch.address, payload.deliveryAddress);
@@ -308,7 +309,7 @@ export class StorefrontEngine {
             calculatedIsFarDistance = distanceResult.isFarDistance;
           } catch (error) {
             console.error('[DistanceProvider] Failed to calculate distance:', error);
-            // calculatedDistanceKm stays as client-provided value (or undefined)
+            // calculatedDistanceKm stays as undefined
           }
         }
 
@@ -446,12 +447,14 @@ export class StorefrontEngine {
                 payments: { create: paymentsData },
                 ...(ledgerEntriesData.length > 0 ? { ledgerEntries: { create: ledgerEntriesData } } : {})
               };
-            } else if (payload.paymentType === 'FULL') {
+            } else if (payload.paymentType === 'FULL' || payload.paymentType === 'ADVANCE') {
               const status = getInitialStatus(payload.paymentMethod);
+              const isAdvance = payload.paymentType === 'ADVANCE';
+              const initialAmount = isAdvance ? totalAmount / 2 : totalAmount;
               const paymentsData = {
-                amount: totalAmount,
+                amount: initialAmount,
                 method: payload.paymentMethod,
-                type: 'FULL' as const,
+                type: isAdvance ? ('ADVANCE' as const) : ('FULL' as const),
                 status
               };
 
@@ -460,13 +463,13 @@ export class StorefrontEngine {
                 ...(status === 'SUCCESS' ? {
                   ledgerEntries: {
                     create: {
-                      amount: totalAmount,
+                      amount: initialAmount,
                       method: payload.paymentMethod,
                       type: 'PAYMENT' as const,
                       status: 'SUCCESS' as const,
                       actorId: context.createdById || null,
                       branchId: branch.id,
-                      notes: `Full payment at ${context.source}`
+                      notes: `${isAdvance ? 'Advance' : 'Full'} payment at ${context.source}`
                     }
                   }
                 } : {})

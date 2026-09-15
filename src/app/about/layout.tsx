@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Our Story",
-  description: "Learn about Gopal Bakery's journey — crafting premium cakes in Vadodara since 1992. Four branches, one passion: making every celebration sweeter.",
+  description: "Learn about Gopal Cake Shop's journey — crafting premium cakes in Vadodara since 1990. Four branches, one passion: making every celebration sweeter.",
   openGraph: {
-    title: "Our Story | Gopal Bakery",
+    title: "Our Story | Gopal Cake Shop",
     description: "From a small kitchen in Khanderao Market to four branches across Vadodara. Discover the story behind every cake we bake.",
     images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
   },

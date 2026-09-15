@@ -23,6 +23,7 @@ import Link from "next/link";
 import { WEIGHT_OPTIONS, getActiveFlavours, getFlavourSurcharge } from "@/lib/flavours";
 import { Trash } from "iconsax-react";
 import { GoogleAddressPicker } from "@/components/home/GoogleAddressPicker";
+import { saveOrderToHistory } from "@/lib/orderHistory";
 
 function parseWeightToNumber(weightStr: string): number {
   if (!weightStr) return 0.5;
@@ -39,6 +40,17 @@ export default function CheckoutPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [idempotencyKey] = useState(() => uuidv4());
+  // Pre-created order: populated eagerly when customer reaches Step 3
+  const [preCreatedOrder, setPreCreatedOrder] = useState<{ orderId: string; trackingId: string } | null>(null);
+  const [preCreateError, setPreCreateError] = useState<string | null>(null);
+  const [isPreCreating, setIsPreCreating] = useState(false);
+  // Ref to the in-flight pre-creation promise so handlePlaceOrder can await it
+  const preCreatePromiseRef = React.useRef<Promise<{ orderId: string; trackingId: string } | null> | null>(null);
+  // Pre-initialized Razorpay modal — ready to .open() instantly
+  const preRzpRef = React.useRef<any>(null);
+  const preRzpPaymentRecordRef = React.useRef<any>(null);
+  const preRzpTrackingIdRef = React.useRef<string | null>(null);
+  const preRzpOrderIdRef = React.useRef<string | null>(null);
   const [toast, setToast] = useState<{
     id: string;
     title: string;
@@ -215,6 +227,160 @@ export default function CheckoutPage() {
 
   const isQuoteRequest = items.some((item) => item.isCustom);
 
+  /** Fires the checkout API silently and caches the result. Safe to call multiple times. */
+  const firePreCreateOrder = (payType: "ADVANCE" | "FULL"): Promise<{ orderId: string; trackingId: string } | null> => {
+    if (preCreatePromiseRef.current) return preCreatePromiseRef.current;
+
+    const promise = (async () => {
+      setIsPreCreating(true);
+      setPreCreateError(null);
+      try {
+        const finalBranchId = "uma";
+        const checkoutPayload = {
+          idempotencyKey,
+          customer: { name: formData.name, phone: formData.phone, email: formData.email },
+          address:
+            deliveryType === "PICKUP"
+              ? { house: "Store Pickup", street: "Uma Char Rasta Branch", area: "Vadodara", city: "Vadodara", pin: "390001", landmark: "Picked up by customer" }
+              : { house: formData.house, street: formData.street, area: formData.area || "Vadodara", city: formData.city, pin: formData.pin || "390001", landmark: formData.landmark },
+          items: items.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            weight: parseWeightToNumber(i.variant || ""),
+            flavor: i.flavor || "Classic",
+            messageOnCake: i.messageOnCake || "",
+            notes: i.notes || "",
+            price: i.price,
+            isCustomizable: i.isCustomizable,
+            isPhotoCake: i.isPhotoCake,
+            printImage: i.printImage,
+            referenceImages: i.referenceImages,
+          })),
+          paymentMethod: "RAZORPAY",
+          paymentType: payType,
+          deliveryType,
+          branchId: finalBranchId,
+          deliveryDistanceKm: deliveryType === "DELIVERY" ? deliveryDistanceKm : undefined,
+          deliveryLatitude: deliveryType === "DELIVERY" && deliveryLatitude ? deliveryLatitude : undefined,
+          deliveryLongitude: deliveryType === "DELIVERY" && deliveryLongitude ? deliveryLongitude : undefined,
+          deliveryDate: new Date(`${date}T${time}:00`).toISOString(),
+          type: "ORDER",
+        };
+
+        const res = await fetch("/api/v1/public/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(checkoutPayload),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const msg = errData.error || "Order could not be pre-created.";
+          setPreCreateError(msg);
+          preCreatePromiseRef.current = null; // allow retry
+          return null;
+        }
+
+        const data = await res.json();
+        const result = { orderId: data.orderId, trackingId: data.trackingId };
+        setPreCreatedOrder(result);
+
+        // ⚡ Immediately pre-create Razorpay gateway order so modal is INSTANT
+        preInitRazorpay(data.orderId, data.trackingId, payType);
+
+        return result;
+      } catch (e: any) {
+        const msg = e?.message || "Network error during order pre-creation.";
+        setPreCreateError(msg);
+        preCreatePromiseRef.current = null;
+        return null;
+      } finally {
+        setIsPreCreating(false);
+      }
+    })();
+
+    preCreatePromiseRef.current = promise;
+    return promise;
+  };
+
+  /**
+   * After the DB order exists, immediately call Razorpay create-order API and
+   * pre-build the Razorpay modal so clicking "Place Order" just calls .open().
+   */
+  const preInitRazorpay = async (orderId: string, trackingId: string, payType: "ADVANCE" | "FULL") => {
+    if (typeof window === "undefined" || !(window as any).Razorpay) return;
+    try {
+      const finalGrandTotal = deliveryType === "DELIVERY" ? subtotal + deliveryCharge : subtotal;
+      const paymentAmount = payType === "ADVANCE" ? finalGrandTotal / 2 : finalGrandTotal;
+
+      const orderRes = await fetch("/api/v1/payments/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, amount: paymentAmount, method: "RAZORPAY" })
+      });
+      if (!orderRes.ok) return;
+      const rzpOrderData = await orderRes.json();
+      if (!rzpOrderData.success || !rzpOrderData.data?.gatewayOrder) return;
+
+      const gatewayOrder = rzpOrderData.data.gatewayOrder;
+      const paymentRecord = rzpOrderData.data.payment;
+      const rzpKey = rzpOrderData.key;
+
+      preRzpPaymentRecordRef.current = paymentRecord;
+      preRzpTrackingIdRef.current = trackingId;
+      preRzpOrderIdRef.current = orderId;
+
+      const options = {
+        key: rzpKey,
+        amount: gatewayOrder.amount,
+        currency: gatewayOrder.currency || "INR",
+        name: "Gopal Cake Shop",
+        description: "Secure Payment",
+        order_id: gatewayOrder.id,
+        prefill: {
+          name: formData.name,
+          contact: formData.phone ? `+91${formData.phone.replace(/^\+91/, "")}` : undefined,
+          email: formData.email || undefined,
+        },
+        theme: { color: "#be123c" },
+        handler: async (response: any) => {
+          try {
+            await fetch("/api/v1/payments/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                paymentId: preRzpPaymentRecordRef.current?.id,
+                gatewayOrderId: response.razorpay_order_id,
+                gatewayPaymentId: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+              })
+            });
+          } catch (e) { console.error("Verify error:", e); }
+          // Save to localStorage for My Orders page
+          if (preRzpTrackingIdRef.current) {
+            saveOrderToHistory({
+              trackingId: preRzpTrackingIdRef.current,
+              orderNumber: preRzpOrderIdRef.current || '',
+              phone: formData.phone,
+              placedAt: new Date().toISOString(),
+              totalAmount: deliveryType === 'DELIVERY' ? subtotal + deliveryCharge : subtotal,
+              previewItems: items.map(i => `${i.name} × ${i.quantity}`).join(', '),
+            });
+          }
+          clearCart();
+          router.push(`/track/${preRzpTrackingIdRef.current}`);
+        },
+        modal: { ondismiss: () => setIsSubmitting(false) }
+      };
+
+      preRzpRef.current = new (window as any).Razorpay(options);
+      preRzpRef.current.on("payment.failed", () => setIsSubmitting(false));
+      console.log("[PreInit] Razorpay modal ready ✅");
+    } catch (e) {
+      console.warn("[PreInit] Razorpay pre-init failed:", e);
+    }
+  };
+
   const handleNextStep = () => {
     if (currentStep === 1 && validateStep1()) {
       setCurrentStep(2);
@@ -226,6 +392,9 @@ export default function CheckoutPage() {
       } else {
         setCurrentStep(3);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        // 🚀 Fire checkout API immediately in the background
+        const payType = paymentMethod === "ADVANCE_50" ? "ADVANCE" : "FULL";
+        firePreCreateOrder(payType);
       }
     }
   };
@@ -242,137 +411,183 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true);
     try {
-      const finalBranchId = "uma";
-
-      const payload = {
-        idempotencyKey,
-        customer: {
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email,
-        },
-        address:
-          deliveryType === "PICKUP"
-            ? {
-                house: "Store Pickup",
-                street: "Uma Char Rasta Branch",
-                area: "Vadodara",
-                city: "Vadodara",
-                pin: "390001",
-                landmark: "Picked up by customer",
-              }
-            : {
-                house: formData.house,
-                street: formData.street,
-                area: formData.area || "Vadodara",
-                city: formData.city,
-                pin: formData.pin || "390001",
-                landmark: formData.landmark,
-              },
-        items: items.map((i) => {
-          return {
-            productId: i.productId,
-            quantity: i.quantity,
-            weight: parseWeightToNumber(i.variant || ""),
-            flavor: i.flavor || "Classic",
-            messageOnCake: i.messageOnCake || "",
-            notes: i.notes || "",
-            price: i.price, 
-            isCustomizable: i.isCustomizable,
-            isPhotoCake: i.isPhotoCake,
-            printImage: i.printImage,
-            referenceImages: i.referenceImages
-          };
-        }),
-        paymentMethod: isQuoteRequest ? undefined : "RAZORPAY",
-        deliveryType,
-        branchId: finalBranchId,
-        deliveryDistanceKm: deliveryType === "DELIVERY" ? deliveryDistanceKm : undefined,
-        deliveryLatitude: deliveryType === "DELIVERY" && deliveryLatitude ? deliveryLatitude : undefined,
-        deliveryLongitude: deliveryType === "DELIVERY" && deliveryLongitude ? deliveryLongitude : undefined,
-        deliveryDate: new Date(`${date}T${time}:00`).toISOString(),
-        type: isQuoteRequest ? "QUOTE" : "ORDER",
-      };
-
-      const res = await fetch("/api/v1/public/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }).catch((e) => ({
-        ok: false,
-        json: async () => ({ error: e.message }),
-      }));
-
-      if (!res.ok) {
-        const errData = await ("json" in res
-          ? res.json().catch(() => ({}))
-          : {});
-        setToast({
-          id: Date.now().toString(),
-          title: "Checkout Failed",
-          message:
-            errData.error || "Order could not be placed. Please try again.",
-          variant: "warning",
-        });
-        return;
-      }
-
-      const data = await res.json();
-      const createdOrderId = data.orderId;
-      const trackingId = data.trackingId;
+      let createdOrderId: string;
+      let trackingId: string;
 
       if (isQuoteRequest) {
-        clearCart();
-        // Clear the custom cake draft so they can start fresh next time
-        if (typeof window !== 'undefined') {
-          sessionStorage.removeItem('gcs_custom_cake_draft');
+        // Quotes are never pre-created — go through the normal path
+        const finalBranchId = "uma";
+        const quotePayload = {
+          idempotencyKey,
+          customer: { name: formData.name, phone: formData.phone, email: formData.email },
+          address:
+            deliveryType === "PICKUP"
+              ? { house: "Store Pickup", street: "Uma Char Rasta Branch", area: "Vadodara", city: "Vadodara", pin: "390001", landmark: "Picked up by customer" }
+              : { house: formData.house, street: formData.street, area: formData.area || "Vadodara", city: formData.city, pin: formData.pin || "390001", landmark: formData.landmark },
+          items: items.map((i) => ({
+            productId: i.productId, quantity: i.quantity, weight: parseWeightToNumber(i.variant || ""),
+            flavor: i.flavor || "Classic", messageOnCake: i.messageOnCake || "", notes: i.notes || "",
+            price: i.price, isCustomizable: i.isCustomizable, isPhotoCake: i.isPhotoCake,
+            printImage: i.printImage, referenceImages: i.referenceImages,
+          })),
+          paymentMethod: undefined,
+          deliveryType, branchId: finalBranchId,
+          deliveryDate: new Date(`${date}T${time}:00`).toISOString(),
+          type: "QUOTE",
+        };
+        const res = await fetch("/api/v1/public/checkout", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(quotePayload),
+        }).catch((e) => ({ ok: false, json: async () => ({ error: e.message }) }));
+        if (!res.ok) {
+          const errData = await ("json" in res ? res.json().catch(() => ({})) : {});
+          setToast({ id: Date.now().toString(), title: "Checkout Failed", message: errData.error || "Order could not be placed. Please try again.", variant: "warning" });
+          return;
         }
-        setToast({
-          id: Date.now().toString(),
-          title: "Quote Request Sent",
-          message: "Our team will review your requirements and send a payment link shortly.",
-          variant: "success",
-        });
-        setTimeout(() => router.push(`/track/${trackingId}`), 2000);
+        const qdata = await res.json();
+        clearCart();
+        if (typeof window !== 'undefined') sessionStorage.removeItem('gcs_custom_cake_draft');
+        setToast({ id: Date.now().toString(), title: "Quote Request Sent", message: "Our team will review your requirements and send a payment link shortly.", variant: "success" });
+        setTimeout(() => router.push(`/track/${qdata.trackingId}`), 2000);
         return;
       }
+
+      // For regular orders: use the pre-created order, or await it, or fall back
+      const payType = paymentMethod === "ADVANCE_50" ? "ADVANCE" : "FULL";
+      let resolved = preCreatedOrder;
+      if (!resolved) {
+        // Either still in flight or never started — await it now
+        const result = await (preCreatePromiseRef.current || firePreCreateOrder(payType));
+        if (!result) {
+          setToast({
+            id: Date.now().toString(),
+            title: "Checkout Failed",
+            message: preCreateError || "Order could not be placed. Please try again.",
+            variant: "warning",
+          });
+          return;
+        }
+        resolved = result;
+      }
+
+      createdOrderId = resolved.orderId;
+      trackingId = resolved.trackingId;
 
       const finalGrandTotal = deliveryType === "DELIVERY" ? subtotal + deliveryCharge : subtotal;
 
       if (paymentMethod === "ADVANCE_50" || paymentMethod === "ONLINE_100") {
         const paymentAmount = paymentMethod === "ADVANCE_50" ? finalGrandTotal / 2 : finalGrandTotal;
+        let sdkSuccess = false;
 
-        // Use server-side Razorpay Payment Link
-        const rzpRes = await fetch("/api/v1/payments/create-payment-link", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: createdOrderId,
-            amount: paymentAmount,
-            trackingId,
-            customerName: formData.name,
-            customerPhone: formData.phone,
-            customerEmail: formData.email,
-          })
-        });
-
-        if (!rzpRes.ok) {
-          let backendError = "Failed to initialize payment gateway";
+        // 1. ⚡ Best case: pre-built Razorpay instance is ready — just .open() it instantly
+        if (preRzpRef.current) {
           try {
-            const errorData = await rzpRes.json();
-            if (errorData.error) backendError = errorData.error;
-          } catch(e) {}
-          throw new Error(backendError);
+            preRzpRef.current.open();
+            sdkSuccess = true;
+          } catch (e) {
+            console.warn("[PreRzp] .open() failed, falling back:", e);
+            preRzpRef.current = null;
+          }
         }
 
-        const rzpData = await rzpRes.json();
-
-        // Store pending payment so the tracking page can clear the cart AFTER payment
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem('gcs_pending_payment', JSON.stringify({ trackingId, orderId: createdOrderId }));
+        // 2. Fallback: SDK available but pre-init didn't complete — create Razorpay order now
+        if (!sdkSuccess) {
+          try {
+            if (typeof window !== "undefined" && (window as any).Razorpay) {
+              const orderRes = await fetch("/api/v1/payments/create-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: createdOrderId, amount: paymentAmount, method: "RAZORPAY" })
+              });
+              if (orderRes.ok) {
+                const rzpOrderData = await orderRes.json();
+                if (rzpOrderData.success && rzpOrderData.data?.gatewayOrder) {
+                  const gatewayOrder = rzpOrderData.data.gatewayOrder;
+                  const paymentRecord = rzpOrderData.data.payment;
+                  const rzp = new (window as any).Razorpay({
+                    key: rzpOrderData.key,
+                    amount: gatewayOrder.amount,
+                    currency: gatewayOrder.currency || "INR",
+                    name: "Gopal Cake Shop",
+                    description: "Secure Payment",
+                    order_id: gatewayOrder.id,
+                    prefill: {
+                      name: formData.name,
+                      contact: formData.phone ? `+91${formData.phone.replace(/^\+91/, "")}` : undefined,
+                      email: formData.email || undefined,
+                    },
+                    theme: { color: "#be123c" },
+                    handler: async (response: any) => {
+                      try {
+                        await fetch("/api/v1/payments/verify", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            paymentId: paymentRecord.id,
+                            gatewayOrderId: response.razorpay_order_id,
+                            gatewayPaymentId: response.razorpay_payment_id,
+                            signature: response.razorpay_signature,
+                          })
+                        });
+                      } catch (e) { console.error("Verify error:", e); }
+                      saveOrderToHistory({
+                        trackingId: trackingId || '',
+                        orderNumber: createdOrderId || '',
+                        phone: formData.phone,
+                        placedAt: new Date().toISOString(),
+                        totalAmount: deliveryType === 'DELIVERY' ? subtotal + deliveryCharge : subtotal,
+                        previewItems: items.map(i => `${i.name} × ${i.quantity}`).join(', '),
+                      });
+                      clearCart();
+                      router.push(`/track/${trackingId}`);
+                    },
+                    modal: { ondismiss: () => setIsSubmitting(false) }
+                  });
+                  rzp.open();
+                  sdkSuccess = true;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("[RazorpaySDK] Falling back to Payment Link:", e);
+          }
         }
-        window.location.href = rzpData.paymentUrl;
+
+        // 3. Last resort: Server-side Razorpay Payment Link (redirect)
+        if (!sdkSuccess) {
+          const rzpRes = await fetch("/api/v1/payments/create-payment-link", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: createdOrderId,
+              amount: paymentAmount,
+              paymentType: paymentMethod === "ADVANCE_50" ? "ADVANCE" : "FULL",
+              trackingId,
+              customerName: formData.name,
+              customerPhone: formData.phone,
+              customerEmail: formData.email,
+            })
+          });
+          if (!rzpRes.ok) {
+            let backendError = "Failed to initialize payment gateway";
+            try { const d = await rzpRes.json(); if (d.error) backendError = d.error; } catch (e) {}
+            throw new Error(backendError);
+          }
+          const rzpData = await rzpRes.json();
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem('gcs_pending_payment', JSON.stringify({ trackingId, orderId: createdOrderId }));
+          }
+          window.location.href = rzpData.paymentUrl;
+        }
       } else {
+        saveOrderToHistory({
+          trackingId: trackingId || '',
+          orderNumber: createdOrderId || '',
+          phone: formData.phone,
+          placedAt: new Date().toISOString(),
+          totalAmount: deliveryType === 'DELIVERY' ? subtotal + deliveryCharge : subtotal,
+          previewItems: items.map(i => `${i.name} × ${i.quantity}`).join(', '),
+        });
         clearCart();
         router.push(`/track/${trackingId}`);
       }
@@ -417,6 +632,7 @@ export default function CheckoutPage() {
 
   return (
     <>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <div className="min-h-screen bg-background pb-32 lg:pb-16 relative">
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 pt-8">
           
@@ -831,6 +1047,8 @@ export default function CheckoutPage() {
                       >
                         {isSubmitting ? (
                           <><Refresh2 className="w-5 h-5 animate-spin" /> Processing...</>
+                        ) : isPreCreating ? (
+                          <><Refresh2 className="w-5 h-5 animate-spin opacity-60" /> Preparing...</>
                         ) : (
                           <><TickCircle className="w-5 h-5" /> Place Order</>
                         )}

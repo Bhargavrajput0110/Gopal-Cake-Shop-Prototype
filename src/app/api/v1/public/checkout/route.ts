@@ -36,6 +36,7 @@ const CheckoutSchema = z.object({
     price: z.number().optional(),
   })).min(1, 'Cart is empty'),
   paymentMethod: z.nativeEnum(PaymentMethod).optional(),
+  paymentType: z.nativeEnum(PaymentType).optional(),
   deliveryType: z.nativeEnum(DeliveryType),
   branchId: z.string(),
   deliveryDate: z.string(),
@@ -78,7 +79,7 @@ const handler = async (ctx: HandlerContext) => {
     targetDate: data.deliveryDate,
     deliveryAddress: formattedAddress,
     paymentMethod: data.paymentMethod || PaymentMethod.CASH,
-    paymentType: PaymentType.FULL, // Assuming FULL for website for now
+    paymentType: data.paymentType || PaymentType.FULL,
     idempotencyKey: data.idempotencyKey,
     isFarDistance: data.isFarDistance,
     deliveryDistanceKm: data.deliveryDistanceKm,

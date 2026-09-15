@@ -1,12 +1,15 @@
 {
-  "name": "Gopal Bakery ERP",
-  "short_name": "GopalBakery",
-  "description": "Enterprise KDS & Logistics Dashboard for Gopal Cake Shop",
-  "start_url": "/sales",
+  "name": "Gopal Cake Shop",
+  "short_name": "Gopal Cakes",
+  "description": "Order premium custom cakes online — birthday, wedding, photo cakes & more. Same-day delivery in Vadodara. 100% eggless.",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#38251E",
+  "background_color": "#FDF8F3",
   "theme_color": "#38251E",
   "orientation": "portrait",
+  "categories": ["food", "shopping"],
+  "lang": "en-IN",
   "icons": [
     {
       "src": "/favicon.ico",
@@ -16,12 +19,14 @@
     {
       "src": "/icon-192x192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512x512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ]
 }

@@ -12,7 +12,11 @@ const handler = async (ctx: HandlerContext) => {
       items: true,
       timeline: {
         orderBy: { createdAt: 'desc' }
-      }
+      },
+      payments: {
+        where: { status: 'SUCCESS' },
+        orderBy: { createdAt: 'asc' },
+      },
     }
   })
 
@@ -49,18 +53,41 @@ const handler = async (ctx: HandlerContext) => {
     }
   }
 
+  // Calculate payment summary
+  const totalPaid = order.payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0)
+  const balanceDue = Math.max(0, Number(order.totalAmount) - totalPaid)
+  const hasAdvancePayment = order.payments.some((p: any) => p.type === 'ADVANCE')
+
   // Return limited public information (no internal IDs or sensitive notes)
   const publicOrder = {
     orderNumber: order.orderNumber,
     status: getCustomerFriendlyStatus(order.status),
     targetDate: order.targetDate,
     timeTarget: order.targetDate,
-    totalAmount: order.totalAmount,
+    deliveryType: order.deliveryType,
+    // Financial breakdown for customer bill
+    subtotal: Number(order.subtotal),
+    deliveryCharge: Number(order.deliveryCharge),
+    discount: Number(order.discount),
+    totalAmount: Number(order.totalAmount),
+    // Payment summary
+    totalPaid,
+    balanceDue,
+    hasAdvancePayment,
+    payments: order.payments.map((p: any) => ({
+      amount: Number(p.amount),
+      type: p.type,
+      method: p.method,
+      paidAt: p.verifiedAt || p.updatedAt,
+    })),
     items: order.items.map((i: any) => ({
       productName: i.productName,
       quantity: i.quantity,
       variant: i.variant,
-      image: i.image
+      flavor: i.flavor,
+      price: Number(i.price),
+      image: i.image,
+      messageOnCake: i.messageOnCake,
     })),
     timeline: order.timeline.map((t: any) => ({
       status: getCustomerFriendlyStatus(t.nextState),

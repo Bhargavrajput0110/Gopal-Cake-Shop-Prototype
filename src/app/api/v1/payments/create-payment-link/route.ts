@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
-    const { orderId, amount, trackingId, customerName, customerPhone, customerEmail } = await req.json();
+    const { orderId, amount, paymentType, trackingId, customerName, customerPhone, customerEmail } = await req.json();
 
     if (!orderId || !amount) {
       return NextResponse.json({ error: 'Missing orderId or amount' }, { status: 400 });
@@ -20,6 +20,10 @@ export async function POST(req: Request) {
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
+
+    // Determine correct payment type (ADVANCE vs FULL)
+    const calculatedType = amount < Number(order.totalAmount) - 0.01 ? 'ADVANCE' : 'FULL';
+    const effectiveType = (paymentType as 'ADVANCE' | 'FULL') || calculatedType;
 
     // Build the base URL from the actual incoming request — this is ALWAYS correct
     // regardless of NEXTAUTH_URL value. Ensures Razorpay sends customer back to this server.
@@ -71,19 +75,38 @@ export async function POST(req: Request) {
 
     const paymentLink = await response.json();
 
-    // Create a pending payment record
-    await prisma.payment.create({
-      data: {
-        orderId,
-        amount,
-        method: 'RAZORPAY',
-        type: 'FULL',
-        status: 'PENDING',
-        provider: 'RAZORPAY',
-        gatewayOrderId: paymentLink.id,
-        metadata: { paymentLinkId: paymentLink.id, paymentLinkUrl: paymentLink.short_url },
-      },
+    // Reuse existing PENDING payment if present to avoid duplicate pending rows
+    const existingPending = await prisma.payment.findFirst({
+      where: { orderId, status: 'PENDING' }
     });
+
+    if (existingPending) {
+      await prisma.payment.update({
+        where: { id: existingPending.id },
+        data: {
+          amount,
+          method: 'RAZORPAY',
+          type: effectiveType,
+          status: 'PENDING',
+          provider: 'RAZORPAY',
+          gatewayOrderId: paymentLink.id,
+          metadata: { paymentLinkId: paymentLink.id, paymentLinkUrl: paymentLink.short_url },
+        }
+      });
+    } else {
+      await prisma.payment.create({
+        data: {
+          orderId,
+          amount,
+          method: 'RAZORPAY',
+          type: effectiveType,
+          status: 'PENDING',
+          provider: 'RAZORPAY',
+          gatewayOrderId: paymentLink.id,
+          metadata: { paymentLinkId: paymentLink.id, paymentLinkUrl: paymentLink.short_url },
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
