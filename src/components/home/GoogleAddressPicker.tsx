@@ -25,10 +25,10 @@ class MapErrorBoundary extends Component<{ children: ReactNode, fallback: ReactN
 
 // The 4 Branches of Gopal Bakery [lng, lat] for Routing
 const branchLocations = [
-  { name: "Uma Char Rasta", coords: [73.1593, 22.3168], isMain: true },
-  { name: "Khanderao Market", coords: [73.1931, 22.2982], isMain: false },
-  { name: "Factory Warashiya", coords: [73.2100, 22.3218], isMain: false },
-  { name: "Ellora Park", coords: [73.1613, 22.3188], isMain: false }
+  { name: "Uma Char Rasta", coords: [73.2185, 22.3025], isMain: true },
+  { name: "Khanderao Market", coords: [73.20194, 22.29745], isMain: false },
+  { name: "Factory Warashiya", coords: [73.2115, 22.3245], isMain: false },
+  { name: "Ellora Park", coords: [73.1610, 22.3182], isMain: false }
 ];
 
 type DistanceResult = { branch: string; distanceKm: number; isMain?: boolean };

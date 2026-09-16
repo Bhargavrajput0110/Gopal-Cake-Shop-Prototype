@@ -12,34 +12,39 @@ export interface Branch {
   id: BranchId;
   displayName: string;
   shortName: string;
+  address: string;
   /** Legacy display names that map to this branch (used by the API) */
   aliases: string[];
 }
 
 export const BRANCHES: Branch[] = [
   {
+    id: 'uma',
+    displayName: 'Uma Branch (Main Outlet)',
+    shortName: 'Uma',
+    address: 'B-9, Sunil Society, Behind Zavernagar Bus Stand Ward, Uma Char Rasta, Vadodara, Gujarat 390019',
+    aliases: ['Uma Char Rasta', 'Uma Branch', 'uma', 'B_UMA'],
+  },
+  {
     id: 'khanderao',
     displayName: 'Khanderao Branch',
     shortName: 'Khanderao',
+    address: '76W2+WQ9, Palace Rd, Khanderao Market Char Rasta, Prabhat Nagar, Mandvi, Vadodara, Gujarat 390001',
     aliases: ['Khanderao Market', 'Khanderao Branch (HQ)', 'Khanderao Branch', 'B_KHM', 'cmswuiita00011su3977ajl1z'],
-  },
-  {
-    id: 'elora',
-    displayName: 'Ellora Park Branch',
-    shortName: 'Ellora Park',
-    aliases: ['Elora Park Branch', 'Ellora Park', 'Ellora Park Branch', 'B_ELL', 'cmswuiiun00031su3vfrn9eq5'],
-  },
-  {
-    id: 'uma',
-    displayName: 'Uma Branch',
-    shortName: 'Uma',
-    aliases: ['Uma Char Rasta', 'Uma Branch', 'uma', 'B_UMA'],
   },
   {
     id: 'varasiya',
     displayName: 'Factory Warashiya',
     shortName: 'Varasiya',
+    address: 'Opp T-8, Behind Hari Seva School, Warashia Colony, Vadodara, Gujarat 390006',
     aliases: ['Varasiya Factory Outlet', 'Factory Warashiya', 'B_VAR', 'cmswuiiu000021su3kv1mr41f'],
+  },
+  {
+    id: 'elora',
+    displayName: 'Ellora Park Branch',
+    shortName: 'Ellora Park',
+    address: 'Shop No.1, Ellora Park Rd, Nr. Neo Mobile & Jalaram Lassi, Opp. Shakti Farsan, Odhavpura, Ellora Park, Hari Nagar, Vadodara, Gujarat 390023',
+    aliases: ['Elora Park Branch', 'Ellora Park', 'Ellora Park Branch', 'B_ELL', 'cmswuiiun00031su3vfrn9eq5'],
   },
 ];
 

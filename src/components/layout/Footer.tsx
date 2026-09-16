@@ -22,10 +22,10 @@ const YoutubeIcon = () => (
 );
 
 const BRANCHES = [
-  { name: "Uma", address: "Uma Char Rasta, Vadodara", phone: "+91 99090 11111" },
-  { name: "Khanderao Market", address: "Near Khanderao Market, Vadodara", phone: "+91 99090 22222" },
-  { name: "Warasiya", address: "Warasiya Ring Road, Vadodara", phone: "+91 99090 33333" },
-  { name: "Ellora", address: "Ellora Park, Vadodara", phone: "+91 99090 44444" },
+  { name: "Uma Char Rasta (Main)", address: "B-9, Sunil Society, Behind Zavernagar Bus Stand, Uma Char Rasta, Vadodara - 390019", phone: "+91 99090 11111" },
+  { name: "Khanderao Market", address: "76W2+WQ9, Palace Rd, Khanderao Market Char Rasta, Mandvi, Vadodara - 390001", phone: "+91 99090 22222" },
+  { name: "Factory Warashiya", address: "Opp T-8, Behind Hari Seva School, Warashia Colony, Vadodara - 390006", phone: "+91 99090 33333" },
+  { name: "Ellora Park", address: "Shop No.1, Ellora Park Rd, Nr. Jalaram Lassi, Odhavpura, Vadodara - 390023", phone: "+91 99090 44444" },
 ];
 
 const NAV_GROUPS = [

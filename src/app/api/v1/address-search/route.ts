@@ -49,10 +49,10 @@ const VADODARA_DICTIONARY = [
   { name: 'Vadodara Railway Station', area: 'Sayajigunj, Vadodara', lat: 22.3100, lon: 73.1810, keywords: ['railway station', 'station', 'vadodara station', 'st depot'] },
 
   // Gopal Cake Shop Branches
-  { name: 'Uma Char Rasta Branch', area: 'Waghodia Road, Vadodara', lat: 22.3168, lon: 73.1593, keywords: ['uma', 'uma char rasta', 'waghodia road branch'] },
-  { name: 'Khanderao Market Branch', area: 'Rajmahal Road, Vadodara', lat: 22.2982, lon: 73.1931, keywords: ['khanderao', 'khanderao market', 'market branch'] },
-  { name: 'Ellora Park Branch', area: 'Ellora Park, Vadodara', lat: 22.3188, lon: 73.1613, keywords: ['ellora', 'ellora park', 'ellorapark'] },
-  { name: 'Factory Warashiya Branch', area: 'Warashiya, Vadodara', lat: 22.3218, lon: 73.2100, keywords: ['warashiya', 'varasiya', 'factory warashiya', 'warashiya branch'] },
+  { name: 'Uma Char Rasta Branch (Main Outlet)', area: 'B-9, Sunil Society, Behind Zavernagar Bus Stand, Uma Char Rasta, Vadodara 390019', lat: 22.3025, lon: 73.2185, keywords: ['uma', 'uma char rasta', 'sunil society', 'zavernagar', 'waghodia road branch'] },
+  { name: 'Khanderao Market Branch', area: 'Palace Rd, Khanderao Market Char Rasta, Mandvi, Vadodara 390001', lat: 22.29745, lon: 73.20194, keywords: ['khanderao', 'khanderao market', 'palace road', 'mandvi'] },
+  { name: 'Ellora Park Branch', area: 'Shop No.1, Ellora Park Rd, Nr. Jalaram Lassi, Odhavpura, Vadodara 390023', lat: 22.3182, lon: 73.1610, keywords: ['ellora', 'ellora park', 'ellorapark', 'shakti farsan'] },
+  { name: 'Factory Warashiya Branch', area: 'Opp T-8, Behind Hari Seva School, Warashia Colony, Vadodara 390006', lat: 22.3245, lon: 73.2115, keywords: ['warashiya', 'varasiya', 'factory warashiya', 'hari seva school', 'warashia colony'] },
 
   // Residential Societies & Key Localities
   { name: 'Shivam Society / Park', area: 'Manjalpur, Vadodara', lat: 22.2750, lon: 73.1850, keywords: ['shivam', 'shivam soc', 'shivam society', 'shivam park', 'shivam tenaments', 'shivam socur'] },

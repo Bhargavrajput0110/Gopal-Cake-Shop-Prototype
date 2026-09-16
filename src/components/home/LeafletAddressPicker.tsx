@@ -12,10 +12,10 @@ const LeafletMapInner = dynamic(() => import("./LeafletMapInner"), {
 
 // The 4 Branches of Gopal Bakery [lng, lat] for OSRM
 const branchLocations = [
-  { name: "Khanderao Market", coords: [73.1931, 22.2982] },
-  { name: "Uma Char Rasta", coords: [73.1593, 22.3168] },
-  { name: "Factory Warashiya", coords: [73.2100, 22.3218] },
-  { name: "Ellora Park", coords: [73.1613, 22.3188] }
+  { name: "Uma Char Rasta", coords: [73.2185, 22.3025] },
+  { name: "Khanderao Market", coords: [73.20194, 22.29745] },
+  { name: "Factory Warashiya", coords: [73.2115, 22.3245] },
+  { name: "Ellora Park", coords: [73.1610, 22.3182] }
 ];
 
 type DistanceResult = { branch: string; distanceKm: number };
