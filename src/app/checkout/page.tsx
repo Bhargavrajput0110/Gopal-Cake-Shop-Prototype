@@ -844,10 +844,12 @@ export default function CheckoutPage() {
                                 if (error) {
                                   setToast({ id: "err", title: "Distance Error", message: error, variant: "warning" });
                                 } else if (distances.length > 0) {
-                                  // Use closest branch distance for accurate delivery fee calculation
-                                  const closestDist = distances[0].distanceKm;
-                                  setDeliveryDistanceKm(closestDist);
-                                  setDeliveryCharge(calculateCharge(closestDist));
+                                  // BUSINESS RULE: All delivery dispatches originate from Main Outlet (Uma Char Rasta Branch).
+                                  // Calculate delivery distance and fee from the Main Location.
+                                  const mainBranch = distances.find(d => d.branch.includes("Uma") || (d as any).isMain) || distances[0];
+                                  const mainDist = mainBranch.distanceKm;
+                                  setDeliveryDistanceKm(mainDist);
+                                  setDeliveryCharge(calculateCharge(mainDist));
                                 }
                               }}
                               onCalculating={(isCalculating) => {

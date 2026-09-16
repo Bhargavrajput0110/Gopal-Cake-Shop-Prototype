@@ -88,19 +88,24 @@ export function HeroDeliveryChecker() {
                 </label>
 
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                  {branchDistances.map((b, idx) => {
-                    const fee = Math.round(b.distanceKm * 20);
-                    const isClosest = idx === 0;
+                  {branchDistances.map((b) => {
+                    const calculateTieredFee = (dist: number) => {
+                      if (dist <= 5) return 100;
+                      if (dist <= 10) return 150;
+                      return 150 + Math.ceil(dist - 10) * 10;
+                    };
+                    const fee = calculateTieredFee(b.distanceKm);
+                    const isMainOutlet = b.branch.includes("Uma") || (b as any).isMain;
                     return (
                       <div
                         key={b.branch}
                         className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${
-                          isClosest ? "border-[#D4AF37] bg-[#D4AF37]/10" : "border-white/10 bg-white/5"
+                          isMainOutlet ? "border-[#D4AF37] bg-[#D4AF37]/10" : "border-white/10 bg-white/5"
                         }`}
                       >
                         <div className="flex flex-col">
-                          <span className={`font-bold text-sm ${isClosest ? "text-[#D4AF37]" : "text-white"}`}>
-                            {b.branch} {isClosest && "⭐"}
+                          <span className={`font-bold text-sm ${isMainOutlet ? "text-[#D4AF37]" : "text-white"}`}>
+                            {b.branch} {isMainOutlet && "(Main Factory Outlet) ⭐"}
                           </span>
                           <span className="text-xs text-white/50">{b.distanceKm} km away</span>
                         </div>

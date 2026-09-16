@@ -23,15 +23,15 @@ class MapErrorBoundary extends Component<{ children: ReactNode, fallback: ReactN
   }
 }
 
-// The 4 Branches of Gopal Bakery [lng, lat] for Haversine
+// The 4 Branches of Gopal Bakery [lng, lat] for Routing
 const branchLocations = [
-  { name: "Khanderao Market", coords: [73.1931, 22.2982] },
-  { name: "Uma Char Rasta", coords: [73.1593, 22.3168] },
-  { name: "Factory Warashiya", coords: [73.2100, 22.3218] }, // Fixed Warashiya branch coordinates
-  { name: "Ellora Park", coords: [73.1613, 22.3188] }
+  { name: "Uma Char Rasta", coords: [73.1593, 22.3168], isMain: true },
+  { name: "Khanderao Market", coords: [73.1931, 22.2982], isMain: false },
+  { name: "Factory Warashiya", coords: [73.2100, 22.3218], isMain: false },
+  { name: "Ellora Park", coords: [73.1613, 22.3188], isMain: false }
 ];
 
-type DistanceResult = { branch: string; distanceKm: number };
+type DistanceResult = { branch: string; distanceKm: number; isMain?: boolean };
 
 // Haversine distance formula
 function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -61,6 +61,27 @@ function calculateEstimatedRoadDistanceKm(lat1: number, lon1: number, lat2: numb
     roadFactor = 1.55;
   }
   return Number((rawDist * roadFactor).toFixed(1));
+}
+
+// Calculate real driving road distance via OSRM, with fallback to Haversine * roadFactor
+async function calculateRealRoadDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): Promise<number> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const url = `https://router.project-osrm.org/route/v1/driving/${lon2},${lat2};${lon1},${lat1}?overview=false`;
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.code === "Ok" && Array.isArray(data.routes) && data.routes.length > 0) {
+        const distKm = data.routes[0].distance / 1000;
+        if (distKm > 0) {
+          return Number(distKm.toFixed(1));
+        }
+      }
+    }
+  } catch (_e) {}
+  return calculateEstimatedRoadDistanceKm(lat1, lon1, lat2, lon2);
 }
 
 function deg2rad(deg: number) {
@@ -283,18 +304,43 @@ export function GoogleAddressPicker(props: GoogleAddressPickerProps) {
   const [searchInputValue, setSearchInputValue] = useState("");
   const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyA1j9ak9yeJsRfWA9vq5rQcDZvPayNCd2s";
 
-  // Calculate Distances via Haversine
+  // Calculate Distances via OSRM Driving Routes
   useEffect(() => {
     if (!selectedLocation) return;
+    let isMounted = true;
     props.onCalculating(true);
 
-    const distances = branchLocations.map(branch => {
-      const roadDist = calculateEstimatedRoadDistanceKm(selectedLocation.lat, selectedLocation.lng, branch.coords[1], branch.coords[0]);
-      return { branch: branch.name, distanceKm: roadDist };
-    });
-    const sorted = distances.sort((a, b) => a.distanceKm - b.distanceKm);
-    props.onDistancesCalculated(sorted, "");
-    props.onCalculating(false);
+    const computeDistances = async () => {
+      const distances = await Promise.all(
+        branchLocations.map(async (branch) => {
+          const roadDist = await calculateRealRoadDistanceKm(
+            selectedLocation.lat,
+            selectedLocation.lng,
+            branch.coords[1],
+            branch.coords[0]
+          );
+          return {
+            branch: branch.name,
+            distanceKm: roadDist,
+            isMain: branch.isMain
+          };
+        })
+      );
+
+      if (!isMounted) return;
+
+      // Keep Main Outlet (Uma Char Rasta) as primary fulfillment reference point, sorted alongside distance
+      const sorted = distances.sort((a, b) => a.distanceKm - b.distanceKm);
+
+      props.onDistancesCalculated(sorted, "");
+      props.onCalculating(false);
+    };
+
+    computeDistances();
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedLocation]);
 
   const handleSelectAddress = (item: any) => {
