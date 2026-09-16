@@ -190,6 +190,16 @@ export default function CheckoutPage() {
           });
           return false;
         }
+
+        if (deliveryDistanceKm > 20) {
+          setToast({
+            id: Date.now().toString(),
+            title: "Delivery Beyond 20 km Limit",
+            message: `Delivery location (${deliveryDistanceKm.toFixed(1)} km) is outside Vadodara (exceeding 20 km). Please contact Owner Rishi Bhai at +91 97126 32132 to place your order.`,
+            variant: "warning",
+          });
+          return false;
+        }
     }
     if (!date || !time) {
       setToast({
@@ -850,6 +860,15 @@ export default function CheckoutPage() {
                                   const mainDist = mainBranch.distanceKm;
                                   setDeliveryDistanceKm(mainDist);
                                   setDeliveryCharge(calculateCharge(mainDist));
+
+                                  if (mainDist > 20) {
+                                    setToast({
+                                      id: "far-dist-warn",
+                                      title: "Delivery Beyond 20 km Limit",
+                                      message: `Distance is ${mainDist.toFixed(1)} km. Online delivery is limited to 20 km. Contact Owner Rishi Bhai at +91 97126 32132 to place order.`,
+                                      variant: "warning"
+                                    });
+                                  }
                                 }
                               }}
                               onCalculating={(isCalculating) => {
@@ -860,6 +879,36 @@ export default function CheckoutPage() {
                                 setDeliveryLongitude(lng);
                               }}
                             />
+
+                            {deliveryType === "DELIVERY" && deliveryDistanceKm > 20 && (
+                              <div className="p-5 bg-rose-50 border-2 border-rose-300 rounded-2xl space-y-3 mt-4 text-left shadow-sm">
+                                <div className="flex items-start gap-3">
+                                  <span className="text-2xl">🚨</span>
+                                  <div>
+                                    <h4 className="font-bold text-rose-950 text-sm">Delivery Location Beyond 20 km Limit ({deliveryDistanceKm.toFixed(1)} km)</h4>
+                                    <p className="text-xs text-rose-900/90 mt-1 leading-relaxed font-serif">
+                                      Automated online delivery is restricted within 20 km of Vadodara. For special delivery out of Vadodara city, please contact Owner <strong>Rishi Bhai</strong> directly.
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2.5 pt-1">
+                                  <a
+                                    href="tel:+919712632132"
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+                                  >
+                                    📞 Call Rishi Bhai (+91 97126 32132)
+                                  </a>
+                                  <a
+                                    href="https://wa.me/919712632132?text=Hello%20Rishi%20Bhai,%20I%20want%20to%20place%20a%20delivery%20order%20exceeding%2020km"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+                                  >
+                                    💬 WhatsApp Rishi Bhai
+                                  </a>
+                                </div>
+                              </div>
+                            )}
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1">
