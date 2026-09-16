@@ -15,17 +15,29 @@ if (typeof window !== "undefined") {
   });
 }
 
+import { useEffect } from "react";
+
 function LocationMarker({ position, setPosition }: { position: L.LatLng | null, setPosition: (p: L.LatLng) => void }) {
   const map = useMapEvents({
     click(e) {
       setPosition(e.latlng);
-      map.flyTo(e.latlng, map.getZoom());
+      map.flyTo(e.latlng, 15, { animate: true });
     },
   });
 
   return position === null ? null : (
     <Marker position={position}></Marker>
   );
+}
+
+function MapController({ position }: { position: L.LatLng | null }) {
+  const map = useMapEvents({});
+  useEffect(() => {
+    if (position) {
+      map.flyTo(position, 15, { animate: true });
+    }
+  }, [map, position]);
+  return null;
 }
 
 export default function LeafletMapInner({ 
@@ -42,7 +54,7 @@ export default function LeafletMapInner({
   return (
     <MapContainer 
       center={leafletPos || [22.3072, 73.1812]} // Default to Vadodara
-      zoom={leafletPos ? 15 : 12} 
+      zoom={leafletPos ? 15 : 13} 
       scrollWheelZoom={true} 
       style={{ height: '100%', width: '100%', zIndex: 0 }}
     >
@@ -50,6 +62,7 @@ export default function LeafletMapInner({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      <MapController position={leafletPos} />
       <LocationMarker 
         position={leafletPos} 
         setPosition={(p) => setPosition({ lat: p.lat, lng: p.lng })} 

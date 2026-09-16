@@ -2,7 +2,16 @@
 
 import { useEffect, useState, useRef, Component, ErrorInfo, ReactNode } from "react";
 import { Refresh2, Location, SearchNormal, TickCircle } from "iconsax-react";
-import { APIProvider, Map, AdvancedMarker, Pin, useMap } from "@vis.gl/react-google-maps";
+import dynamic from "next/dynamic";
+
+const LeafletMapInner = dynamic(() => import("./LeafletMapInner"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[300px] w-full flex items-center justify-center bg-rose-50 text-[var(--brand-deep-rose)] rounded-xl border border-border">
+      <Refresh2 className="w-6 h-6 animate-spin" />
+    </div>
+  )
+});
 
 class MapErrorBoundary extends Component<{ children: ReactNode, fallback: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode, fallback: ReactNode }) {
@@ -257,48 +266,18 @@ function InnerMap({
   onAddressChange: (addr: string) => void;
   onLocationSelected?: (lat: number, lng: number) => void;
 }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (map && selectedLocation) {
-      map.panTo(selectedLocation);
-    }
-  }, [map, selectedLocation]);
-
-  const handleMapClick = (e: any) => {
-    if (e.detail?.latLng) {
-      const lat = e.detail.latLng.lat;
-      const lng = e.detail.latLng.lng;
-      setSelectedLocation({ lat, lng });
-      onAddressChange("Custom Pinned Location");
-      if (onLocationSelected) onLocationSelected(lat, lng);
-    } else if (e.latLng) {
-      const lat = typeof e.latLng.lat === 'function' ? e.latLng.lat() : e.latLng.lat;
-      const lng = typeof e.latLng.lng === 'function' ? e.latLng.lng() : e.latLng.lng;
-      setSelectedLocation({ lat, lng });
-      onAddressChange("Custom Pinned Location");
-      if (onLocationSelected) onLocationSelected(lat, lng);
-    }
-  };
-
   return (
     <div className="h-[300px] w-full rounded-xl overflow-hidden border border-border shadow-inner relative z-0 mt-4">
-      <Map
-        defaultZoom={13}
-        defaultCenter={{ lat: 22.3072, lng: 73.1812 }}
-        onClick={handleMapClick}
-        disableDefaultUI={true}
-        zoomControl={true}
-        mapId="DEMO_MAP_ID"
-      >
-        {selectedLocation && (
-          <AdvancedMarker position={selectedLocation}>
-            <Pin background={"#e11d48"} borderColor={"#be123c"} glyphColor={"#fff"} />
-          </AdvancedMarker>
-        )}
-      </Map>
-      <div className="absolute top-2 left-2 right-2 bg-secondary/90 backdrop-blur-sm p-2 rounded-lg text-center text-xs text-foreground font-medium shadow-md pointer-events-none z-[1000]">
-        Click anywhere on the map to fine-tune your exact location.
+      <LeafletMapInner
+        position={selectedLocation}
+        setPosition={(pos) => {
+          setSelectedLocation(pos);
+          onAddressChange("Custom Pinned Location");
+          if (onLocationSelected) onLocationSelected(pos.lat, pos.lng);
+        }}
+      />
+      <div className="absolute top-2 left-2 right-2 bg-white/90 backdrop-blur-md p-2 rounded-lg text-center text-xs text-foreground font-semibold shadow-md pointer-events-none z-[1000] border border-border/50">
+        📍 Click anywhere on the map to fine-tune your exact house location.
       </div>
     </div>
   );
@@ -452,20 +431,12 @@ export function GoogleAddressPicker(props: GoogleAddressPickerProps) {
       </div>
 
       {isMapOpen && (
-        <MapErrorBoundary fallback={
-          <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl text-orange-800 text-xs">
-            Map preview restricted by browser extension. Address search above is fully active.
-          </div>
-        }>
-          <APIProvider apiKey={API_KEY}>
-            <InnerMap
-              selectedLocation={selectedLocation}
-              setSelectedLocation={setSelectedLocation}
-              onAddressChange={props.onAddressChange}
-              onLocationSelected={props.onLocationSelected}
-            />
-          </APIProvider>
-        </MapErrorBoundary>
+        <InnerMap
+          selectedLocation={selectedLocation}
+          setSelectedLocation={setSelectedLocation}
+          onAddressChange={props.onAddressChange}
+          onLocationSelected={props.onLocationSelected}
+        />
       )}
     </div>
   );
