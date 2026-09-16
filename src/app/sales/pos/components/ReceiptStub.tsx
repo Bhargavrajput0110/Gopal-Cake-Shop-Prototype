@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
 import { fetchClient } from "@/lib/api/client"
-import { Printer, DocumentDownload, TickCircle } from "iconsax-react"
+import { Printer, DocumentDownload, TickCircle, CloseSquare } from "iconsax-react"
 import { generateInvoicePDF } from "@/lib/invoice"
 
 interface ReceiptStubProps {
@@ -104,10 +104,19 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
       `}} />
 
       {/* Screen Control Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 print-hidden bg-[#3E2723]/5 p-3 rounded-xl border border-[#C5A059]/20">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4 print-hidden bg-[#3E2723]/5 p-3 rounded-xl border border-[#C5A059]/20">
         <div className="flex items-center gap-2">
+          {onClose && (
+            <button 
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3E2723] text-white text-xs font-bold rounded-lg hover:bg-[#2C1C19] transition-all shadow-sm active:scale-95 mr-1"
+            >
+              <CloseSquare className="w-4 h-4 text-[#C5A059]" />
+              Back
+            </button>
+          )}
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-bold text-[#3E2723] uppercase tracking-wider">Official Bill & Receipt</span>
+          <span className="text-xs font-bold text-[#3E2723] uppercase tracking-wider hidden sm:inline">Official Receipt</span>
         </div>
         <div className="flex items-center gap-2">
           <button 
@@ -119,10 +128,10 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
           </button>
           <button 
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#3E2723] text-white text-xs font-bold rounded-lg hover:bg-[#2C1C19] transition-all shadow-md active:scale-95"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#3E2723] text-white text-xs font-bold rounded-lg hover:bg-[#2C1C19] transition-all shadow-md active:scale-95"
           >
             <Printer className="w-4 h-4 text-[#C5A059]" />
-            Print (80mm Thermal)
+            Print (80mm)
           </button>
         </div>
       </div>
@@ -130,7 +139,7 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
       {/* Screen & Print Container */}
       <div 
         id="receipt-stub" 
-        className="bg-white text-[#2B1810] p-6 max-w-[420px] mx-auto rounded-2xl shadow-xl border border-[#C5A059]/30 text-xs font-sans relative overflow-hidden"
+        className="bg-white text-[#2B1810] p-5 sm:p-6 max-w-[420px] mx-auto rounded-2xl shadow-xl border border-[#C5A059]/30 text-xs font-sans relative overflow-hidden"
       >
         {/* Subtle Decorative Top Watermark Bar */}
         <div className="h-1.5 bg-gradient-to-r from-[#3E2723] via-[#C5A059] to-[#3E2723] -mx-6 -mt-6 mb-5 print-hidden" />

@@ -201,18 +201,18 @@ export default function PaymentTrackingPage() {
         </div>
       </div>
       
-      {/* Hidden render for ReceiptStub when requested */}
+      {/* Receipt Modal */}
       {receiptId && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center print:bg-white print:static print:z-auto">
-          <div className="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full relative print:shadow-none print:p-0">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto print:bg-white print:static print:z-auto print:p-0">
+          <div className="bg-white p-3 sm:p-4 rounded-2xl shadow-2xl max-w-md w-full relative my-auto max-h-[92vh] overflow-y-auto print:shadow-none print:p-0 print:max-h-none print:overflow-visible">
             <button 
               onClick={() => setReceiptId(null)}
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 print:hidden font-bold text-xl"
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 print:hidden font-bold text-xl z-20 bg-gray-100 hover:bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center"
+              title="Close"
             >
               &times;
             </button>
-            <h3 className="text-center font-bold mb-4 print:hidden">Order Receipt</h3>
-            <ReceiptStub orderId={receiptId} />
+            <ReceiptStub orderId={receiptId} onClose={() => setReceiptId(null)} />
           </div>
         </div>
       )}
