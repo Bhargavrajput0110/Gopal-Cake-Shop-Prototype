@@ -56,7 +56,7 @@ export default function LeafletMapInner({
       center={leafletPos || [22.3072, 73.1812]} // Default to Vadodara
       zoom={leafletPos ? 15 : 13} 
       scrollWheelZoom={true} 
-      style={{ height: '100%', width: '100%', zIndex: 0 }}
+      style={{ height: '300px', minHeight: '300px', width: '100%', zIndex: 0 }}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
