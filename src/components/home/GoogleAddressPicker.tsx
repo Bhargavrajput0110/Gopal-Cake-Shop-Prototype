@@ -77,7 +77,7 @@ async function calculateRealRoadDistanceKm(lat1: number, lon1: number, lat2: num
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000);
-    const url = `https://router.project-osrm.org/route/v1/driving/${lon2},${lat2};${lon1},${lat1}?overview=false`;
+    const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`;
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId);
     if (res.ok) {
