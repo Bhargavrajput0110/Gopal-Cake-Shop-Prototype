@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Call, TickCircle, Warning2, Gift, Reserve, Notification, Clock, Lock1, Edit2, CloseSquare } from "iconsax-react";
+import { Call, TickCircle, Warning2, Gift, Reserve, Notification, Clock, Lock1, Edit2, CloseSquare, Receipt21 } from "iconsax-react";
 import { useOrders, Order, TimelineEvent } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { SearchNormal1 } from "iconsax-react";
 import { Button } from "@/components/ui/button";
+import { ReceiptStub } from "@/app/sales/pos/components/ReceiptStub";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Suspense } from "react";
 import { StaffChatWidget } from "@/components/chat/StaffChatWidget";
@@ -95,6 +96,7 @@ function SalesDashboardContent() {
   // Edit & Toast State
   const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [vendorAssignOrder, setVendorAssignOrder] = useState<Order | null>(null);
+  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
   const [toastData, setToastData] = useState({ show: false, msg: "", rec: "" });
 
   const employeeId = searchParams.get("employeeId") || "";
@@ -330,6 +332,7 @@ function SalesDashboardContent() {
                   key={order.id} 
                   order={order} 
                   onViewTimeline={()=>setTimelineOrder(order)} 
+                  onReceipt={()=>setReceiptOrder(order)}
                   onEdit={()=>setEditOrder(order)}
                   onAssignVendor={()=>setVendorAssignOrder(order)}
                   onWhatsApp={(msg)=>setToastData({show:true, msg, rec: order.customerPhone})}
@@ -449,6 +452,21 @@ function SalesDashboardContent() {
         )}
       </AnimatePresence>
 
+      {/* Bill & Receipt Modal */}
+      {receiptOrder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full relative p-4 max-h-[90vh] overflow-y-auto my-auto shadow-2xl">
+            <button
+              onClick={() => setReceiptOrder(null)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 z-10 p-1"
+            >
+              <CloseSquare className="w-6 h-6" />
+            </button>
+            <ReceiptStub orderId={receiptOrder.id} onClose={() => setReceiptOrder(null)} />
+          </div>
+        </div>
+      )}
+
       {/* Real-time internal staff messaging hub */}
       <StaffChatWidget 
         senderId={employeeId || session?.user?.id || "SALES-01"} 
@@ -514,7 +532,7 @@ export default function OrderManagementPage() {
   );
 }
 
-function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWhatsApp, onMutated }: { order: Order; onViewTimeline: () => void; onEdit: () => void; onAssignVendor: () => void; onWhatsApp: (msg: string) => void; onMutated: () => void }) {
+function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVendor, onWhatsApp, onMutated }: { order: Order; onViewTimeline: () => void; onReceipt: () => void; onEdit: () => void; onAssignVendor: () => void; onWhatsApp: (msg: string) => void; onMutated: () => void }) {
   const { updateOrderStatus, updateOrderFields, updateVendorTaskStatus } = useOrders();
   const [quotePrice, setQuotePrice] = useState<number>(order.grandTotal || 0);
   const [selectedDiscount, setSelectedDiscount] = useState<number>(0);
@@ -853,6 +871,9 @@ function OrderDetailsCard({ order, onViewTimeline, onEdit, onAssignVendor, onWha
                  )}
                  <button onClick={onViewTimeline} className="px-3 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors shadow-sm">
                    <Clock className="w-3.5 h-3.5 text-[#C5A059]" /> Timeline
+                 </button>
+                 <button onClick={onReceipt} className="px-3 py-2 bg-white border border-[#C5A059]/40 text-[#3E2723] rounded-lg text-xs font-bold hover:bg-[#FDFBF7] flex items-center justify-center gap-1.5 transition-colors shadow-sm">
+                   <Receipt21 className="w-3.5 h-3.5 text-[#C5A059]" /> Bill
                  </button>
                  <a href={`tel:${order.customerPhone}`} className="px-3 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors shadow-sm">
                    <Call className="w-3.5 h-3.5 text-blue-600" /> Call

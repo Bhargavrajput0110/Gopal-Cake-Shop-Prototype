@@ -5,7 +5,8 @@ import { useOrders, type Order, type OrderStatus } from "@/context/OrderContext"
 import { DataTable, type ColumnDef, type RowAction, type ToolbarFilter, type BulkAction } from "@/components/ui/data-table"
 import { PageHeader } from "@/components/ui/page-header"
 import { Badge } from "@/components/ui/badge"
-import { Clock, Car, Shop, Bag, Call, Eye, CloseCircle, TickCircle, Element4, TextalignJustifycenter } from "iconsax-react"
+import { Clock, Car, Shop, Bag, Call, Eye, CloseCircle, TickCircle, Element4, TextalignJustifycenter, Receipt21 } from "iconsax-react"
+import { ReceiptStub } from "@/app/sales/pos/components/ReceiptStub"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { OrderDetailsDialog } from "@/components/admin/orders/OrderDetailsDialog"
@@ -166,6 +167,7 @@ export default function LiveOrdersPage() {
   const [view, setView] = useState<"board" | "list">("board")
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [reassignOrderId, setReassignOrderId] = useState<string | null>(null)
+  const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null)
 
   // Row actions — preserve existing business logic, wrapped in Design System pattern
   const rowActions: RowAction<Order>[] = [
@@ -174,6 +176,13 @@ export default function LiveOrdersPage() {
       icon: Eye,
       onClick: (order) => {
         setSelectedOrderId(order.id)
+      },
+    },
+    {
+      label: "View / Print Bill",
+      icon: Receipt21,
+      onClick: (order) => {
+        setReceiptOrderId(order.id)
       },
     },
     {
@@ -507,6 +516,21 @@ export default function LiveOrdersPage() {
             window.location.reload()
           }}
         />
+      )}
+
+      {/* Bill & Receipt Modal */}
+      {receiptOrderId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full relative p-4 max-h-[90vh] overflow-y-auto my-auto shadow-2xl">
+            <button
+              onClick={() => setReceiptOrderId(null)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 z-10 p-1"
+            >
+              <CloseCircle className="w-6 h-6" />
+            </button>
+            <ReceiptStub orderId={receiptOrderId} onClose={() => setReceiptOrderId(null)} />
+          </div>
+        </div>
       )}
     </div>
   )
