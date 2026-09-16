@@ -100,12 +100,12 @@ export class StorefrontEngine {
     }
 
     // 1. Resolve Fulfillment Branch
-    // BUSINESS RULE: All delivery orders are ALWAYS fulfilled from Uma Branch.
-    // This is enforced server-side and cannot be overridden by the client.
-    // For PICKUP orders, the customer-selected branch is used.
+    // BUSINESS RULE:
+    // - Website Online Delivery orders are fulfilled from Central Outlet (Uma Branch).
+    // - Sales POS & Admin POS orders are fulfilled from the active POS branch where staff is logged in (e.g., Khanderao POS -> Khanderao Branch).
     let branch;
-    if (payload.deliveryType === DeliveryType.DELIVERY) {
-      // Enforce Uma as the fulfillment outlet — ignore whatever branchId the client sent
+    if (payload.deliveryType === DeliveryType.DELIVERY && context.source === OrderSource.WEBSITE) {
+      // Enforce Uma as central fulfillment outlet for public website delivery orders
       branch = await prisma.branch.findFirst({
         where: { isActive: true, OR: [{ code: 'UMA' }, { name: { contains: 'Uma', mode: 'insensitive' } }] }
       })
@@ -117,7 +117,7 @@ export class StorefrontEngine {
       branch = await prisma.branch.findUnique({ where: { id: payload.branchId } })
       
       if (!branch) {
-        // Fallback: If it's an alias like "uma", parse it and lookup by code
+        // Fallback: If it's an alias like "uma" or "khanderao", parse it and lookup by code
         const parsedBranchCode = toBranchId(payload.branchId)
         branch = await prisma.branch.findFirst({
           where: { code: { equals: parsedBranchCode, mode: 'insensitive' } }
@@ -125,7 +125,14 @@ export class StorefrontEngine {
       }
       
       if (!branch || !branch.isActive) {
-        throw new Error('Selected pickup branch is invalid or inactive.')
+        // Fallback to central Uma branch if active branch cannot be resolved
+        branch = await prisma.branch.findFirst({
+          where: { isActive: true, OR: [{ code: 'UMA' }, { name: { contains: 'Uma', mode: 'insensitive' } }] }
+        })
+      }
+
+      if (!branch) {
+        throw new Error('Selected branch is invalid or inactive.')
       }
     }
 

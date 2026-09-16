@@ -275,10 +275,14 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                           if (error) {
                             setCheckoutError(`Distance Error: ${error}`)
                           } else {
-                            const branchName = getBranchDisplayName(activeBranch)
-                            const dist = distances.find(d => d.branch === branchName)?.distanceKm || 0
-                            setDeliveryDistanceKm(dist)
-                            setIsFarDistance(dist > 15) // Example far distance logic
+                            const targetName = getBranchDisplayName(activeBranch);
+                            const matched = distances.find(d => 
+                              d.branch.toLowerCase().includes(targetName.toLowerCase()) || 
+                              targetName.toLowerCase().includes(d.branch.toLowerCase())
+                            );
+                            const dist = matched ? matched.distanceKm : (distances[0]?.distanceKm || 0);
+                            setDeliveryDistanceKm(dist);
+                            setIsFarDistance(dist > 15);
                           }
                         }}
                         onCalculating={(isCalculating) => {
