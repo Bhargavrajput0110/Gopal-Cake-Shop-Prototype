@@ -115,11 +115,13 @@ async function performSmartAddressSearch(query: string): Promise<any[]> {
 function PlacesAutocomplete({
   value,
   onChange,
-  onSelectAddress
+  onSelectAddress,
+  selectedLocation
 }: {
   value: string;
   onChange: (val: string) => void;
   onSelectAddress: (item: any) => void;
+  selectedLocation?: { lat: number; lng: number } | null;
 }) {
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -158,11 +160,16 @@ function PlacesAutocomplete({
   };
 
   const handleUseTypedText = () => {
+    // If results has predictions, use the top result's exact GPS lat/lon for distance calculation
+    const topResult = results && results.length > 0 ? results[0] : null;
+    const lat = topResult ? parseFloat(topResult.lat) : (selectedLocation?.lat || 22.3072);
+    const lon = topResult ? parseFloat(topResult.lon) : (selectedLocation?.lng || 73.1812);
+
     onSelectAddress({
       name: value,
       display_name: `${value}, Vadodara`,
-      lat: 22.3072,
-      lon: 73.1812,
+      lat: lat,
+      lon: lon,
     });
     setIsOpen(false);
   };
@@ -427,6 +434,7 @@ export function GoogleAddressPicker(props: GoogleAddressPickerProps) {
             props.onAddressChange(val);
           }}
           onSelectAddress={handleSelectAddress}
+          selectedLocation={selectedLocation}
         />
 
         <button
