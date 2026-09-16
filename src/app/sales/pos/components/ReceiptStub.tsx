@@ -154,7 +154,7 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
             />
           </div>
           <h1 className="text-xl font-black uppercase tracking-widest font-serif text-[#3E2723]">Gopal Cake Shop</h1>
-          <p className="text-[10px] font-bold text-[#C5A059] uppercase tracking-wider mt-0.5">Crafting Sweet Moments Since 1995</p>
+          <p className="text-[10px] font-bold text-[#C5A059] uppercase tracking-wider mt-0.5">Crafting Sweet Moments Since 1990</p>
           <p className="text-[11px] font-bold mt-1 text-gray-800">{order.branch?.name ? `${order.branch.name} Branch` : "Uma Char Rasta Branch"}</p>
           <p className="text-[10px] text-gray-600 leading-tight">{order.branch?.address || "Waghodia Road, Vadodara, Gujarat"}</p>
           <p className="text-[10px] text-gray-600">Ph: {order.branch?.phone ? `+91 ${order.branch.phone}` : "+91 9898616894"}</p>

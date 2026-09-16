@@ -44,7 +44,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(197, 160, 89); // Theme accent (#C5A059)
-  doc.text('CRAFTING SWEET MOMENTS SINCE 1995', 20, 29);
+  doc.text('CRAFTING SWEET MOMENTS SINCE 1990', 20, 29);
 
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(9);
