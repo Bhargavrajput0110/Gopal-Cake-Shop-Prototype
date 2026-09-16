@@ -1,300 +1,705 @@
-import * as React from "react"
-import { useQuery } from "@tanstack/react-query"
-import { fetchClient } from "@/lib/api/client"
-import { Printer, DocumentDownload, TickCircle, CloseSquare } from "iconsax-react"
-import { generateInvoicePDF } from "@/lib/invoice"
+"use client";
+
+import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchClient } from "@/lib/api/client";
+import { Printer, DocumentDownload, CloseSquare, TickCircle } from "iconsax-react";
+import { generateInvoicePDF } from "@/lib/invoice";
 
 interface ReceiptStubProps {
-  orderId: string
-  onClose?: () => void
+  orderId: string;
+  onClose?: () => void;
 }
 
 export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
-  // Fetch order details for the receipt
   const { data: responseData, isLoading } = useQuery({
-    queryKey: ['receipt', orderId],
-    queryFn: () => fetchClient<any>(`/orders/${orderId}`)
-  })
+    queryKey: ["receipt", orderId],
+    queryFn: () => fetchClient<any>(`/orders/${orderId}`),
+  });
 
   if (isLoading || !responseData) {
     return (
-      <div className="p-8 text-center font-serif italic text-muted-foreground animate-pulse">
-        Generating premium receipt...
+      <div
+        style={{
+          padding: "48px 24px",
+          textAlign: "center",
+          fontFamily: "'Georgia', serif",
+          color: "#8B6914",
+          fontSize: 14,
+          letterSpacing: "0.05em",
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            border: "3px solid #C5A059",
+            borderTopColor: "transparent",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+            margin: "0 auto 16px",
+          }}
+        />
+        Preparing your premium receipt...
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
-  // The API returns { success: true, data: { ... } }
   const order = responseData.data || responseData;
-
   if (!order || !order.orderNumber) return null;
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownloadPDF = () => {
-    try {
-      const invoiceItems = (order.items || []).map((item: any) => ({
-        name: item.productName || item.name || 'Custom Cake',
-        qty: Number(item.quantity || item.qty || 1),
-        weight: item.weight || '1kg',
-        flavor: item.flavor || item.flavour || 'Standard',
-        price: Number(item.price || 0)
-      }));
-
-      const invoiceData = {
-        orderId: order.orderNumber || order.id,
-        customerName: order.customer?.name || order.customerName || 'Valued Customer',
-        customerPhone: order.customer?.phone || order.customerPhone,
-        deliveryAddress: order.deliveryAddress || order.customer?.address || order.delivery?.address,
-        items: invoiceItems,
-        subtotal: Number(order.subtotal || order.totalAmount || 0),
-        deliveryCharge: Number(order.deliveryCharge || 0),
-        discount: Number(order.discount || 0),
-        grandTotal: Number(order.totalAmount || order.grandTotal || 0),
-        createdAt: order.createdAt
-      };
-
-      const doc = generateInvoicePDF(invoiceData);
-      doc.save(`Invoice-${order.orderNumber || order.id}.pdf`);
-    } catch (err) {
-      console.error('Error generating PDF:', err);
-      alert('Unable to download PDF. Try printing instead.');
-    }
-  };
-
   const parseNumber = (val: any) => Number(val || 0);
-
   const subtotal = parseNumber(order.subtotal);
   const deliveryCharge = parseNumber(order.deliveryCharge);
   const discount = parseNumber(order.discount);
   const totalAmount = parseNumber(order.totalAmount || order.grandTotal);
-  const tax = Math.max(0, totalAmount - subtotal - deliveryCharge + discount);
   const paidAmount = parseNumber(order.paidAmount || order.advancePaid);
-  const pendingBalance = parseNumber(order.pendingBalance || (totalAmount - paidAmount));
+  const pendingBalance = parseNumber(order.pendingBalance || totalAmount - paidAmount);
+
+  const handlePrint = () => window.print();
+
+  const handleDownloadPDF = () => {
+    try {
+      const invoiceItems = (order.items || []).map((item: any) => ({
+        name: item.productName || item.name || "Custom Cake",
+        qty: Number(item.quantity || item.qty || 1),
+        weight: item.weight || "1kg",
+        flavor: item.flavor || item.flavour || "Standard",
+        price: Number(item.price || 0),
+        messageOnCake: item.messageOnCake,
+        designName: item.designName,
+      }));
+      const doc = generateInvoicePDF({
+        orderId: order.orderNumber || order.id,
+        customerName: order.customer?.name || order.customerName || "Valued Customer",
+        customerPhone: order.customer?.phone || order.customerPhone,
+        deliveryAddress: order.deliveryAddress || order.customer?.address,
+        items: invoiceItems,
+        subtotal,
+        deliveryCharge,
+        discount,
+        grandTotal: totalAmount,
+        paidAmount,
+        pendingBalance,
+        createdAt: order.createdAt,
+        targetDate: order.targetDate,
+        deliveryType: order.deliveryType,
+        branchName: order.branch?.name,
+        branchPhone: order.branch?.phone,
+        branchAddress: order.branch?.address,
+      });
+      doc.save(`Invoice-${order.orderNumber || order.id}.pdf`);
+    } catch (err) {
+      console.error("PDF error:", err);
+      alert("Unable to download PDF. Try printing instead.");
+    }
+  };
+
+  // ─── Styles ───────────────────────────────────────────────
+  const BROWN = "#3E2723";
+  const GOLD = "#C5A059";
+  const CREAM = "#FFFDF7";
+  const LIGHT_GOLD = "#F7F1E3";
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{__html: `
-        @media print {
-          body * {
-            visibility: hidden !important;
-          }
-          #receipt-stub, #receipt-stub * {
-            visibility: visible !important;
-          }
-          #receipt-stub {
-            position: fixed !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 80mm !important;
-            padding: 2mm 4mm !important;
-            margin: 0 !important;
-            background: #ffffff !important;
-            color: #000000 !important;
-            font-family: 'Courier New', Courier, monospace !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-          .print-hidden {
-            display: none !important;
-          }
-        }
-      `}} />
+      {/* Print Styles */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap');
 
-      {/* Screen Control Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-4 print-hidden bg-[#3E2723]/5 p-3 rounded-xl border border-[#C5A059]/20">
-        <div className="flex items-center gap-2">
+          @media print {
+            body * { visibility: hidden !important; }
+            #receipt-stub, #receipt-stub * { visibility: visible !important; }
+            #receipt-stub {
+              position: fixed !important;
+              left: 0 !important; top: 0 !important;
+              width: 80mm !important;
+              padding: 3mm 5mm !important;
+              margin: 0 !important;
+              background: #fff !important;
+              color: #000 !important;
+              font-family: 'Inter', 'Segoe UI', sans-serif !important;
+              box-shadow: none !important;
+              border: none !important;
+            }
+            .print-hidden { display: none !important; }
+            .print-logo { width: 14mm !important; height: 14mm !important; }
+            .print-ornament { display: none !important; }
+          }
+
+          .receipt-card {
+            background: linear-gradient(160deg, #FFFFFF 0%, #FFFDF7 50%, #FFF9EF 100%);
+            border: 1px solid rgba(197,160,89,0.35);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 48px rgba(62,39,35,0.12), 0 2px 8px rgba(197,160,89,0.08);
+            max-width: 440px;
+            margin: 0 auto;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            position: relative;
+          }
+
+          .receipt-top-bar {
+            background: linear-gradient(90deg, #3E2723, #5D3A2E, #3E2723);
+            height: 6px;
+          }
+
+          .receipt-gold-bar {
+            background: linear-gradient(90deg, #C5A059, #E8C97A, #C5A059);
+            height: 2px;
+          }
+
+          .receipt-header {
+            background: linear-gradient(135deg, #3E2723 0%, #5D3A2E 60%, #3E2723 100%);
+            padding: 24px 24px 20px;
+            text-align: center;
+            position: relative;
+          }
+
+          .receipt-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 40px;
+            background: linear-gradient(to bottom right, transparent 49%, #FFFDF7 50%),
+                        linear-gradient(to bottom left, transparent 49%, #FFFDF7 50%);
+            background-size: 50% 100%;
+            background-repeat: no-repeat;
+            background-position: left, right;
+          }
+
+          .receipt-logo-ring {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #C5A059, #E8C97A, #C5A059);
+            padding: 3px;
+            margin: 0 auto 12px;
+            box-shadow: 0 4px 24px rgba(197,160,89,0.5);
+          }
+
+          .receipt-logo-inner {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: #fff;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+          }
+
+          .receipt-shop-name {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 20px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin: 0 0 4px;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+          }
+
+          .receipt-tagline {
+            font-size: 10px;
+            font-weight: 600;
+            color: #C5A059;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            margin: 0;
+          }
+
+          .ornament {
+            color: #C5A059;
+            font-size: 14px;
+            opacity: 0.8;
+            user-select: none;
+          }
+
+          .receipt-body { padding: 20px 20px 16px; }
+
+          .receipt-branch-row {
+            text-align: center;
+            margin-bottom: 16px;
+          }
+
+          .badge-row {
+            background: ${LIGHT_GOLD};
+            border: 1px solid rgba(197,160,89,0.3);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            font-size: 11px;
+          }
+
+          .badge-row-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 0;
+          }
+
+          .badge-row-item + .badge-row-item {
+            border-top: 1px dashed rgba(197,160,89,0.3);
+            padding-top: 5px;
+            margin-top: 2px;
+          }
+
+          .label-text { color: #8B7355; font-weight: 500; }
+          .value-text { color: #2B1810; font-weight: 700; font-family: 'Inter', monospace; }
+
+          .order-number-badge {
+            background: linear-gradient(135deg, #3E2723, #5D3A2E);
+            color: #C5A059;
+            font-weight: 800;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-family: 'Inter', monospace;
+            letter-spacing: 0.05em;
+            font-size: 11px;
+          }
+
+          .section-title {
+            font-size: 9px;
+            font-weight: 800;
+            color: ${GOLD};
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin: 0 0 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          }
+
+          .section-title::before, .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(197,160,89,0.4));
+          }
+          .section-title::after { transform: scaleX(-1); }
+
+          .item-row {
+            padding: 8px 0;
+            border-bottom: 1px dashed rgba(197,160,89,0.2);
+          }
+
+          .item-row:last-child { border-bottom: none; }
+
+          .item-name {
+            font-weight: 700;
+            color: #2B1810;
+            font-size: 12px;
+            margin-bottom: 2px;
+          }
+
+          .item-meta {
+            font-size: 10px;
+            color: #7B6248;
+            padding-left: 8px;
+            line-height: 1.5;
+          }
+
+          .item-price {
+            font-weight: 800;
+            color: #3E2723;
+            font-size: 12px;
+            white-space: nowrap;
+          }
+
+          .cake-message {
+            background: linear-gradient(135deg, #FFF8E7, #FFFDF7);
+            border: 1px solid rgba(197,160,89,0.3);
+            border-left: 3px solid #C5A059;
+            border-radius: 6px;
+            padding: 5px 8px;
+            margin-top: 4px;
+            font-family: Georgia, serif;
+            font-style: italic;
+            font-size: 10px;
+            color: #5D3A2E;
+          }
+
+          .totals-section {
+            background: ${LIGHT_GOLD};
+            border: 1px solid rgba(197,160,89,0.25);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-top: 12px;
+            font-size: 11px;
+          }
+
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            color: #6B5340;
+          }
+
+          .grand-total-box {
+            background: linear-gradient(135deg, #3E2723, #5D3A2E);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+
+          .grand-total-label { color: #C5A059; font-weight: 700; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+          .grand-total-value { color: #fff; font-weight: 900; font-size: 16px; }
+
+          .payment-section {
+            margin-top: 10px;
+            border-top: 1px dashed rgba(197,160,89,0.3);
+            padding-top: 10px;
+          }
+
+          .paid-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #3E2723;
+            font-weight: 600;
+            margin-bottom: 6px;
+          }
+
+          .balance-due {
+            background: linear-gradient(135deg, #FFF5F5, #FFF8F8);
+            border: 1px solid rgba(220, 50, 50, 0.25);
+            border-left: 3px solid #DC3545;
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 800;
+            color: #B91C1C;
+          }
+
+          .paid-full {
+            background: linear-gradient(135deg, #F0FDF4, #F0FFF4);
+            border: 1px solid rgba(34,197,94,0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #15803D;
+          }
+
+          .receipt-footer {
+            text-align: center;
+            padding: 16px 20px 20px;
+            border-top: 1px dashed rgba(197,160,89,0.3);
+            margin-top: 8px;
+          }
+
+          .footer-thanks {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: #3E2723;
+            margin-bottom: 4px;
+          }
+
+          .footer-sub {
+            font-size: 9.5px;
+            color: #8B7355;
+            line-height: 1.5;
+          }
+
+          .footer-socials {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 10px;
+            font-size: 9px;
+            font-weight: 600;
+            color: #7B6248;
+          }
+
+          .receipt-bottom-bar {
+            height: 5px;
+            background: linear-gradient(90deg, #3E2723, #C5A059, #3E2723);
+          }
+        `
+      }} />
+
+      {/* ── Control Bar ── */}
+      <div
+        className="print-hidden"
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          marginBottom: 16,
+          background: "linear-gradient(135deg, rgba(62,39,35,0.06), rgba(197,160,89,0.06))",
+          border: "1px solid rgba(197,160,89,0.25)",
+          borderRadius: 14,
+          padding: "10px 14px",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {onClose && (
-            <button 
+            <button
               onClick={onClose}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3E2723] text-white text-xs font-bold rounded-lg hover:bg-[#2C1C19] transition-all shadow-sm active:scale-95 mr-1"
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "6px 12px",
+                background: BROWN, color: "#fff",
+                border: "none", borderRadius: 8,
+                fontSize: 11, fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#2C1C19")}
+              onMouseLeave={e => (e.currentTarget.style.background = BROWN)}
             >
-              <CloseSquare className="w-4 h-4 text-[#C5A059]" />
+              <CloseSquare size={14} color={GOLD} />
               Back
             </button>
           )}
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-bold text-[#3E2723] uppercase tracking-wider hidden sm:inline">Official Receipt</span>
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", display: "inline-block", boxShadow: "0 0 6px #22C55E" }} />
+          <span style={{ fontSize: 10, fontWeight: 800, color: BROWN, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            Official Receipt
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <button 
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
             onClick={handleDownloadPDF}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-[#C5A059]/30 text-[#3E2723] text-xs font-bold rounded-lg hover:bg-[#FDFBF7] transition-all shadow-sm"
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "6px 14px",
+              background: "#fff",
+              border: `1px solid rgba(197,160,89,0.4)`,
+              color: BROWN, borderRadius: 8,
+              fontSize: 11, fontWeight: 700,
+              cursor: "pointer", transition: "all 0.2s",
+              boxShadow: "0 1px 4px rgba(62,39,35,0.08)",
+            }}
           >
-            <DocumentDownload className="w-4 h-4 text-[#C5A059]" />
+            <DocumentDownload size={14} color={GOLD} />
             PDF Invoice
           </button>
-          <button 
+          <button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#3E2723] text-white text-xs font-bold rounded-lg hover:bg-[#2C1C19] transition-all shadow-md active:scale-95"
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "7px 16px",
+              background: `linear-gradient(135deg, ${BROWN}, #5D3A2E)`,
+              color: "#fff", border: "none", borderRadius: 8,
+              fontSize: 11, fontWeight: 700,
+              cursor: "pointer", transition: "all 0.2s",
+              boxShadow: "0 2px 10px rgba(62,39,35,0.3)",
+            }}
           >
-            <Printer className="w-4 h-4 text-[#C5A059]" />
+            <Printer size={14} color={GOLD} />
             Print (80mm)
           </button>
         </div>
       </div>
 
-      {/* Screen & Print Container */}
-      <div 
-        id="receipt-stub" 
-        className="bg-white text-[#2B1810] p-5 sm:p-6 max-w-[420px] mx-auto rounded-2xl shadow-xl border border-[#C5A059]/30 text-xs font-sans relative overflow-hidden"
-      >
-        {/* Subtle Decorative Top Watermark Bar */}
-        <div className="h-1.5 bg-gradient-to-r from-[#3E2723] via-[#C5A059] to-[#3E2723] -mx-6 -mt-6 mb-5 print-hidden" />
+      {/* ── Premium Receipt Card ── */}
+      <div id="receipt-stub" className="receipt-card">
 
-        {/* Brand Header with Logo */}
-        <div className="text-center mb-5 pb-4 border-b border-gray-300">
-          <div className="w-16 h-16 mx-auto mb-2 rounded-full p-1 bg-white border border-[#C5A059]/40 shadow-sm flex items-center justify-center">
-            <img 
-              src="/logo.png" 
-              alt="Gopal Cake Shop Logo" 
-              className="w-full h-full object-contain"
-            />
+        {/* Top Bars */}
+        <div className="receipt-top-bar" />
+        <div className="receipt-gold-bar" />
+
+        {/* Dark Header with Logo */}
+        <div className="receipt-header">
+          <div className="receipt-logo-ring">
+            <div className="receipt-logo-inner">
+              <img
+                src="/logo.png"
+                alt="Gopal Cake Shop"
+                className="print-logo"
+                style={{ width: "100%", height: "100%", objectFit: "contain", padding: 4 }}
+              />
+            </div>
           </div>
-          <h1 className="text-xl font-black uppercase tracking-widest font-serif text-[#3E2723]">Gopal Cake Shop</h1>
-          <p className="text-[10px] font-bold text-[#C5A059] uppercase tracking-wider mt-0.5">Crafting Sweet Moments Since 1990</p>
-          <p className="text-[11px] font-bold mt-1 text-gray-800">{order.branch?.name ? `${order.branch.name} Branch` : "Uma Char Rasta Branch"}</p>
-          <p className="text-[10px] text-gray-600 leading-tight">{order.branch?.address || "Waghodia Road, Vadodara, Gujarat"}</p>
-          <p className="text-[10px] text-gray-600">Ph: {order.branch?.phone ? `+91 ${order.branch.phone}` : "+91 9898616894"}</p>
-          <p className="text-[9px] font-mono mt-1 text-gray-500">GSTIN: 24AAAFG0000A1Z2</p>
+          <h1 className="receipt-shop-name">Gopal Cake Shop</h1>
+          <p className="receipt-tagline">✦ Crafting Sweet Moments Since 1990 ✦</p>
         </div>
 
-        {/* Order Meta Badge */}
-        <div className="bg-[#FFFDF7] border border-[#C5A059]/30 rounded-xl p-3 mb-4 space-y-1.5 font-mono text-[11px]">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-500">Bill No:</span>
-            <span className="font-bold text-[#3E2723] bg-[#C5A059]/10 px-2 py-0.5 rounded border border-[#C5A059]/20">{order.orderNumber}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Order Date:</span>
-            <span>{order.createdAt ? new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }) : '-'}</span>
-          </div>
-          <div className="flex justify-between font-bold pt-1 border-t border-dashed border-gray-300">
-            <span className="text-gray-600">Type:</span>
-            <span className="text-[#3E2723] uppercase">{order.deliveryType === 'DELIVERY' ? 'Home Delivery 🚗' : 'Store Pickup 🏬'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Target Time:</span>
-            <span className="font-bold text-gray-900">{order.targetDate ? new Date(order.targetDate).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }) : '-'}</span>
+        {/* Body */}
+        <div className="receipt-body">
+
+          {/* Branch Info */}
+          <div className="receipt-branch-row">
+            <div style={{ fontSize: 11, fontWeight: 700, color: BROWN, marginBottom: 2 }}>
+              {order.branch?.name ? `${order.branch.name} Branch` : "Uma Char Rasta Branch"}
+            </div>
+            <div style={{ fontSize: 10, color: "#7B6248", lineHeight: 1.5 }}>
+              {order.branch?.address || "Waghodia Road, Vadodara, Gujarat"}
+            </div>
+            <div style={{ fontSize: 10, color: "#7B6248" }}>
+              Ph: {order.branch?.phone ? `+91 ${order.branch.phone}` : "+91 9898616894"} &nbsp;|&nbsp; GSTIN: 24AAAFG0000A1Z2
+            </div>
           </div>
 
-          {/* Customer Details */}
-          {order.customer && (
-            <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-300">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Customer:</span>
-                <span className="font-bold text-gray-900">{order.customer.name || 'Walk-in'}</span>
-              </div>
-              {order.customer.phone && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Phone:</span>
-                  <span>+91 {order.customer.phone}</span>
+          {/* Ornamental divider */}
+          <div style={{ textAlign: "center", marginBottom: 12, fontSize: 11, color: GOLD, letterSpacing: 6, userSelect: "none" }}>
+            ── ✦ ──
+          </div>
+
+          {/* Order Details Badge */}
+          <div className="badge-row">
+            <div className="badge-row-item">
+              <span className="label-text">Bill No</span>
+              <span className="order-number-badge">{order.orderNumber}</span>
+            </div>
+            <div className="badge-row-item">
+              <span className="label-text">Order Date</span>
+              <span className="value-text">
+                {order.createdAt
+                  ? new Date(order.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+                  : "—"}
+              </span>
+            </div>
+            <div className="badge-row-item">
+              <span className="label-text">Target Date</span>
+              <span className="value-text">
+                {order.targetDate
+                  ? new Date(order.targetDate).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+                  : "—"}
+              </span>
+            </div>
+            <div className="badge-row-item">
+              <span className="label-text">Type</span>
+              <span className="value-text">
+                {order.deliveryType === "DELIVERY" ? "🚗 Home Delivery" : "🏬 Store Pickup"}
+              </span>
+            </div>
+
+            {/* Customer */}
+            {order.customer && (
+              <>
+                <div className="badge-row-item" style={{ marginTop: 4 }}>
+                  <span className="label-text">Customer</span>
+                  <span className="value-text">{order.customer.name || "Walk-in"}</span>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Delivery Address */}
-          {(order.deliveryType === 'DELIVERY' || order.deliveryAddress || order.customer?.address) && (
-            <div className="pt-1.5 mt-1 border-t border-dashed border-gray-300 font-sans">
-              <span className="font-bold uppercase text-[9px] text-[#C5A059] block">Delivery Address:</span>
-              <p className="font-semibold text-[11px] text-gray-800 leading-snug mt-0.5">
-                {order.deliveryAddress || order.customer?.address || 'Address on file'}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Itemized Table */}
-        <div className="mb-4">
-          <div className="flex justify-between font-bold text-[10px] uppercase tracking-wider text-[#3E2723] border-b-2 border-[#3E2723] pb-1.5 mb-2 font-mono">
-            <span>Item & Specifications</span>
-            <span>Amount</span>
-          </div>
-          {order.items?.map((item: any, idx: number) => (
-            <div key={item.id || idx} className="mb-2.5 pb-2 border-b border-gray-100 last:border-b-0 font-mono">
-              <div className="flex justify-between font-bold text-gray-900 text-[12px]">
-                <span>{item.quantity}x {item.productName || item.name}</span>
-                <span>₹{(parseNumber(item.price) * parseNumber(item.quantity)).toFixed(2)}</span>
-              </div>
-              <div className="pl-3 text-[10px] text-gray-600 space-y-0.5 mt-0.5">
-                <div>Weight: <span className="font-bold">{item.weight || '1kg'}</span> {item.flavor ? `| Flavor: ${item.flavor}` : ''}</div>
-                {item.designName && (
-                  <div>Design: <span className="italic">{item.designName}</span> {item.designCode ? `(${item.designCode})` : ''}</div>
+                {order.customer.phone && (
+                  <div className="badge-row-item">
+                    <span className="label-text">Phone</span>
+                    <span className="value-text">+91 {order.customer.phone}</span>
+                  </div>
                 )}
+              </>
+            )}
+
+            {/* Delivery Address */}
+            {(order.deliveryAddress || order.customer?.address) && (
+              <div style={{ paddingTop: 8, borderTop: "1px dashed rgba(197,160,89,0.3)", marginTop: 4 }}>
+                <div style={{ fontSize: 9, fontWeight: 800, color: GOLD, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 3 }}>
+                  Delivery Address
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#2B1810", lineHeight: 1.4 }}>
+                  {order.deliveryAddress || order.customer?.address}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Items Section */}
+          <div className="section-title" style={{ fontSize: 9, fontWeight: 800, color: GOLD, letterSpacing: "0.2em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, margin: "14px 0 8px" }}>
+            <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg, transparent, rgba(197,160,89,0.4))" }} />
+            Order Items
+            <span style={{ flex: 1, height: 1, background: "linear-gradient(270deg, transparent, rgba(197,160,89,0.4))" }} />
+          </div>
+
+          <div style={{ borderTop: `2px solid ${BROWN}`, paddingTop: 8 }}>
+            {(order.items || []).map((item: any, idx: number) => (
+              <div key={item.id || idx} className="item-row">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div className="item-name">
+                    {item.quantity}× {item.productName || item.name}
+                  </div>
+                  <div className="item-price">
+                    ₹{(parseNumber(item.price) * parseNumber(item.quantity)).toFixed(2)}
+                  </div>
+                </div>
+                <div className="item-meta">
+                  {item.weight && <span>Weight: <strong>{item.weight}</strong></span>}
+                  {item.weight && item.flavor && <span> &nbsp;·&nbsp; </span>}
+                  {item.flavor && <span>Flavor: <strong>{item.flavor}</strong></span>}
+                  {item.designName && (
+                    <div>Design: <em>{item.designName}</em>{item.designCode ? ` (${item.designCode})` : ""}</div>
+                  )}
+                </div>
                 {item.messageOnCake && (
-                  <div className="italic text-[#3E2723] font-serif bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/50 mt-1 inline-block">
-                    "{item.messageOnCake}"
+                  <div className="cake-message">
+                    &ldquo;{item.messageOnCake}&rdquo;
                   </div>
                 )}
               </div>
+            ))}
+          </div>
+
+          {/* Totals */}
+          <div className="totals-section">
+            {subtotal > 0 && (
+              <div className="total-row">
+                <span>Subtotal</span>
+                <span style={{ fontWeight: 600 }}>₹{subtotal.toFixed(2)}</span>
+              </div>
+            )}
+            {deliveryCharge > 0 && (
+              <div className="total-row">
+                <span>Delivery Charge</span>
+                <span style={{ fontWeight: 600 }}>₹{deliveryCharge.toFixed(2)}</span>
+              </div>
+            )}
+            {discount > 0 && (
+              <div className="total-row" style={{ color: "#15803D", fontWeight: 700 }}>
+                <span>🎁 Discount</span>
+                <span>−₹{discount.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="grand-total-box">
+              <span className="grand-total-label">Total Amount</span>
+              <span className="grand-total-value">₹{totalAmount.toFixed(2)}</span>
             </div>
-          ))}
+          </div>
+
+          {/* Payment Status */}
+          <div className="payment-section">
+            <div className="paid-row">
+              <span>Advance / Paid</span>
+              <span style={{ color: "#15803D", fontWeight: 800 }}>₹{paidAmount.toFixed(2)}</span>
+            </div>
+            {pendingBalance > 0 ? (
+              <div className="balance-due">
+                <span>⚠️ Balance Due at Pickup</span>
+                <span>₹{pendingBalance.toFixed(2)}</span>
+              </div>
+            ) : (
+              <div className="paid-full">
+                <TickCircle size={15} color="#16A34A" />
+                Full Payment Received
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Financial Breakdown */}
-        <div className="border-t-2 border-[#3E2723] pt-3 text-[11px] font-mono space-y-1.5">
-          <div className="flex justify-between text-gray-600">
-            <span>Subtotal</span>
-            <span>₹{subtotal.toFixed(2)}</span>
-          </div>
-          {deliveryCharge > 0 && (
-            <div className="flex justify-between text-gray-600">
-              <span>Delivery Charge</span>
-              <span>₹{deliveryCharge.toFixed(2)}</span>
-            </div>
-          )}
-          {discount > 0 && (
-            <div className="flex justify-between text-emerald-700 font-bold">
-              <span>Discount Savings</span>
-              <span>-₹{discount.toFixed(2)}</span>
-            </div>
-          )}
-          {tax > 0 && (
-            <div className="flex justify-between text-gray-500">
-              <span>Taxes (GST)</span>
-              <span>₹{tax.toFixed(2)}</span>
-            </div>
-          )}
-          <div className="flex justify-between text-sm font-black text-[#3E2723] bg-[#3E2723]/5 p-2 rounded-lg border border-[#3E2723]/10 mt-2">
-            <span>TOTAL AMOUNT</span>
-            <span>₹{totalAmount.toFixed(2)}</span>
-          </div>
-        </div>
-        
-        {/* Payment & Balance Status */}
-        <div className="border-t border-dashed border-gray-300 mt-4 pt-3 text-[11px] font-mono">
-          <div className="flex justify-between font-bold text-[#3E2723] mb-1">
-            <span>Advance / Paid Amount:</span>
-            <span className="text-emerald-700 font-black">₹{paidAmount.toFixed(2)}</span>
-          </div>
-          {pendingBalance > 0 ? (
-            <div className="flex justify-between font-black text-xs text-rose-700 bg-rose-50 border border-rose-200 p-2 rounded-lg mt-1">
-              <span>BALANCE DUE AT PICKUP:</span>
-              <span>₹{pendingBalance.toFixed(2)}</span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-1.5 text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 p-2 rounded-lg mt-1">
-              <TickCircle className="w-4 h-4 text-emerald-600" />
-              <span>FULL PAYMENT RECEIVED</span>
-            </div>
-          )}
-        </div>
-
-        {/* Footer & Instagram Barcode */}
-        <div className="text-center mt-6 pt-4 border-t border-dashed border-gray-300 text-[10px] space-y-1">
-          <p className="font-serif font-black text-xs text-[#3E2723]">Thank You For Celebrating With Us!</p>
-          <p className="text-gray-600 font-medium">Please verify your order items before leaving the counter.</p>
-          <div className="pt-2 flex items-center justify-center gap-2 text-gray-700 font-mono text-[9px]">
-            <span>📷 Instagram: @gopalcakeshop</span>
-            <span>•</span>
+        {/* Footer */}
+        <div className="receipt-footer">
+          <p className="footer-thanks">Thank You for Celebrating With Us! 🎂</p>
+          <p className="footer-sub">Please verify your order items before leaving the counter.</p>
+          <div className="footer-socials">
+            <span>📷 @gopalcakeshop</span>
+            <span>·</span>
             <span>🌐 gopalcakeshop.com</span>
           </div>
         </div>
+
+        {/* Bottom bar */}
+        <div className="receipt-bottom-bar" />
       </div>
     </>
-  )
+  );
 }
-
