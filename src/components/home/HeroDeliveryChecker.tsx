@@ -5,10 +5,7 @@ import dynamic from "next/dynamic";
 import { Refresh2, Location, Map, CloseSquare } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const LeafletAddressPicker = dynamic(
-  () => import("@/components/home/LeafletAddressPicker").then((mod) => mod.LeafletAddressPicker),
-  { ssr: false, loading: () => <div className="p-4 text-center text-sm text-[#D4AF37]"><Refresh2 className="w-5 h-5 animate-spin mx-auto mb-2" /> Initializing GPS...</div> }
-);
+import { GoogleAddressPicker } from "@/components/home/GoogleAddressPicker";
 
 export function HeroDeliveryChecker() {
   const [isOpen, setIsOpen] = useState(false);
@@ -59,7 +56,7 @@ export function HeroDeliveryChecker() {
           </h3>
 
           <div className="bg-white/5 rounded-2xl p-4 border border-white/5 relative z-50">
-            <LeafletAddressPicker 
+            <GoogleAddressPicker 
               onAddressChange={(addr) => setAddress(addr)}
               onCalculating={(isCalc) => setIsCalculatingDistance(isCalc)}
               onDistancesCalculated={(distances, err) => {

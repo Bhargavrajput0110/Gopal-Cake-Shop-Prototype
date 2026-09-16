@@ -843,10 +843,11 @@ export default function CheckoutPage() {
                               onDistancesCalculated={(distances, error) => {
                                 if (error) {
                                   setToast({ id: "err", title: "Distance Error", message: error, variant: "warning" });
-                                } else {
-                                  const umaDist = distances.find(d => d.branch === "Uma Char Rasta")?.distanceKm || 0;
-                                  setDeliveryDistanceKm(umaDist);
-                                  setDeliveryCharge(calculateCharge(umaDist));
+                                } else if (distances.length > 0) {
+                                  // Use closest branch distance for accurate delivery fee calculation
+                                  const closestDist = distances[0].distanceKm;
+                                  setDeliveryDistanceKm(closestDist);
+                                  setDeliveryCharge(calculateCharge(closestDist));
                                 }
                               }}
                               onCalculating={(isCalculating) => {
