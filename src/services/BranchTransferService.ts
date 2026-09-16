@@ -86,25 +86,36 @@ export class BranchTransferService {
       // Update Order Target Date if requested and valid
       if (params.newTargetDate) {
         const newDate = new Date(params.newTargetDate);
-        if (newDate > order.targetDate) {
-          throw new Error('New target date cannot be later than the original target date given by the customer.');
+        if (isNaN(newDate.getTime())) {
+          throw new Error('Invalid target date provided.');
+        }
+
+        if (order.targetDate) {
+          const diffMs = newDate.getTime() - new Date(order.targetDate).getTime();
+          // Allow up to 60 seconds tolerance for precision/timezone rounding
+          if (diffMs > 60000) {
+            throw new Error('New target date cannot be later than the original target date given by the customer.');
+          }
         }
         
-        await tx.order.update({
-          where: { id: params.orderId },
-          data: { targetDate: newDate }
-        });
-        
-        await tx.auditLog.create({
-          data: {
-            actorId: validUserId,
-            action: 'ORDER_TARGET_DATE_UPDATED',
-            tableName: 'Order',
-            recordId: params.orderId,
-            oldValue: { targetDate: order.targetDate },
-            newValue: { targetDate: newDate }
-          }
-        });
+        // Only update database if date actually changed (difference > 60 seconds)
+        if (!order.targetDate || Math.abs(newDate.getTime() - new Date(order.targetDate).getTime()) > 60000) {
+          await tx.order.update({
+            where: { id: params.orderId },
+            data: { targetDate: newDate }
+          });
+          
+          await tx.auditLog.create({
+            data: {
+              actorId: validUserId,
+              action: 'ORDER_TARGET_DATE_UPDATED',
+              tableName: 'Order',
+              recordId: params.orderId,
+              oldValue: { targetDate: order.targetDate },
+              newValue: { targetDate: newDate }
+            }
+          });
+        }
       }
 
       await TimelineService.create({

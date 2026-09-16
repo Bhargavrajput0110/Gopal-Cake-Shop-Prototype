@@ -194,15 +194,17 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
   const originalDate = new Date(order.targetDate || new Date().toISOString());
   const formattedOriginalDate = new Date(originalDate.getTime() - (originalDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
   const [newTargetDate, setNewTargetDate] = useState<string>(formattedOriginalDate);
-  const isTimeDelayed = new Date(newTargetDate).getTime() > originalDate.getTime();
+  const isTimeDelayed = new Date(newTargetDate).getTime() > (originalDate.getTime() + 60000);
 
   const handleInitiate = async () => {
     setLoading(true);
     try {
+      const parsedDate = new Date(newTargetDate);
+      const targetISO = !isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : undefined;
       const res = await fetch('/api/v1/transfers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-branch-id': activeBranch },
-        body: JSON.stringify({ orderId: order.id, toBranchId: transferTarget, reason: 'Manual route', newTargetDate })
+        body: JSON.stringify({ orderId: order.id, toBranchId: transferTarget, reason: 'Manual route', newTargetDate: targetISO })
       });
       const data = await res.json();
       if (!res.ok) {
