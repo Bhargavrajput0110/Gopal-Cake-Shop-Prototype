@@ -9,10 +9,15 @@ export function CustomCursor() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // Check if device supports hover (ignore on touch devices / iOS)
+    if (typeof window !== "undefined" && (
+      /iPad|iPhone|iPod/.test(window.navigator.userAgent) ||
+      window.matchMedia("(pointer: coarse)").matches
+    )) {
+      return;
+    }
      
     setIsMounted(true);
-    // Check if device supports hover (ignore on touch devices)
-    if (window.matchMedia("(pointer: coarse)").matches) return;
 
     const updateMousePosition = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });

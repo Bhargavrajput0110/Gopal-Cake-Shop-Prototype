@@ -12,44 +12,66 @@ import { PageColorWrapper } from "@/components/home/PageColorWrapper";
 
 const LOCAL_BUSINESS_JSON_LD = {
   "@context": "https://schema.org",
-  "@type": "Bakery",
-  name: "Gopal Cake Shop",
-  alternateName: "Gopal Cakes Vadodara",
-  url: "https://gopalcakeshop.com",
-  logo: "https://gopalcakeshop.com/logo.png",
-  image: "https://gopalcakeshop.com/og-image.jpg",
-  description:
-    "Gopal Cake Shop crafts premium custom cakes for every celebration in Vadodara. 100% eggless, same-day delivery. Est. 1990.",
-  telephone: "+91-97126-32132",
-  priceRange: "₹₹",
-  servesCuisine: "Bakery",
-  hasMap: "https://maps.google.com/?q=Gopal+Cake+Shop+Vadodara",
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: "Khanderao Market",
-    addressLocality: "Vadodara",
-    addressRegion: "Gujarat",
-    postalCode: "390001",
-    addressCountry: "IN",
-  },
-  geo: {
-    "@type": "GeoCoordinates",
-    latitude: 22.3072,
-    longitude: 73.1812,
-  },
-  openingHoursSpecification: [
+  "@graph": [
     {
-      "@type": "OpeningHoursSpecification",
-      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-      opens: "09:00",
-      closes: "21:00",
+      "@type": "Organization",
+      "@id": "https://gopalcakeshop.com/#organization",
+      "name": "Gopal Cake Shop",
+      "url": "https://gopalcakeshop.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://gopalcakeshop.com/logo.png",
+        "width": 500,
+        "height": 500
+      },
+      "image": "https://gopalcakeshop.com/logo.png",
+      "sameAs": [
+        "https://www.instagram.com/gopalcakeshop",
+        "https://www.facebook.com/gopalcakeshop"
+      ]
     },
-  ],
-  sameAs: [
-    "https://www.instagram.com/gopalcakeshop",
-    "https://www.facebook.com/gopalcakeshop",
-  ],
-  foundingDate: "1990",
+    {
+      "@type": "Bakery",
+      "@id": "https://gopalcakeshop.com/#bakery",
+      "name": "Gopal Cake Shop",
+      "alternateName": "Gopal Cakes Vadodara",
+      "url": "https://gopalcakeshop.com",
+      "logo": "https://gopalcakeshop.com/logo.png",
+      "image": "https://gopalcakeshop.com/logo.png",
+      "description":
+        "Gopal Cake Shop crafts premium custom cakes for every celebration in Vadodara. 100% eggless, same-day delivery. Est. 1990.",
+      "telephone": "+91-97126-32132",
+      "priceRange": "₹₹",
+      "servesCuisine": "Bakery",
+      "hasMap": "https://maps.google.com/?q=Gopal+Cake+Shop+Vadodara",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Khanderao Market",
+        "addressLocality": "Vadodara",
+        "addressRegion": "Gujarat",
+        "postalCode": "390001",
+        "addressCountry": "IN"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 22.3072,
+        "longitude": 73.1812
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          "opens": "09:00",
+          "closes": "21:00"
+        }
+      ],
+      "sameAs": [
+        "https://www.instagram.com/gopalcakeshop",
+        "https://www.facebook.com/gopalcakeshop"
+      ],
+      "foundingDate": "1990"
+    }
+  ]
 };
 
 export default function Home() {

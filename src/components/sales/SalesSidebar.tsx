@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ClipboardText, Shop, Car, Card, AddCircle, Logout, Activity } from "iconsax-react";
-import { signOut } from "next-auth/react";
 import { authSignOut } from "@/lib/authUtils";
 
 export const navItems = [
@@ -20,10 +20,11 @@ export function SalesSidebar() {
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-[#38251E] text-[#FAFAF8] shadow-2xl flex flex-col hidden md:flex z-50">
-      <div className="h-16 flex items-center px-6 shrink-0 relative overflow-hidden">
+      <div className="h-20 flex items-center gap-3 px-6 shrink-0 relative overflow-hidden">
         {/* Subtle gold glow behind logo */}
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-[#C8A97E]/20 to-transparent blur-xl"></div>
-        <h1 className="text-xl font-black text-[#C8A97E] font-serif tracking-widest relative z-10">GOPAL BAKERY</h1>
+        <Image src="/logo.png" alt="Gopal Cake Shop Logo" width={40} height={40} className="w-10 h-10 object-contain relative z-10" />
+        <h1 className="text-base font-black text-[#C8A97E] font-serif tracking-widest relative z-10 leading-tight">GOPAL CAKE SHOP</h1>
       </div>
       <div className="px-6 py-5 bg-black/20 border-b border-[#C8A97E]/10 shrink-0">
         <p className="text-[10px] font-black text-[#C8A97E]/70 uppercase tracking-[0.2em]">Salesperson Desk</p>

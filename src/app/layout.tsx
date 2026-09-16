@@ -72,10 +72,10 @@ export const metadata: Metadata = {
       "Order premium custom cakes for birthdays, weddings & special occasions. Fresh, 100% eggless, handcrafted with love. Same-day delivery across Vadodara.",
     images: [
       {
-        url: "/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Gopal Cake Shop — Premium Custom Cakes in Vadodara",
+        url: "/logo.png",
+        width: 500,
+        height: 500,
+        alt: "Gopal Cake Shop Logo",
       },
     ],
   },
@@ -84,7 +84,7 @@ export const metadata: Metadata = {
     title: "Gopal Cake Shop — Premium Custom Cakes in Vadodara",
     description:
       "Order premium custom cakes for birthdays, weddings & special occasions. 100% eggless. Same-day delivery across Vadodara.",
-    images: ["/og-image.jpg"],
+    images: ["/logo.png"],
   },
   appleWebApp: {
     capable: true,
@@ -93,11 +93,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo.png", sizes: "any" },
       { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/icon-192x192.png",
-    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
+    shortcut: "/logo.png",
   },
   robots: {
     index: true,

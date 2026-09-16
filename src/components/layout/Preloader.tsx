@@ -8,6 +8,18 @@ export function Preloader() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const ua = window.navigator.userAgent;
+      const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isTouch = window.matchMedia('(pointer: coarse)').matches;
+
+      // Bypassed on mobile & iOS to prevent body overflow lock and instant page presentation
+      if (isIOS || isTouch) {
+        setIsLoading(false);
+        return;
+      }
+    }
+
     document.body.style.overflow = "hidden";
 
     // Animate progress counter — faster and smoother
@@ -23,14 +35,14 @@ export function Preloader() {
 
     const timer = setTimeout(() => {
       setIsLoading(false);
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = "";
       window.scrollTo(0, 0);
-    }, 1600); // reduced from 2600ms
+    }, 1200);
 
     return () => {
       clearTimeout(timer);
       clearInterval(progressInterval);
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = "";
     };
   }, []);
 

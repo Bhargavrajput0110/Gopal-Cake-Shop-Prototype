@@ -27,7 +27,7 @@ class MapErrorBoundary extends Component<{ children: ReactNode, fallback: ReactN
 const branchLocations = [
   { name: "Khanderao Market", coords: [73.1931, 22.2982] },
   { name: "Uma Char Rasta", coords: [73.1593, 22.3168] },
-  { name: "Factory Warashiya", coords: [73.1593, 22.3168] }, // Matches Uma as requested
+  { name: "Factory Warashiya", coords: [73.2100, 22.3218] }, // Fixed Warashiya branch coordinates
   { name: "Ellora Park", coords: [73.1613, 22.3188] }
 ];
 
@@ -45,6 +45,22 @@ function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon
   var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   var d = R * c;
   return d;
+}
+
+// Calculate realistic road distance in Vadodara accounting for city geometry
+function calculateEstimatedRoadDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const rawDist = getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2);
+  let roadFactor = 1.3;
+  if (rawDist <= 2) {
+    roadFactor = 1.25;
+  } else if (rawDist <= 6) {
+    roadFactor = 1.38;
+  } else if (rawDist <= 12) {
+    roadFactor = 1.48;
+  } else {
+    roadFactor = 1.55;
+  }
+  return Number((rawDist * roadFactor).toFixed(1));
 }
 
 function deg2rad(deg: number) {
@@ -261,8 +277,8 @@ function InnerMap({
 }
 
 export function GoogleAddressPicker(props: GoogleAddressPickerProps) {
-  const [selectedLocation, setSelectedLocation] = useState<{ lat: number, lng: number } | null>(null);
-  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number, lng: number } | null>({ lat: 22.3072, lng: 73.1812 });
+  const [isMapOpen, setIsMapOpen] = useState(true);
   const [isDetecting, setIsDetecting] = useState(false);
   const [searchInputValue, setSearchInputValue] = useState("");
   const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyA1j9ak9yeJsRfWA9vq5rQcDZvPayNCd2s";
@@ -273,8 +289,8 @@ export function GoogleAddressPicker(props: GoogleAddressPickerProps) {
     props.onCalculating(true);
 
     const distances = branchLocations.map(branch => {
-      const rawDist = getDistanceFromLatLonInKm(selectedLocation.lat, selectedLocation.lng, branch.coords[1], branch.coords[0]);
-      return { branch: branch.name, distanceKm: Number((rawDist * 1.3).toFixed(1)) };
+      const roadDist = calculateEstimatedRoadDistanceKm(selectedLocation.lat, selectedLocation.lng, branch.coords[1], branch.coords[0]);
+      return { branch: branch.name, distanceKm: roadDist };
     });
     const sorted = distances.sort((a, b) => a.distanceKm - b.distanceKm);
     props.onDistancesCalculated(sorted, "");

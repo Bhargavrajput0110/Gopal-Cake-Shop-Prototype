@@ -1,17 +1,17 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Logout } from "iconsax-react"
 import { cn } from "@/lib/utils"
 import type { AppConfig } from "./navigation.types"
+import { useSession } from "next-auth/react"
+import { authSignOut } from "@/lib/authUtils"
 
 interface AppSidebarProps {
   config: AppConfig
 }
-
-import { useSession, signOut } from "next-auth/react"
-import { authSignOut } from "@/lib/authUtils";
 
 export function AppSidebar({ config }: AppSidebarProps) {
   const pathname = usePathname()
@@ -35,9 +35,7 @@ export function AppSidebar({ config }: AppSidebarProps) {
     <aside className="fixed left-0 top-0 h-screen w-64 glass-sidebar flex flex-col hidden md:flex z-30 shrink-0">
       {/* Brand Header */}
       <div className="h-16 flex items-center px-6 border-b border-border gap-3 shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <span className="text-primary font-black text-sm">G</span>
-        </div>
+        <Image src="/logo.png" alt="Gopal Cake Shop Logo" width={32} height={32} className="w-8 h-8 object-contain shrink-0" />
         <div className="min-w-0">
           <h1 className="text-sm font-black text-foreground tracking-tight leading-none truncate">
             {config.appName}
