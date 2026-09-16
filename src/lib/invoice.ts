@@ -6,8 +6,6 @@ export interface InvoiceItem {
   weight?: string;
   flavor?: string;
   price: number;
-  messageOnCake?: string;
-  designName?: string;
 }
 
 export interface InvoiceData {
@@ -20,349 +18,185 @@ export interface InvoiceData {
   deliveryCharge?: number;
   discount?: number;
   grandTotal: number;
-  paidAmount?: number;
-  pendingBalance?: number;
   createdAt?: string;
-  targetDate?: string;
-  deliveryType?: string;
   branchName?: string;
-  branchPhone?: string;
-  branchAddress?: string;
-}
-
-// Helper: draw rounded rectangle
-function roundedRect(
-  doc: jsPDF, x: number, y: number, w: number, h: number,
-  r: number, style: 'F' | 'D' | 'FD' = 'F'
-) {
-  doc.roundedRect(x, y, w, h, r, r, style);
-}
-
-// Helper: draw a horizontal rule
-function hRule(doc: jsPDF, x1: number, x2: number, y: number, color: [number, number, number], width = 0.3) {
-  doc.setDrawColor(...color);
-  doc.setLineWidth(width);
-  doc.line(x1, y, x2, y);
 }
 
 export function generateInvoicePDF(data: InvoiceData): jsPDF {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-  const W = 210; // page width
-  const MARGIN = 18;
-  const CONTENT_W = W - MARGIN * 2;
-
-  // ─── COLORS ─────────────────────────────────────────────
-  const BROWN: [number, number, number] = [62, 39, 35];
-  const BROWN_MID: [number, number, number] = [93, 58, 46];
-  const GOLD: [number, number, number] = [197, 160, 89];
-  const GOLD_LIGHT: [number, number, number] = [247, 241, 230];
-  const CREAM: [number, number, number] = [255, 253, 247];
-  const GRAY: [number, number, number] = [100, 90, 80];
-  const GRAY_LIGHT: [number, number, number] = [230, 220, 208];
-  const WHITE: [number, number, number] = [255, 255, 255];
-  const GREEN: [number, number, number] = [21, 128, 61];
-  const RED: [number, number, number] = [185, 28, 28];
-
-  // ─── TOP DARK HEADER BAND ───────────────────────────────
-  doc.setFillColor(...BROWN);
-  doc.rect(0, 0, W, 38, 'F');
-  doc.setFillColor(...GOLD);
-  doc.rect(0, 38, W, 1.5, 'F');
-
-  // ─── LOGO (top-left in header) ──────────────────────────
-  // Draw circular gold logo ring
-  doc.setFillColor(...GOLD);
-  doc.circle(MARGIN + 10, 19, 11, 'F');
-  doc.setFillColor(...WHITE);
-  doc.circle(MARGIN + 10, 19, 10, 'F');
-
-  // Try to add the logo image from public folder
-  try {
-    // Use fetch to embed logo as base64 in PDF — deferred to browser
-    // We'll place a text cake emoji as fallback
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(...BROWN);
-    doc.text('🎂', MARGIN + 10, 20.5, { align: 'center' });
-  } catch (_) { /* skip */ }
-
-  // ─── SHOP NAME & TAGLINE (centered in header) ────────────
-  const headerCenterX = (W + MARGIN + 22) / 2 + 5;
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.setTextColor(...WHITE);
-  doc.text('GOPAL CAKE SHOP', MARGIN + 22, 15);
-
-  doc.setFontSize(8);
-  doc.setFont('Helvetica', 'bold');
-  doc.setTextColor(...GOLD);
-  doc.text('CRAFTING SWEET MOMENTS SINCE 1990', MARGIN + 22, 21.5);
-
-  doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(220, 210, 195);
-  const branchText = `${data.branchName || 'Uma Char Rasta Branch'}  •  ${data.branchAddress || 'Waghodia Road, Vadodara, Gujarat'}`;
-  doc.text(branchText, MARGIN + 22, 27.5);
-  doc.text(`Ph: +91 ${data.branchPhone || '9898616894'}   |   GSTIN: 24AAAFG0000A1Z2`, MARGIN + 22, 32.5);
-
-  // ─── TAX INVOICE label (top-right) ──────────────────────
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(...GOLD);
-  doc.text('TAX INVOICE', W - MARGIN, 18, { align: 'right' });
-  doc.setFontSize(7.5);
-  doc.setFont('Helvetica', 'normal');
-  doc.setTextColor(200, 185, 165);
-  doc.text('Original for Recipient', W - MARGIN, 23.5, { align: 'right' });
-
-  // ─── ORDER & CUSTOMER DETAILS ────────────────────────────
-  let y = 48;
-
-  // Two-column info block background
-  doc.setFillColor(...CREAM);
-  roundedRect(doc, MARGIN, y, CONTENT_W, 38, 3, 'F');
-  doc.setDrawColor(...GOLD_LIGHT);
-  doc.setLineWidth(0.3);
-  roundedRect(doc, MARGIN, y, CONTENT_W, 38, 3, 'D');
-
-  // Left col — Invoice Details
-  const col1X = MARGIN + 5;
-  const col2X = MARGIN + CONTENT_W / 2 + 4;
-
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GOLD);
-  doc.text('INVOICE DETAILS', col1X, y + 7);
-
-  doc.setFontSize(8.5);
-  doc.setFont('Helvetica', 'normal');
-  doc.setTextColor(...GRAY);
-
-  const orderDate = data.createdAt
-    ? new Date(data.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-    : new Date().toLocaleDateString('en-IN');
-  const targetDate = data.targetDate
-    ? new Date(data.targetDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-    : '—';
-
-  const detailRows = [
-    ['Order No', data.orderId],
-    ['Order Date', orderDate],
-    ['Target Date', targetDate],
-    ['Status', 'CONFIRMED'],
-  ];
-
-  detailRows.forEach(([label, val], i) => {
-    const rowY = y + 15 + i * 6;
-    doc.setTextColor(...GRAY);
-    doc.setFont('Helvetica', 'normal');
-    doc.text(`${label}:`, col1X, rowY);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(...BROWN);
-    doc.text(val, col1X + 28, rowY);
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
   });
 
-  // Right col — Customer Details
+  // Top Accent Header Line (Gold & Dark Brown)
+  doc.setFillColor(62, 39, 35); // #3E2723
+  doc.rect(0, 0, 210, 6, 'F');
+  doc.setFillColor(197, 160, 89); // #C5A059
+  doc.rect(0, 6, 210, 1.5, 'F');
+
+  // Gopal Cake Shop branding
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GOLD);
-  doc.text('BILL TO', col2X, y + 7);
+  doc.setFontSize(22);
+  doc.setTextColor(62, 39, 35); // Theme color (#3E2723)
+  doc.text('GOPAL CAKE SHOP', 20, 24);
 
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(9);
-  doc.setTextColor(...BROWN);
-  doc.text(data.customerName, col2X, y + 15);
+  doc.setTextColor(197, 160, 89); // Theme accent (#C5A059)
+  doc.text('CRAFTING SWEET MOMENTS SINCE 1990', 20, 29);
 
   doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(...GRAY);
-  if (data.customerPhone) {
-    doc.text(`Phone: +91 ${data.customerPhone}`, col2X, y + 21);
-  }
-  if (data.deliveryAddress) {
-    const addrLines = doc.splitTextToSize(`Address: ${data.deliveryAddress}`, CONTENT_W / 2 - 8);
-    doc.text(addrLines, col2X, y + 27);
-  } else {
-    doc.text(`Type: ${data.deliveryType === 'DELIVERY' ? 'Home Delivery' : 'Store Pickup'}`, col2X, y + 27);
-  }
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`${data.branchName || 'Uma Char Rasta Branch'} • Vadodara, Gujarat`, 20, 34);
+  doc.text('Ph: +91 9898616894 | GSTIN: 24AAAFG0000A1Z2', 20, 39);
 
-  // Vertical divider
-  doc.setDrawColor(...GOLD_LIGHT);
+  // Title Box
+  doc.setFontSize(16);
+  doc.setFont('Helvetica', 'bold');
+  doc.setTextColor(62, 39, 35);
+  doc.text('TAX INVOICE', 145, 24);
+
+  doc.setFontSize(9);
+  doc.setFont('Helvetica', 'normal');
+  doc.setTextColor(120, 120, 120);
+  doc.text('Original for Recipient', 145, 29);
+
+  // Horizontal Divider Line
+  doc.setDrawColor(220, 210, 195);
   doc.setLineWidth(0.4);
-  doc.line(MARGIN + CONTENT_W / 2, y + 5, MARGIN + CONTENT_W / 2, y + 35);
+  doc.line(20, 44, 190, 44);
 
-  y += 46;
+  // Invoice & Customer Details Block
+  doc.setFontSize(9.5);
+  doc.setFont('Helvetica', 'bold');
+  doc.setTextColor(62, 39, 35);
+  doc.text('INVOICE DETAILS', 20, 51);
+  doc.text('CUSTOMER / BILL TO', 120, 51);
 
-  // ─── ITEMS TABLE ─────────────────────────────────────────
-  // Header Row
-  doc.setFillColor(...BROWN);
-  roundedRect(doc, MARGIN, y, CONTENT_W, 9, 2, 'F');
+  doc.setFontSize(9);
+  doc.setFont('Helvetica', 'normal');
+  doc.setTextColor(70, 70, 70);
+
+  doc.text(`Order No:  ${data.orderId}`, 20, 57);
+  doc.text(`Date:         ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN')}`, 20, 62);
+  doc.text(`Status:      CONFIRMED`, 20, 67);
 
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...WHITE);
-  doc.text('ITEM DESCRIPTION', MARGIN + 4, y + 6);
-  doc.text('FLAVOR', MARGIN + 82, y + 6);
-  doc.text('WEIGHT', MARGIN + 107, y + 6);
-  doc.text('QTY', MARGIN + 130, y + 6);
-  doc.text('UNIT PRICE', MARGIN + 140, y + 6);
-  doc.text('TOTAL', MARGIN + 162, y + 6);
-
-  y += 9;
-
+  doc.text(data.customerName, 120, 57);
   doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(8.5);
+  if (data.customerPhone) {
+    doc.text(`Phone: +91 ${data.customerPhone}`, 120, 62);
+  }
+  if (data.deliveryAddress) {
+    const splitAddr = doc.splitTextToSize(`Address: ${data.deliveryAddress}`, 70);
+    doc.text(splitAddr, 120, 67);
+  } else {
+    doc.text('Type: Store Pickup', 120, 67);
+  }
+
+  // Items Header Table
+  let y = 82;
+  doc.setFillColor(62, 39, 35);
+  doc.rect(20, y, 170, 8, 'F');
+  
+  doc.setFont('Helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text('ITEM DESCRIPTION', 24, y + 5.5);
+  doc.text('FLAVOR', 85, y + 5.5);
+  doc.text('WEIGHT', 115, y + 5.5);
+  doc.text('QTY', 140, y + 5.5);
+  doc.text('PRICE', 155, y + 5.5);
+  doc.text('TOTAL', 175, y + 5.5);
+
+  y += 8;
+
+  // Item List
+  doc.setFont('Helvetica', 'normal');
+  doc.setTextColor(50, 50, 50);
 
   data.items.forEach((item, index) => {
-    const rowH = item.messageOnCake || item.designName ? 14 : 9;
-
-    if (y + rowH > 262) {
+    y += 8;
+    // Check page overflow
+    if (y > 260) {
       doc.addPage();
       y = 20;
     }
 
-    // Alternating row bg
+    // Alternating Row Background
     if (index % 2 === 0) {
-      doc.setFillColor(...CREAM);
-    } else {
-      doc.setFillColor(...GOLD_LIGHT);
+      doc.setFillColor(252, 250, 246);
+      doc.rect(20, y - 5.5, 170, 7.5, 'F');
     }
-    doc.rect(MARGIN, y, CONTENT_W, rowH, 'F');
 
     const itemTotal = item.price * item.qty;
-    doc.setTextColor(...BROWN);
-    doc.setFont('Helvetica', 'bold');
-    doc.text(item.name.substring(0, 28), MARGIN + 4, y + 6);
-
-    doc.setFont('Helvetica', 'normal');
-    doc.setTextColor(...GRAY);
-    doc.text(item.flavor || '—', MARGIN + 82, y + 6);
-    doc.text(item.weight || '—', MARGIN + 107, y + 6);
-    doc.text(item.qty.toString(), MARGIN + 132, y + 6, { align: 'center' });
-    doc.text(`₹${item.price.toFixed(2)}`, MARGIN + 155, y + 6, { align: 'right' });
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(...BROWN);
-    doc.text(`₹${itemTotal.toFixed(2)}`, MARGIN + 171, y + 6, { align: 'right' });
-
-    // Sub-details
-    if (item.designName) {
-      doc.setFont('Helvetica', 'italic');
-      doc.setFontSize(7.5);
-      doc.setTextColor(...GRAY);
-      doc.text(`Design: ${item.designName}`, MARGIN + 8, y + 11);
-    }
-    if (item.messageOnCake) {
-      doc.setFont('Helvetica', 'italic');
-      doc.setFontSize(7.5);
-      doc.setTextColor(93, 58, 46);
-      const msgY = item.designName ? y + 15 : y + 11;
-      doc.text(`"${item.messageOnCake}"`, MARGIN + 8, msgY);
-    }
-
-    doc.setFontSize(8.5);
-    y += rowH;
+    doc.text(item.name.substring(0, 30), 24, y);
+    doc.text(item.flavor || '-', 85, y);
+    doc.text(item.weight || '-', 115, y);
+    doc.text(item.qty.toString(), 140, y);
+    doc.text(`₹${item.price.toFixed(2)}`, 155, y);
+    doc.text(`₹${itemTotal.toFixed(2)}`, 175, y);
   });
 
-  // Table bottom border
-  hRule(doc, MARGIN, MARGIN + CONTENT_W, y, BROWN, 0.5);
+  // Divider
+  y += 6;
+  doc.setDrawColor(200, 190, 175);
+  doc.line(20, y, 190, y);
+
+  // Summary Table (Right Aligned)
   y += 8;
+  doc.setFontSize(9.5);
+  doc.setFont('Helvetica', 'normal');
+  doc.setTextColor(80, 80, 80);
 
-  // ─── SUMMARY BLOCK ───────────────────────────────────────
-  const summaryX = MARGIN + CONTENT_W - 80;
-  const summaryW = 80;
+  doc.text('Subtotal:', 130, y);
+  doc.text(`₹${data.subtotal.toFixed(2)}`, 175, y);
 
-  // Summary background
-  doc.setFillColor(...CREAM);
-  roundedRect(doc, summaryX, y, summaryW, 8, 1.5, 'F');
+  if (data.deliveryCharge && data.deliveryCharge > 0) {
+    y += 6;
+    doc.text('Delivery Fee:', 130, y);
+    doc.text(`₹${data.deliveryCharge.toFixed(2)}`, 175, y);
+  }
 
-  const summaryRows: [string, string, boolean?][] = [];
-  if (data.subtotal > 0) summaryRows.push(['Subtotal', `₹${data.subtotal.toFixed(2)}`]);
-  if (data.deliveryCharge && data.deliveryCharge > 0) summaryRows.push(['Delivery Fee', `₹${data.deliveryCharge.toFixed(2)}`]);
-  if (data.discount && data.discount > 0) summaryRows.push([`Discount`, `- ₹${data.discount.toFixed(2)}`, true]);
-
-  let sy = y + 6;
-  summaryRows.forEach(([label, val, isDiscount]) => {
-    doc.setFillColor(...CREAM);
-    doc.rect(summaryX, sy - 5, summaryW, 7.5, 'F');
-
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(isDiscount ? GREEN[0] : GRAY[0], isDiscount ? GREEN[1] : GRAY[1], isDiscount ? GREEN[2] : GRAY[2]);
-    doc.text(label, summaryX + 3, sy);
-    doc.setFont('Helvetica', 'bold');
-    doc.text(val, summaryX + summaryW - 3, sy, { align: 'right' });
-    sy += 8;
-  });
+  if (data.discount && data.discount > 0) {
+    y += 6;
+    doc.setTextColor(34, 139, 34); // Green
+    doc.text('Discount:', 130, y);
+    doc.text(`- ₹${data.discount.toFixed(2)}`, 175, y);
+    doc.setTextColor(80, 80, 80);
+  }
 
   // Grand Total Box
-  sy += 2;
-  doc.setFillColor(...BROWN);
-  roundedRect(doc, summaryX, sy, summaryW, 12, 2, 'F');
-  doc.setDrawColor(...GOLD);
-  doc.setLineWidth(0.4);
-  roundedRect(doc, summaryX, sy, summaryW, 12, 2, 'D');
+  y += 8;
+  doc.setFillColor(247, 241, 230);
+  doc.rect(125, y - 5, 65, 9, 'F');
+  doc.setDrawColor(197, 160, 89);
+  doc.rect(125, y - 5, 65, 9, 'D');
 
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(...GOLD);
-  doc.text('Grand Total:', summaryX + 3, sy + 8);
-  doc.setFontSize(12);
-  doc.setTextColor(...WHITE);
-  doc.text(`₹${data.grandTotal.toFixed(2)}`, summaryX + summaryW - 3, sy + 8.5, { align: 'right' });
+  doc.setFontSize(11);
+  doc.setTextColor(62, 39, 35);
+  doc.text('Grand Total:', 128, y + 1);
+  doc.text(`₹${data.grandTotal.toFixed(2)}`, 172, y + 1);
 
-  sy += 18;
-
-  // Payment Status
-  if ((data.paidAmount ?? 0) > 0) {
-    doc.setFillColor(240, 253, 244);
-    roundedRect(doc, summaryX, sy, summaryW, 8, 1.5, 'F');
-    doc.setDrawColor(134, 239, 172);
-    doc.setLineWidth(0.3);
-    roundedRect(doc, summaryX, sy, summaryW, 8, 1.5, 'D');
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...GREEN);
-    doc.text('Paid / Advance:', summaryX + 3, sy + 5.5);
-    doc.setFont('Helvetica', 'bold');
-    doc.text(`₹${(data.paidAmount ?? 0).toFixed(2)}`, summaryX + summaryW - 3, sy + 5.5, { align: 'right' });
-    sy += 10;
-  }
-
-  if ((data.pendingBalance ?? 0) > 0) {
-    doc.setFillColor(255, 241, 241);
-    roundedRect(doc, summaryX, sy, summaryW, 9, 1.5, 'F');
-    doc.setDrawColor(252, 165, 165);
-    doc.setLineWidth(0.3);
-    roundedRect(doc, summaryX, sy, summaryW, 9, 1.5, 'D');
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...RED);
-    doc.text('Balance Due:', summaryX + 3, sy + 6);
-    doc.text(`₹${(data.pendingBalance ?? 0).toFixed(2)}`, summaryX + summaryW - 3, sy + 6, { align: 'right' });
-  }
-
-  // ─── FOOTER ──────────────────────────────────────────────
-  const footerY = 274;
-
-  hRule(doc, MARGIN, W - MARGIN, footerY - 4, GOLD_LIGHT, 0.4);
-
+  // Footer & Terms
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(9);
-  doc.setTextColor(...BROWN);
-  doc.text('Thank you for celebrating with Gopal Cake Shop!', MARGIN, footerY + 2);
+  doc.setTextColor(62, 39, 35);
+  doc.text('Thank you for choosing Gopal Cake Shop!', 20, 272);
 
   doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GRAY);
-  doc.text('contact@gopalcakeshop.com  |  www.gopalcakeshop.com  |  @gopalcakeshop', MARGIN, footerY + 7.5);
-  doc.text('This is a computer-generated invoice. No physical signature required.', MARGIN, footerY + 12.5);
+  doc.setFontSize(8);
+  doc.setTextColor(130, 130, 130);
+  doc.text('For queries or support, reach us at contact@gopalcakeshop.com or visit www.gopalcakeshop.com', 20, 277);
+  doc.text('This is a computer generated invoice and does not require a physical signature.', 20, 282);
 
-  // Bottom gold bar
-  doc.setFillColor(...GOLD);
-  doc.rect(0, 292, W, 3, 'F');
-  doc.setFillColor(...BROWN);
-  doc.rect(0, 295, W, 2, 'F');
+  // Bottom Gold Bar
+  doc.setFillColor(197, 160, 89);
+  doc.rect(0, 292, 210, 5, 'F');
 
   return doc;
 }
+
