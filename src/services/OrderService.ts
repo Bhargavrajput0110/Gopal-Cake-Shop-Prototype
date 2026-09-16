@@ -51,10 +51,13 @@ export class OrderService {
       }
     }
     if (filters?.search) {
+      const cleanSearch = filters.search.trim().replace(/^#/, '');
       whereClause.OR = [
-        { orderNumber: { contains: filters.search, mode: 'insensitive' } },
-        { customer: { name: { contains: filters.search, mode: 'insensitive' } } },
-        { customer: { phone: { contains: filters.search, mode: 'insensitive' } } },
+        { orderNumber: { contains: cleanSearch, mode: 'insensitive' } },
+        { id: { contains: cleanSearch, mode: 'insensitive' } },
+        { trackingId: { contains: cleanSearch, mode: 'insensitive' } },
+        { customer: { name: { contains: cleanSearch, mode: 'insensitive' } } },
+        { customer: { phone: { contains: cleanSearch, mode: 'insensitive' } } },
       ]
     }
     if (filters?.startDate || filters?.endDate) {

@@ -5,13 +5,12 @@ import { createPortal } from "react-dom";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { useOrders } from "@/context/OrderContext";
-import { SearchNormal1, Clock, CloseSquare, TickCircle, Warning2, ArrowSwapHorizontal, ArchiveBook, Send, TruckFast, CloseCircle } from "iconsax-react";
+import { SearchNormal1, CloseSquare, ArrowSwapHorizontal, ArchiveBook, Send, TruckFast, Warning2 } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BackButton } from "@/components/ui/BackButton";
+import { toBranchShortName } from "@/lib/branches";
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
-
-import { toBranchId, toBranchShortName } from "@/lib/branches";
 
 const BRANCHES = [
   { id: "khanderao", name: "Khanderao Market", shortName: "Khanderao" },
@@ -19,6 +18,68 @@ const BRANCHES = [
   { id: "varasiya", name: "Factory Warashiya", shortName: "Warashiya" },
   { id: "elora", name: "Ellora Park", shortName: "Ellora Park" }
 ] as const;
+
+function matchesOrderQuery(order: any, query: string): boolean {
+  if (!query) return true;
+  const q = query.trim().toLowerCase().replace(/^#/, "");
+  if (!q) return true;
+
+  const orderNum = (order.orderNumber || order.id || "").toLowerCase();
+  const idStr = (order.id || "").toLowerCase();
+  const trackingStr = (order.trackingId || "").toLowerCase();
+  const custName = (order.customerName || order.customer?.name || "").toLowerCase();
+  const phone = (order.customerPhone || order.customer?.phone || "").toLowerCase();
+  const status = (order.status || "").toLowerCase().replace(/_/g, " ");
+
+  // Direct substring check
+  if (orderNum.includes(q) || idStr.includes(q) || trackingStr.includes(q) || custName.includes(q) || phone.includes(q) || status.includes(q)) {
+    return true;
+  }
+
+  // Check items matching (e.g. cake name)
+  if (Array.isArray(order.items)) {
+    for (const item of order.items) {
+      const name = (item.name || item.product?.name || "").toLowerCase();
+      if (name.includes(q)) return true;
+    }
+  }
+
+  // Last 4 characters / suffix match (e.g. "3B5E", "CE8D", "02B5")
+  const cleanOrderNum = orderNum.replace(/[^a-z0-9]/g, "");
+  const cleanQ = q.replace(/[^a-z0-9]/g, "");
+  if (cleanQ && cleanOrderNum.endsWith(cleanQ)) {
+    return true;
+  }
+
+  return false;
+}
+
+function matchesTransferQuery(t: any, query: string): boolean {
+  if (!query) return true;
+  const q = query.trim().toLowerCase().replace(/^#/, "");
+  if (!q) return true;
+
+  const order = t.order || {};
+  const orderNum = (order.orderNumber || order.id || t.orderId || "").toLowerCase();
+  const idStr = (t.id || order.id || "").toLowerCase();
+  const custName = (order.customerName || order.customer?.name || "").toLowerCase();
+  const phone = (order.customerPhone || order.customer?.phone || "").toLowerCase();
+  const fromBranch = (toBranchShortName(t.fromBranchId) || "").toLowerCase();
+  const toBranch = (toBranchShortName(t.toBranchId) || "").toLowerCase();
+  const status = (t.status || "").toLowerCase().replace(/_/g, " ");
+
+  if (orderNum.includes(q) || idStr.includes(q) || custName.includes(q) || phone.includes(q) || fromBranch.includes(q) || toBranch.includes(q) || status.includes(q)) {
+    return true;
+  }
+
+  const cleanOrderNum = orderNum.replace(/[^a-z0-9]/g, "");
+  const cleanQ = q.replace(/[^a-z0-9]/g, "");
+  if (cleanQ && cleanOrderNum.endsWith(cleanQ)) {
+    return true;
+  }
+
+  return false;
+}
 
 export default function BranchTransferPage() {
   const { orders } = useOrders(); // To get local orders that can be transferred
@@ -32,12 +93,10 @@ export default function BranchTransferPage() {
   const { data: incoming, mutate: mutateIncoming } = useSWR(`/api/v1/transfers?mode=incoming`, fetcher);
   const { data: outgoing, mutate: mutateOutgoing } = useSWR(`/api/v1/transfers?mode=outgoing`, fetcher);
 
-  // Local Orders that can be transferred
-  const activeOrders = orders.filter(o => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (o.orderNumber || o.id).toLowerCase().includes(q) || (o.customerName || '').toLowerCase().includes(q);
-  });
+  // Filtered lists for each tab
+  const filteredActiveOrders = orders.filter(o => matchesOrderQuery(o, search));
+  const filteredOutgoing = Array.isArray(outgoing) ? outgoing.filter(t => matchesTransferQuery(t, search)) : [];
+  const filteredIncoming = Array.isArray(incoming) ? incoming.filter(t => matchesTransferQuery(t, search)) : [];
 
   return (
     <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} className="space-y-6 min-h-[calc(100vh-8rem)] flex flex-col pb-12">
@@ -79,27 +138,41 @@ export default function BranchTransferPage() {
 
       <div className="relative shrink-0 -mt-4 z-0">
         <SearchNormal1 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input value={search} onChange={e=>setSearch(e.target.value)} type="text"
-          placeholder="Search..."
-          className="w-full pl-9 pr-4 py-3 rounded-xl border border-[#C5A059]/30 bg-white backdrop-blur-md text-sm focus:outline-none focus:ring-2 focus:ring-[#C5A059]/50 shadow-sm" />
+        <input 
+          value={search} 
+          onChange={e=>setSearch(e.target.value)} 
+          type="text"
+          placeholder="Search by last 4 digits (e.g. 3B5E, CE8D), order #, customer name, or phone..."
+          className="w-full pl-9 pr-4 py-3 rounded-xl border border-[#C5A059]/30 bg-white backdrop-blur-md text-sm focus:outline-none focus:ring-2 focus:ring-[#C5A059]/50 shadow-sm" 
+        />
+        {search && (
+          <button 
+            onClick={() => setSearch("")} 
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded-md"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       <div className="space-y-4 flex-1">
-        {activeTab === 'local' && activeOrders.map(order => (
+        {activeTab === 'local' && filteredActiveOrders.map(order => (
            <LocalOrderCard key={order.id} order={order} activeBranch={activeBranch} onTransfer={() => { mutateOutgoing(); setActiveTab("outgoing"); }} />
         ))}
-        {activeTab === 'outgoing' && outgoing?.map((t: any) => (
+        {activeTab === 'outgoing' && filteredOutgoing.map((t: any) => (
            <TransferCard key={t.id} transfer={t} type="outgoing" mutate={() => mutateOutgoing()} />
         ))}
-        {activeTab === 'incoming' && incoming?.map((t: any) => (
+        {activeTab === 'incoming' && filteredIncoming.map((t: any) => (
            <TransferCard key={t.id} transfer={t} type="incoming" mutate={() => mutateIncoming()} />
         ))}
-        {((activeTab === 'local' && activeOrders.length === 0) || 
-          (activeTab === 'outgoing' && (!outgoing || outgoing.length === 0)) || 
-          (activeTab === 'incoming' && (!incoming || incoming.length === 0))) && (
+        {((activeTab === 'local' && filteredActiveOrders.length === 0) || 
+          (activeTab === 'outgoing' && filteredOutgoing.length === 0) || 
+          (activeTab === 'incoming' && filteredIncoming.length === 0)) && (
           <div className="flex flex-col items-center justify-center h-48 bg-white/50 border border-dashed border-[#C5A059]/30 rounded-xl">
             <ArrowSwapHorizontal className="w-8 h-8 text-[#C5A059]/40 mb-2" />
-            <p className="text-muted-foreground font-bold text-sm uppercase tracking-widest">No {activeTab} records found</p>
+            <p className="text-muted-foreground font-bold text-sm uppercase tracking-widest">
+              {search ? `No matching ${activeTab} orders for "${search}"` : `No ${activeTab} records found`}
+            </p>
           </div>
         )}
       </div>
