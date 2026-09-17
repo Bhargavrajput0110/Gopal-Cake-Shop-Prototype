@@ -200,9 +200,9 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
         return
       }
 
-      // Only clear cart and navigate on confirmed success with a real orderId
+      // Only clear cart and navigate on confirmed success with a real order
       clearCart()
-      onSuccess(data.orderId)
+      onSuccess(data.orderNumber || data.orderId)
     } catch (err: any) {
       console.error('[POS] Checkout network error:', err)
       // DO NOT silently succeed — DO NOT take payment without confirmation

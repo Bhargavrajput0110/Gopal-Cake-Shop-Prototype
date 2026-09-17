@@ -12,8 +12,13 @@ const handler = async (ctx: HandlerContext) => {
     return NextResponse.json({ error: 'Order ID is required' }, { status: 400 })
   }
 
-  const order = await prisma.order.findUnique({
-    where: { id },
+  const order = await prisma.order.findFirst({
+    where: {
+      OR: [
+        { id },
+        { orderNumber: id }
+      ]
+    },
     include: {
       customer: true,
       branch: true,

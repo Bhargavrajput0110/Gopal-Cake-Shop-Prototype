@@ -107,7 +107,7 @@ export default function POSPage() {
             
             <h1 className="font-display text-4xl font-black text-foreground mb-2">Payment Secured</h1>
             <p className="font-editorial italic text-muted-foreground mb-8 text-xl">
-              Order #<span className="font-ui font-black text-[var(--brand-deep-rose)] tracking-widest">{successOrder.split('-')[0].toUpperCase()}</span>
+              Order #<span className="font-ui font-black text-[var(--brand-deep-rose)] tracking-widest">{successOrder}</span>
             </p>
             
             <div className="flex flex-col gap-4 w-full">
