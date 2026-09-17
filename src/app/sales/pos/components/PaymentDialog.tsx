@@ -539,11 +539,11 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                   </div>
 
                   <div className="bg-white p-3 rounded-xl border border-sky-200 shadow-sm flex flex-col items-center text-center space-y-2">
-                    <div className="w-44 h-56 relative rounded-lg overflow-hidden border border-gray-200 bg-white shadow-inner flex items-center justify-center">
+                    <div className="w-56 max-h-80 relative rounded-lg overflow-hidden border border-gray-200 bg-white shadow-inner flex items-center justify-center p-1">
                       <img 
                         src="/images/gopal_bakery_upi_qr.jpg" 
                         alt="Gopal Bakery Paytm UPI QR Code" 
-                        className="w-full h-full object-contain"
+                        className="w-full h-auto max-h-72 object-contain"
                       />
                     </div>
                     <div className="text-xs font-bold text-gray-800">
