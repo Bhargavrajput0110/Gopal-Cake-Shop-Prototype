@@ -62,13 +62,23 @@ const handler = async (ctx: HandlerContext) => {
     deliveryDistanceKm: data.deliveryDistanceKm
   }
 
+  // Enforce Business Rule: Salesperson discount capped at 25% max
+  if (appRole === 'SALESPERSON' && data.overrideDiscount && data.overrideDiscount > 0) {
+    // Calculate subtotal from items
+    const subtotal = data.items.reduce((acc, item) => acc + ((item.overridePrice || 0) * item.quantity), 0);
+    const maxAllowed = subtotal > 0 ? subtotal * 0.25 : 0;
+    if (subtotal > 0 && data.overrideDiscount > (maxAllowed + 0.05)) {
+      return errorResponse(`Salesperson discount is capped at 25% max (₹${maxAllowed.toFixed(2)}). For higher discounts, please contact Admin (Rishi Bhai).`, 'DISCOUNT_LIMIT_EXCEEDED', 400, [], requestId);
+    }
+  }
+
   // 3. Define Context (POS)
   const context: CheckoutContext = {
     source: OrderSource.POS,
     createdById: user.id,
     canOverridePrice: ['ADMIN', 'MANAGER', 'SALESPERSON'].includes(appRole), // POS allows salespeople to negotiate/set custom design prices
     canOverrideDelivery: false,
-    canOverrideDiscount: ['ADMIN', 'MANAGER'].includes(appRole),
+    canOverrideDiscount: ['ADMIN', 'MANAGER', 'SALESPERSON'].includes(appRole),
     canAssignPriority: true
   }
 

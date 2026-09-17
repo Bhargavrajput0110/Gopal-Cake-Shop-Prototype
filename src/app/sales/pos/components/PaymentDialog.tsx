@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useSession } from "next-auth/react"
 import { MoneyArchive, Card, Mobile, Calendar2, Clock, Location, User, Tag, Warning2 } from "iconsax-react"
 import { useCart } from "@/context/CartContext"
 import { OrdersApiClient } from "@/lib/api/orders.api"
@@ -52,6 +53,16 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
   const [discountType, setDiscountType] = React.useState<'NONE' | 'PERCENT' | 'FLAT'>('NONE')
   const [discountValue, setDiscountValue] = React.useState<string>('')
 
+  // Role & Discount Validation
+  const { data: session } = useSession()
+  const userRole = (session?.user as any)?.role || 'SALESPERSON'
+  const isSalesperson = userRole === 'SALESPERSON'
+  const maxDiscountAmount = (subtotal * 0.25)
+  const isDiscountExceeded = isSalesperson && (
+    (discountType === 'PERCENT' && (parseFloat(discountValue) || 0) > 25) ||
+    (discountType === 'FLAT' && (parseFloat(discountValue) || 0) > maxDiscountAmount)
+  )
+
   // Payment
   const [method, setMethod] = React.useState<'CASH' | 'CARD' | 'UPI'>('CASH')
   const [paymentType, setPaymentType] = React.useState<'FULL' | 'PARTIAL'>('FULL')
@@ -93,6 +104,13 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
 
   const handleCheckout = async () => {
     setCheckoutError(null)
+
+    // Strict Validation: Discount Cap for Salesperson (max 25%)
+    if (isDiscountExceeded) {
+      const maxFlatMsg = `₹${maxDiscountAmount.toFixed(2)} (25% of ₹${subtotal.toFixed(2)})`;
+      setCheckoutError(`Salesperson discount is capped at 25% maximum (${discountType === 'PERCENT' ? '25%' : maxFlatMsg}). For higher discounts, please contact Admin (Rishi Bhai).`)
+      return
+    }
     
     // Strict Validation: Customer Name & Phone
     if (!customer.name || customer.name.trim().length < 2) {
@@ -441,18 +459,38 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                 </div>
 
                 {/* Discount */}
-                <div className="flex gap-4 items-end bg-white p-4 rounded-2xl border border-border/40 shadow-sm">
-                  <div className="flex-1 space-y-2">
-                    <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest flex items-center gap-1"><Tag className="w-3 h-3"/> Discount</label>
-                    <div className="flex gap-2">
-                      <button onClick={() => { setDiscountType('NONE'); setDiscountValue(''); }} className={`px-3 py-1.5 text-[9px] font-bold rounded-lg ${discountType === 'NONE' ? 'bg-primary text-primary-foreground' : 'bg-secondary/10 text-foreground/70'}`}>NONE</button>
-                      <button onClick={() => setDiscountType('PERCENT')} className={`px-3 py-1.5 text-[9px] font-bold rounded-lg ${discountType === 'PERCENT' ? 'bg-primary text-primary-foreground' : 'bg-secondary/10 text-foreground/70'}`}>% OFF</button>
-                      <button onClick={() => setDiscountType('FLAT')} className={`px-3 py-1.5 text-[9px] font-bold rounded-lg ${discountType === 'FLAT' ? 'bg-primary text-primary-foreground' : 'bg-secondary/10 text-foreground/70'}`}>₹ OFF</button>
+                <div className={`space-y-2 bg-white p-4 rounded-2xl border transition-colors shadow-sm ${isDiscountExceeded ? 'border-amber-400 bg-amber-50/40' : 'border-border/40'}`}>
+                  <div className="flex gap-4 items-end">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest flex items-center gap-1"><Tag className="w-3 h-3"/> Discount</label>
+                        {isSalesperson && (
+                          <span className="text-[9px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">Max 25% (Sales)</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => { setDiscountType('NONE'); setDiscountValue(''); }} className={`px-3 py-1.5 text-[9px] font-bold rounded-lg ${discountType === 'NONE' ? 'bg-primary text-primary-foreground' : 'bg-secondary/10 text-foreground/70'}`}>NONE</button>
+                        <button onClick={() => setDiscountType('PERCENT')} className={`px-3 py-1.5 text-[9px] font-bold rounded-lg ${discountType === 'PERCENT' ? 'bg-primary text-primary-foreground' : 'bg-secondary/10 text-foreground/70'}`}>% OFF</button>
+                        <button onClick={() => setDiscountType('FLAT')} className={`px-3 py-1.5 text-[9px] font-bold rounded-lg ${discountType === 'FLAT' ? 'bg-primary text-primary-foreground' : 'bg-secondary/10 text-foreground/70'}`}>₹ OFF</button>
+                      </div>
                     </div>
+                    {discountType !== 'NONE' && (
+                      <div className="w-32 animate-in slide-in-from-right-4 fade-in">
+                        <input 
+                          type="number" 
+                          max={discountType === 'PERCENT' ? (isSalesperson ? 25 : 100) : (isSalesperson ? maxDiscountAmount : undefined)} 
+                          value={discountValue} 
+                          onChange={e => setDiscountValue(e.target.value)} 
+                          placeholder={discountType === 'PERCENT' ? (isSalesperson ? 'Max 25%' : '10') : `Max ₹${maxDiscountAmount.toFixed(0)}`} 
+                          className={`w-full bg-secondary/5 border-0 border-b-2 focus:ring-0 px-2 py-1.5 font-serif text-xl text-center rounded-t-lg ${isDiscountExceeded ? 'border-amber-600 text-amber-900 bg-amber-100/50' : 'border-primary'}`} 
+                        />
+                      </div>
+                    )}
                   </div>
-                  {discountType !== 'NONE' && (
-                    <div className="w-32 animate-in slide-in-from-right-4 fade-in">
-                      <input type="number" value={discountValue} onChange={e => setDiscountValue(e.target.value)} placeholder={discountType === 'PERCENT' ? '10' : '500'} className="w-full bg-secondary/5 border-0 border-b-2 border-primary focus:ring-0 px-2 py-1.5 font-serif text-xl text-center rounded-t-lg" />
+                  {isDiscountExceeded && (
+                    <div className="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 p-2.5 rounded-xl flex items-start gap-1.5 animate-in fade-in">
+                      <Warning2 className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" />
+                      <span>Salesperson discount is capped at 25% max ({discountType === 'PERCENT' ? '25%' : `₹${maxDiscountAmount.toFixed(2)}`}). For higher discounts, please contact Admin (Rishi Bhai).</span>
                     </div>
                   )}
                 </div>
