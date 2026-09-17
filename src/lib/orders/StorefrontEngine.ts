@@ -13,7 +13,7 @@ import {
 } from '@prisma/client'
 import { OutboxService } from '@/lib/events/OutboxService'
 import { SettingsService } from '@/services/SettingsService'
-import { toBranchId, generateFormattedOrderNumber } from '@/lib/branches'
+import { toBranchId, generateSequentialOrderNumber } from '@/lib/branches'
 import { DistanceFactory } from '@/services/distance/DistanceFactory'
 
 export interface CheckoutContext {
@@ -386,10 +386,11 @@ export class StorefrontEngine {
 
     // 7. Transactional Order Creation
     const order = await prisma.$transaction(async (tx) => {
+      const orderNum = await generateSequentialOrderNumber(tx, branch.id);
       // Create Order
       const newOrder = await tx.order.create({
         data: {
-          orderNumber: generateFormattedOrderNumber(branch.id),
+          orderNumber: orderNum,
           trackingId: `GCS-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
           customerId: payload.customerId,
           branchId: branch.id,

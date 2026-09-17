@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { CustomerSearchService } from '@/lib/customers/CustomerSearchService';
 import { OrderSource, DeliveryType, OrderStatus, OrderItemStatus, OrderType, MediaType } from '@prisma/client';
-import { toBranchId, generateFormattedOrderNumber } from '@/lib/branches';
+import { toBranchId, generateSequentialOrderNumber } from '@/lib/branches';
 
 export async function POST(req: Request) {
   try {
@@ -68,7 +68,6 @@ export async function POST(req: Request) {
     });
 
     const orderData = {
-        orderNumber: generateFormattedOrderNumber(resolvedBranchId),
         customerId: customer.id,
         branchId: resolvedBranchId,
         source: OrderSource.WEBSITE,
@@ -90,8 +89,12 @@ export async function POST(req: Request) {
     console.log("Attempting to create order with data:", JSON.stringify(orderData, null, 2));
 
     const order = await prisma.$transaction(async (tx) => {
+      const orderNumber = await generateSequentialOrderNumber(tx, resolvedBranchId);
       const createdOrder = await tx.order.create({
-        data: orderData
+        data: {
+          ...orderData,
+          orderNumber,
+        }
       });
 
       await tx.timeline.create({

@@ -103,7 +103,19 @@ export function getBranchNumericCode(rawBranchId?: string | null): string {
   }
 }
 
-/** Generate clean human-readable order number starting with branch numeric code (e.g. 001-789412) */
+/** Generate 100% sequential order number starting from 0001 per branch (e.g. 001-0001, 003-0001) */
+export async function generateSequentialOrderNumber(tx: any, rawBranchId?: string | null): Promise<string> {
+  const code = getBranchNumericCode(rawBranchId);
+  const count = await tx.order.count({
+    where: {
+      orderNumber: { startsWith: `${code}-` }
+    }
+  });
+  const nextSeq = (count + 1).toString().padStart(4, '0');
+  return `${code}-${nextSeq}`;
+}
+
+/** Generate clean human-readable order number starting with branch numeric code (fallback format) */
 export function generateFormattedOrderNumber(rawBranchId?: string | null): string {
   const code = getBranchNumericCode(rawBranchId);
   const timePart = Date.now().toString().slice(-4);
