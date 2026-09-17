@@ -237,33 +237,30 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
   const [transferTarget, setTransferTarget] = useState<string>("varasiya");
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [newTargetDate, setNewTargetDate] = useState<string>("");
 
   useEffect(() => { setMounted(true); }, []);
 
-  // ------------------------------------------------------------------
-  // Timezone-safe date handling for datetime-local input
-  //
-  // The problem with the old code:
-  //   new Date(originalDate.getTime() - (getTimezoneOffset() * 60000))
-  // For IST (UTC+5:30), getTimezoneOffset() = -330 (negative!), so that
-  // formula ADDS 5.5 hours, corrupting the displayed date.
-  //
-  // Fix: use JS's local date part methods which already account for TZ.
-  // ------------------------------------------------------------------
-  const hasOriginalDate = !!(order.timeTarget || order.targetDate);
+  useEffect(() => {
+    if (showModal) {
+      const target = order.timeTarget || order.targetDate || order.expectedDeliveryDate;
+      if (target) {
+        const d = new Date(target);
+        if (!isNaN(d.getTime())) {
+          setNewTargetDate(toLocalInputValue(d));
+          return;
+        }
+      }
+      setNewTargetDate(toLocalInputValue(new Date()));
+    }
+  }, [showModal, order]);
+
+  const hasOriginalDate = !!(order.timeTarget || order.targetDate || order.expectedDeliveryDate);
   const originalDateObj: Date | null = hasOriginalDate
-    ? new Date(order.timeTarget || order.targetDate)
+    ? new Date(order.timeTarget || order.targetDate || order.expectedDeliveryDate)
     : null;
 
-  // Build the default value for the datetime-local input in local time
-  const defaultInput = originalDateObj
-    ? toLocalInputValue(originalDateObj)
-    : toLocalInputValue(new Date());
-
-  const [newTargetDate, setNewTargetDate] = useState<string>(defaultInput);
-
-  // Only block if: order has a real target date AND new date is LATER than it
-  // Pre-poning (earlier) is always allowed. No target date = no restriction.
+  // Soft indicator if transfer target is later than promised customer time
   const isTimeDelayed =
     hasOriginalDate && originalDateObj !== null
       ? new Date(newTargetDate).getTime() > originalDateObj.getTime() + 60_000
@@ -315,15 +312,15 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
         <p className="text-sm font-bold text-foreground mb-1">{order.customerName || "Walk-in Customer"}</p>
         <p className="text-xs text-muted-foreground">
           Pickup:{" "}
-          {order.timeTarget || order.pickupTime
-            ? new Date(order.timeTarget || order.pickupTime).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })
+          {order.timeTarget || order.pickupTime || order.targetDate
+            ? new Date(order.timeTarget || order.pickupTime || order.targetDate).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })
             : "ASAP"}
         </p>
       </div>
       <div className="shrink-0 pt-2 md:pt-0">
         <button
           onClick={() => setShowModal(true)}
-          className="w-full md:w-auto px-6 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-sm font-bold hover:bg-emerald-100 flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95"
+          className="w-full md:w-auto px-6 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-sm font-bold hover:bg-emerald-100 flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95 cursor-pointer"
         >
           <Send className="w-4 h-4" /> Initiate Transfer
         </button>
@@ -378,7 +375,7 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
                       Adjust Timeline
                       {hasOriginalDate && originalDateObj && (
-                        <span className="ml-2 text-gray-400 font-normal normal-case tracking-normal">
+                        <span className="ml-2 text-gray-400 font-normal normal-case tracking-normal block">
                           (customer deadline: {originalDateObj.toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })})
                         </span>
                       )}
@@ -388,28 +385,25 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
                       value={newTargetDate}
                       onChange={e => setNewTargetDate(e.target.value)}
                       className={`w-full bg-white border rounded-lg px-3 py-2 text-sm font-bold mb-1 focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
-                        isTimeDelayed ? "border-red-500" : "border-gray-200"
+                        isTimeDelayed ? "border-amber-400" : "border-gray-200"
                       }`}
                     />
-                    <div className="h-6 mb-4">
+                    <div className="min-h-6 mb-4">
                       {isTimeDelayed ? (
-                        <span className="text-[10px] text-red-500 font-bold flex items-center gap-1">
-                          <Warning2 className="w-3 h-3" /> Cannot set later than the customer&apos;s pickup deadline.
+                        <span className="text-[10px] text-amber-600 font-bold flex items-center gap-1">
+                          <Warning2 className="w-3 h-3 shrink-0" /> Note: Deadline is adjusted later than customer promised time.
                         </span>
                       ) : (
                         <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                          ✓{" "}
-                          {hasOriginalDate
-                            ? "You can prepone the deadline for this branch."
-                            : "No deadline restriction — any time is fine."}
+                          ✓ Ready for branch transfer
                         </span>
                       )}
                     </div>
 
                     <button
-                      disabled={loading || isTimeDelayed}
+                      disabled={loading}
                       onClick={handleInitiate}
-                      className="w-full py-3 bg-emerald-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-md hover:shadow-lg"
+                      className="w-full py-3 bg-emerald-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-md hover:shadow-lg cursor-pointer"
                     >
                       {loading ? "Sending..." : "Confirm Transfer"}
                     </button>

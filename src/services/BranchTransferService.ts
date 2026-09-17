@@ -89,14 +89,6 @@ export class BranchTransferService {
         if (isNaN(newDate.getTime())) {
           throw new Error('Invalid target date provided.');
         }
-
-        if (order.targetDate) {
-          const diffMs = newDate.getTime() - new Date(order.targetDate).getTime();
-          // Allow up to 60 seconds tolerance for precision/timezone rounding
-          if (diffMs > 60000) {
-            throw new Error('New target date cannot be later than the original target date given by the customer.');
-          }
-        }
         
         // Only update database if date actually changed (difference > 60 seconds)
         if (!order.targetDate || Math.abs(newDate.getTime() - new Date(order.targetDate).getTime()) > 60000) {
