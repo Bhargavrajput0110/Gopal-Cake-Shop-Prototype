@@ -112,6 +112,7 @@ export class OrderService {
           customer: true,
           items: { include: { media: true } },
           ledgerEntries: true,
+          payments: true,
           vendorTasks: { include: { vendor: true } },
           ingredientRequests: { include: { requestedBy: true } },
           transfers: { orderBy: { createdAt: 'asc' } },
@@ -175,6 +176,25 @@ export class OrderService {
           pendingBalance: finSummary.outstandingAmount,
           advancePaid: finSummary.paidAmount,
           financialStatus: finSummary.paymentStatus,
+          payments: [
+            ...((o as any).ledgerEntries || [])
+              .filter((le: any) => le.type === 'PAYMENT' && (le.status === 'SUCCESS' || !le.status))
+              .map((le: any) => ({
+                paymentType: le.type,
+                amount: Number(le.amount),
+                method: le.method || 'CASH',
+                timestamp: le.createdAt,
+              })),
+            ...((o as any).payments || [])
+              .filter((p: any) => p.status === 'SUCCESS' || !p.status)
+              .filter((p: any) => !((o as any).ledgerEntries || []).some((l: any) => l.referenceId === p.id || l.referenceId === p.gatewayPaymentId))
+              .map((p: any) => ({
+                paymentType: 'PAYMENT',
+                amount: Number(p.amount),
+                method: p.paymentMethod || 'ONLINE',
+                timestamp: p.createdAt,
+              }))
+          ],
           delayLevel: "none",
           transfers: ((o as any).transfers || []).map((t: any) => ({
             id: t.id,

@@ -16,19 +16,39 @@ export default function PaymentTrackingPage() {
     let collectedToday = 0;
     let pending = 0;
     let advances = 0;
-    const todayStr = new Date().toISOString().split('T')[0];
+
+    const isToday = (dateInput: string | Date | undefined | null) => {
+      if (!dateInput) return false;
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return false;
+      const today = new Date();
+      return (
+        d.getFullYear() === today.getFullYear() &&
+        d.getMonth() === today.getMonth() &&
+        d.getDate() === today.getDate()
+      );
+    };
 
     orders.forEach(o => {
-      if (o.payments) {
+      let todayCollectedForOrder = 0;
+
+      if (o.payments && Array.isArray(o.payments) && o.payments.length > 0) {
         o.payments.forEach(p => {
-          if (p.timestamp && p.timestamp.startsWith(todayStr)) {
-            collectedToday += p.amount;
+          if (p.timestamp && isToday(p.timestamp)) {
+            todayCollectedForOrder += Number(p.amount || 0);
           }
         });
       }
+
+      // Fallback: If payments array didn't match today but the order was created today and advance was paid
+      if (todayCollectedForOrder === 0 && isToday(o.createdAt) && (o.advancePaid || 0) > 0) {
+        todayCollectedForOrder = Number(o.advancePaid || 0);
+      }
+
+      collectedToday += todayCollectedForOrder;
       
-      if (o.advancePaid) advances += o.advancePaid;
-      if (o.pendingBalance > 0) pending += o.pendingBalance;
+      if (o.advancePaid) advances += Number(o.advancePaid || 0);
+      if (o.pendingBalance > 0) pending += Number(o.pendingBalance || 0);
     });
 
     return { totalCollectedToday: collectedToday, pendingBalances: pending, advancePayments: advances };
