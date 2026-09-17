@@ -41,6 +41,19 @@ export const {
         }
         
         if (isValid) {
+          // Record successful login timestamp in DB
+          try {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                lastLoginAt: new Date(),
+                lastActivityAt: new Date()
+              }
+            });
+          } catch (err) {
+            console.error('[Auth] Failed to update lastLoginAt:', err);
+          }
+
           return {
             id: user.id,
             name: user.name,

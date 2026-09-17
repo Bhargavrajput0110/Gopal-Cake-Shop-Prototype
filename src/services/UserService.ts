@@ -19,7 +19,7 @@ export class UserService {
       status: u.status,
       branchId: u.branchId,
       createdAt: u.createdAt.toISOString(),
-      lastLoginAt: u.lastLoginAt?.toISOString() || null,
+      lastLoginAt: (u.lastLoginAt || u.lastActivityAt)?.toISOString() || null,
     }))
   }
 
@@ -63,7 +63,7 @@ export class UserService {
       status: user.status,
       branchId: user.branchId,
       createdAt: user.createdAt.toISOString(),
-      lastLoginAt: user.lastLoginAt?.toISOString() || null,
+      lastLoginAt: (user.lastLoginAt || user.lastActivityAt)?.toISOString() || null,
     }
   }
 
@@ -120,7 +120,7 @@ export class UserService {
       status: user.status,
       branchId: user.branchId,
       createdAt: user.createdAt.toISOString(),
-      lastLoginAt: user.lastLoginAt?.toISOString() || null,
+      lastLoginAt: (user.lastLoginAt || user.lastActivityAt)?.toISOString() || null,
     }
   }
 
@@ -182,7 +182,7 @@ export class UserService {
       status: user.status,
       branchId: user.branchId,
       createdAt: user.createdAt.toISOString(),
-      lastLoginAt: user.lastLoginAt?.toISOString() || null,
+      lastLoginAt: (user.lastLoginAt || user.lastActivityAt)?.toISOString() || null,
     }
   }
 }

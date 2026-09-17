@@ -76,9 +76,16 @@ export const columns: ColumnDef<UserResponseDTO, any>[] = [
     accessorKey: "lastLoginAt",
     header: "Last Login",
     cell: ({ row }) => {
+      const dateVal = row.original.lastLoginAt
+      if (!dateVal) return <span className="text-muted-foreground text-xs italic">Never</span>
+      
+      const d = new Date(dateVal)
+      if (isNaN(d.getTime())) return <span className="text-muted-foreground text-xs italic">Never</span>
+
       return (
-        <div className="text-sm text-muted-foreground">
-          {row.original.lastLoginAt ? new Date(row.original.lastLoginAt).toLocaleDateString() : 'Never'}
+        <div className="text-xs font-medium text-foreground">
+          {d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })},{' '}
+          <span className="text-muted-foreground">{d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
         </div>
       )
     }
