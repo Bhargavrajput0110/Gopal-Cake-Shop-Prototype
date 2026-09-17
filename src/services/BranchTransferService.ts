@@ -22,6 +22,17 @@ async function resolveDbBranchId(rawBranch: string, tx: any): Promise<string> {
   return first ? first.id : normalized;
 }
 
+async function resolveValidUserId(userId: string | undefined | null, tx: any): Promise<string> {
+  if (userId) {
+    const userExists = await tx.user.findUnique({ where: { id: userId } });
+    if (userExists) return userExists.id;
+  }
+  const staffUser = await tx.user.findFirst({ where: { role: { in: ['ADMIN', 'MANAGER', 'SALESPERSON'] } } });
+  if (staffUser) return staffUser.id;
+  const anyUser = await tx.user.findFirst();
+  return anyUser ? anyUser.id : 'system-user';
+}
+
 export class BranchTransferService {
   /**
    * Request a transfer from one branch to another.
@@ -59,17 +70,7 @@ export class BranchTransferService {
       const canonicalFromBranch = await resolveDbBranchId(params.fromBranchId || order.branchId, tx);
       const canonicalToBranch = await resolveDbBranchId(params.toBranchId, tx);
 
-      let validUserId: string | null = params.requestedBy;
-      const userExists = await tx.user.findUnique({ where: { id: params.requestedBy } });
-      if (!userExists) {
-        const staffUser = await tx.user.findFirst({ where: { role: { in: ['ADMIN', 'MANAGER', 'SALESPERSON'] } } });
-        validUserId = staffUser ? staffUser.id : null;
-      }
-
-      if (!validUserId) {
-        const anyUser = await tx.user.findFirst();
-        validUserId = anyUser ? anyUser.id : 'system-user';
-      }
+      const validUserId = await resolveValidUserId(params.requestedBy, tx);
 
       const transfer = await tx.branchTransfer.create({
         data: {
@@ -157,18 +158,20 @@ export class BranchTransferService {
       }
       if (transfer.status !== 'PENDING') throw new Error(`Cannot accept transfer in status ${transfer.status}`);
 
+      const validUserId = await resolveValidUserId(params.respondedBy, tx);
+
       const updated = await tx.branchTransfer.update({
         where: { id: params.transferId },
         data: {
           status: 'ACCEPTED',
-          respondedBy: params.respondedBy,
+          respondedBy: validUserId,
           notes: params.notes ? `${transfer.notes || ''}\n[Accept]: ${params.notes}` : transfer.notes
         }
       });
 
       await TimelineService.create({
         orderId: transfer.orderId,
-        actorId: params.respondedBy,
+        actorId: validUserId,
         action: `Transfer request accepted`,
         status: transfer.order.status,
         nextState: transfer.order.status,
@@ -201,18 +204,20 @@ export class BranchTransferService {
       }
       if (transfer.status !== 'PENDING') throw new Error(`Cannot reject transfer in status ${transfer.status}`);
 
+      const validUserId = await resolveValidUserId(params.respondedBy, tx);
+
       const updated = await tx.branchTransfer.update({
         where: { id: params.transferId },
         data: {
           status: 'REJECTED',
-          respondedBy: params.respondedBy,
+          respondedBy: validUserId,
           notes: params.notes ? `${transfer.notes || ''}\n[Reject]: ${params.notes}` : transfer.notes
         }
       });
 
       await TimelineService.create({
         orderId: transfer.orderId,
-        actorId: params.respondedBy,
+        actorId: validUserId,
         action: `Transfer request rejected`,
         status: transfer.order.status,
         nextState: transfer.order.status,
@@ -247,6 +252,8 @@ export class BranchTransferService {
       }
       if (transfer.status !== 'ACCEPTED') throw new Error(`Cannot dispatch transfer in status ${transfer.status}. Must be ACCEPTED first.`);
 
+      const validUserId = await resolveValidUserId(params.dispatchedBy, tx);
+
       const updated = await tx.branchTransfer.update({
         where: { id: params.transferId },
         data: {
@@ -258,7 +265,7 @@ export class BranchTransferService {
 
       await TimelineService.create({
         orderId: transfer.orderId,
-        actorId: params.dispatchedBy,
+        actorId: validUserId,
         action: `Transfer dispatched (In Transit)`,
         status: transfer.order.status,
         nextState: transfer.order.status,
@@ -292,6 +299,8 @@ export class BranchTransferService {
       }
       if (transfer.status !== 'IN_TRANSIT') throw new Error(`Cannot receive transfer in status ${transfer.status}. Must be IN_TRANSIT first.`);
 
+      const validUserId = await resolveValidUserId(params.receivedBy, tx);
+
       // 1. Update transfer status
       const updated = await tx.branchTransfer.update({
         where: { id: params.transferId },
@@ -313,7 +322,7 @@ export class BranchTransferService {
       // 3. Timeline event (which triggers outbox notification)
       await TimelineService.create({
         orderId: transfer.orderId,
-        actorId: params.receivedBy,
+        actorId: validUserId,
         action: `Transfer physically received. Ownership updated to ${transfer.toBranchId}`,
         status: updatedOrder.status,
         nextState: updatedOrder.status,
@@ -325,7 +334,7 @@ export class BranchTransferService {
       // 4. Audit ownership change
       await tx.auditLog.create({
         data: {
-          actorId: params.receivedBy,
+          actorId: validUserId,
           action: 'OWNERSHIP_TRANSFERRED',
           tableName: 'Order',
           recordId: transfer.orderId,
