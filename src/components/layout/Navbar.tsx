@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { name: "Home", href: "/" },
   { name: "Menu", href: "/menu" },
   { name: "Custom", href: "/custom" },
+  { name: "My Orders", href: "/orders" },
   { name: "About Us", href: "/about" },
 ];
 
@@ -35,10 +36,7 @@ export function Navbar() {
   const isHome = pathname === "/";
   const showScrolledNavbar = scrolled || !isHome;
 
-  const allNavLinks = [
-    ...NAV_LINKS,
-    ...(user ? [{ name: "My Orders", href: "/customer/orders" }] : []),
-  ];
+  const allNavLinks = NAV_LINKS;
 
   useEffect(() => {
     const handleScroll = () => {
