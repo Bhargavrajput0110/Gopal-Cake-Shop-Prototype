@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { DriverOrderDTO } from '@/dtos/OrderSchemas'
 import { DriverTransitionButton } from './DriverTransitionButton'
-import { Call, Message, Location, Clock, Danger, ArrowDown2, TickCircle, Map1 } from "iconsax-react"
+import { Call, Message, Location, Clock, Danger, ArrowDown2, TickCircle, Map1, Mobile, MoneyArchive } from "iconsax-react"
 import { useQueryClient } from '@tanstack/react-query'
 import { fetchClient } from '@/lib/api/client'
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader"
@@ -31,6 +31,7 @@ export function DeliveryJobCard({ order, isActiveRoute = false }: DeliveryJobCar
   const [cashCollected, setCashCollected] = React.useState(balanceDue === 0)
   const [isCollecting, setIsCollecting] = React.useState(false)
   const [showCashScreen, setShowCashScreen] = React.useState(false)
+  const [paymentMode, setPaymentMode] = React.useState<'CASH' | 'UPI'>('UPI')
   const [proofUrl, setProofUrl] = React.useState<string | null>(null)
 
   React.useEffect(() => {
@@ -77,28 +78,71 @@ export function DeliveryJobCard({ order, isActiveRoute = false }: DeliveryJobCar
     }
   }
 
-  // Cash Collection Overlay State
+  // Payment Collection Overlay State (Cash / UPI)
   if (showCashScreen && !cashCollected) {
     return (
-      <div className="bg-white border-4 border-amber-500 rounded-3xl shadow-xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom-4">
-        <div className="flex flex-col items-center justify-center text-center py-10 space-y-4">
-          <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
-            <span className="font-display font-black text-4xl">₹</span>
-          </div>
-          <div>
-            <p className="font-ui text-[12px] uppercase tracking-widest font-black text-gray-500 mb-2">COLLECT CASH FROM CUSTOMER</p>
-            <p className="font-display font-black text-6xl text-gray-900">₹{balanceDue.toFixed(0)}</p>
-          </div>
-        </div>
+      <div className="bg-white border-4 border-sky-500 rounded-3xl shadow-xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom-4 space-y-4">
         
-        <div className="flex flex-col gap-3 mt-auto pt-6 border-t-2 border-gray-100">
+        {/* Toggle Mode */}
+        <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200">
+          <button
+            onClick={() => setPaymentMode('UPI')}
+            className={`flex-1 py-3 font-ui text-[11px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${paymentMode === 'UPI' ? 'bg-sky-600 text-white shadow' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            <Mobile className="w-4 h-4" /> UPI QR Scanner
+          </button>
+          <button
+            onClick={() => setPaymentMode('CASH')}
+            className={`flex-1 py-3 font-ui text-[11px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 ${paymentMode === 'CASH' ? 'bg-amber-500 text-white shadow' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            <MoneyArchive className="w-4 h-4" /> Cash
+          </button>
+        </div>
+
+        {paymentMode === 'UPI' ? (
+          <div className="flex flex-col items-center justify-center text-center space-y-3 bg-sky-50/60 p-4 rounded-2xl border-2 border-sky-200">
+            <div className="flex items-center justify-between w-full px-2">
+              <span className="font-ui text-[10px] font-black uppercase tracking-widest text-sky-800">Scan Paytm UPI QR</span>
+              <span className="font-ui text-[9px] font-black text-sky-900 bg-sky-200 px-2 py-0.5 rounded-full">GOPAL BAKERY</span>
+            </div>
+            
+            <div className="w-52 h-64 relative rounded-xl overflow-hidden border-2 border-sky-300 bg-white shadow-md flex items-center justify-center p-1">
+              <img 
+                src="/images/gopal_bakery_upi_qr.jpg" 
+                alt="Paytm UPI QR Code" 
+                className="w-full h-full object-contain"
+              />
+            </div>
+
+            <div>
+              <p className="font-ui text-[10px] uppercase tracking-widest font-black text-gray-500">Collect Amount</p>
+              <p className="font-display font-black text-4xl text-sky-950">₹{balanceDue.toFixed(0)}</p>
+            </div>
+
+            <p className="font-mono text-[9px] font-bold text-gray-600 bg-white px-3 py-1 rounded-md border border-sky-200">
+              UPI ID: paytmqr69rnay@ptys | 9712632132
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center py-8 space-y-4 bg-amber-50/60 p-4 rounded-2xl border-2 border-amber-200">
+            <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
+              <span className="font-display font-black text-4xl">₹</span>
+            </div>
+            <div>
+              <p className="font-ui text-[12px] uppercase tracking-widest font-black text-gray-500 mb-1">COLLECT CASH FROM CUSTOMER</p>
+              <p className="font-display font-black text-5xl text-gray-900">₹{balanceDue.toFixed(0)}</p>
+            </div>
+          </div>
+        )}
+        
+        <div className="flex flex-col gap-3 mt-auto pt-2 border-t border-gray-100">
           <button
             onClick={async () => {
               setIsCollecting(true)
               try {
                 await fetchClient(`/orders/${order.id}/payments`, {
                   method: 'POST',
-                  body: JSON.stringify({ amount: balanceDue, method: 'CASH' })
+                  body: JSON.stringify({ amount: balanceDue, method: paymentMode })
                 })
                 setCashCollected(true)
                 setShowCashScreen(false)
@@ -110,13 +154,13 @@ export function DeliveryJobCard({ order, isActiveRoute = false }: DeliveryJobCar
               }
             }}
             disabled={isCollecting}
-            className="w-full py-5 bg-emerald-600 hover:bg-emerald-700 text-white font-ui text-[12px] uppercase tracking-[0.2em] font-black rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
+            className={`w-full py-5 text-white font-ui text-[12px] uppercase tracking-[0.2em] font-black rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95 shadow-lg ${paymentMode === 'UPI' ? 'bg-sky-600 hover:bg-sky-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
           >
-            {isCollecting ? 'Recording...' : <><TickCircle className="w-6 h-6" /> Confirm Cash Received</>}
+            {isCollecting ? 'Recording...' : <><TickCircle className="w-6 h-6" /> Confirm {paymentMode} Received</>}
           </button>
           <button
             onClick={() => setShowCashScreen(false)}
-            className="w-full py-4 text-gray-500 font-ui text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl bg-gray-100 hover:bg-gray-200 transition-colors active:scale-95"
+            className="w-full py-3 text-gray-500 font-ui text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl bg-gray-100 hover:bg-gray-200 transition-colors active:scale-95"
             disabled={isCollecting}
           >
             Cancel

@@ -527,6 +527,35 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                 </button>
               </div>
 
+              {/* UPI QR Scanner Card */}
+              {method === 'UPI' && (
+                <div className="bg-gradient-to-b from-sky-50 to-blue-50/80 border-2 border-sky-300 p-4 rounded-2xl space-y-3 shadow-md animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Mobile className="w-4 h-4 text-sky-700" />
+                      <span className="font-black text-[11px] uppercase tracking-wider text-sky-900">Scan Paytm UPI QR</span>
+                    </div>
+                    <span className="text-[9px] font-black bg-sky-200 text-sky-900 px-2 py-0.5 rounded-full">GOPAL BAKERY</span>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-sky-200 shadow-sm flex flex-col items-center text-center space-y-2">
+                    <div className="w-44 h-56 relative rounded-lg overflow-hidden border border-gray-200 bg-white shadow-inner flex items-center justify-center">
+                      <img 
+                        src="/images/gopal_bakery_upi_qr.jpg" 
+                        alt="Gopal Bakery Paytm UPI QR Code" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="text-xs font-bold text-gray-800">
+                      Collect: <span className="text-xl font-black text-emerald-600">₹{amountToPay.toFixed(2)}</span>
+                    </div>
+                    <div className="text-[9px] font-mono font-bold text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md border border-gray-200">
+                      UPI ID: paytmqr69rnay@ptys | 9712632132
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Math Summary */}
               <div className="mt-auto space-y-3 pt-6 border-t border-border/20">
                 <div className="flex justify-between text-sm font-serif"><span className="text-foreground/60">Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>

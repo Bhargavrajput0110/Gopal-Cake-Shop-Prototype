@@ -167,6 +167,18 @@ export default function SalesCheckoutPage() {
                 <Card className="w-4 h-4" /> <span className="text-sm font-medium">Payment Link</span>
               </label>
             </div>
+
+            {paymentMethod === 'UPI' && (
+              <div className="bg-sky-50 border-2 border-sky-300 p-4 rounded-xl space-y-2 text-center animate-in fade-in">
+                <p className="text-xs font-bold uppercase text-sky-900 tracking-wider">Paytm UPI QR Code (GOPAL BAKERY)</p>
+                <div className="w-44 h-56 mx-auto bg-white p-1 rounded-lg border border-sky-200 shadow-sm flex items-center justify-center">
+                  <img src="/images/gopal_bakery_upi_qr.jpg" alt="Paytm UPI QR Code" className="w-full h-full object-contain" />
+                </div>
+                <p className="text-[10px] font-mono text-gray-600 bg-white px-2 py-0.5 rounded inline-block border">
+                  paytmqr69rnay@ptys | 9712632132
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
