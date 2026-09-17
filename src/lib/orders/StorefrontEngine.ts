@@ -153,7 +153,7 @@ export class StorefrontEngine {
     const designs = await prisma.design.findMany({ where: { id: { in: productIds } } })
     
     const allVendors = await prisma.user.findMany({
-      where: { role: { in: ['VENDOR_FLORIST', 'VENDOR_PHOTO', 'VENDOR_ACRYLIC'] } }
+      where: { role: { in: ['VENDOR_FLORIST', 'VENDOR_PHOTO', 'VENDOR_ACRYLIC'] }, status: 'ACTIVE' }
     });
 
     let subtotal = 0
