@@ -1,12 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { TickCircle, Refresh2, Gallery, Location, Calendar2, Danger, CloseSquare, Clock, ArrowRight, Colorfilter, Diagram, Camera, DocumentDownload, Maximize, CloudAdd } from "iconsax-react";
+import { TickCircle, Refresh2, Gallery, Location, Danger, CloseSquare, Clock, DocumentDownload, Maximize } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BackButton } from "@/components/ui/BackButton";
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
 import { useSession } from "next-auth/react";
 import { authSignOut } from "@/lib/authUtils";
-import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 // Custom Hook for SLA Countdown
@@ -89,18 +87,22 @@ export default function VendorTasks() {
           id: item.id,
           vendorId: item.assignedVendor?.id || "UNKNOWN",
           order: {
-            orderNumber: item.order.orderNumber,
-            branch: { name: item.order.branch.name },
-            targetDate: item.order.targetDate
+            orderNumber: item.order?.orderNumber || "Task",
+            branch: { name: item.order?.branch?.name || "Kitchen" },
+            targetDate: item.order?.targetDate
           },
           productName: item.productName,
           quantity: item.quantity,
           status: item.status,
           parentItem: {
-            productName: item.parentItem?.productName || "Unknown Item",
+            productName: item.parentItem?.productName || item.productName || "Unknown Item",
             notes: item.notes || item.parentItem?.notes || "",
-            designImageUrl: item.parentItem?.designImageUrl || "",
-            gallery: item.parentItem?.media?.map((m: any) => m.url) || []
+            designImageUrl: item.parentItem?.designImageUrl || item.designImageUrl || item.image || "",
+            gallery: (item.parentItem?.media && item.parentItem.media.length > 0)
+              ? item.parentItem.media.map((m: any) => m.url)
+              : (item.media && item.media.length > 0)
+              ? item.media.map((m: any) => m.url)
+              : null
           }
         }));
         setTasks(mapped);
@@ -306,7 +308,7 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
     >
       {/* Visual Reference (Left/Top) */}
       <div className="lg:w-2/5 bg-gray-100 relative overflow-hidden flex flex-col min-h-[300px]">
-        {p.gallery ? (
+        {p.gallery && p.gallery.length > 0 ? (
            <div className="flex-1 flex flex-col p-6 bg-gray-50 border-r border-gray-200">
              <div className="flex justify-between items-center mb-6">
                <h3 className="font-display font-black text-xl text-gray-900">Reference Assets</h3>
@@ -339,7 +341,7 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
              </button>
            </div>
         ) : p.designImageUrl ? (
-          <div className="relative flex-1 flex items-center justify-center group/img">
+          <div className="relative flex-1 flex items-center justify-center group/img min-h-[300px]">
             <img src={p.designImageUrl} alt="Reference" className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover/img:scale-105" />
             
             {/* Hover Overlay with Action Icons */}
@@ -353,7 +355,7 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
             </div>
           </div>
         ) : (
-          <div className="text-gray-400 flex flex-col items-center justify-center flex-1">
+          <div className="text-gray-400 flex flex-col items-center justify-center flex-1 min-h-[300px]">
             <Gallery className="w-12 h-12 mb-2 opacity-30" />
             <span className="font-ui text-[10px] uppercase tracking-widest font-bold">No Reference Image</span>
           </div>
