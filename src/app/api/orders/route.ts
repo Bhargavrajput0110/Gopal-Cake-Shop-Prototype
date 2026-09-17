@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { CustomerSearchService } from '@/lib/customers/CustomerSearchService';
 import { OrderSource, DeliveryType, OrderStatus, OrderItemStatus, OrderType, MediaType } from '@prisma/client';
-import { toBranchId } from '@/lib/branches';
+import { toBranchId, generateFormattedOrderNumber } from '@/lib/branches';
 
 export async function POST(req: Request) {
   try {
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     });
 
     const orderData = {
-        orderNumber: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        orderNumber: generateFormattedOrderNumber(resolvedBranchId),
         customerId: customer.id,
         branchId: resolvedBranchId,
         source: OrderSource.WEBSITE,

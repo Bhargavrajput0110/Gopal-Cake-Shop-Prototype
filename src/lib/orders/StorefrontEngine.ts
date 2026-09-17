@@ -13,7 +13,7 @@ import {
 } from '@prisma/client'
 import { OutboxService } from '@/lib/events/OutboxService'
 import { SettingsService } from '@/services/SettingsService'
-import { toBranchId } from '@/lib/branches'
+import { toBranchId, generateFormattedOrderNumber } from '@/lib/branches'
 import { DistanceFactory } from '@/services/distance/DistanceFactory'
 
 export interface CheckoutContext {
@@ -389,7 +389,7 @@ export class StorefrontEngine {
       // Create Order
       const newOrder = await tx.order.create({
         data: {
-          orderNumber: `ORD-${Date.now()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`,
+          orderNumber: generateFormattedOrderNumber(branch.id),
           trackingId: `GCS-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
           customerId: payload.customerId,
           branchId: branch.id,

@@ -87,5 +87,26 @@ export function toBranchDisplayName(id: string): string {
 
 /** Get short name for a branch ID */
 export function toBranchShortName(id: string): string {
-  return BRANCHES.find(b => b.id === id)?.shortName ?? id;
+  const canonical = toBranchId(id);
+  return BRANCHES.find(b => b.id === canonical)?.shortName ?? id;
+}
+
+/** Get numeric branch code (001: Uma, 002: Khanderao, 003: Warashiya, 004: Ellora Park) */
+export function getBranchNumericCode(rawBranchId?: string | null): string {
+  const canonical = toBranchId(rawBranchId);
+  switch (canonical) {
+    case 'uma': return '001';
+    case 'khanderao': return '002';
+    case 'varasiya': return '003';
+    case 'elora': return '004';
+    default: return '001';
+  }
+}
+
+/** Generate clean human-readable order number starting with branch numeric code (e.g. 001-789412) */
+export function generateFormattedOrderNumber(rawBranchId?: string | null): string {
+  const code = getBranchNumericCode(rawBranchId);
+  const timePart = Date.now().toString().slice(-4);
+  const randPart = Math.floor(10 + Math.random() * 90).toString();
+  return `${code}-${timePart}${randPart}`;
 }
