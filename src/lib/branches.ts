@@ -82,13 +82,26 @@ export function toBranchId(raw?: string | null): BranchId {
 
 /** Get display name for a branch ID */
 export function toBranchDisplayName(id: string): string {
-  return BRANCHES.find(b => b.id === id)?.displayName ?? id;
+  const canonical = toBranchId(id);
+  const found = BRANCHES.find(b => b.id === canonical);
+  if (found) return found.displayName;
+  if (id.includes('cmswuiiu000021su3kv1mr41f') || id.includes('varas') || id.includes('waras')) return 'Factory Warashiya';
+  if (id.includes('cmswuiita00011su3977ajl1z') || id.includes('khand')) return 'Khanderao Branch';
+  if (id.includes('uma')) return 'Uma Branch (Main Outlet)';
+  if (id.includes('cmswuiiun00031su3vfrn9eq5') || id.includes('elor') || id.includes('ellor')) return 'Ellora Park Branch';
+  return id;
 }
 
 /** Get short name for a branch ID */
 export function toBranchShortName(id: string): string {
   const canonical = toBranchId(id);
-  return BRANCHES.find(b => b.id === canonical)?.shortName ?? id;
+  const found = BRANCHES.find(b => b.id === canonical);
+  if (found) return found.shortName;
+  if (id.includes('cmswuiiu000021su3kv1mr41f') || id.includes('varas') || id.includes('waras')) return 'Warashiya';
+  if (id.includes('cmswuiita00011su3977ajl1z') || id.includes('khand')) return 'Khanderao';
+  if (id.includes('uma')) return 'Uma';
+  if (id.includes('cmswuiiun00031su3vfrn9eq5') || id.includes('elor') || id.includes('ellor')) return 'Ellora Park';
+  return id;
 }
 
 /** Get numeric branch code (001: Uma, 002: Khanderao, 003: Warashiya, 004: Ellora Park) */
