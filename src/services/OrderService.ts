@@ -114,6 +114,7 @@ export class OrderService {
           ledgerEntries: true,
           vendorTasks: { include: { vendor: true } },
           ingredientRequests: { include: { requestedBy: true } },
+          transfers: { orderBy: { createdAt: 'asc' } },
         }
       }),
       db.order.count({ where: whereClause }),
@@ -175,6 +176,18 @@ export class OrderService {
           advancePaid: finSummary.paidAmount,
           financialStatus: finSummary.paymentStatus,
           delayLevel: "none",
+          transfers: ((o as any).transfers || []).map((t: any) => ({
+            id: t.id,
+            fromBranchId: t.fromBranchId,
+            toBranchId: t.toBranchId,
+            status: t.status,
+            createdAt: t.createdAt
+          })),
+          transferHistory: ((o as any).transfers || []).map((t: any) => ({
+            from: t.fromBranchId,
+            to: t.toBranchId,
+            status: t.status
+          })),
           vendorTasks: ((o as any).vendorTasks || []).map((vt: any) => ({
             id: vt.id,
             vendorId: vt.vendorId,

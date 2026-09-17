@@ -58,28 +58,6 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
       )
     }
 
-    if (item.status === 'NEW' || item.status === 'ACCEPTED') {
-      return (
-        <Button 
-          disabled
-          className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md bg-secondary/10 text-secondary/50 cursor-not-allowed"
-        >
-          Still Preparing...
-        </Button>
-      )
-    }
-    
-    if (item.status === 'READY_FOR_PICKUP' || item.status === 'ASSIGNED_TO_DRIVER') {
-      return (
-        <Button 
-          className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-blue-600 hover:bg-blue-700 text-white"
-          onClick={() => onAction('START_TRIP')}
-        >
-          Start Trip
-        </Button>
-      )
-    }
-
     if (item.status === 'ON_THE_WAY' || item.status === 'ON_THE_WAY_TO_VENDOR') {
       return (
         <div className="grid grid-cols-2 gap-3">
@@ -134,14 +112,14 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
       )
     }
 
-    // Fallback if status doesn't match above exactly but is still "pending" (e.g. READY_FOR_PICKUP backwards compatibility)
+    // Default for assigned task before trip start:
     return (
-        <Button 
-          className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md bg-primary text-primary-foreground"
-          onClick={() => onAction('ACCEPTED')}
-        >
-          Start Flow
-        </Button>
+      <Button 
+        className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-blue-600 hover:bg-blue-700 text-white"
+        onClick={() => onAction('START_TRIP')}
+      >
+        Start Trip
+      </Button>
     )
   }
 

@@ -11,6 +11,9 @@ vi.mock('../../src/lib/prisma', () => ({
     ledgerEntry: {
       findMany: vi.fn(),
       aggregate: vi.fn(),
+    },
+    timeline: {
+      findMany: vi.fn(),
     }
   }
 }));
@@ -22,17 +25,18 @@ describe('DashboardKPIService', () => {
 
   it('calculates KPIs correctly for today', async () => {
     // Mock today's ledger entries (sales & refunds)
+    const now = new Date();
     vi.mocked(prisma.ledgerEntry.findMany).mockResolvedValue([
-      { type: 'PAYMENT', amount: 100, branchId: 'Branch-A', branch: { name: 'A' } },
-      { type: 'PAYMENT', amount: 200, branchId: 'Branch-A', branch: { name: 'A' } },
-      { type: 'REFUND', amount: -50, branchId: 'Branch-A', branch: { name: 'A' } },
+      { type: 'PAYMENT', amount: 100, branchId: 'Branch-A', branch: { name: 'A' }, createdAt: now },
+      { type: 'PAYMENT', amount: 200, branchId: 'Branch-A', branch: { name: 'A' }, createdAt: now },
+      { type: 'REFUND', amount: -50, branchId: 'Branch-A', branch: { name: 'A' }, createdAt: now },
     ] as any);
     
     // Mock today's orders for counts
     vi.mocked(prisma.order.findMany).mockResolvedValue([
-      { id: '1', status: 'DELIVERED', items: [{ productName: 'Cake A', quantity: 1, price: 100 }], timeline: [] },
-      { id: '2', status: 'NEW', items: [{ productName: 'Cake A', quantity: 2, price: 100 }], timeline: [] },
-      { id: '3', status: 'CANCELLED', items: [], timeline: [] }, 
+      { id: '1', status: 'DELIVERED', totalAmount: 100, items: [{ productName: 'Cake A', quantity: 1, price: 100 }], timeline: [], payments: [] },
+      { id: '2', status: 'NEW', totalAmount: 200, items: [{ productName: 'Cake A', quantity: 2, price: 100 }], timeline: [], payments: [] },
+      { id: '3', status: 'CANCELLED', totalAmount: 0, items: [], timeline: [], payments: [] }, 
     ] as any);
 
     // Mock late orders count
@@ -42,7 +46,7 @@ describe('DashboardKPIService', () => {
 
     const kpis = await DashboardKPIService.getKPIs({ branchId: null, date: new Date() } as any);
 
-    expect(kpis.todaysSales).toBe(300); // 100 + 200
+    expect(kpis.todaysSales).toBe(250); // 300 - 50 (net sales)
     expect(kpis.todaysRefunds).toBe(-50);
     expect(kpis.ordersToday).toBe(2); // Only DELIVERED and NEW, CANCELLED doesn't count towards revenue order count
     expect(kpis.pendingOrders).toBe(1); // The 'NEW' one

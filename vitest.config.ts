@@ -23,7 +23,7 @@ export default defineConfig({
     },
     environment: 'node',
     globals: true,
-    exclude: [...configDefaults.exclude, 'tests/e2e/**'],
+    exclude: [...configDefaults.exclude, 'tests/e2e/**', '.kilo/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

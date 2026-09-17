@@ -325,6 +325,18 @@ export default function ChefDashboardPage() {
         {/* Ticket Body (Items) */}
         <div className="flex-1 p-4 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-10">
           
+          {/* Inter-Branch Transfer Origin Indicator */}
+          {(order as any).transferHistory && (order as any).transferHistory.length > 0 && (
+            <div className="mb-3 p-2.5 bg-amber-50 border-2 border-amber-300 rounded-xl flex items-center justify-between text-amber-900">
+              <span className="font-black text-xs uppercase tracking-widest flex items-center gap-1.5">
+                🚚 Transferred from {toBranchShortName((order as any).transferHistory[0].from)} Branch
+              </span>
+              <span className="text-[10px] font-extrabold bg-amber-200 text-amber-900 px-2 py-0.5 rounded uppercase">
+                Store Pickup
+              </span>
+            </div>
+          )}
+          
           {(() => {
             const allImages = [
               ...(order.cakeImage ? [order.cakeImage] : []),

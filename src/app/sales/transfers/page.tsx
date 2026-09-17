@@ -14,7 +14,8 @@ const fetcher = (url: string) => fetch(url).then(r => r.json());
 const BRANCHES = [
   { id: "khanderao", name: "Khanderao Market", shortName: "Khanderao" },
   { id: "uma", name: "Uma Char Rasta", shortName: "Uma" },
-  { id: "varasiya", name: "Factory Warashiya", shortName: "Warashiya" },
+  { id: "varasiya", name: "Varasiya Factory", shortName: "Varasiya" },
+
   { id: "elora", name: "Ellora Park", shortName: "Ellora Park" }
 ] as const;
 

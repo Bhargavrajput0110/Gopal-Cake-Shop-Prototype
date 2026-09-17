@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma as db } from '@/lib/prisma'
 import { withApiHandler } from '@/lib/withApiHandler'
 import { FinancialService } from '@/services/FinancialService'
+import { toBranchShortName } from '@/lib/branches'
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -87,11 +88,17 @@ export const GET = withApiHandler(async (ctx) => {
     const order = transfer.order as any;
     if (!order) return;
 
+    // Only show in driver pool when cake is actually ready — not while chef is still making it
+    if (order.status !== 'READY_FOR_PICKUP') return;
+
     if (driverId && order.driverId && order.driverId !== driverId) return;
 
     // Calculate inter-branch delivery target time: 1.5 hours BEFORE customer pickup time
     const customerTarget = new Date(order.targetDate);
     const transferTargetTime = new Date(customerTarget.getTime() - 90 * 60 * 1000); // 1.5 hours earlier
+
+    const fromBranchName = toBranchShortName(transfer.fromBranchId);
+    const toBranchName = toBranchShortName(transfer.toBranchId);
 
     if (order.deliveryType === 'PICKUP') {
       payload.push({
@@ -103,16 +110,16 @@ export const GET = withApiHandler(async (ctx) => {
         targetDate: transferTargetTime.toISOString(),
         customerTargetDate: customerTarget.toISOString(),
         createdAt: transfer.createdAt,
-        notes: `STORE PICKUP INTER-BRANCH TRANSFER: Deliver to ${transfer.fromBranchId} branch 1-2 hours before customer pickup time. $0 extra charged to customer.`,
+        notes: `STORE PICKUP INTER-BRANCH TRANSFER: Deliver to ${fromBranchName} branch 1-2 hours before customer pickup time. ₹0 extra charged to customer.`,
         assignedDriverId: order.driverId,
         timeTarget: transferTargetTime.toISOString(),
         totalAmount: 0,
         paidAmount: 0,
         extraFeeToCustomer: 0,
-        formattedAddress: `Deliver to Store Branch: ${transfer.fromBranchId.toUpperCase()}`,
-        pickupLocation: "Uma Branch (Central Factory)",
-        dropoffLocation: `${transfer.fromBranchId.toUpperCase()} Branch Store`,
-        customerName: `${transfer.fromBranchId.toUpperCase()} Store Counter`,
+        formattedAddress: `Deliver to Store Branch: ${fromBranchName} Branch Store`,
+        pickupLocation: `${toBranchName} Branch (Central Factory)`,
+        dropoffLocation: `${fromBranchName} Branch Store`,
+        customerName: `${fromBranchName} Store Counter`,
         customerPhone: order.customer?.phone || "",
         items: order.items.map((item: any) => ({
           id: item.id,

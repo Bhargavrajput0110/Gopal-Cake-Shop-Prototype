@@ -11,6 +11,8 @@
  * chain is preserved — only the internals of this service have changed.
  */
 
+import { prisma } from '@/lib/prisma';
+import { toBranchId } from '@/lib/branches';
 import { LoggerService } from '@/services/LoggerService';
 import { NotificationMatrix } from './NotificationMatrix';
 import { NotificationDispatcher } from './NotificationDispatcher';
@@ -59,9 +61,41 @@ export class NotificationService {
     }
 
     // Guard: skip WhatsApp entirely if DTO build failed
-    const effectiveRules = orderData
+    let effectiveRules = orderData
       ? rules
       : rules.filter((r) => r.channel !== 'WHATSAPP');
+
+    // Suppress customer WhatsApp notification for PICKUP orders if produced at Factory (Uma) or in Inter-Branch Transfer
+    const isReadyAction =
+      (typeof action === 'string' && action.toLowerCase().includes('ready')) ||
+      (typeof effectiveAction === 'string' && effectiveAction.toLowerCase().includes('ready')) ||
+      nextState === 'READY_FOR_PICKUP';
+
+    if (isReadyAction && orderId) {
+      const dbOrder = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { id: true, orderNumber: true, branchId: true, deliveryType: true }
+      });
+
+      if (dbOrder && (dbOrder.deliveryType === 'PICKUP' || (dbOrder as any).deliveryType === 'pickup')) {
+        const canonicalBranch = toBranchId(dbOrder.branchId);
+
+        const activeTransfer = await prisma.branchTransfer.findFirst({
+          where: {
+            OR: [
+              { orderId: dbOrder.id },
+              { orderId: dbOrder.orderNumber }
+            ],
+            status: { in: ['PENDING', 'ACCEPTED', 'IN_TRANSIT'] }
+          }
+        });
+
+        if (canonicalBranch === 'uma' || activeTransfer) {
+          LoggerService.info(`[NotificationService] Suppressing customer WhatsApp for order ${orderId} — canonicalBranch: ${canonicalBranch}, activeTransfer: ${!!activeTransfer}`);
+          effectiveRules = effectiveRules.filter((r) => !(r.recipientRole === 'CUSTOMER' && r.channel === 'WHATSAPP'));
+        }
+      }
+    }
 
     const errors: Error[] = [];
 

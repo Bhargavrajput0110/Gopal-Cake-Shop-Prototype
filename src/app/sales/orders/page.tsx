@@ -539,14 +539,38 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
   const [submittingQuote, setSubmittingQuote] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
   const [isHandingOver, setIsHandingOver] = useState(false);
+  const [isNotifyingReady, setIsNotifyingReady] = useState(false);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   
   // Reusable intent-based animation layer
   const animation = useOrderTransitionAnimation(order.id, order.status);
   const animationClass = animationToClass(animation);
 
-  const isLocked = ["CHEF_ACCEPTED","MAKING","DECORATING","READY_FOR_PICKUP","PENDING_ASSIGNMENT","ASSIGNED_TO_DRIVER","PICKED_UP","ON_THE_WAY","DELIVERED"].includes(order.status);
+  const isLocked = ["CHEF_ACCEPTED","MAKING","DECORATING","READY_FOR_PICKUP","PENDING_ASSIGNMENT","ASSIGNED_TO_DRIVER","PICKED_UP","ON_THE_WAY","DELIVERED","COMPLETED","CANCELLED"].includes(order.status as string);
   const canEdit = !isLocked;
+
+  const handleNotifyReady = async () => {
+    if (isNotifyingReady) return;
+    setIsNotifyingReady(true);
+    try {
+      const res = await fetch(`/api/v1/orders/${order.id}/actions/ready`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: 'Salesperson confirmed cake is ready for pickup at branch.' })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to send ready notification');
+      }
+      onWhatsApp("WhatsApp notification sent to customer: Your cake is ready for pickup! 🎂");
+      onMutated();
+    } catch (e: any) {
+      console.error(e);
+      alert(e?.message || "Failed to notify customer");
+    } finally {
+      setIsNotifyingReady(false);
+    }
+  };
 
   const handleHandover = async () => {
     if (isHandingOver) return;
@@ -633,7 +657,13 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
   return (
     <>
       <motion.div layout initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.95}}
-        className={`bg-white backdrop-blur-md border border-[#C5A059]/20 rounded-2xl shadow-md overflow-hidden flex flex-col md:flex-row group transition-all duration-300 relative ${animationClass ? animationClass : 'hover:border-[#C5A059]/50 hover:shadow-lg'}`}>
+        className={`bg-white backdrop-blur-md rounded-2xl shadow-md overflow-hidden flex flex-col md:flex-row group transition-all duration-300 relative border ${
+          order.status === 'COMPLETED' ? 'border-emerald-200 bg-emerald-50/30 opacity-80' :
+          order.status === 'CANCELLED' ? 'border-rose-200 bg-rose-50/20 opacity-75' :
+          animationClass ? `border-[#C5A059]/20 ${animationClass}` :
+          'border-[#C5A059]/20 hover:border-[#C5A059]/50 hover:shadow-lg'
+        }`}>
+
 
         {/* Large Prominent Cake Image Section (Zomato/Blinkit Partner Style) */}
         <div 
@@ -671,13 +701,18 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
           <div>
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <h3 className="text-xl sm:text-2xl font-serif font-black text-[#3E2723]">{order.orderNumber || order.id}</h3>
-              <span className="bg-[#C5A059]/10 text-[#3E2723] border border-[#C5A059]/30 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-2xs">
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-2xs border ${
+                order.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                order.status === 'CANCELLED' ? 'bg-rose-50 text-rose-600 border-rose-200' :
+                'bg-[#C5A059]/10 text-[#3E2723] border-[#C5A059]/30'
+              }`}>
                 {statusLabel(order.status)}
               </span>
               {order.delayLevel==="delayed" && <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1 animate-pulse"><Warning2 className="w-3 h-3"/>Delayed</span>}
               {order.delayLevel==="warning" && <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><Warning2 className="w-3 h-3"/>Issue</span>}
-              {isLocked && <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><Lock1 className="w-3 h-3"/>Locked</span>}
+              {isLocked && !(["COMPLETED","CANCELLED"] as string[]).includes(order.status as string) && <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><Lock1 className="w-3 h-3"/>Locked</span>}
             </div>
+
             
             {/* Transfer History View */}
             {(order as any).transferHistory && (order as any).transferHistory.length > 0 && (
@@ -812,16 +847,41 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                   <TickCircle className="w-5 h-5" /> Approve
                 </button>
               )}
-              {order.pendingBalance > 0 && order.status !== "NEW" && (
+              {order.pendingBalance > 0 && order.status !== "NEW" && !(["COMPLETED","CANCELLED"] as string[]).includes(order.status as string) && (
+
                 <button onClick={handleCollectPayment} className="flex-1 min-w-[140px] bg-amber-500 text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-amber-600 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
                   <Gift className="w-5 h-5" /> Collect ₹{order.pendingBalance}
                 </button>
               )}
+              {order.status === "READY_FOR_PICKUP" && (order.orderType === "pickup" || (order as any).deliveryType === "PICKUP") && (() => {
+                const hasReceivedTransfer = (order as any).transfers?.some((t: any) => t.status === 'RECEIVED');
+                return (
+                  <button 
+                    disabled={isNotifyingReady}
+                    onClick={handleNotifyReady} 
+                    className={`flex-1 min-w-[150px] text-white px-3 py-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform disabled:opacity-50 ${hasReceivedTransfer ? 'bg-purple-600 hover:bg-purple-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                    title={hasReceivedTransfer ? "Cake has arrived at this branch — notify customer via WhatsApp" : "Notify customer via WhatsApp that cake is ready for pickup at store"}
+                  >
+                    {isNotifyingReady ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Notifying...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Notification className="w-4 h-4 text-white" />
+                        {hasReceivedTransfer ? "Notify Customer" : "Ready For Pickup"}
+                      </>
+                    )}
+                  </button>
+                );
+              })()}
+
               {order.pendingBalance === 0 && order.status === "READY_FOR_PICKUP" && (order.orderType === "pickup" || (order as any).deliveryType === "PICKUP") && (
                 <button 
                   disabled={isHandingOver}
                   onClick={handleHandover} 
-                  className="flex-1 min-w-[130px] bg-[#3E2723] text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-[#2c1c19] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform disabled:opacity-50"
+                  className="flex-1 min-w-[130px] bg-[#3E2723] text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-[#2c1c19] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform disabled:opacity-50"
                 >
                   {isHandingOver ? (
                     <>

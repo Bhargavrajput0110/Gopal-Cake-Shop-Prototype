@@ -42,9 +42,19 @@ export class OrderTransitionService {
 
     const currentState = order.status as OrderStatus
 
-    // Idempotency check: if already in the target state for this action, just return success
+    // Special case: PICKUP order already in READY_FOR_PICKUP + action = 'ready'
+    // This happens when a Varasiya salesperson clicks "Notify Customer" after an inter-branch
+    // transfer delivery. The order stays in READY_FOR_PICKUP — we must NOT idempotency-skip
+    // because the customer WhatsApp notification needs to be fired NOW.
+    const isPickupReNotification =
+      action === 'ready' &&
+      currentState === 'READY_FOR_PICKUP' &&
+      order.deliveryType === 'PICKUP'
+
+    // Idempotency check: if already in the target state for this action, just return success.
+    // Skip this check for the PICKUP re-notification case above.
     const targetConfig = STATE_MACHINE.find((t: any) => t.action === action)
-    if (targetConfig && currentState === targetConfig.next) {
+    if (!isPickupReNotification && targetConfig && currentState === targetConfig.next) {
       console.log(`[Idempotent] Order ${orderId} is already in state ${currentState} for action ${action}`)
       return
     }
@@ -105,25 +115,33 @@ export class OrderTransitionService {
 
     // Interactive Transaction
     await prisma.$transaction(async (tx) => {
-      // 1. Update Order Conditionally
-      const updatedOrder = await tx.order.updateMany({
-        where: { 
-          id: orderId,
-          status: currentState // Concurrency check
-        },
-        data: {
-          status: nextState
-        }
-      })
+      // 1. Update Order Status Conditionally
+      // For PICKUP re-notification (READY_FOR_PICKUP → READY_FOR_PICKUP), skip the status update
+      // because the order is already in the right state — we just need to fire the notification.
+      if (!isPickupReNotification) {
+        const updatedOrder = await tx.order.updateMany({
+          where: { 
+            id: orderId,
+            status: currentState // Concurrency check
+          },
+          data: {
+            status: nextState
+          }
+        })
 
-      if (updatedOrder.count === 0) {
-        throw new Error('CONCURRENCY_ERROR: Order state has changed since read.')
+        if (updatedOrder.count === 0) {
+          throw new Error('CONCURRENCY_ERROR: Order state has changed since read.')
+        }
       }
 
       // 2. Insert Timeline (which atomically creates an Outbox TIMELINE_CREATED event)
+      const tData = isPickupReNotification
+        ? { ...timelineData, action: 'ready', note: note || 'Salesperson confirmed cake arrived at branch — customer notified for pickup.' }
+        : timelineData
+
       await TimelineService.create({
         orderId,
-        ...timelineData
+        ...tData
       }, tx as any)
 
       for (const extraEvt of extraTimelineEvents) {
@@ -136,8 +154,8 @@ export class OrderTransitionService {
       // 3. Insert Audit Log (All Roles)
       await tx.auditLog.create({
         data: {
-          action: `Transition: ${action}`,
-          reason: note || `Transitioned ${orderId} from ${currentState} to ${nextState}`,
+          action: isPickupReNotification ? 'PICKUP_CUSTOMER_NOTIFIED' : `Transition: ${action}`,
+          reason: note || (isPickupReNotification ? `Salesperson confirmed cake ready for pickup at branch — customer WhatsApp sent` : `Transitioned ${orderId} from ${currentState} to ${nextState}`),
           actorId,
           tableName: 'Order',
           recordId: orderId,
@@ -162,15 +180,37 @@ export class OrderTransitionService {
       driverId: (order as any).driverId ?? null,
     }).catch(err => console.error(`[OrderTransitionService] In-app notification failed for ${orderId}:`, err))
 
-    NotificationService.handleTimelineEvent({
-      action,
-      orderId,
-      actorId,
-      branchId: order.branchId,
-      nextState,
-      orderNumber: order.orderNumber,
-      driverId: (order as any).driverId ?? null,
-      createdAt: new Date().toISOString(),
-    }, eventId).catch(err => console.error(`[OrderTransitionService] WhatsApp notification failed for ${orderId}:`, err))
+    // Check if customer WhatsApp ORDER_READY notification should be suppressed due to active Inter-Branch Transfer or Factory location
+    let shouldSendCustomerWhatsApp = true;
+    const isReadyAction = (typeof action === 'string' && action.toLowerCase().includes('ready')) || nextState === 'READY_FOR_PICKUP';
+    if (isReadyAction && (order.deliveryType === 'PICKUP' || (order as any).deliveryType === 'pickup')) {
+      const canonicalBranch = toBranchId(order.branchId);
+      const activeTransfer = await prisma.branchTransfer.findFirst({
+        where: {
+          OR: [
+            { orderId: order.id },
+            { orderId: order.orderNumber }
+          ],
+          status: { in: ['PENDING', 'ACCEPTED', 'IN_TRANSIT'] }
+        }
+      });
+      if (canonicalBranch === 'uma' || activeTransfer) {
+        shouldSendCustomerWhatsApp = false;
+        console.log(`[OrderTransitionService] Suppressed customer WhatsApp ORDER_READY for order ${orderId} — branch: ${canonicalBranch}, activeTransfer: ${!!activeTransfer}`);
+      }
+    }
+
+    if (shouldSendCustomerWhatsApp) {
+      NotificationService.handleTimelineEvent({
+        action,
+        orderId,
+        actorId,
+        branchId: order.branchId,
+        nextState,
+        orderNumber: order.orderNumber,
+        driverId: (order as any).driverId ?? null,
+        createdAt: new Date().toISOString(),
+      }, eventId).catch(err => console.error(`[OrderTransitionService] WhatsApp notification failed for ${orderId}:`, err))
+    }
   }
 }

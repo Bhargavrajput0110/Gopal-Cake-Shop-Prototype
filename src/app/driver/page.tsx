@@ -95,7 +95,17 @@ export default function DriverDashboard() {
 
   const processAction = async (item: DriverOrderDTO, action: string, extraData?: any) => {
     const timestamp = new Date().toISOString()
-    const payload = { orderId: item.id.replace('task-', ''), action, timestamp, ...extraData }
+
+    const isBranchTransferTask = item.id.startsWith('transfer-')
+    const isVendorTask = item.id.startsWith('vendor-')
+    // Strip prefix to get real DB id
+    const realId = item.id
+      .replace('transfer-', '')
+      .replace('vendor-', '')
+      .replace('delivery-', '')
+      .replace('task-', '')
+
+    const payload = { orderId: realId, action, timestamp, ...extraData }
 
     // State machine logic
     let newStatus = item.status
@@ -105,9 +115,9 @@ export default function DriverDashboard() {
       newDriverId = activeDriver?.id || null // Assign to me!
     }
     if (action === 'START_TRIP') newStatus = item.taskType === 'VENDOR_PICKUP' ? 'ON_THE_WAY_TO_VENDOR' : 'ON_THE_WAY'
-    if (action === 'PICKED_UP') newStatus = item.taskType === 'CUSTOMER_DELIVERY' ? 'OUT_FOR_DELIVERY' : (item.taskType === 'VENDOR_PICKUP' ? 'DELIVERING_TO_BRANCH' : 'PICKED_UP')
+    if (action === 'PICKED_UP') newStatus = item.taskType === 'CUSTOMER_DELIVERY' ? 'OUT_FOR_DELIVERY' : (item.taskType === 'VENDOR_PICKUP' ? 'DELIVERING_TO_BRANCH' : 'DELIVERING_TO_BRANCH')
     if (action === 'DELIVERED') {
-      newStatus = 'DELIVERED'
+      newStatus = isBranchTransferTask ? 'COMPLETED' : 'DELIVERED'
       confetti({
         particleCount: 150,
         spread: 80,
@@ -125,10 +135,25 @@ export default function DriverDashboard() {
       setTimeout(() => setToastMessage(null), 3000);
     } else {
       try {
-        const isVendorTask = item.id.startsWith('vendor-');
-        const realId = item.id.replace('vendor-', '').replace('delivery-', '').replace('task-', '');
-        
-        if (isVendorTask) {
+        if (isBranchTransferTask) {
+          // Branch transfer: route to the correct endpoint based on the action
+          if (action === 'DELIVERED') {
+            // Driver has physically delivered the cake to the original pickup branch (e.g. Varasiya).
+            // This marks the transfer RECEIVED and moves the order back to the pickup branch.
+            await fetchClient(`/driver/deliveries/${realId}/branch-delivered`, {
+              method: 'PATCH',
+              body: JSON.stringify({ action, timestamp, driverId: activeDriver?.id })
+            })
+          } else if (action === 'START_TRIP' || action === 'PICKED_UP') {
+            // Driver has picked up the cake and is heading to the destination branch.
+            // Mark the transfer as IN_TRANSIT without moving the order yet.
+            await fetchClient(`/driver/deliveries/${realId}/branch-transit`, {
+              method: 'PATCH',
+              body: JSON.stringify({ action, timestamp, driverId: activeDriver?.id })
+            })
+          }
+          // For other actions (ACCEPTED, etc.) no backend call needed — handled by optimistic update
+        } else if (isVendorTask) {
           await fetchClient(`/driver/deliveries/${realId}/vendor-status`, {
             method: 'PATCH',
             body: JSON.stringify(payload)
