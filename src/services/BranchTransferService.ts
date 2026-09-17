@@ -146,11 +146,15 @@ export class BranchTransferService {
     branchId: string; // The branch accepting it (target)
     respondedBy: string;
     notes?: string;
+    role?: string;
   }) {
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.branchTransfer.findUnique({ where: { id: params.transferId }, include: { order: true } });
       if (!transfer) throw new Error('Transfer not found');
-      if (toBranchId(transfer.toBranchId) !== toBranchId(params.branchId)) throw new Error('Only the target branch can accept a transfer.');
+      const isAdmin = params.role?.toUpperCase() === 'ADMIN';
+      if (!isAdmin && toBranchId(transfer.toBranchId) !== toBranchId(params.branchId)) {
+        throw new Error('Only the target branch can accept a transfer.');
+      }
       if (transfer.status !== 'PENDING') throw new Error(`Cannot accept transfer in status ${transfer.status}`);
 
       const updated = await tx.branchTransfer.update({
@@ -186,11 +190,15 @@ export class BranchTransferService {
     branchId: string; // The branch rejecting it (target)
     respondedBy: string;
     notes: string; // Mandatory for rejection
+    role?: string;
   }) {
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.branchTransfer.findUnique({ where: { id: params.transferId }, include: { order: true } });
       if (!transfer) throw new Error('Transfer not found');
-      if (toBranchId(transfer.toBranchId) !== toBranchId(params.branchId)) throw new Error('Only the target branch can reject a transfer.');
+      const isAdmin = params.role?.toUpperCase() === 'ADMIN';
+      if (!isAdmin && toBranchId(transfer.toBranchId) !== toBranchId(params.branchId)) {
+        throw new Error('Only the target branch can reject a transfer.');
+      }
       if (transfer.status !== 'PENDING') throw new Error(`Cannot reject transfer in status ${transfer.status}`);
 
       const updated = await tx.branchTransfer.update({
@@ -228,11 +236,15 @@ export class BranchTransferService {
     transportedBy?: string;
     notes?: string;
     newTargetDate?: Date | string;
+    role?: string;
   }) {
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.branchTransfer.findUnique({ where: { id: params.transferId }, include: { order: true } });
       if (!transfer) throw new Error('Transfer not found');
-      if (toBranchId(transfer.fromBranchId) !== toBranchId(params.branchId)) throw new Error('Only the source branch can dispatch a transfer.');
+      const isAdmin = params.role?.toUpperCase() === 'ADMIN';
+      if (!isAdmin && toBranchId(transfer.fromBranchId) !== toBranchId(params.branchId)) {
+        throw new Error('Only the source branch can dispatch a transfer.');
+      }
       if (transfer.status !== 'ACCEPTED') throw new Error(`Cannot dispatch transfer in status ${transfer.status}. Must be ACCEPTED first.`);
 
       const updated = await tx.branchTransfer.update({
@@ -269,11 +281,15 @@ export class BranchTransferService {
     branchId: string; // Target branch
     receivedBy: string;
     notes?: string;
+    role?: string;
   }) {
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.branchTransfer.findUnique({ where: { id: params.transferId }, include: { order: true } });
       if (!transfer) throw new Error('Transfer not found');
-      if (toBranchId(transfer.toBranchId) !== toBranchId(params.branchId)) throw new Error('Only the target branch can receive a transfer.');
+      const isAdmin = params.role?.toUpperCase() === 'ADMIN';
+      if (!isAdmin && toBranchId(transfer.toBranchId) !== toBranchId(params.branchId)) {
+        throw new Error('Only the target branch can receive a transfer.');
+      }
       if (transfer.status !== 'IN_TRANSIT') throw new Error(`Cannot receive transfer in status ${transfer.status}. Must be IN_TRANSIT first.`);
 
       // 1. Update transfer status

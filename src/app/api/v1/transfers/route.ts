@@ -12,19 +12,33 @@ const RequestTransferSchema = z.object({
   newTargetDate: z.string().optional(),
 });
 
+import { toBranchId, BRANCHES } from '@/lib/branches';
+
 // GET: List all incoming and outgoing transfers for the authenticated user's active branch
-export const GET = withApiHandler(async ({ req, branchId }) => {
+export const GET = withApiHandler(async ({ req, appRole, branchId }) => {
   const { searchParams } = new URL(req.url);
   const mode = searchParams.get('mode'); // "incoming" or "outgoing"
 
-  if (!branchId) throw new Error('Branch context required');
+  let possibleBranchIds: string[] = [];
+  if (branchId) {
+    const canonical = toBranchId(branchId);
+    const branchObj = BRANCHES.find(b => b.id === canonical);
+    possibleBranchIds = branchObj ? [canonical, branchId, ...branchObj.aliases] : [canonical, branchId];
+  }
+
+  let whereClause: any = {};
+  if (appRole === 'ADMIN' && possibleBranchIds.length === 0) {
+    whereClause = {};
+  } else if (mode === 'incoming') {
+    whereClause = { toBranchId: { in: possibleBranchIds } };
+  } else if (mode === 'outgoing') {
+    whereClause = { fromBranchId: { in: possibleBranchIds } };
+  } else if (possibleBranchIds.length > 0) {
+    whereClause = { OR: [{ fromBranchId: { in: possibleBranchIds } }, { toBranchId: { in: possibleBranchIds } }] };
+  }
 
   const transfers = await prisma.branchTransfer.findMany({
-    where: mode === 'incoming' 
-      ? { toBranchId: branchId }
-      : mode === 'outgoing'
-        ? { fromBranchId: branchId }
-        : { OR: [{ fromBranchId: branchId }, { toBranchId: branchId }] },
+    where: whereClause,
     include: {
       order: {
         select: { id: true, orderNumber: true, status: true, customerId: true, branchId: true }

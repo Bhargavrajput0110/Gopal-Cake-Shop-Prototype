@@ -9,7 +9,7 @@ const ActionSchema = z.object({
 });
 
 // PATCH: Execute a state machine action on a transfer
-export const PATCH = withApiHandler(async ({ req, user, branchId, params }) => {
+export const PATCH = withApiHandler(async ({ req, user, appRole, branchId, params }) => {
   const { id, action } = await params;
   if (!branchId || !user?.id) throw new Error('Branch and user context required');
   
@@ -28,7 +28,8 @@ export const PATCH = withApiHandler(async ({ req, user, branchId, params }) => {
         transferId: id,
         branchId: branchId,
         respondedBy: user.id,
-        notes: parsed.notes
+        notes: parsed.notes,
+        role: appRole || undefined,
       });
       break;
 
@@ -40,7 +41,8 @@ export const PATCH = withApiHandler(async ({ req, user, branchId, params }) => {
         transferId: id,
         branchId: branchId,
         respondedBy: user.id,
-        notes: parsed.notes
+        notes: parsed.notes,
+        role: appRole || undefined,
       });
       break;
 
@@ -50,7 +52,8 @@ export const PATCH = withApiHandler(async ({ req, user, branchId, params }) => {
         branchId: branchId,
         dispatchedBy: user.id,
         transportedBy: parsed.transportedBy,
-        notes: parsed.notes
+        notes: parsed.notes,
+        role: appRole || undefined,
       });
       break;
 
@@ -59,7 +62,8 @@ export const PATCH = withApiHandler(async ({ req, user, branchId, params }) => {
         transferId: id,
         branchId: branchId,
         receivedBy: user.id,
-        notes: parsed.notes
+        notes: parsed.notes,
+        role: appRole || undefined,
       });
       break;
 

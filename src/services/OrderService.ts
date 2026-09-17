@@ -2,7 +2,7 @@ import { getIsolatedPrisma, prisma } from '@/lib/prisma'
 import { supabaseAdmin } from '@/lib/supabase'
 import { CreateDraftOrderDTO, UpdateDraftOrderDTO, OrderResponseDTO, DriverOrderDTO } from '@/dtos/OrderSchemas'
 import { Prisma } from '@prisma/client'
-import { toBranchId } from '@/lib/branches'
+import { toBranchId, BRANCHES } from '@/lib/branches'
 import { FinancialService } from '@/services/FinancialService'
 
 
@@ -14,28 +14,31 @@ export class OrderService {
     limit: number = 20,
     filters?: { status?: string, branch?: string, driverId?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string, dueSoon?: boolean, hasIssues?: boolean }
   ): Promise<{ data: OrderResponseDTO[], total: number }> {
-    // For non-admin users, use their real DB branchId from session directly
-    // (session branchId is the real Supabase CUID like cmswuiiun00031su3vfrn9eq5)
-    // For admin filtering by the ?branch= query param, resolve alias -> real CUID
     const BRANCH_CUID_MAP: Record<string, string> = {
       'elora': 'cmswuiiun00031su3vfrn9eq5',
       'khanderao': 'cmswuiita00011su3977ajl1z',
       'varasiya': 'cmswuiiu000021su3kv1mr41f',
       'uma': 'uma',
     };
-    const resolveToDbId = (id: string) => BRANCH_CUID_MAP[id] ?? id;
+    
+    const getBranchFilterValues = (rawId: string): string[] => {
+      const canonical = toBranchId(rawId);
+      const branchObj = BRANCHES.find(b => b.id === canonical);
+      const aliases = branchObj ? branchObj.aliases : [];
+      const cuid = BRANCH_CUID_MAP[canonical] || rawId;
+      return Array.from(new Set([canonical, rawId, cuid, ...aliases]));
+    };
 
     const db = prisma
     const skip = (page - 1) * limit
     const whereClause: Prisma.OrderWhereInput = {}
 
     if (role && role.toUpperCase() !== 'ADMIN') {
-      // withApiHandler converts the session CUID into a canonical short name (e.g. 'elora')
-      // We must convert it back to the real DB CUID for the query
-      whereClause.branchId = branchId ? resolveToDbId(branchId) : undefined;
+      if (branchId) {
+        whereClause.branchId = { in: getBranchFilterValues(branchId) };
+      }
     } else if (filters?.branch) {
-      const canonical = toBranchId(filters.branch);
-      whereClause.branchId = resolveToDbId(canonical);
+      whereClause.branchId = { in: getBranchFilterValues(filters.branch) };
     }
 
     if (filters?.driverId) {
