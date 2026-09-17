@@ -38,38 +38,97 @@ export const GET = withApiHandler(async (ctx) => {
     }
   }
 
-  const orders = await db.order.findMany({
-    where: {
-      deliveryType: 'DELIVERY',
-      OR: [
-        { status: { in: ['NEW', 'WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'READY_FOR_PICKUP', 'PENDING_ASSIGNMENT'] }, driverId: null, ...branchFilter },
-        { driverId: driverId ? driverId : { not: null } },
-        { items: { some: { status: { in: ['READY_FOR_PICKUP', 'DELIVERED'] }, assignedVendorId: { not: null } } }, driverId: null, ...branchFilter }
-      ]
-    },
-    include: {
-      customer: true,
-      branch: { select: { name: true, address: true } },
-      items: {
-        include: { 
-          childItems: {
-            include: { assignedVendor: { select: { name: true } } }
-          },
-          assignedVendor: { select: { name: true } }
-        }
+  const [orders, activeTransfers] = await Promise.all([
+    db.order.findMany({
+      where: {
+        deliveryType: 'DELIVERY',
+        OR: [
+          { status: { in: ['NEW', 'WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'READY_FOR_PICKUP', 'PENDING_ASSIGNMENT'] }, driverId: null, ...branchFilter },
+          { driverId: driverId ? driverId : { not: null } },
+          { items: { some: { status: { in: ['READY_FOR_PICKUP', 'DELIVERED'] }, assignedVendorId: { not: null } } }, driverId: null, ...branchFilter }
+        ]
       },
-      ledgerEntries: true
-    },
-    orderBy: {
-      targetDate: 'asc'
-    }
-  })
+      include: {
+        customer: true,
+        branch: { select: { name: true, address: true } },
+        items: {
+          include: { 
+            childItems: {
+              include: { assignedVendor: { select: { name: true } } }
+            },
+            assignedVendor: { select: { name: true } }
+          }
+        },
+        ledgerEntries: true
+      },
+      orderBy: {
+        targetDate: 'asc'
+      }
+    }),
+    db.branchTransfer.findMany({
+      where: {
+        status: { in: ['ACCEPTED', 'IN_TRANSIT'] }
+      },
+      include: {
+        order: {
+          include: {
+            customer: true,
+            items: true
+          }
+        }
+      }
+    })
+  ])
 
   const payload: any[] = [];
 
+  // 1. Process Inter-Branch Transfers for Drivers (Uma delivery person delivering Store Pickup cakes 1.5 hours earlier to target branch)
+  activeTransfers.forEach((transfer) => {
+    const order = transfer.order as any;
+    if (!order) return;
+
+    if (driverId && order.driverId && order.driverId !== driverId) return;
+
+    // Calculate inter-branch delivery target time: 1.5 hours BEFORE customer pickup time
+    const customerTarget = new Date(order.targetDate);
+    const transferTargetTime = new Date(customerTarget.getTime() - 90 * 60 * 1000); // 1.5 hours earlier
+
+    if (order.deliveryType === 'PICKUP') {
+      payload.push({
+        id: `transfer-${transfer.id}`,
+        taskType: 'BRANCH_TRANSFER',
+        orderNumber: order.orderNumber,
+        status: transfer.status === 'IN_TRANSIT' ? 'OUT_FOR_DELIVERY' : 'READY_FOR_PICKUP',
+        deliveryType: 'BRANCH_TRANSFER',
+        targetDate: transferTargetTime.toISOString(),
+        customerTargetDate: customerTarget.toISOString(),
+        createdAt: transfer.createdAt,
+        notes: `STORE PICKUP INTER-BRANCH TRANSFER: Deliver to ${transfer.fromBranchId} branch 1-2 hours before customer pickup time. $0 extra charged to customer.`,
+        assignedDriverId: order.driverId,
+        timeTarget: transferTargetTime.toISOString(),
+        totalAmount: 0,
+        paidAmount: 0,
+        extraFeeToCustomer: 0,
+        formattedAddress: `Deliver to Store Branch: ${transfer.fromBranchId.toUpperCase()}`,
+        pickupLocation: "Uma Branch (Central Factory)",
+        dropoffLocation: `${transfer.fromBranchId.toUpperCase()} Branch Store`,
+        customerName: `${transfer.fromBranchId.toUpperCase()} Store Counter`,
+        customerPhone: order.customer?.phone || "",
+        items: order.items.map((item: any) => ({
+          id: item.id,
+          productName: item.productName || item.name || 'Cake',
+          quantity: item.quantity,
+          flavor: item.flavor || null,
+          boxCount: item.boxCount || 1,
+          status: item.status
+        }))
+      });
+    }
+  });
+
   orders.forEach((rawOrder) => {
     const order = rawOrder as any;
-    // 1. Process Vendor Pickups (from child items)
+    // 2. Process Vendor Pickups (from child items)
     order.items.forEach((parentItem: any) => {
       parentItem.childItems.forEach((childItem: any) => {
         if (childItem.assignedVendorId && (childItem.status === 'READY_FOR_PICKUP' || childItem.status === 'DELIVERED')) {
@@ -110,7 +169,7 @@ export const GET = withApiHandler(async (ctx) => {
       });
     });
 
-    // 2. Process Customer Delivery
+    // 3. Process Customer Delivery
     if (['NEW', 'WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'PENDING_ASSIGNMENT', 'READY_FOR_PICKUP', 'ASSIGNED_TO_DRIVER', 'PICKED_UP', 'ON_THE_WAY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED_DELIVERY'].includes(order.status)) {
       if (driverId && order.driverId && order.driverId !== driverId) return;
 
@@ -135,6 +194,7 @@ export const GET = withApiHandler(async (ctx) => {
           financialStatus: summary.paymentStatus,
           formattedAddress: order.deliveryAddress || null,
           distanceKm: order.deliveryDistanceKm || null,
+          extraFeeToCustomer: 0, // ₹0 extra charged to customer for transfers
           googleMapsUrl: (order.deliveryLatitude && order.deliveryLongitude) ? `https://www.google.com/maps/dir/?api=1&destination=${order.deliveryLatitude},${order.deliveryLongitude}` : null,
           customerName: order.customer.name,
           customerPhone: order.customer.phone,
