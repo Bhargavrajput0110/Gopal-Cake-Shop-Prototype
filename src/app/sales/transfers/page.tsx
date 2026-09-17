@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { SearchNormal1, CloseSquare, ArrowSwapHorizontal, ArchiveBook, Send, TruckFast, Warning2 } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BackButton } from "@/components/ui/BackButton";
-import { toBranchShortName } from "@/lib/branches";
+import { toBranchShortName, toBranchId } from "@/lib/branches";
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
@@ -234,7 +234,9 @@ export default function BranchTransferPage() {
 // ---------------------------------------------------------------------------
 function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
   const [showModal, setShowModal] = useState(false);
-  const [transferTarget, setTransferTarget] = useState<string>("varasiya");
+  const canonicalActive = toBranchId(activeBranch);
+  const availableBranches = BRANCHES.filter(b => b.id !== canonicalActive);
+  const [transferTarget, setTransferTarget] = useState<string>(availableBranches[0]?.id || "varasiya");
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [newTargetDate, setNewTargetDate] = useState<string>("");
@@ -243,6 +245,9 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
 
   useEffect(() => {
     if (showModal) {
+      if (availableBranches.length > 0 && !availableBranches.some(b => b.id === transferTarget)) {
+        setTransferTarget(availableBranches[0].id);
+      }
       const target = order.timeTarget || order.targetDate || order.expectedDeliveryDate;
       if (target) {
         const d = new Date(target);
@@ -253,7 +258,7 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
       }
       setNewTargetDate(toLocalInputValue(new Date()));
     }
-  }, [showModal, order]);
+  }, [showModal, order, activeBranch]);
 
   const hasOriginalDate = !!(order.timeTarget || order.targetDate || order.expectedDeliveryDate);
   const originalDateObj: Date | null = hasOriginalDate
@@ -367,7 +372,7 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
                       onChange={e => setTransferTarget(e.target.value)}
                       className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold mb-4 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     >
-                      {BRANCHES.filter(b => b.id !== activeBranch).map(b => (
+                      {availableBranches.map(b => (
                         <option key={b.id} value={b.id}>{b.name}</option>
                       ))}
                     </select>

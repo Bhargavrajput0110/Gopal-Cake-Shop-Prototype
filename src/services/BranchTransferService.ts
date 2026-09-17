@@ -1,25 +1,35 @@
 import { PrismaClient, Prisma, TransferStatus, TimelineEventType, OrderStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { toBranchId } from '@/lib/branches';
+import { toBranchId, BRANCHES } from '@/lib/branches';
 import { TimelineService } from './TimelineService';
 
 async function resolveDbBranchId(rawBranch: string, tx: any): Promise<string> {
-  const normalized = toBranchId(rawBranch);
+  const canonical = toBranchId(rawBranch);
+  const branchObj = BRANCHES.find((b: any) => b.id === canonical);
+  const aliases = branchObj
+    ? Array.from(new Set([canonical, rawBranch, branchObj.shortName, branchObj.displayName, ...branchObj.aliases]))
+    : Array.from(new Set([canonical, rawBranch]));
+
   const found = await tx.branch.findFirst({
     where: {
       OR: [
-        { id: rawBranch },
-        { id: normalized },
-        { code: rawBranch },
-        { code: normalized },
-        { name: { contains: normalized, mode: 'insensitive' } },
-        { name: { contains: rawBranch, mode: 'insensitive' } }
+        { id: { in: aliases } },
+        { code: { in: aliases.map(a => a.toUpperCase()) } },
+        { name: { in: aliases } },
+        { name: { contains: 'Warasiya', mode: 'insensitive' } },
+        { name: { contains: 'Varasiya', mode: 'insensitive' } },
+        { name: { contains: 'Warashiya', mode: 'insensitive' } },
+        { name: { contains: canonical, mode: 'insensitive' } }
       ]
     }
   });
   if (found) return found.id;
+
+  const byId = await tx.branch.findUnique({ where: { id: rawBranch } });
+  if (byId) return byId.id;
+
   const first = await tx.branch.findFirst();
-  return first ? first.id : normalized;
+  return first ? first.id : canonical;
 }
 
 async function resolveValidUserId(userId: string | undefined | null, tx: any): Promise<string> {
