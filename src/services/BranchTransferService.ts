@@ -179,10 +179,18 @@ export class BranchTransferService {
         }
       });
 
+      // Transfer Operational Ownership immediately to target branch (e.g. Uma) so chefs & delivery see it
+      await tx.order.update({
+        where: { id: transfer.orderId },
+        data: {
+          branchId: transfer.toBranchId
+        }
+      });
+
       await TimelineService.create({
         orderId: transfer.orderId,
         actorId: validUserId,
-        action: `Transfer request accepted`,
+        action: `Transfer request accepted. Order ownership transferred to ${transfer.toBranchId}`,
         status: transfer.order.status,
         nextState: transfer.order.status,
         eventType: 'TRANSFER_ACCEPTED',

@@ -506,13 +506,10 @@ function TransferCard({ transfer, type, mutate }: any) {
           </button>
         )}
         {type === "outgoing" && transfer.status === "ACCEPTED" && (
-          <button
-            disabled={loading}
-            onClick={() => handleAction("dispatch")}
-            className="px-6 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 disabled:opacity-50 shadow-md"
-          >
-            Dispatch Now
-          </button>
+          <span className="px-4 py-2 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Accepted — Assigned to {toBranchShortName(transfer.toBranchId)}
+          </span>
         )}
       </div>
     </div>
