@@ -67,7 +67,7 @@ export function MobileNav({ config }: MobileNavProps) {
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="p-2 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
+            className="p-2 text-foreground/60 hover:text-destructive rounded-lg transition-colors"
             aria-label="Close navigation menu"
           >
             <CloseSquare className="w-5 h-5" />

@@ -60,7 +60,7 @@ export function ManagerSidebar() {
       <div className="p-4 border-t border-border">
         <button 
           onClick={() => { authSignOut("/login") }}
-          className="flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-destructive transition-colors w-full px-3 py-2 rounded-lg hover:bg-destructive/10"
+          className="flex items-center gap-3 text-sm font-medium text-foreground/60 hover:text-destructive transition-colors w-full px-3 py-2 rounded-lg hover:bg-destructive/10"
         >
           <Logout className="w-4 h-4" />
           Sign Out

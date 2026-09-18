@@ -104,7 +104,7 @@ export function AppSidebar({ config }: AppSidebarProps) {
         </div>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 text-sm font-semibold text-muted-foreground hover:text-destructive transition-colors w-full px-3 py-2 rounded-xl hover:bg-destructive/10"
+          className="flex items-center gap-3 text-sm font-semibold text-foreground/60 hover:text-destructive transition-colors w-full px-3 py-2 rounded-xl hover:bg-destructive/10"
         >
           <Logout className="w-4 h-4" />
           Sign Out
