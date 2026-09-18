@@ -12,6 +12,8 @@ import { GlobalScrollDisabler } from "@/components/layout/GlobalScrollDisabler";
 import { Noise } from "@/components/layout/Noise";
 import { PWARegistration } from "@/components/PWARegistration";
 import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
+import Script from "next/script";
+
 
 // Fonts — self-hosted via next/font (no external requests, auto-optimized)
 const playfair = Playfair_Display({
@@ -124,88 +126,7 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-// Schema.org structured data for Google rich results
-const schemaJsonLd = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": ["Bakery", "LocalBusiness"],
-      "@id": "https://gopalcakeshop.com/#bakery",
-      "name": "Gopal Cake Shop",
-      "alternateName": "Gopal Bakery",
-      "description": "Premium custom cakes for every celebration in Vadodara. Birthday cakes, wedding cakes, photo cakes & more. 100% eggless. Est. 1990.",
-      "url": "https://gopalcakeshop.com",
-      "telephone": "+919712632132",
-      "priceRange": "₹₹",
-      "image": "https://gopalcakeshop.com/logo.png",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://gopalcakeshop.com/logo.png",
-        "width": 424,
-        "height": 327
-      },
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "Karelibaug",
-        "addressLocality": "Vadodara",
-        "addressRegion": "Gujarat",
-        "postalCode": "390018",
-        "addressCountry": "IN"
-      },
-      "geo": {
-        "@type": "GeoCoordinates",
-        "latitude": 22.3217,
-        "longitude": 73.1851
-      },
-      "openingHoursSpecification": [
-        {
-          "@type": "OpeningHoursSpecification",
-          "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
-          "opens": "09:00",
-          "closes": "21:00"
-        }
-      ],
-      "sameAs": [
-        "https://www.instagram.com/gopal_cake_shop",
-        "https://www.zomato.com/vadodara/gopal-cake-shop-karelibaug"
-      ],
-      "hasOfferCatalog": {
-        "@type": "OfferCatalog",
-        "name": "Cakes & Pastries",
-        "itemListElement": [
-          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Birthday Cakes" } },
-          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Wedding Cakes" } },
-          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Photo Cakes" } },
-          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Custom Designer Cakes" } }
-        ]
-      }
-    },
-    {
-      "@type": "Organization",
-      "@id": "https://gopalcakeshop.com/#organization",
-      "name": "Gopal Cake Shop",
-      "url": "https://gopalcakeshop.com",
-      "logo": "https://gopalcakeshop.com/logo.png",
-      "foundingDate": "1990"
-    },
-    {
-      "@type": "WebSite",
-      "@id": "https://gopalcakeshop.com/#website",
-      "url": "https://gopalcakeshop.com",
-      "name": "Gopal Cake Shop",
-      "description": "Order premium custom cakes online in Vadodara",
-      "publisher": { "@id": "https://gopalcakeshop.com/#organization" },
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "https://gopalcakeshop.com/menu?q={search_term_string}"
-        },
-        "query-input": "required name=search_term_string"
-      }
-    }
-  ]
-};
+
 
 export default function RootLayout({
   children,
@@ -217,17 +138,31 @@ export default function RootLayout({
       lang="en"
       className={`antialiased font-sans ${playfair.variable} ${dmSans.variable}`}
     >
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaJsonLd) }}
-        />
-      </head>
+      <head />
       <body suppressHydrationWarning className="flex flex-col w-full overflow-x-hidden bg-background text-foreground relative selection:bg-[#B67A7E] selection:text-white min-h-screen font-sans">
         <PWARegistration />
         <Noise />
         <Preloader />
         <CustomCursor />
+        {/* Google Analytics 4 — loads after interactive, never blocks render */}
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga4-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}', {
+                  page_path: window.location.pathname,
+                });
+              `}
+            </Script>
+          </>
+        )}
         <ReactQueryProvider>
           <CustomerAuthProvider>
             <CartProvider>

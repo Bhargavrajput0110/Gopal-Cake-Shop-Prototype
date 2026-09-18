@@ -25,6 +25,7 @@ const LOCAL_BUSINESS_JSON_LD = {
         "height": 500
       },
       "image": "https://gopalcakeshop.com/logo.png",
+      "foundingDate": "1990",
       "sameAs": [
         "https://www.instagram.com/gopalcakeshop",
         "https://www.facebook.com/gopalcakeshop"
@@ -69,7 +70,33 @@ const LOCAL_BUSINESS_JSON_LD = {
         "https://www.instagram.com/gopalcakeshop",
         "https://www.facebook.com/gopalcakeshop"
       ],
-      "foundingDate": "1990"
+      "foundingDate": "1990",
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Cakes & Pastries",
+        "itemListElement": [
+          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Birthday Cakes" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Wedding Cakes" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Photo Cakes" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Custom Designer Cakes" } }
+        ]
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://gopalcakeshop.com/#website",
+      "url": "https://gopalcakeshop.com",
+      "name": "Gopal Cake Shop",
+      "description": "Order premium custom cakes online in Vadodara",
+      "publisher": { "@id": "https://gopalcakeshop.com/#organization" },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://gopalcakeshop.com/menu?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
     }
   ]
 };

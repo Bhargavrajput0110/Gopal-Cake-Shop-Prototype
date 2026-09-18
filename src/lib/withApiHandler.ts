@@ -154,7 +154,6 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
         branchId = 'khanderao'
       }
 
-      console.log(`[withApiHandler] path=${req.nextUrl.pathname} appRole=${appRole} branchId=${branchId} user=${JSON.stringify(user)}`)
 
       // RBAC Enforcement
       if (requiredPermission && appRole) {
@@ -212,7 +211,7 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
       const executionTime = Date.now() - startTime
       LoggerService.error(`API Error: ${req.method} ${req.nextUrl.pathname}`, error, { requestId, userAgent, executionTimeMs: executionTime })
 
-      console.error('[withApiHandler] Caught error:', error);
+      LoggerService.error('[withApiHandler] Caught error:', error);
 
       if (error && (error.name === 'ZodError' || error instanceof ZodError)) {
         const issues = (error as any).issues || (error as any).errors || []

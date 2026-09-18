@@ -34,62 +34,86 @@ export function CategoryCardsNav() {
       const headerOffset = 80;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-  
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
+      window.scrollTo({ top: offsetPosition, behavior: "smooth" });
     }
   };
+
+  const sharedClasses = (comingSoon: boolean) =>
+    `group relative h-28 sm:h-32 md:h-48 w-full rounded-2xl md:rounded-[2rem] overflow-hidden flex flex-col justify-end p-3 md:p-6 border border-[var(--border)] shadow-sm transition-shadow active:scale-[0.98] ${
+      comingSoon ? "cursor-not-allowed opacity-80" : "hover:shadow-md"
+    }`;
+
+  const cardContent = (card: typeof cards[number]) => (
+    <>
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+        style={{ backgroundImage: `url('${card.imgUrl}')` }}
+      />
+      {/* Dark Gradient Overlay */}
+      <div
+        className={`absolute inset-0 bg-gradient-to-t ${
+          card.comingSoon
+            ? "from-black via-black/60 to-black/30"
+            : "from-black/80 via-black/30 to-transparent"
+        }`}
+      />
+      {/* Coming Soon Badge */}
+      {card.comingSoon && (
+        <div className="absolute top-4 left-4 bg-primary text-white text-[9px] md:text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full z-20">
+          Coming Soon
+        </div>
+      )}
+      {/* Content */}
+      <div className="relative z-10 w-full flex flex-col md:flex-row items-center justify-center md:justify-between gap-1 md:gap-0 h-full text-center md:text-left">
+        <div>
+          <h3 className="font-display font-bold md:font-black text-[11px] sm:text-[13px] md:text-2xl text-white tracking-tight leading-tight break-words">
+            {card.title}
+          </h3>
+          <p className="hidden md:block font-ui text-[10px] uppercase tracking-widest text-white/80 font-bold mt-1">
+            {card.subtitle}
+          </p>
+        </div>
+        <div className="hidden md:flex w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </div>
+      </div>
+    </>
+  );
 
   return (
     <section className="px-6 py-10 max-w-[1440px] mx-auto bg-background z-20 relative">
       <div className="grid grid-cols-3 gap-2 md:gap-4 pb-4 md:pb-0">
-        {cards.map((card, index) => (
-          <motion.a
-            key={card.id}
-            href={card.comingSoon ? "#" : `#${card.id}`}
-            onClick={(e) => {
-              if (card.comingSoon) {
-                e.preventDefault();
-                return;
-              }
-              handleScroll(e, card.id);
-            }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 * index, duration: 0.5 }}
-            className={`group relative h-28 sm:h-32 md:h-48 w-full rounded-2xl md:rounded-[2rem] overflow-hidden flex flex-col justify-end p-3 md:p-6 border border-[var(--border)] shadow-sm transition-shadow active:scale-[0.98] ${card.comingSoon ? 'cursor-not-allowed opacity-80' : 'hover:shadow-md'}`}
-          >
-            {/* Background Image */}
-            <div 
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-              style={{ backgroundImage: `url('${card.imgUrl}')` }}
-            />
-            {/* Dark Gradient Overlay */}
-            <div className={`absolute inset-0 bg-gradient-to-t ${card.comingSoon ? 'from-black via-black/60 to-black/30' : 'from-black/80 via-black/30 to-transparent'}`} />
-            
-            {/* Coming Soon Badge */}
-            {card.comingSoon && (
-              <div className="absolute top-4 left-4 bg-primary text-white text-[9px] md:text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full z-20">
-                Coming Soon
-              </div>
-            )}
-
-            {/* Content */}
-            <div className="relative z-10 w-full flex flex-col md:flex-row items-center justify-center md:justify-between gap-1 md:gap-0 h-full text-center md:text-left">
-              <div>
-                <h3 className="font-display font-bold md:font-black text-[11px] sm:text-[13px] md:text-2xl text-white tracking-tight leading-tight break-words">{card.title}</h3>
-                <p className="hidden md:block font-ui text-[10px] uppercase tracking-widest text-white/80 font-bold mt-1">{card.subtitle}</p>
-              </div>
-              <div className="hidden md:flex w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-              </div>
-            </div>
-          </motion.a>
-        ))}
+        {cards.map((card, index) =>
+          card.comingSoon ? (
+            // Not-yet-available: render as div — not an anchor, not crawlable by Google
+            <motion.div
+              key={card.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * index, duration: 0.5 }}
+              className={sharedClasses(true)}
+              aria-label={`${card.title} — Coming Soon`}
+            >
+              {cardContent(card)}
+            </motion.div>
+          ) : (
+            // Live section: render as anchor with smooth scroll
+            <motion.a
+              key={card.id}
+              href={`#${card.id}`}
+              onClick={(e) => handleScroll(e, card.id)}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * index, duration: 0.5 }}
+              className={sharedClasses(false)}
+            >
+              {cardContent(card)}
+            </motion.a>
+          )
+        )}
       </div>
     </section>
   );

@@ -101,7 +101,6 @@ export class OrderService {
     }
     orderBy.push({ id: 'desc' });
 
-    console.log(`[OrderService.listOrders] role=${role} branchId=${branchId} whereClause=${JSON.stringify(whereClause)}`)
     const [orders, total] = await Promise.all([
       db.order.findMany({
         where: whereClause,
@@ -120,7 +119,6 @@ export class OrderService {
       }),
       db.order.count({ where: whereClause }),
     ])
-    console.log(`[OrderService.listOrders] total=${total} ordersCount=${orders.length}`)
 
     // Fetch product details from Supabase to merge with items
     const productIds = Array.from(new Set(orders.flatMap(o => o.items.map(i => (i as any).productId)).filter(Boolean)))
@@ -195,7 +193,11 @@ export class OrderService {
                 timestamp: p.createdAt,
               }))
           ],
-          delayLevel: "none",
+          delayLevel: (() => {
+            if (!o.targetDate) return "none";
+            const notYetComplete = !['READY_FOR_PICKUP','PENDING_ASSIGNMENT','ASSIGNED_TO_DRIVER','PICKED_UP','ON_THE_WAY','DELIVERED','COMPLETED','CANCELLED'].includes(o.status as string);
+            return notYetComplete && new Date(o.targetDate) < new Date() ? "delayed" : "none";
+          })(),
           transfers: ((o as any).transfers || []).map((t: any) => ({
             id: t.id,
             fromBranchId: t.fromBranchId,
@@ -371,7 +373,7 @@ export class OrderService {
     if (existing?.status !== 'DRAFT') {
       throw new Error('Only DRAFT orders can be deleted')
     }
-
+    await db.order.delete({ where: { id } })
   }
 
   /**
@@ -389,12 +391,12 @@ export class OrderService {
     const orders = await prisma.order.findMany({
       where: {
         branchId: canonicalBranchId,
-        // Open pool OR my assigned jobs
+        // Open pool (unassigned) OR my assigned jobs
         OR: [
-          { status: 'READY' },
+          { status: 'READY_FOR_PICKUP', driverId: null },
           { 
             driverId: driverId, 
-            status: { in: ['READY', 'OUT_FOR_DELIVERY'] } 
+            status: { in: ['ASSIGNED_TO_DRIVER', 'PICKED_UP', 'ON_THE_WAY'] } 
           }
         ],
         // Safety: only show delivery types

@@ -13,9 +13,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+
   transpilePackages: ['react-map-gl', 'mapbox-gl', '@mapbox/search-js-react'],
   images: {
     // Optimization enabled — Cloudinary images are auto-resized & served as WebP
