@@ -155,12 +155,12 @@ export function Hero() {
             </p>
 
             {/* CTA group */}
-            <div className="flex flex-wrap items-center gap-4">
-              <Link href="/menu" className="group flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--brand-deep-rose)] to-[#9a425a] hover:from-[#9a425a] hover:to-[var(--brand-deep-rose)] text-white px-7 md:px-8 py-3.5 md:py-4 rounded-full font-ui text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-500 shadow-[0_8px_32px_rgba(139,58,82,0.3)] hover:shadow-[0_8px_32px_rgba(139,58,82,0.5)] hover:-translate-y-0.5">
+            <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+              <Link href="/menu" className="group flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--brand-deep-rose)] to-[#9a425a] hover:from-[#9a425a] hover:to-[var(--brand-deep-rose)] text-white px-5 sm:px-8 py-3 md:py-4 rounded-full font-ui text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-500 shadow-[0_8px_32px_rgba(139,58,82,0.3)] hover:shadow-[0_8px_32px_rgba(139,58,82,0.5)] hover:-translate-y-0.5 whitespace-nowrap">
                 <span>Order Now</span>
-                <ArrowRight2 variant="Bold" className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                <ArrowRight2 variant="Bold" className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-300" />
               </Link>
-              <Link href="/custom" className="group flex items-center justify-center bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/20 text-white px-7 md:px-8 py-3.5 md:py-4 rounded-full font-ui text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-500 hover:-translate-y-0.5">
+              <Link href="/custom" className="group flex-1 sm:flex-initial flex items-center justify-center bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/20 text-white px-5 sm:px-8 py-3 md:py-4 rounded-full font-ui text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-500 hover:-translate-y-0.5 whitespace-nowrap">
                 <span>Customize</span>
               </Link>
             </div>
