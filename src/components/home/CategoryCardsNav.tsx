@@ -84,36 +84,38 @@ export function CategoryCardsNav() {
   );
 
   return (
-    <section className="px-6 py-10 max-w-[1440px] mx-auto bg-background z-20 relative">
-      <div className="grid grid-cols-3 gap-2 md:gap-4 pb-4 md:pb-0">
-        {cards.map((card, index) =>
-          card.comingSoon ? (
-            // Not-yet-available: render as div — not an anchor, not crawlable by Google
-            <motion.div
-              key={card.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * index, duration: 0.5 }}
-              className={sharedClasses(true)}
-              aria-label={`${card.title} — Coming Soon`}
-            >
-              {cardContent(card)}
-            </motion.div>
-          ) : (
-            // Live section: render as anchor with smooth scroll
-            <motion.a
-              key={card.id}
-              href={`#${card.id}`}
-              onClick={(e) => handleScroll(e, card.id)}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * index, duration: 0.5 }}
-              className={sharedClasses(false)}
-            >
-              {cardContent(card)}
-            </motion.a>
-          )
-        )}
+    <section className="w-full bg-[var(--brand-cream)] py-6 md:py-8 border-b border-[var(--border)]/30 z-20 relative">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-8">
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
+          {cards.map((card, index) =>
+            card.comingSoon ? (
+              // Not-yet-available: render as div — not an anchor, not crawlable by Google
+              <motion.div
+                key={card.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 * index, duration: 0.5 }}
+                className={sharedClasses(true)}
+                aria-label={`${card.title} — Coming Soon`}
+              >
+                {cardContent(card)}
+              </motion.div>
+            ) : (
+              // Live section: render as anchor with smooth scroll
+              <motion.a
+                key={card.id}
+                href={`#${card.id}`}
+                onClick={(e) => handleScroll(e, card.id)}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 * index, duration: 0.5 }}
+                className={sharedClasses(false)}
+              >
+                {cardContent(card)}
+              </motion.a>
+            )
+          )}
+        </div>
       </div>
     </section>
   );
