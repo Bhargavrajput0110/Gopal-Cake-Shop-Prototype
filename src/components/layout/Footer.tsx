@@ -47,6 +47,7 @@ const NAV_GROUPS = [
       { name: "Contact", href: "/about#contact" },
       { name: "Privacy Policy", href: "/privacy" },
       { name: "Terms", href: "/terms" },
+      { name: "Staff Portal 🔒", href: "/login" },
     ],
   },
 ];
