@@ -85,52 +85,52 @@ export function Navbar() {
         }`}
       >
         <div className="max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12">
-          {/* 3-column grid: [Logo+Name left] [Nav links center] [Actions right] */}
-          <div className="grid grid-cols-3 items-center h-[72px] md:h-20">
+          {/* Header row: flex justify-between on mobile, 3-column grid on desktop */}
+          <div className="flex items-center justify-between md:grid md:grid-cols-3 h-[72px] md:h-20">
 
-            {/* ── Col 1: Logo + Brand Name (left) ── */}
-            <div className="flex items-center gap-3">
+            {/* ── Col 1: Mobile Hamburger + Logo & Brand Name (left) ── */}
+            <div className="flex items-center gap-2.5">
               {/* Mobile: Hamburger */}
               <button
-                className="md:hidden flex flex-col items-center justify-center w-10 h-10 gap-[5px] focus:outline-none"
+                className="md:hidden flex flex-col items-center justify-center w-9 h-9 gap-[5px] focus:outline-none"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label="Toggle menu"
               >
-                <span className={`block w-[22px] h-[1.5px] transition-all duration-300 origin-center ${
+                <span className={`block w-[20px] h-[1.5px] transition-all duration-300 origin-center ${
                   mobileMenuOpen
                     ? "bg-[var(--brand-deep-rose)] rotate-45 translate-y-[6.5px]"
                     : showScrolledNavbar ? "bg-foreground" : "bg-white"
                 }`} />
-                <span className={`block w-[22px] h-[1.5px] transition-all duration-300 ${
+                <span className={`block w-[20px] h-[1.5px] transition-all duration-300 ${
                   mobileMenuOpen ? "opacity-0" : showScrolledNavbar ? "bg-foreground" : "bg-white"
                 }`} />
-                <span className={`block w-[22px] h-[1.5px] transition-all duration-300 origin-center ${
+                <span className={`block w-[20px] h-[1.5px] transition-all duration-300 origin-center ${
                   mobileMenuOpen
                     ? "bg-[var(--brand-deep-rose)] -rotate-45 -translate-y-[6.5px]"
                     : showScrolledNavbar ? "bg-foreground" : "bg-white"
                 }`} />
               </button>
 
-              {/* Desktop: Logo + Brand Name */}
+              {/* Logo + Brand Name (Mobile & Desktop) */}
               <Link
                 href="/"
-                className="hidden md:flex items-center gap-2.5 group transition-opacity duration-200 hover:opacity-85"
+                className="flex items-center gap-2 group transition-opacity duration-200 hover:opacity-85"
               >
                 <Image
                   src="/logo.png"
                   alt="Gopal Cake Shop"
-                  width={48}
-                  height={48}
-                  className="h-11 w-11 object-contain transition-transform duration-300 group-hover:scale-105"
+                  width={44}
+                  height={44}
+                  className="h-9 w-9 md:h-11 md:w-11 object-contain transition-transform duration-300 group-hover:scale-105"
                   priority
                 />
                 <div className="flex flex-col leading-none">
-                  <span className={`font-display italic font-bold text-lg leading-tight transition-colors duration-300 ${
+                  <span className={`font-display italic font-bold text-base md:text-lg leading-tight transition-colors duration-300 ${
                     showScrolledNavbar ? "text-[var(--foreground)]" : "text-white"
                   }`}>
                     Gopal
                   </span>
-                  <span className={`font-ui font-bold text-[7px] tracking-[0.3em] uppercase transition-colors duration-300 ${
+                  <span className={`font-ui font-bold text-[6px] md:text-[7px] tracking-[0.25em] md:tracking-[0.3em] uppercase transition-colors duration-300 ${
                     showScrolledNavbar ? "text-[var(--brand-deep-rose)]" : "text-[var(--brand-champagne)]"
                   }`}>
                     Cake Shop
@@ -139,7 +139,7 @@ export function Navbar() {
               </Link>
             </div>
 
-            {/* ── Col 2: All Nav Links (perfectly centered) ── */}
+            {/* ── Col 2: All Nav Links (perfectly centered on desktop) ── */}
             <nav className="hidden md:flex items-center justify-center gap-7">
               {allNavLinks.map((link) => (
                 <Link
@@ -216,22 +216,24 @@ export function Navbar() {
               </div>
 
               {/* Mobile: Cart & Search */}
-              <div className="flex md:hidden items-center gap-2">
+              <div className="flex md:hidden items-center gap-1.5">
                 <button
                   onClick={() => setIsSearchOpen(true)}
                   className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-all ${
                     showScrolledNavbar ? "text-foreground/70" : "text-white/80"
                   }`}
+                  aria-label="Search"
                 >
                   <SearchNormal1 variant="TwoTone" className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => setIsCartOpen(true)}
-                  className="relative flex items-center justify-center w-10 h-10 transition-all duration-200 hover:opacity-80"
+                  className="relative flex items-center justify-center w-9 h-9 transition-all duration-200 hover:opacity-80"
+                  aria-label="Shopping Cart"
                 >
-                  <ShoppingCart size="26" color={showScrolledNavbar ? "#8b3a52" : "#ffffff"} variant="Bold" />
+                  <ShoppingCart size="24" color={showScrolledNavbar ? "#8b3a52" : "#ffffff"} variant="Bold" />
                   {totalItems > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-[var(--brand-deep-rose)] text-white text-[9px] font-bold flex items-center justify-center border border-white shadow-sm">
+                    <span className="absolute -top-0.5 -right-0.5 h-[16px] w-[16px] rounded-full bg-[var(--brand-deep-rose)] text-white text-[8px] font-bold flex items-center justify-center border border-white shadow-sm">
                       {totalItems}
                     </span>
                   )}
