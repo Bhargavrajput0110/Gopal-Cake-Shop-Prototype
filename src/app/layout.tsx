@@ -93,12 +93,17 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/logo.png", sizes: "any" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-48x48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/icon-144x144.png", sizes: "144x144", type: "image/png" },
       { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/apple-icon.png",
-    shortcut: "/logo.png",
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
   },
   robots: {
     index: true,
@@ -119,6 +124,89 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+// Schema.org structured data for Google rich results
+const schemaJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": ["Bakery", "LocalBusiness"],
+      "@id": "https://gopalcakeshop.com/#bakery",
+      "name": "Gopal Cake Shop",
+      "alternateName": "Gopal Bakery",
+      "description": "Premium custom cakes for every celebration in Vadodara. Birthday cakes, wedding cakes, photo cakes & more. 100% eggless. Est. 1990.",
+      "url": "https://gopalcakeshop.com",
+      "telephone": "+919712632132",
+      "priceRange": "₹₹",
+      "image": "https://gopalcakeshop.com/logo.png",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://gopalcakeshop.com/logo.png",
+        "width": 424,
+        "height": 327
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Karelibaug",
+        "addressLocality": "Vadodara",
+        "addressRegion": "Gujarat",
+        "postalCode": "390018",
+        "addressCountry": "IN"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 22.3217,
+        "longitude": 73.1851
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+          "opens": "09:00",
+          "closes": "21:00"
+        }
+      ],
+      "sameAs": [
+        "https://www.instagram.com/gopal_cake_shop",
+        "https://www.zomato.com/vadodara/gopal-cake-shop-karelibaug"
+      ],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Cakes & Pastries",
+        "itemListElement": [
+          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Birthday Cakes" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Wedding Cakes" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Photo Cakes" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Custom Designer Cakes" } }
+        ]
+      }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://gopalcakeshop.com/#organization",
+      "name": "Gopal Cake Shop",
+      "url": "https://gopalcakeshop.com",
+      "logo": "https://gopalcakeshop.com/logo.png",
+      "foundingDate": "1990"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://gopalcakeshop.com/#website",
+      "url": "https://gopalcakeshop.com",
+      "name": "Gopal Cake Shop",
+      "description": "Order premium custom cakes online in Vadodara",
+      "publisher": { "@id": "https://gopalcakeshop.com/#organization" },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://gopalcakeshop.com/menu?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+  ]
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -129,6 +217,12 @@ export default function RootLayout({
       lang="en"
       className={`antialiased font-sans ${playfair.variable} ${dmSans.variable}`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaJsonLd) }}
+        />
+      </head>
       <body suppressHydrationWarning className="flex flex-col w-full overflow-x-hidden bg-background text-foreground relative selection:bg-[#B67A7E] selection:text-white min-h-screen font-sans">
         <PWARegistration />
         <Noise />
