@@ -156,11 +156,17 @@ export function Hero() {
 
             {/* CTA group */}
             <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-              <Link href="/menu" className="group flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--brand-deep-rose)] to-[#9a425a] hover:from-[#9a425a] hover:to-[var(--brand-deep-rose)] text-white px-5 sm:px-8 py-3 md:py-4 rounded-full font-ui text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-500 shadow-[0_8px_32px_rgba(139,58,82,0.3)] hover:shadow-[0_8px_32px_rgba(139,58,82,0.5)] hover:-translate-y-0.5 whitespace-nowrap">
+              <Link
+                href="/menu"
+                className="group flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--brand-deep-rose)] to-[#8B2A53] hover:from-[#8B2A53] hover:to-[var(--brand-deep-rose)] text-white px-5 sm:px-8 py-3.5 md:py-4 rounded-full font-ui text-[10px] md:text-[11px] font-bold uppercase tracking-[0.18em] transition-all duration-300 shadow-[0_8px_24px_rgba(160,48,96,0.35)] hover:shadow-[0_12px_32px_rgba(160,48,96,0.5)] hover:-translate-y-0.5 whitespace-nowrap border border-white/20"
+              >
                 <span>Order Now</span>
                 <ArrowRight2 variant="Bold" className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-300" />
               </Link>
-              <Link href="/custom" className="group flex-1 sm:flex-initial flex items-center justify-center bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/20 text-white px-5 sm:px-8 py-3 md:py-4 rounded-full font-ui text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-500 hover:-translate-y-0.5 whitespace-nowrap">
+              <Link
+                href="/custom"
+                className="group flex-1 sm:flex-initial flex items-center justify-center bg-[var(--brand-champagne)] hover:bg-[#c4a886] text-[var(--brand-chocolate)] px-5 sm:px-8 py-3.5 md:py-4 rounded-full font-ui text-[10px] md:text-[11px] font-black uppercase tracking-[0.18em] transition-all duration-300 shadow-[0_8px_24px_rgba(212,184,150,0.25)] hover:shadow-[0_12px_32px_rgba(212,184,150,0.4)] hover:-translate-y-0.5 whitespace-nowrap border border-[var(--brand-champagne)]"
+              >
                 <span>Customize</span>
               </Link>
             </div>
