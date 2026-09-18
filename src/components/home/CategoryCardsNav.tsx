@@ -5,22 +5,25 @@ import { motion } from "framer-motion";
 export function CategoryCardsNav() {
   const cards = [
     {
+      number: "01",
       title: "Fresh Bakes",
-      subtitle: "Daily baked bread & cakes",
+      subtitle: "Artisanal breads & pastries",
       id: "fresh-bakes",
       imgUrl: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80",
       comingSoon: true,
     },
     {
+      number: "02",
       title: "Signature Cakes",
-      subtitle: "Our premium collection",
+      subtitle: "Handcrafted 100% eggless",
       id: "signature-cakes",
       imgUrl: "https://images.unsplash.com/photo-1535141192574-5d4897c12636?w=600&q=80",
       comingSoon: false,
     },
     {
+      number: "03",
       title: "Fresh Florals",
-      subtitle: "Beautiful bouquets",
+      subtitle: "Complementary bouquets",
       id: "fresh-florals",
       imgUrl: "https://images.unsplash.com/photo-1563241527-3004b7be0ffd?w=600&q=80",
       comingSoon: true,
@@ -39,60 +42,69 @@ export function CategoryCardsNav() {
   };
 
   const sharedClasses = (comingSoon: boolean) =>
-    `group relative h-28 sm:h-32 md:h-48 w-full rounded-2xl md:rounded-[2rem] overflow-hidden flex flex-col justify-end p-3 md:p-6 border border-[var(--border)] shadow-sm transition-shadow active:scale-[0.98] ${
-      comingSoon ? "cursor-not-allowed opacity-80" : "hover:shadow-md"
+    `group relative h-36 sm:h-44 md:h-56 w-full rounded-2xl md:rounded-[2rem] overflow-hidden flex flex-col justify-end p-4 md:p-6 border border-[var(--brand-champagne)]/20 shadow-sm transition-all duration-500 active:scale-[0.98] ${
+      comingSoon ? "cursor-not-allowed opacity-90" : "hover:border-[var(--brand-champagne)]/60 hover:shadow-xl"
     }`;
 
   const cardContent = (card: typeof cards[number]) => (
     <>
-      {/* Background Image */}
+      {/* Background Image with slow zoom */}
       <div
-        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+        className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 ease-out group-hover:scale-105"
         style={{ backgroundImage: `url('${card.imgUrl}')` }}
       />
-      {/* Dark Gradient Overlay */}
+      {/* Dark Vignette Overlay */}
       <div
-        className={`absolute inset-0 bg-gradient-to-t ${
-          card.comingSoon
-            ? "from-black via-black/60 to-black/30"
-            : "from-black/80 via-black/30 to-transparent"
-        }`}
+        className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 transition-opacity duration-500 group-hover:opacity-85"
       />
-      {/* Coming Soon Badge */}
-      {card.comingSoon && (
-        <div className="absolute top-4 left-4 bg-primary text-white text-[9px] md:text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full z-20">
-          Coming Soon
-        </div>
-      )}
+      {/* Subtle Top Row: Number & Badge */}
+      <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-20">
+        <span className="font-display italic text-[11px] md:text-sm text-[var(--brand-champagne)] opacity-90 font-medium">
+          {card.number}
+        </span>
+        {card.comingSoon ? (
+          <span className="px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-[var(--brand-champagne)]/40 text-[var(--brand-champagne)] text-[8px] md:text-[9px] font-bold uppercase tracking-[0.2em] shadow-sm">
+            Coming Soon
+          </span>
+        ) : (
+          <span className="px-2.5 py-0.5 rounded-full bg-[var(--brand-deep-rose)] text-white text-[8px] md:text-[9px] font-bold uppercase tracking-[0.2em] shadow-sm">
+            Order Now
+          </span>
+        )}
+      </div>
+
       {/* Content */}
-      <div className="relative z-10 w-full flex flex-col md:flex-row items-center justify-center md:justify-between gap-1 md:gap-0 h-full text-center md:text-left">
-        <div>
-          <h3 className="font-display font-bold md:font-black text-[11px] sm:text-[13px] md:text-2xl text-white tracking-tight leading-tight break-words">
-            {card.title}
-          </h3>
-          <p className="hidden md:block font-ui text-[10px] uppercase tracking-widest text-white/80 font-bold mt-1">
-            {card.subtitle}
-          </p>
-        </div>
-        <div className="hidden md:flex w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </div>
+      <div className="relative z-10 w-full flex flex-col justify-end text-left">
+        <h3 className="font-display italic font-semibold md:font-bold text-sm sm:text-base md:text-2xl text-white tracking-wide leading-tight drop-shadow-md">
+          {card.title}
+        </h3>
+        <p className="font-ui text-[9px] md:text-[11px] uppercase tracking-[0.18em] text-[var(--brand-champagne)] font-medium mt-1 opacity-90">
+          {card.subtitle}
+        </p>
       </div>
     </>
   );
 
   return (
-    <section className="w-full bg-[var(--brand-cream)] py-6 md:py-8 border-b border-[var(--border)]/30 z-20 relative">
+    <section className="w-full bg-[var(--brand-cream)] py-6 md:py-10 border-b border-[var(--border)]/30 z-20 relative">
       <div className="max-w-[1440px] mx-auto px-4 md:px-8">
-        <div className="grid grid-cols-3 gap-2 md:gap-4">
+        {/* Minimalist Section Subhead */}
+        <div className="flex items-center justify-between mb-4 md:mb-6">
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-px bg-[var(--brand-champagne)]" />
+            <span className="font-ui text-[9px] md:text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--brand-champagne)]">
+              Curated Collections
+            </span>
+          </div>
+          <span className="font-display italic text-xs md:text-sm text-foreground/40">Est. 1990</span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2.5 md:gap-5">
           {cards.map((card, index) =>
             card.comingSoon ? (
-              // Not-yet-available: render as div — not an anchor, not crawlable by Google
               <motion.div
                 key={card.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * index, duration: 0.5 }}
                 className={sharedClasses(true)}
@@ -101,12 +113,11 @@ export function CategoryCardsNav() {
                 {cardContent(card)}
               </motion.div>
             ) : (
-              // Live section: render as anchor with smooth scroll
               <motion.a
                 key={card.id}
                 href={`#${card.id}`}
                 onClick={(e) => handleScroll(e, card.id)}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * index, duration: 0.5 }}
                 className={sharedClasses(false)}
