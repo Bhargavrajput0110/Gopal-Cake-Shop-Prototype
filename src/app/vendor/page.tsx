@@ -152,7 +152,12 @@ export default function VendorTasks() {
   };
 
   if (status === 'loading' || isLoading || !activeVendor) {
-    return <div className="flex justify-center items-center h-screen bg-gray-950"><Refresh2 className="animate-spin w-12 h-12 text-gray-500" /></div>;
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[70vh] bg-gray-50">
+        <Refresh2 className="animate-spin w-10 h-10 text-amber-600 mb-3" />
+        <span className="font-ui text-xs font-bold uppercase tracking-widest text-gray-500">Loading Studio Tasks...</span>
+      </div>
+    );
   }
 
   const myTasks = tasks;
