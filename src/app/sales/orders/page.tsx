@@ -199,7 +199,15 @@ function SalesDashboardContent() {
   useEffect(() => {
     const controller = new AbortController();
     fetchOrders(controller.signal);
-    return () => controller.abort();
+
+    const handlePopState = () => {
+      fetchOrders();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      controller.abort();
+      window.removeEventListener("popstate", handlePopState);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, filter, search, dateFilter, customDate, activeBranch]);
 
