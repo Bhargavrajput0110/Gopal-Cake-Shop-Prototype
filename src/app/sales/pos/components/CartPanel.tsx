@@ -12,7 +12,7 @@ interface CartPanelProps {
 
 export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
   const { data: session } = useSession()
-  const { items: cart, customerId, discountCode, subtotal, updateQuantity, removeItem, clearCart } = useCart()
+  const { items: cart, customerId, discountCode, subtotal, updateQuantity, removeItem, clearCart, updateItemConfig } = useCart()
   const [overrideStatus, setOverrideStatus] = React.useState<string | null>(null)
   const [isSavingQuote, setIsSavingQuote] = React.useState(false)
   const [configCartItemId, setConfigCartItemId] = React.useState<string | null>(null)
@@ -110,7 +110,22 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
               <div className="flex-1 min-w-0">
                 <p className="font-display font-bold text-lg text-foreground truncate pr-2">{item.name}</p>
                 <div className="flex flex-col gap-1 mt-1">
-                  <p className="text-muted-foreground text-sm font-ui tracking-widest font-bold">₹{item.price.toFixed(2)}</p>
+                  <div className="flex items-center gap-1.5 my-0.5">
+                    <span className="text-xs font-black text-amber-800">₹</span>
+                    <input 
+                      type="number"
+                      min="0"
+                      value={item.price || ''}
+                      onChange={(e) => {
+                        const newPrice = Math.max(0, Number(e.target.value) || 0);
+                        updateItemConfig(item.cartItemId, { price: newPrice });
+                      }}
+                      placeholder="0"
+                      className="w-24 px-2 py-0.5 bg-amber-50 hover:bg-amber-100/80 border border-amber-300 rounded font-black text-sm text-foreground focus:ring-1 focus:ring-amber-500 outline-none transition-colors"
+                      title="Click to edit price directly"
+                    />
+                    <span className="text-[10px] text-amber-700 font-bold uppercase tracking-widest">(Edit Price)</span>
+                  </div>
                   <p className="text-muted-foreground font-ui text-[9px] uppercase tracking-widest font-black truncate">
                     {item.weight}kg {item.flavor ? `• ${item.flavor}` : ''} {item.shape ? `• ${item.shape}` : ''}
                   </p>
