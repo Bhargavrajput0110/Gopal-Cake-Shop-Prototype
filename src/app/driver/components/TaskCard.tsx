@@ -3,6 +3,8 @@ import { DriverOrderDTO } from '@/dtos/OrderSchemas'
 import { Button } from '@/components/ui/button'
 import { Call, Location, ArrowRight, Clock, Shop, User, Box, TickCircle } from "iconsax-react"
 
+import { formatTime, formatDate, formatDayLabel } from '@/lib/formatTime'
+
 interface TaskCardProps {
   task: DriverOrderDTO
   onAction: (action: string, extraData?: any) => void
@@ -140,8 +142,13 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
           </span>
         </div>
         <div className="text-right flex flex-col items-end">
-          <span className="font-serif text-xl font-black leading-none flex items-center gap-1.5"><Clock className="w-4 h-4 opacity-70"/> {deliveryTime}</span>
-          <span className="text-[9px] font-bold opacity-70 uppercase tracking-[0.2em] mt-1 text-foreground/50">DUE TIME</span>
+          <span className="font-serif text-xl font-black leading-none flex items-center gap-1.5 text-gray-900">
+            <Clock className="w-4 h-4 opacity-70 text-amber-600"/> {formatTime(item.timeTarget)}
+          </span>
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md mt-1 border border-amber-200/80">
+            📅 {formatDayLabel(item.timeTarget)} ({formatDate(item.timeTarget)})
+          </span>
+          <span className="text-[8px] font-bold opacity-70 uppercase tracking-[0.2em] mt-0.5 text-foreground/50">DUE DATE & TIME</span>
         </div>
       </div>
 

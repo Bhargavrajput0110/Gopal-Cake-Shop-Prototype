@@ -6,6 +6,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { fetchClient } from '@/lib/api/client'
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader"
 
+import { formatTime, formatDate, formatDayLabel } from '@/lib/formatTime'
+
 interface DeliveryJobCardProps {
   order: DriverOrderDTO
   isActiveRoute?: boolean
@@ -177,7 +179,9 @@ export function DeliveryJobCard({ order, isActiveRoute = false }: DeliveryJobCar
       {isActiveRoute && order.status !== 'READY_FOR_PICKUP' && (
         <div className={`${statusBg} text-white px-6 py-3 flex justify-between items-center`}>
           <span className="font-ui text-[10px] uppercase tracking-widest font-black">{statusText}</span>
-          <span className="font-ui text-[12px] font-black flex items-center gap-1"><Clock className="w-4 h-4"/> {timeWindow.split(' - ')[1]}</span>
+          <span className="font-ui text-[12px] font-black flex items-center gap-1.5">
+            📅 {formatDayLabel(order.timeTarget)} ({formatDate(order.timeTarget)}) · <Clock className="w-4 h-4"/> {formatTime(order.timeTarget)}
+          </span>
         </div>
       )}
 
