@@ -78,26 +78,48 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
   });
 
   // Map OrderItems
-  const mappedOrderItems = orderItems.map((item: any) => ({
-    id: item.id,
-    vendorId: item.assignedVendor?.id || user.id,
-    instructions: item.instructions || item.notes || "",
-    order: {
-      orderNumber: item.order?.orderNumber || "Task",
-      branch: { name: item.order?.branch?.name || "Kitchen" },
-      targetDate: item.order?.targetDate
-    },
-    productName: item.productName,
-    quantity: item.quantity,
-    status: item.status || 'accepted'
-  }));
+  const mappedOrderItems = orderItems.map((item: any) => {
+    const cakeImg = item.designImageUrl || item.image || item.parentItem?.designImageUrl || "";
+    const customerPhoto = item.image || item.designImageUrl || "";
+    const mediaUrls = item.media ? item.media.map((m: any) => m.url) : [];
+    
+    const gallery = Array.from(new Set([cakeImg, customerPhoto, ...mediaUrls].filter(Boolean)));
+    return {
+      id: item.id,
+      vendorId: item.assignedVendor?.id || user.id,
+      instructions: item.instructions || item.notes || "",
+      designImageUrl: cakeImg,
+      customerPhotoUrl: customerPhoto,
+      order: {
+        orderNumber: item.order?.orderNumber || "Task",
+        branch: { name: item.order?.branch?.name || "Kitchen" },
+        targetDate: item.order?.targetDate
+      },
+      productName: item.productName,
+      quantity: item.quantity,
+      status: item.status || 'accepted',
+      parentItem: {
+        productName: item.productName || "Custom Assignment",
+        notes: item.instructions || item.notes || "",
+        designImageUrl: cakeImg,
+        customerPhotoUrl: customerPhoto,
+        gallery: gallery
+      }
+    };
+  });
 
   // Map VendorTasks
   const mappedVendorTasks = vendorTasks.map((vt: any) => {
     const items = vt.order?.items || [];
     const itemWithImage = items.find((i: any) => i.designImageUrl || i.image || i.parentItem?.designImageUrl) || items[0] || {};
-    const imgUrl = itemWithImage.designImageUrl || itemWithImage.image || itemWithImage.parentItem?.designImageUrl || "";
+    const notesJson = typeof vt.notes === 'object' && vt.notes !== null ? vt.notes : {};
     
+    const cakeImg = notesJson.designImageUrl || itemWithImage.designImageUrl || itemWithImage.image || itemWithImage.parentItem?.designImageUrl || "";
+    const customerPhoto = notesJson.photoUrl || itemWithImage.designImageUrl || itemWithImage.image || "";
+    const mediaUrls = itemWithImage.media ? itemWithImage.media.map((m: any) => m.url) : [];
+
+    const gallery = Array.from(new Set([cakeImg, customerPhoto, ...mediaUrls].filter(Boolean)));
+
     return {
       id: vt.id,
       vendorId: vt.vendorId || user.id,
@@ -110,12 +132,14 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
       productName: itemWithImage.productName || "Custom Fulfillment Assignment",
       quantity: itemWithImage.quantity || 1,
       status: vt.status || 'accepted',
-      designImageUrl: imgUrl,
+      designImageUrl: cakeImg,
+      customerPhotoUrl: customerPhoto,
       parentItem: {
         productName: itemWithImage.productName || "Custom Assignment",
         notes: vt.instructions || "",
-        designImageUrl: imgUrl,
-        gallery: itemWithImage.media ? itemWithImage.media.map((m: any) => m.url) : null
+        designImageUrl: cakeImg,
+        customerPhotoUrl: customerPhoto,
+        gallery: gallery
       }
     };
   });

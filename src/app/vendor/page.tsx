@@ -418,26 +418,47 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
       {/* Visual Reference (Left Column) */}
       <div className="lg:w-2/5 bg-gray-900/5 relative overflow-hidden flex flex-col min-h-[340px] border-r border-gray-100">
         {p.gallery && p.gallery.length > 0 ? (
-           <div className="flex-1 flex flex-col p-6 bg-slate-900 text-white">
+           <div className="flex-1 flex flex-col p-6 bg-slate-950 text-white min-h-[340px]">
              <div className="flex justify-between items-center mb-4">
-               <h3 className="font-display font-black text-lg text-amber-300">Reference Assets</h3>
-               <span className="px-3 py-1 bg-white/10 rounded-full font-ui text-[9px] uppercase tracking-widest font-black text-gray-300">
-                 {p.gallery.length} files
+               <div>
+                 <h3 className="font-display font-black text-lg text-amber-300">Design & Print Assets</h3>
+                 <p className="font-ui text-[9px] text-gray-400 font-bold uppercase tracking-widest">Cake Design + Customer Photo</p>
+               </div>
+               <span className="px-3 py-1 bg-amber-400/20 border border-amber-400/30 rounded-full font-ui text-[9px] uppercase tracking-widest font-black text-amber-300">
+                 {p.gallery.length} Assets
                </span>
              </div>
              
              <div className="grid grid-cols-2 gap-3 mb-4">
-               {p.gallery.map((img: string, idx: number) => (
-                 <div key={idx} className={`relative overflow-hidden rounded-xl shadow-md border border-white/20 group/img ${idx === 0 && p.gallery.length % 2 !== 0 ? 'col-span-2 aspect-[4/3]' : 'aspect-square'}`}>
-                   <img src={img} alt={`Gallery ${idx}`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-110" />
-                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                     <button onClick={() => onImageClick(img)} className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-lg" title="View Fullscreen">
-                       <Maximize className="w-5 h-5" />
-                     </button>
+               {p.gallery.map((img: string, idx: number) => {
+                 const isFirst = idx === 0;
+                 const label = isFirst ? "🎂 Cake Design" : "📸 Customer Photo (Print)";
+                 return (
+                   <div key={idx} className={`relative overflow-hidden rounded-xl shadow-md border border-white/20 group/img ${p.gallery.length === 1 || (idx === 0 && p.gallery.length % 2 !== 0) ? 'col-span-2 aspect-[4/3]' : 'aspect-square'}`}>
+                     <img src={img} alt={`Asset ${idx}`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-110" />
+                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                       <button onClick={() => onImageClick(img)} className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-lg" title="View Fullscreen">
+                         <Maximize className="w-5 h-5" />
+                       </button>
+                       <span className="font-ui text-[8px] font-black uppercase tracking-widest text-amber-300">{label}</span>
+                     </div>
+                     <div className="absolute top-2 left-2 px-2.5 py-1 bg-black/70 backdrop-blur-md rounded-lg font-ui text-[8px] font-black text-amber-300 border border-amber-400/30">
+                       {label}
+                     </div>
                    </div>
-                 </div>
-               ))}
+                 );
+               })}
              </div>
+
+             <a 
+               href={p.gallery[1] || p.gallery[0]} 
+               target="_blank" 
+               rel="noopener noreferrer"
+               className="mt-auto w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl font-ui text-[10px] uppercase tracking-widest font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg"
+             >
+               <DocumentDownload className="w-4 h-4" />
+               Download Photo for Printing
+             </a>
            </div>
         ) : (p.designImageUrl || task.designImageUrl || task.image) ? (
           <div className="relative flex-1 flex items-center justify-center group/img min-h-[340px] bg-black">
@@ -453,7 +474,7 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
             
             <div className="absolute bottom-4 left-6 right-6 flex justify-between items-center z-10">
               <span className="font-ui text-[9px] uppercase tracking-widest font-black text-amber-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-md border border-amber-400/30">
-                📷 Reference Design
+                🎂 Cake Design & Reference Photo
               </span>
             </div>
           </div>

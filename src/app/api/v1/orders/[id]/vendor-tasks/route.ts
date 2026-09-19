@@ -7,7 +7,9 @@ const VendorTaskSchema = z.object({
   vendorType: z.string(),
   instructions: z.string(),
   vendorId: z.string().optional(),
-  status: z.string().default('PENDING')
+  status: z.string().default('PENDING'),
+  designImageUrl: z.string().optional(),
+  photoUrl: z.string().optional()
 });
 
 const VendorTaskUpdateSchema = z.object({
@@ -58,13 +60,21 @@ export const POST = withApiHandler(async ({ req, params, appRole }) => {
 
   const vendorId = payload.data.vendorId || vendorUser?.id;
 
+  const firstItem = order.items?.[0];
+  const cakeDesignImage = payload.data.designImageUrl || firstItem?.designImageUrl || firstItem?.image || "";
+  const customerPhotoToPrint = payload.data.photoUrl || firstItem?.designImageUrl || firstItem?.image || "";
+
   const task = await prisma.vendorTask.create({
     data: {
       orderId,
       vendorType: payload.data.vendorType,
       instructions: payload.data.instructions,
       vendorId: vendorId,
-      status: payload.data.status || 'accepted'
+      status: payload.data.status || 'accepted',
+      notes: {
+        designImageUrl: cakeDesignImage,
+        photoUrl: customerPhotoToPrint
+      }
     }
   });
 
