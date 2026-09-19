@@ -66,10 +66,12 @@ export const PATCH = withApiHandler(async (ctx) => {
   }
 
   if (transfer.status === 'RECEIVED') {
-    return NextResponse.json(
-      { error: 'This branch transfer has already been completed.' },
-      { status: 409 }
-    )
+    return NextResponse.json({
+      success: true,
+      message: 'This branch transfer has already been completed.',
+      transferId,
+      orderId: transfer.order.id
+    })
   }
 
   const orderId = transfer.order.id

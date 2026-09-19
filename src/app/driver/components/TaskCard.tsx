@@ -9,6 +9,15 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task: item, onAction }: TaskCardProps) {
+  const [isProcessing, setIsProcessing] = React.useState(false)
+
+  const handleActionClick = (action: string, extraData?: any) => {
+    if (isProcessing) return
+    setIsProcessing(true)
+    onAction(action, extraData)
+    setTimeout(() => setIsProcessing(false), 2000)
+  }
+
   const isLate = new Date(item.timeTarget).getTime() < Date.now()
   const isPending = !['DELIVERED', 'FAILED_DELIVERY', 'COMPLETED'].includes(item.status)
   const isCustomerDelivery = item.taskType === 'CUSTOMER_DELIVERY' || !item.taskType // fallback
@@ -50,10 +59,11 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
     if (!item.assignedDriverId) {
       return (
         <Button 
-          className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-[var(--foreground)] hover:bg-black/90 text-[var(--background)]"
-          onClick={() => onAction('ACCEPTED')}
+          disabled={isProcessing}
+          className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-[var(--foreground)] hover:bg-black/90 text-[var(--background)] disabled:opacity-50"
+          onClick={() => handleActionClick('ACCEPTED')}
         >
-          Accept Task
+          {isProcessing ? 'Processing...' : 'Accept Task'}
         </Button>
       )
     }
@@ -70,10 +80,11 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
             <span className="text-[10px] font-bold uppercase tracking-widest">Navigate</span>
           </Button>
           <Button 
-            className="h-14 rounded-full flex gap-2 items-center justify-center bg-amber-500 hover:bg-amber-600 text-white shadow-md transition-all"
-            onClick={() => onAction('PICKED_UP')}
+            disabled={isProcessing}
+            className="h-14 rounded-full flex gap-2 items-center justify-center bg-amber-500 hover:bg-amber-600 text-white shadow-md transition-all disabled:opacity-50"
+            onClick={() => handleActionClick('PICKED_UP')}
           >
-            <span className="text-[10px] font-bold uppercase tracking-widest">Mark Picked Up</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">{isProcessing ? 'Updating...' : 'Mark Picked Up'}</span>
           </Button>
         </div>
       )
@@ -103,10 +114,11 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
             </Button>
           </div>
           <Button 
-            className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-emerald-500 hover:bg-emerald-600 text-white flex justify-center items-center gap-2"
-            onClick={() => onAction('DELIVERED')}
+            disabled={isProcessing}
+            className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-emerald-500 hover:bg-emerald-600 text-white flex justify-center items-center gap-2 disabled:opacity-50"
+            onClick={() => handleActionClick('DELIVERED')}
           >
-            <TickCircle className="w-5 h-5" /> Delivered
+            <TickCircle className="w-5 h-5" /> {isProcessing ? 'Updating...' : 'Delivered'}
           </Button>
         </div>
       )
@@ -115,10 +127,11 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
     // Default for assigned task before trip start:
     return (
       <Button 
-        className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-blue-600 hover:bg-blue-700 text-white"
-        onClick={() => onAction('START_TRIP')}
+        disabled={isProcessing}
+        className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+        onClick={() => handleActionClick('START_TRIP')}
       >
-        Start Trip
+        {isProcessing ? 'Starting...' : 'Start Trip'}
       </Button>
     )
   }
