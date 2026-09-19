@@ -233,20 +233,10 @@ export default function DriverDashboard() {
       {/* Header */}
       <header className="bg-white/40 backdrop-blur-md border-b border-border/40 p-6 sticky top-0 z-20 flex justify-between items-center shadow-sm">
         <div>
-          <div className="mb-2">
-            <BackButton fallback="/login" label="Back to Login" variant="outline" size="sm" />
-          </div>
           <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground leading-none">Driver Tasks</h1>
           <p className="text-[10px] font-sans font-bold text-primary uppercase tracking-[0.2em] mt-1">Driving as {activeDriver.name}</p>
         </div>
         <div className="flex items-center gap-4">
-          <a 
-            href="/login"
-            className="text-[10px] font-bold uppercase tracking-widest text-foreground/50 hover:text-rose-600 transition-colors bg-white/50 px-3 py-1.5 rounded-full border border-border/40"
-          >
-            Sign Out
-          </a>
-          
           {offlineQueue.length > 0 && (
             <span className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm border border-amber-200">
               <Refresh className="w-3 h-3 animate-spin" /> {offlineQueue.length} Pending
