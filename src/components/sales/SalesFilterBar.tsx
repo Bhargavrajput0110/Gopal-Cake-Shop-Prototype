@@ -111,29 +111,57 @@ export function SalesFilterBar() {
         {DATE_FILTERS.map(df => {
           const isActive = (currentDate === df.id || (df.id === "all" && currentDate === "all"));
           return (
-            <button 
-              key={df.id}
-              onClick={() => updateUrlParams({ date: df.id === "all" ? null : df.id, customDate: null, page: "1" })}
-              className={`snap-start px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all duration-300 ${
-                isActive
-                  ? "bg-[#C5A059] text-[#3E2723] shadow-md shadow-[#C5A059]/30 scale-100" 
-                  : "bg-black/[0.04] text-muted-foreground hover:bg-black/[0.08] hover:text-foreground scale-95 hover:scale-100"
-              }`}
-            >
-              {df.label}
-            </button>
+            <div key={df.id} className="contents">
+              <button 
+                onClick={() => updateUrlParams({ date: df.id === "all" ? null : df.id, customDate: null, page: "1" })}
+                className={`snap-start px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all duration-300 ${
+                  isActive && currentDate !== "custom"
+                    ? "bg-[#C5A059] text-[#3E2723] shadow-md shadow-[#C5A059]/30 scale-100" 
+                    : "bg-black/[0.04] text-muted-foreground hover:bg-black/[0.08] hover:text-foreground scale-95 hover:scale-100"
+                }`}
+              >
+                {df.label}
+              </button>
+
+              {/* Custom Date Picker Pill — placed directly right after Tomorrow button */}
+              {df.id === "tomorrow" && (
+                <div 
+                  className={`snap-start relative flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all duration-300 cursor-pointer ${
+                    currentDate === "custom" && currentCustomDate
+                      ? "bg-[#C5A059] text-[#3E2723] shadow-md shadow-[#C5A059]/30 scale-100 ring-2 ring-[#3E2723]/20"
+                      : "bg-black/[0.04] text-muted-foreground hover:bg-black/[0.08] hover:text-foreground scale-95 hover:scale-100"
+                  }`}
+                >
+                  <span className="text-sm">📅</span>
+                  <span>
+                    {currentDate === "custom" && currentCustomDate
+                      ? new Date(currentCustomDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+                      : "Pick Date"}
+                  </span>
+                  <input 
+                    type="date" 
+                    value={currentCustomDate} 
+                    onChange={(e) => handleCustomDateChange(e.target.value)}
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                    title="Select custom date"
+                  />
+                  {currentDate === "custom" && currentCustomDate && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCustomDateChange("");
+                      }} 
+                      className="z-20 text-[#3E2723] hover:text-black font-extrabold ml-1 px-1.5 py-0.5 rounded-full hover:bg-black/10"
+                      title="Clear custom date"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           );
         })}
-        
-        <div className="flex items-center gap-2 ml-auto snap-start bg-black/[0.04] rounded-full px-3 py-1.5 border border-black/5">
-          <span className="text-[11px] text-muted-foreground font-bold whitespace-nowrap uppercase tracking-wider">Pick Date:</span>
-          <input 
-            type="date" 
-            value={currentCustomDate} 
-            onChange={(e) => handleCustomDateChange(e.target.value)}
-            className="bg-transparent text-[13px] font-bold text-foreground focus:outline-none"
-          />
-        </div>
       </div>
     </div>
   );
