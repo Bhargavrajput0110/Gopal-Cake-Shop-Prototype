@@ -25,7 +25,7 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
   const isBranchTransfer = item.taskType === 'BRANCH_TRANSFER'
 
   // Format times
-  const deliveryTime = new Date(item.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const deliveryTime = new Date(item.timeTarget).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
 
   const handleNavigate = () => {
     if (item.googleMapsUrl) {

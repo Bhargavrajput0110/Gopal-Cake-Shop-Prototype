@@ -27,7 +27,7 @@ export function ChefLayout({ children, branchName = "Kitchen", lastUpdated }: Ch
           {lastUpdated && (
             <div className="hidden md:flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-foreground/50 bg-white/50 border border-border/40 px-3 py-1.5 rounded-full shadow-sm">
               <Clock className="w-3.5 h-3.5 text-secondary" />
-              Sync: {lastUpdated.toLocaleTimeString()}
+              Sync: {lastUpdated.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
             </div>
           )}
           <button className="relative p-2 text-foreground/50 hover:text-secondary transition-colors rounded-full hover:bg-secondary/5 border border-transparent hover:border-secondary/20">

@@ -55,7 +55,7 @@ function formatTimeAgo(dateStr: string) {
 
 function formatTimeTarget(dateStr: string) {
   if (!dateStr) return ""
-  return new Date(dateStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  return new Date(dateStr).toLocaleTimeString('en-IN', { hour: "numeric", minute: "2-digit", hour12: true })
 }
 
 function OrderTypeIcon({ type }: { type: string }) {

@@ -387,7 +387,7 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
               <Clock className="w-4 h-4"/> {isCompleted ? 'Delivery Status' : 'Delivery SLA'}
             </p>
             <p className={`font-display font-bold text-2xl ${isUrgent && !isCompleted ? 'text-rose-600' : isCompleted ? 'text-emerald-600' : 'text-gray-900'}`}>{timeLeftStr}</p>
-            {!isCompleted && <p className="font-ui text-[10px] font-bold text-gray-500 mt-1">{targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>}
+            {!isCompleted && <p className="font-ui text-[10px] font-bold text-gray-500 mt-1">{targetDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>}
           </div>
           <div className="p-5 rounded-2xl bg-gray-50 border border-gray-100">
             <p className="font-ui text-[9px] uppercase tracking-widest font-bold text-gray-500 mb-2 flex items-center gap-2">

@@ -120,7 +120,7 @@ export default function SalesOverviewPage() {
                   <div>
                     <div className="flex justify-between items-start mb-4">
                       <span className="font-ui text-[9px] font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full uppercase tracking-[0.2em]">{order.orderNumber || order.id}</span>
-                      <span className="font-ui text-[10px] text-[var(--muted-foreground)] font-bold uppercase tracking-[0.2em]">{new Date(req.timestamp || Date.now()).toLocaleTimeString()}</span>
+                      <span className="font-ui text-[10px] text-[var(--muted-foreground)] font-bold uppercase tracking-[0.2em]">{new Date(req.timestamp || Date.now()).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
                     </div>
                     <p className="font-display font-black text-2xl text-[var(--foreground)] mb-2">{req.itemName}</p>
                     {(req as any).note && <p className="font-editorial italic text-[var(--muted-foreground)] text-sm border-l-2 border-amber-200 pl-4 py-1">{(req as any).note}</p>}

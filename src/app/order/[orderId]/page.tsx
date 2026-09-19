@@ -346,7 +346,7 @@ export default function OrderStatusPage() {
                 <div>
                   <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50 block mb-1">Target Time</span>
                   <p className="font-serif font-bold text-lg text-foreground">
-                    {new Date(order.timeTarget).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                    {new Date(order.timeTarget).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', hour12: true })}
                   </p>
                 </div>
 
@@ -414,7 +414,7 @@ export default function OrderStatusPage() {
                     <div>
                       <p className="font-serif font-bold text-foreground">{evt.event}</p>
                       <p className="font-serif italic text-foreground/50 text-sm mt-1">
-                        {evt.actor} • {new Date(evt.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                        {evt.actor} • {new Date(evt.timestamp).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
                       </p>
                     </div>
                   </div>

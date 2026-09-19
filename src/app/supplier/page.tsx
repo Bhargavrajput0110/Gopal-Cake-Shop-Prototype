@@ -212,7 +212,7 @@ export default function SupplierDashboard() {
                 <div className="flex items-center justify-between mt-auto pt-4 border-t border-border border-dashed">
                   <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
                     <Clock className="w-4 h-4" />
-                    <span>Requested: {new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span>Requested: {new Date(req.timestamp).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
                   </div>
 
                   {req.status === "pending" ? (

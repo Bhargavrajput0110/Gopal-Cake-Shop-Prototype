@@ -22,8 +22,8 @@ function formatDate(date: Date | string) {
   if (isNaN(d.getTime())) return { relative: "Invalid Date", absolute: "Invalid Date" }
   
   const relative = formatDistanceToNow(d, { addSuffix: true })
-  const absolute = d.toLocaleDateString(undefined, { 
-    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" 
+  const absolute = d.toLocaleDateString('en-IN', { 
+    month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true
   })
   
   return { relative, absolute }

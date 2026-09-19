@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BackButton } from "@/components/ui/BackButton";
 import { Reserve, Warning2, TickCircle, Clock, CloseSquare, Danger, Bag, Refresh2 } from "iconsax-react";
 import { toBranchId, BRANCHES, BranchId, toBranchShortName } from "@/lib/branches";
+import { formatTime, formatDate, matchesDayFilter } from "@/lib/formatTime";
 
 // Standard bakery ingredients for the missing ingredients modal
 const COMMON_INGREDIENTS = [
@@ -75,6 +76,7 @@ export default function ChefDashboardPage() {
   
   const [activeBranch, setActiveBranch] = useState<BranchId>("khanderao");
   const [activeTab, setActiveTab] = useState<"queue" | "myTasks" | "ready">("queue");
+  const [dayFilter, setDayFilter] = useState<'YESTERDAY' | 'TODAY' | 'TOMORROW' | 'ALL'>('TODAY');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -91,17 +93,17 @@ export default function ChefDashboardPage() {
 
   // Queue
   const queueOrders = branchOrders
-    .filter(o => o.status === "WAITING_FOR_CHEF")
+    .filter(o => o.status === "WAITING_FOR_CHEF" && matchesDayFilter(o.timeTarget, dayFilter))
     .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
   
   // My Tasks
   const myTasksOrders = branchOrders
-    .filter(o => ["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(o.status))
+    .filter(o => ["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(o.status) && matchesDayFilter(o.timeTarget, dayFilter))
     .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
     
   // Ready
   const readyOrders = branchOrders
-    .filter(o => ["READY_FOR_PICKUP", "PENDING_ASSIGNMENT", "ASSIGNED_TO_DRIVER"].includes(o.status))
+    .filter(o => ["READY_FOR_PICKUP", "PENDING_ASSIGNMENT", "ASSIGNED_TO_DRIVER"].includes(o.status) && matchesDayFilter(o.timeTarget, dayFilter))
     .sort((a, b) => new Date(b.timeline?.[b.timeline.length - 1]?.timestamp || b.createdAt).getTime() - new Date(a.timeline?.[a.timeline.length - 1]?.timestamp || a.createdAt).getTime());
 
   // Header Stats
@@ -299,8 +301,13 @@ export default function ChefDashboardPage() {
                   <Clock className="w-5 h-5" /> {timeLeftStr}
                 </div>
                 {order.timeTarget && (
-                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5" suppressHydrationWarning>
-                    Target: {new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <div className="text-right mt-0.5" suppressHydrationWarning>
+                    <div className="text-[11px] font-black uppercase tracking-widest" style={{color:'inherit', opacity:0.85}}>
+                      {formatTime(order.timeTarget)}
+                    </div>
+                    <div className="text-[9px] font-bold opacity-60 uppercase tracking-widest">
+                      {formatDate(order.timeTarget)}
+                    </div>
                   </div>
                 )}
               </div>
@@ -505,6 +512,26 @@ export default function ChefDashboardPage() {
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
               )}
             </button>
+            {/* Day Filter Buttons */}
+            <div className="flex bg-gray-800 p-1 rounded-xl gap-1">
+              {(['YESTERDAY', 'TODAY', 'TOMORROW', 'ALL'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setDayFilter(f)}
+                  className={`px-3 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all ${
+                    dayFilter === f
+                      ? f === 'YESTERDAY' ? 'bg-gray-500 text-white shadow'
+                      : f === 'TODAY' ? 'bg-amber-500 text-white shadow'
+                      : f === 'TOMORROW' ? 'bg-blue-500 text-white shadow'
+                      : 'bg-white text-gray-900 shadow'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+
             <div className="flex bg-gray-800 p-1 rounded-xl w-full md:w-auto">
               <button onClick={() => setActiveTab("queue")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'queue' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
                 Queue 

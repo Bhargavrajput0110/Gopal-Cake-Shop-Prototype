@@ -48,7 +48,7 @@ export function DeliveryJobCard({ order, isActiveRoute = false }: DeliveryJobCar
   }
 
   const windowStart = new Date(targetDate.getTime() - 30 * 60000)
-  const timeWindow = `${windowStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+  const timeWindow = `${windowStart.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })} - ${targetDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`
 
   // Status Colors
   let statusBg = "bg-emerald-500"

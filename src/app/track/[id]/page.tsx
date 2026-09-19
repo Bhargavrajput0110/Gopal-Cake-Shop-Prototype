@@ -146,7 +146,7 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
           <h1 className="font-display font-black text-4xl md:text-5xl tracking-tight mb-2">#{order.orderNumber}</h1>
           <p className="font-editorial italic text-gray-400 text-lg">
             {order.timeTarget
-              ? `Due: ${new Date(order.timeTarget).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at ${new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              ? `Due: ${new Date(order.timeTarget).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at ${new Date(order.timeTarget).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`
               : 'Today'}
           </p>
         </motion.div>
@@ -210,7 +210,7 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
                       <p className="font-ui text-[9px] uppercase tracking-[0.2em] font-bold text-gray-500">{stage.subtitle}</p>
                       {timestamp && (
                         <p className="font-editorial text-xs text-gray-400 mt-1 italic">
-                          {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(timestamp).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
                         </p>
                       )}
                     </div>

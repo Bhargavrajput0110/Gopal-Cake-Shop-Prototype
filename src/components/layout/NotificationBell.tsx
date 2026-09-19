@@ -154,7 +154,7 @@ export function NotificationBell() {
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
                         <p className="text-[10px] text-muted-foreground/60 mt-1">
-                          {new Date(n.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(n.createdAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
                         </p>
                       </div>
                       <div className="flex flex-col gap-1 shrink-0">

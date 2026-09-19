@@ -38,7 +38,7 @@ export function DriverQueueCard({ job, actions }: DriverQueueCardProps) {
   }
 
   const windowStart = new Date(targetDate.getTime() - 30 * 60000)
-  const timeWindow = `${windowStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+  const timeWindow = `${windowStart.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })} - ${targetDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`
 
   let statusColor = "text-green-600 bg-green-50 border-green-200"
   let statusText = "On Time"
