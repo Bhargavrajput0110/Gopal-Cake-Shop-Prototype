@@ -68,29 +68,8 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
       )
     }
 
-    if (item.status === 'ON_THE_WAY' || item.status === 'ON_THE_WAY_TO_VENDOR') {
-      return (
-        <div className="grid grid-cols-2 gap-3">
-          <Button 
-            variant="outline" 
-            className="h-14 rounded-full flex gap-2 items-center justify-center bg-white shadow-sm transition-all border-secondary/30 text-secondary hover:bg-secondary hover:text-white"
-            onClick={handleNavigate}
-          >
-            <Location className="w-4 h-4" />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Navigate</span>
-          </Button>
-          <Button 
-            disabled={isProcessing}
-            className="h-14 rounded-full flex gap-2 items-center justify-center bg-amber-500 hover:bg-amber-600 text-white shadow-md transition-all disabled:opacity-50"
-            onClick={() => handleActionClick('PICKED_UP')}
-          >
-            <span className="text-[10px] font-bold uppercase tracking-widest">{isProcessing ? 'Updating...' : 'Mark Picked Up'}</span>
-          </Button>
-        </div>
-      )
-    }
-
-    if (item.status === 'PICKED_UP' || item.status === 'DELIVERING_TO_BRANCH' || item.status === 'OUT_FOR_DELIVERY') {
+    // IF TASK IS ALREADY PICKED UP / OUT FOR DELIVERY -> SHOW "DELIVERED"
+    if (['PICKED_UP', 'DELIVERING_TO_BRANCH', 'OUT_FOR_DELIVERY', 'ON_THE_WAY'].includes(item.status)) {
       return (
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
@@ -124,15 +103,25 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
       )
     }
 
-    // Default for assigned task before trip start:
+    // DEFAULT FOR ASSIGNED TASK BEFORE PICKUP -> SHOW "MARK PICKED UP" DIRECTLY!
     return (
-      <Button 
-        disabled={isProcessing}
-        className="h-14 rounded-full w-full font-bold uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-all bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
-        onClick={() => handleActionClick('START_TRIP')}
-      >
-        {isProcessing ? 'Starting...' : 'Start Trip'}
-      </Button>
+      <div className="grid grid-cols-2 gap-3">
+        <Button 
+          variant="outline" 
+          className="h-14 rounded-full flex gap-2 items-center justify-center bg-white shadow-sm transition-all border-secondary/30 text-secondary hover:bg-secondary hover:text-white"
+          onClick={handleNavigate}
+        >
+          <Location className="w-4 h-4" />
+          <span className="text-[10px] font-bold uppercase tracking-widest">Navigate</span>
+        </Button>
+        <Button 
+          disabled={isProcessing}
+          className="h-14 rounded-full flex gap-2 items-center justify-center bg-amber-500 hover:bg-amber-600 text-white shadow-md transition-all disabled:opacity-50"
+          onClick={() => handleActionClick('PICKED_UP')}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-widest">{isProcessing ? 'Updating...' : 'Mark Picked Up'}</span>
+        </Button>
+      </div>
     )
   }
 
