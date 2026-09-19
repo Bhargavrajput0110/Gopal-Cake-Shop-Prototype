@@ -16,7 +16,7 @@ function CustomPageContent() {
   const customProduct = {
     id: "custom-cake-studio",
     name: "Build Your Custom Cake",
-    basePrice: 600,
+    basePrice: 0,
     category: { name: "Bespoke Creation" },
     thumbnail: null // We will rely on their upload
   };

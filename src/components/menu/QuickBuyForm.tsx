@@ -356,12 +356,10 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
               {/* Custom Order & Quote Info Notice */}
               <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-amber-800 font-bold text-xs uppercase tracking-wider">💡 Custom Cake Quote & Pricing</span>
+                  <span className="text-amber-800 font-bold text-xs uppercase tracking-wider">🍰 Custom Cake Design Request</span>
                 </div>
                 <p className="text-xs text-amber-950 font-medium leading-relaxed">
-                  {referenceImages.length > 0 
-                    ? `Reference photo attached. Estimated base price is ₹${finalPrice}. Our Master Chef will review your design photo and confirm the final quote price within 15 minutes.` 
-                    : `Standard estimate starts at ₹${finalPrice}. You can add to cart now or attach reference photos for a custom quote.`}
+                  Custom cakes have no fixed price. Select your desired weight & flavour, upload your reference design photo, and submit your request. Our Master Chef & Sales team will inspect your design and send you an exact price quote for confirmation.
                 </p>
               </div>
 
@@ -398,13 +396,9 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           className="w-full h-13 py-3 rounded-2xl bg-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/90 text-white font-ui font-bold text-sm tracking-widest uppercase shadow-lg shadow-[var(--brand-deep-rose)]/20 hover:-translate-y-1 transition-all"
         >
           {editingCartItem ? (
-            "Update Item"
+            "Update Custom Request"
           ) : isCustom ? (
-            referenceImages.length > 0 ? (
-              `Submit Custom Quote Request — Est. ₹${finalPrice}`
-            ) : (
-              `Add Custom Cake to Cart — Est. ₹${finalPrice}`
-            )
+            "Submit Custom Cake Request"
           ) : (
             `Add to Cart — ₹${finalPrice}`
           )}
