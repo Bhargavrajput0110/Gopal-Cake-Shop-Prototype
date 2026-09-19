@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BackButton } from "@/components/ui/BackButton";
 import { Reserve, Warning2, TickCircle, Clock, CloseSquare, Danger, Bag, Refresh2 } from "iconsax-react";
 import { toBranchId, BRANCHES, BranchId, toBranchShortName } from "@/lib/branches";
-import { formatTime, formatDate, matchesDayFilter } from "@/lib/formatTime";
+import { formatTime, formatDate, formatDayLabel, matchesDayFilter } from "@/lib/formatTime";
 
 // Standard bakery ingredients for the missing ingredients modal
 const COMMON_INGREDIENTS = [
@@ -297,16 +297,16 @@ export default function ChefDashboardPage() {
             {!isReady && (
               <>
               <div className="flex flex-col items-end">
-                <div className="flex items-center justify-end gap-1 font-black text-lg">
-                  <Clock className="w-5 h-5" /> {timeLeftStr}
+                <div className="flex items-center justify-end gap-1.5 font-black text-base bg-black/20 px-2.5 py-1 rounded-lg">
+                  <Clock className="w-4 h-4 shrink-0" /> {timeLeftStr}
                 </div>
                 {order.timeTarget && (
-                  <div className="text-right mt-0.5" suppressHydrationWarning>
-                    <div className="text-[11px] font-black uppercase tracking-widest" style={{color:'inherit', opacity:0.85}}>
-                      {formatTime(order.timeTarget)}
+                  <div className="text-right mt-1.5" suppressHydrationWarning>
+                    <div className="text-xs font-black uppercase tracking-wider bg-black/30 text-white px-2 py-0.5 rounded backdrop-blur-xs inline-block">
+                      TARGET: {formatTime(order.timeTarget)}
                     </div>
-                    <div className="text-[9px] font-bold opacity-60 uppercase tracking-widest">
-                      {formatDate(order.timeTarget)}
+                    <div className="text-[10px] font-extrabold opacity-90 uppercase tracking-widest mt-0.5">
+                      📅 {formatDayLabel(order.timeTarget)} ({formatDate(order.timeTarget)})
                     </div>
                   </div>
                 )}
@@ -456,14 +456,14 @@ export default function ChefDashboardPage() {
       </AnimatePresence>
       
       {/* Top Navigation Bar */}
-      <div className="bg-gray-900 text-white sticky top-0 z-40 shadow-xl">
-        <div className="px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight flex items-center gap-3">
-              <Reserve className="w-8 h-8 text-amber-400" /> KDS Terminal
+      <div className="bg-gray-900 text-white sticky top-0 z-40 shadow-xl border-b border-gray-800">
+        <div className="px-4 md:px-8 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-black tracking-tight flex items-center gap-2">
+              <Reserve className="w-7 h-7 text-amber-400" /> KDS Terminal
             </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Station:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden sm:inline">Station:</span>
               {(() => {
                 const isChefRole = String((session?.user as any)?.role || '').toLowerCase() === 'chef';
                 return (
@@ -471,7 +471,7 @@ export default function ChefDashboardPage() {
                     value={activeBranch} 
                     onChange={(e) => setActiveBranch(e.target.value as BranchId)}
                     disabled={isChefRole}
-                    className="bg-gray-800 text-amber-400 font-bold text-xs uppercase tracking-widest px-2 py-1 rounded border border-gray-700 outline-none disabled:opacity-75 disabled:cursor-not-allowed"
+                    className="bg-gray-800 text-amber-400 font-bold text-xs uppercase tracking-widest px-2.5 py-1 rounded-lg border border-gray-700 outline-none disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     {BRANCHES.filter(b => !isChefRole || b.id === activeBranch).map(b => (
                       <option key={b.id} value={b.id}>{b.shortName} KITCHEN</option>
@@ -483,70 +483,79 @@ export default function ChefDashboardPage() {
           </div>
           
           {/* Header Stats */}
-          <div className="hidden lg:flex items-center gap-6 bg-gray-800 border border-gray-700 rounded-xl px-6 py-2">
+          <div className="hidden lg:flex items-center gap-6 bg-gray-800 border border-gray-700 rounded-xl px-5 py-1.5">
             <div className="flex flex-col items-center">
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Today</span>
-              <span className="text-xl font-black text-white">{statsTotal}</span>
+              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Today</span>
+              <span className="text-lg font-black text-white">{statsTotal}</span>
             </div>
-            <div className="w-px h-8 bg-gray-700"></div>
+            <div className="w-px h-6 bg-gray-700"></div>
             <div className="flex flex-col items-center">
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Active</span>
-              <span className="text-xl font-black text-amber-400">{statsActive}</span>
+              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Active</span>
+              <span className="text-lg font-black text-amber-400">{statsActive}</span>
             </div>
-            <div className="w-px h-8 bg-gray-700"></div>
+            <div className="w-px h-6 bg-gray-700"></div>
             <div className="flex flex-col items-center">
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Completed</span>
-              <span className="text-xl font-black text-emerald-400">{statsCompleted}</span>
+              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Completed</span>
+              <span className="text-lg font-black text-emerald-400">{statsCompleted}</span>
             </div>
           </div>
-          
-          <div className="flex flex-col md:flex-row items-end md:items-center gap-4 w-full md:w-auto">
+
+          <div className="flex items-center gap-3">
             <button 
               onClick={toggleMute} 
-              className={`hidden md:flex p-2 rounded-lg border ${isMuted ? 'bg-rose-500/10 border-rose-500 text-rose-500' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'} transition-colors`}
+              className={`p-2 rounded-lg border ${isMuted ? 'bg-rose-500/10 border-rose-500 text-rose-500' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'} transition-colors`}
               title={isMuted ? "Unmute Notifications" : "Mute Notifications"}
             >
               {isMuted ? (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
               ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
               )}
             </button>
-            {/* Day Filter Buttons */}
-            <div className="flex bg-gray-800 p-1 rounded-xl gap-1">
-              {(['YESTERDAY', 'TODAY', 'TOMORROW', 'ALL'] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setDayFilter(f)}
-                  className={`px-3 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all ${
-                    dayFilter === f
-                      ? f === 'YESTERDAY' ? 'bg-gray-500 text-white shadow'
-                      : f === 'TODAY' ? 'bg-amber-500 text-white shadow'
-                      : f === 'TOMORROW' ? 'bg-blue-500 text-white shadow'
-                      : 'bg-white text-gray-900 shadow'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex bg-gray-800 p-1 rounded-xl w-full md:w-auto">
-              <button onClick={() => setActiveTab("queue")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'queue' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
-                Queue 
-                {queueOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'queue' ? 'bg-rose-500 text-white' : 'bg-gray-700'}`}>{queueOrders.length}</span>}
-              </button>
-              <button onClick={() => setActiveTab("myTasks")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'myTasks' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
-                Active 
-                {myTasksOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'myTasks' ? 'bg-gray-900 text-white' : 'bg-gray-700'}`}>{myTasksOrders.length}</span>}
-              </button>
-              <button onClick={() => setActiveTab("ready")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'ready' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}>
-                Ready
-              </button>
-            </div>
-            <BackButton fallback="/login" label="Switch Account" variant="ghost" className="text-white hover:bg-white/10 shrink-0" />
           </div>
+        </div>
+
+        {/* Sub-Header Bar: Day Filters & Status Tabs */}
+        <div className="px-4 md:px-8 py-2 bg-gray-950 border-t border-gray-800 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3">
+          
+          {/* Day Filters */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-400/90 shrink-0 mr-1 flex items-center gap-1">
+              📅 DATE FILTER:
+            </span>
+            {(['YESTERDAY', 'TODAY', 'TOMORROW', 'ALL'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setDayFilter(f)}
+                className={`px-3.5 py-1.5 rounded-lg font-black text-[11px] uppercase tracking-wider transition-all shrink-0 ${
+                  dayFilter === f
+                    ? f === 'YESTERDAY' ? 'bg-gray-600 text-white shadow-md ring-2 ring-gray-400'
+                    : f === 'TODAY' ? 'bg-amber-500 text-white shadow-md ring-2 ring-amber-300'
+                    : f === 'TOMORROW' ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
+                    : 'bg-white text-gray-900 shadow-md ring-2 ring-gray-200'
+                    : 'bg-gray-800/90 text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                {f === 'ALL' ? 'ALL DATES' : f}
+              </button>
+            ))}
+          </div>
+
+          {/* Ticket State Tabs */}
+          <div className="flex bg-gray-800 p-1 rounded-xl w-full md:w-auto shrink-0">
+            <button onClick={() => setActiveTab("queue")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'queue' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
+              Queue 
+              {queueOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'queue' ? 'bg-rose-500 text-white' : 'bg-gray-700 text-gray-300'}`}>{queueOrders.length}</span>}
+            </button>
+            <button onClick={() => setActiveTab("myTasks")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'myTasks' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
+              Active 
+              {myTasksOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'myTasks' ? 'bg-gray-900 text-white' : 'bg-gray-700 text-gray-300'}`}>{myTasksOrders.length}</span>}
+            </button>
+            <button onClick={() => setActiveTab("ready")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'ready' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}>
+              Ready
+            </button>
+          </div>
+
         </div>
       </div>
 

@@ -268,7 +268,7 @@ ${ d.pendingBalances.length > 0 ? `
   return (
     <div className="min-h-screen bg-[var(--background)] relative">
       <div className="absolute top-6 left-6 z-50 print:hidden">
-        <BackButton fallback="/login" label="Switch Account" variant="ghost" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]" />
+        <BackButton fallback="/login" label="Back to Login" variant="ghost" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]" />
       </div>
       {/* Command Center Dot Matrix Background */}
       <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, #000 1.5px, transparent 1.5px)', backgroundSize: '32px 32px' }}></div>

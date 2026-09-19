@@ -34,7 +34,7 @@ export function DriverLayout({ children, isOffline, metrics }: DriverLayoutProps
 
         <div className="flex justify-between items-start mb-4">
           <div>
-            <BackButton fallback="/login" label="Switch Account" variant="ghost" className="px-0 mb-1 h-auto text-[var(--muted-foreground)] hover:text-[var(--foreground)]" />
+            <BackButton fallback="/login" label="Back to Login" variant="ghost" className="px-0 mb-1 h-auto text-[var(--muted-foreground)] hover:text-[var(--foreground)]" />
             <h1 className="font-black text-3xl font-display tracking-tight text-[var(--foreground)]">Delivery</h1>
           </div>
           {metrics && (

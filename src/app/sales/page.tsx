@@ -41,7 +41,7 @@ export default function SalesOverviewPage() {
     <motion.div className="space-y-12 pb-20 pt-8 relative" variants={containerVariants} initial="hidden" animate="show">
       
       <div className="absolute top-2 left-0 z-50">
-        <BackButton fallback="/login" label="Switch Account" variant="ghost" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]" />
+        <BackButton fallback="/login" label="Back to Login" variant="ghost" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]" />
       </div>
 
       {/* Editorial Header */}
