@@ -11,59 +11,96 @@ export const PATCH = withApiHandler(async (ctx: HandlerContext) => {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const item = await prisma.orderItem.findUnique({
-    where: { id: params.id },
-    include: { order: true }
-  });
-
-  if (!item || (!isStaff && item.assignedVendorId !== user.id)) {
-    return NextResponse.json({ error: 'Not found or unauthorized' }, { status: 404 });
-  }
-
   const body = await ctx.req.json();
-  const { action } = body; // ACCEPTED, PREPARING, READY_FOR_PICKUP
+  const { action, mediaUrl } = body;
 
-  let newStatus: OrderItemStatus;
-  let timelineAction = '';
-  let timelineNote = '';
+  let nextStatus = 'accepted';
+  let orderItemStatus: OrderItemStatus = 'CHEF_ACCEPTED';
+  let timelineAction = 'VENDOR_ACCEPTED';
+  let timelineNote = 'Vendor accepted task.';
 
   if (action === 'ACCEPTED') {
-    newStatus = 'CHEF_ACCEPTED';
+    nextStatus = 'accepted';
+    orderItemStatus = 'CHEF_ACCEPTED';
     timelineAction = 'VENDOR_ACCEPTED';
-    timelineNote = `Vendor accepted the task.`;
+    timelineNote = 'Vendor accepted task.';
   } else if (action === 'MAKING') {
-    newStatus = 'MAKING';
+    nextStatus = 'in_production';
+    orderItemStatus = 'MAKING';
     timelineAction = 'VENDOR_PREPARING';
-    timelineNote = `Vendor started preparing.`;
+    timelineNote = 'Vendor started production.';
   } else if (action === 'READY_FOR_PICKUP') {
-    newStatus = 'READY_FOR_PICKUP';
+    nextStatus = 'ready';
+    orderItemStatus = 'READY_FOR_PICKUP';
     timelineAction = 'VENDOR_READY';
-    timelineNote = body.mediaUrl 
-      ? `Vendor marked item ready and uploaded deliverables. URL: ${body.mediaUrl}` 
+    timelineNote = mediaUrl 
+      ? `Vendor marked item ready and uploaded deliverables. URL: ${mediaUrl}` 
       : `Vendor marked item ready for pickup.`;
   } else {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   }
 
-  const updated = await prisma.$transaction(async (tx) => {
-    const u = await tx.orderItem.update({
-      where: { id: params.id },
-      data: { status: newStatus }
-    });
-
-    await TimelineService.create({
-      orderId: item.orderId,
-      orderItemId: item.id,
-      action: timelineAction,
-      note: timelineNote,
-      actorId: user.id,
-      role: user.role,
-      status: item.order.status,
-      nextState: item.order.status
-    }, tx as any);
-
-    return u;
+  // 1. Try finding in OrderItem first
+  const item = await prisma.orderItem.findUnique({
+    where: { id: params.id },
+    include: { order: true }
   });
 
-  return NextResponse.json({ success: true, data: updated });
+  if (item) {
+    const updated = await prisma.$transaction(async (tx) => {
+      const u = await tx.orderItem.update({
+        where: { id: params.id },
+        data: { status: orderItemStatus }
+      });
+
+      await TimelineService.create({
+        orderId: item.orderId,
+        orderItemId: item.id,
+        action: timelineAction,
+        note: timelineNote,
+        actorId: user.id,
+        role: user.role,
+        status: item.order.status,
+        nextState: item.order.status
+      }, tx as any);
+
+      return u;
+    });
+
+    return NextResponse.json({ success: true, data: updated });
+  }
+
+  // 2. If not found in OrderItem, try VendorTask table
+  const vendorTask = await prisma.vendorTask.findUnique({
+    where: { id: params.id },
+    include: { order: true }
+  });
+
+  if (vendorTask) {
+    const updatedTask = await prisma.$transaction(async (tx) => {
+      const vt = await tx.vendorTask.update({
+        where: { id: params.id },
+        data: {
+          status: nextStatus,
+          vendorId: vendorTask.vendorId || user.id
+        }
+      });
+
+      await TimelineService.create({
+        orderId: vendorTask.orderId,
+        action: timelineAction,
+        note: timelineNote,
+        actorId: user.id,
+        role: user.role,
+        status: vendorTask.order.status,
+        nextState: vendorTask.order.status
+      }, tx as any);
+
+      return vt;
+    });
+
+    return NextResponse.json({ success: true, data: updatedTask });
+  }
+
+  return NextResponse.json({ error: 'Task not found' }, { status: 404 });
 });
