@@ -17,7 +17,7 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 
 export default function POSPage() {
-  const { clearCart } = useCart()
+  const { items: cart, subtotal, clearCart } = useCart()
   const [isPaymentOpen, setIsPaymentOpen] = React.useState(false)
   const [successOrder, setSuccessOrder] = React.useState<string | null>(null)
   const [isBulkModalOpen, setIsBulkModalOpen] = React.useState(false)
@@ -190,10 +190,39 @@ export default function POSPage() {
         </div>
 
         {/* Right Side: Cart */}
-        <div className="w-full xl:w-[420px] shrink-0 xl:h-full">
+        <div id="pos-cart-panel" className="w-full xl:w-[420px] shrink-0 xl:h-full scroll-mt-20">
           <CartPanel onCheckout={() => setIsPaymentOpen(true)} />
         </div>
       </main>
+
+      {/* Sticky Floating Mobile Order Cart Bar (Only visible on small/medium mobile screens) */}
+      {cart.length > 0 && (
+        <div className="xl:hidden fixed bottom-16 left-4 right-4 z-40 animate-in slide-in-from-bottom duration-300">
+          <button
+            onClick={() => {
+              const cartElement = document.getElementById('pos-cart-panel');
+              if (cartElement) {
+                cartElement.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="w-full py-4 px-5 bg-gradient-to-r from-[var(--brand-deep-rose)] to-amber-700 text-white rounded-2xl font-ui font-black text-xs uppercase tracking-widest shadow-2xl flex items-center justify-between border-2 border-white/30 active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white text-[var(--brand-deep-rose)] font-black text-sm flex items-center justify-center shadow-md">
+                {cart.length}
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-[10px] text-pink-100 leading-none">ORDER CART READY</p>
+                <p className="font-black text-xs text-white tracking-wider mt-0.5">VIEW CART & CHECKOUT</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/20">
+              <span className="font-display font-black text-base text-white">₹{subtotal.toFixed(2)}</span>
+              <span className="text-amber-200 text-base font-bold">→</span>
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Modals */}
       <AnimatePresence>

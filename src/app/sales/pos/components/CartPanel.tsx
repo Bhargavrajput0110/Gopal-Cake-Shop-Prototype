@@ -106,71 +106,76 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
           </div>
         ) : (
           cart.map(item => (
-            <div key={item.cartItemId} className="flex gap-4 bg-white p-4 rounded-[1.5rem] border border-border shadow-sm group hover:border-[var(--brand-deep-rose)]/50 transition-colors">
-              <div className="flex-1 min-w-0">
-                <p className="font-display font-bold text-lg text-foreground truncate pr-2">{item.name}</p>
-                <div className="flex flex-col gap-1 mt-1">
-                  <div className="flex items-center gap-1.5 my-0.5">
-                    <span className="text-xs font-black text-amber-800">₹</span>
-                    <input 
-                      type="number"
-                      min="0"
-                      value={item.price || ''}
-                      onChange={(e) => {
-                        const newPrice = Math.max(0, Number(e.target.value) || 0);
-                        updateItemConfig(item.cartItemId, { price: newPrice });
-                      }}
-                      placeholder="0"
-                      className="w-24 px-2 py-0.5 bg-amber-50 hover:bg-amber-100/80 border border-amber-300 rounded font-black text-sm text-foreground focus:ring-1 focus:ring-amber-500 outline-none transition-colors"
-                      title="Click to edit price directly"
-                    />
-                    <span className="text-[10px] text-amber-700 font-bold uppercase tracking-widest">(Edit Price)</span>
-                  </div>
+            <div key={item.cartItemId} className="bg-white p-4 rounded-2xl border border-border shadow-sm space-y-3 group hover:border-[var(--brand-deep-rose)]/50 transition-colors">
+              {/* Row 1: Item Name & Item Total Price */}
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="font-display font-bold text-base md:text-lg text-foreground truncate">{item.name}</p>
                   <p className="text-muted-foreground font-ui text-[9px] uppercase tracking-widest font-black truncate">
                     {item.weight}kg {item.flavor ? `• ${item.flavor}` : ''} {item.shape ? `• ${item.shape}` : ''}
                   </p>
                   {item.designName && (
-                    <p className="text-[var(--brand-deep-rose)] font-ui text-[9px] uppercase tracking-widest font-black mt-1 truncate">Design: {item.designName}</p>
+                    <p className="text-[var(--brand-deep-rose)] font-ui text-[9px] uppercase tracking-widest font-black mt-0.5 truncate">
+                      Design: {item.designName}
+                    </p>
                   )}
-                  
-                  {/* Convenient Action Buttons: Edit Config & Remove Item */}
-                  <div className="flex items-center gap-3 mt-2 pt-1 border-t border-border/40">
-                    <button 
-                      onClick={() => setConfigCartItemId(item.cartItemId)}
-                      className="text-[10px] font-ui uppercase tracking-widest font-black text-indigo-600 hover:text-indigo-500 transition-colors"
-                    >
-                      Edit Configuration
-                    </button>
-                    <span className="text-border text-xs font-light">|</span>
-                    <button 
-                      onClick={() => removeItem(item.cartItemId)}
-                      className="text-[10px] font-ui uppercase tracking-widest font-black text-rose-500 hover:text-rose-600 transition-colors flex items-center gap-1 group/btn"
-                    >
-                      <Trash className="w-3 h-3 text-rose-500 group-hover/btn:scale-110 transition-transform" />
-                      <span>Remove Item</span>
-                    </button>
-                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-display font-black text-lg md:text-xl text-foreground">₹{(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               </div>
-              <div className="flex flex-col items-end justify-between py-1 shrink-0">
-                <p className="font-display font-black text-xl text-foreground">₹{(item.price * item.quantity).toFixed(2)}</p>
-                
-                {/* Massive Touch Targets for Increment/Decrement */}
-                <div className="flex items-center gap-1 bg-muted/50 border border-border rounded-xl p-1 shadow-inner">
+
+              {/* Row 2: Price Edit Input & Quantity Stepper */}
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/40 flex-wrap">
+                <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-300">
+                  <span className="text-xs font-black text-amber-800">₹</span>
+                  <input 
+                    type="number"
+                    min="0"
+                    value={item.price || ''}
+                    onChange={(e) => {
+                      const newPrice = Math.max(0, Number(e.target.value) || 0);
+                      updateItemConfig(item.cartItemId, { price: newPrice });
+                    }}
+                    placeholder="0"
+                    className="w-20 px-1 py-0.5 bg-white border border-amber-300 rounded font-black text-sm text-foreground focus:ring-1 focus:ring-amber-500 outline-none"
+                  />
+                  <span className="text-[9px] text-amber-800 font-bold uppercase tracking-widest">(Edit Price)</span>
+                </div>
+
+                {/* Touch Friendly Quantity Stepper */}
+                <div className="flex items-center gap-1 bg-muted/60 border border-border rounded-xl p-1 shrink-0">
                   <button 
                     onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)} 
-                    className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg text-foreground transition-all active:scale-90"
+                    className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg text-foreground transition-all active:scale-90"
                   >
-                    {item.quantity === 1 ? <Trash className="w-5 h-5 text-rose-500" variant="Bold" /> : <Minus className="w-5 h-5" />}
+                    {item.quantity === 1 ? <Trash className="w-4 h-4 text-rose-500" variant="Bold" /> : <Minus className="w-4 h-4" />}
                   </button>
-                  <span className="w-8 text-center font-display text-lg font-bold text-foreground">{item.quantity}</span>
+                  <span className="w-6 text-center font-display text-base font-bold text-foreground">{item.quantity}</span>
                   <button 
                     onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)} 
-                    className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg text-foreground transition-all active:scale-90"
+                    className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg text-foreground transition-all active:scale-90"
                   >
-                    <Add className="w-5 h-5" />
+                    <Add className="w-4 h-4" />
                   </button>
                 </div>
+              </div>
+
+              {/* Row 3: Convenient Actions (Edit Config & Remove Item) */}
+              <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs font-bold">
+                <button 
+                  onClick={() => setConfigCartItemId(item.cartItemId)}
+                  className="text-[10px] font-ui uppercase tracking-widest font-black text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200/80 transition-colors"
+                >
+                  ⚙️ Edit Configuration
+                </button>
+                <button 
+                  onClick={() => removeItem(item.cartItemId)}
+                  className="text-[10px] font-ui uppercase tracking-widest font-black text-rose-600 hover:text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200/80 transition-colors flex items-center gap-1"
+                >
+                  <Trash className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Remove Item</span>
+                </button>
               </div>
             </div>
           ))
