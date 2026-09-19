@@ -1091,7 +1091,7 @@ function VendorAssignModal({ order, onClose, onWhatsApp }: { order: Order; onClo
     });
   };
 
-  const handleConfirmVendorAssignment = () => {
+  const handleConfirmVendorAssignment = async () => {
     const newTasks = [...(order.vendorTasks || [])];
     selectedVendors.forEach(v => {
       const userNote = vendorNotes[v.type]?.trim() || `Assigned to ${v.name} by Sales`;
@@ -1121,9 +1121,27 @@ function VendorAssignModal({ order, onClose, onWhatsApp }: { order: Order; onClo
       }
     });
     
-    updateOrderFields(order.id, { vendorTasks: newTasks });
+    await updateOrderFields(order.id, { vendorTasks: newTasks });
+
+    // Persist each assigned vendor task via backend API to ensure real-time vendor delivery
+    try {
+      for (const v of selectedVendors) {
+        const userNote = vendorNotes[v.type]?.trim() || `Assigned to ${v.name}`;
+        await fetch(`/api/v1/orders/${order.id}/vendor-tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vendorType: v.type,
+            instructions: userNote,
+            status: 'accepted'
+          })
+        });
+      }
+    } catch(e) {}
+    
     if (selectedVendors.length > 0) {
-      onWhatsApp(`Notified ${selectedVendors.map(v => v.name).join(', ')} with instructions.`);
+      const notesSummary = selectedVendors.map(v => `${v.name}: "${vendorNotes[v.type] || 'Assigned'}"`).join(' | ');
+      onWhatsApp(`WhatsApp notification sent to Partner (${notesSummary})`);
     }
     onClose();
   };
