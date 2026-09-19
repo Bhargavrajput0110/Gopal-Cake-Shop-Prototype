@@ -123,8 +123,7 @@ export default function VendorTasks() {
   const onUpdate = async (id: string, action: string, mediaUrl?: string) => {
     // Optimistic Update
     const originalTasks = [...tasks];
-    let nextStatus = action === 'ACCEPTED' ? 'CHEF_ACCEPTED' : action;
-    if (action === 'READY_FOR_PICKUP') nextStatus = 'READY_FOR_PICKUP';
+    let nextStatus = action === 'ACCEPTED' ? 'accepted' : action === 'MAKING' ? 'in_production' : 'ready';
     
     setTasks(tasks.map(t => t.id === id ? { ...t, status: nextStatus } : t));
 
@@ -142,6 +141,7 @@ export default function VendorTasks() {
       } else {
         setToastMessage(action === 'ACCEPTED' ? `Assignment Accepted.` : `Production Started.`);
       }
+      fetchTasks();
     } catch (e) {
       console.error(e);
       setTasks(originalTasks); // Rollback
@@ -241,17 +241,24 @@ export default function VendorTasks() {
               let btnLabel = 'ACCEPT ASSIGNMENT';
               let btnColor = 'bg-gray-900 text-white hover:bg-gray-800';
               
-              if (task.status === 'CHEF_ACCEPTED') {
+              const s = (task.status || '').toLowerCase();
+              
+              if (s === 'accepted' || s === 'chef_accepted') {
                 statusLabel = 'Accepted';
                 btnAction = 'MAKING';
                 btnLabel = 'START PRODUCTION';
                 btnColor = 'bg-indigo-600 text-white hover:bg-indigo-700';
-              } else if (task.status === 'MAKING') {
+              } else if (s === 'making' || s === 'in_production') {
                 statusLabel = 'In Production';
                 btnAction = 'READY_FOR_PICKUP';
                 btnLabel = 'MARK AS READY';
                 btnColor = 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_0_20px_rgba(16,185,129,0.3)]';
-              } else if (task.status === 'COMPLETED') {
+              } else if (s === 'ready' || s === 'ready_for_pickup') {
+                statusLabel = 'Ready for Pickup';
+                btnAction = '';
+                btnLabel = '✓ READY FOR PICKUP';
+                btnColor = 'bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 cursor-default';
+              } else if (s === 'completed' || s === 'delivered') {
                 statusLabel = 'Completed';
                 btnAction = '';
                 btnLabel = 'DELIVERED';
