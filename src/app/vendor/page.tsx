@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { TickCircle, Refresh2, Gallery, Location, Danger, CloseSquare, Clock, DocumentDownload, Maximize } from "iconsax-react";
+import { formatTime, formatDate, formatDayLabel } from "@/lib/formatTime";
+import { TickCircle, Refresh2, Gallery, Location, Danger, CloseSquare, Clock, DocumentDownload, Maximize, Flash, Play, BagTick, DocumentUpload, Copy, TickSquare } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
 import { useSession } from "next-auth/react";
@@ -312,144 +313,187 @@ export default function VendorTasks() {
 function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUpdate, onImageClick, isCompleted, isPhotographer }: any) {
   const { timeLeftStr, isUrgent } = useSLA(o.targetDate, isCompleted);
   const targetDate = o.targetDate ? new Date(o.targetDate) : new Date();
+  const [copied, setCopied] = useState(false);
+
+  const s = (task.status || '').toLowerCase();
+  
+  // Progress Step index (0: Pending, 1: Accepted, 2: Making, 3: Ready/Completed)
+  let stepIndex = 0;
+  if (s === 'accepted' || s === 'chef_accepted') stepIndex = 1;
+  if (s === 'making' || s === 'in_production') stepIndex = 2;
+  if (s === 'ready' || s === 'ready_for_pickup' || s === 'completed' || s === 'delivered') stepIndex = 3;
+
+  const copyOrderId = () => {
+    if (o.orderNumber) {
+      navigator.clipboard.writeText(o.orderNumber);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: 30 }} 
       animate={{ opacity: 1, y: 0 }} 
-      className={`bg-white rounded-[2rem] shadow-sm border ${isCompleted ? 'border-gray-100 opacity-75' : 'border-gray-200'} overflow-hidden flex flex-col lg:flex-row group`}
+      className={`bg-white rounded-[2.5rem] shadow-[0_16px_48px_rgba(74,59,53,0.06)] border ${isCompleted ? 'border-gray-200 opacity-80' : 'border-gray-200/80 hover:border-amber-400/50 hover:shadow-[0_24px_64px_rgba(74,59,53,0.1)]'} transition-all duration-500 overflow-hidden flex flex-col lg:flex-row group`}
     >
-      {/* Visual Reference (Left/Top) */}
-      <div className="lg:w-2/5 bg-gray-100 relative overflow-hidden flex flex-col min-h-[300px]">
+      {/* Visual Reference (Left Column) */}
+      <div className="lg:w-2/5 bg-gray-900/5 relative overflow-hidden flex flex-col min-h-[340px] border-r border-gray-100">
         {p.gallery && p.gallery.length > 0 ? (
-           <div className="flex-1 flex flex-col p-6 bg-gray-50 border-r border-gray-200">
-             <div className="flex justify-between items-center mb-6">
-               <h3 className="font-display font-black text-xl text-gray-900">Reference Assets</h3>
-               <span className="px-3 py-1 bg-gray-200 rounded-full font-ui text-[9px] uppercase tracking-widest font-black text-gray-600">
+           <div className="flex-1 flex flex-col p-6 bg-slate-900 text-white">
+             <div className="flex justify-between items-center mb-4">
+               <h3 className="font-display font-black text-lg text-amber-300">Reference Assets</h3>
+               <span className="px-3 py-1 bg-white/10 rounded-full font-ui text-[9px] uppercase tracking-widest font-black text-gray-300">
                  {p.gallery.length} files
                </span>
              </div>
              
-             <div className="grid grid-cols-2 gap-4 mb-6">
+             <div className="grid grid-cols-2 gap-3 mb-4">
                {p.gallery.map((img: string, idx: number) => (
-                 <div key={idx} className={`relative overflow-hidden rounded-2xl shadow-sm border border-gray-200 group/img ${idx === 0 && p.gallery.length % 2 !== 0 ? 'col-span-2 aspect-[4/3]' : 'aspect-square'}`}>
+                 <div key={idx} className={`relative overflow-hidden rounded-xl shadow-md border border-white/20 group/img ${idx === 0 && p.gallery.length % 2 !== 0 ? 'col-span-2 aspect-[4/3]' : 'aspect-square'}`}>
                    <img src={img} alt={`Gallery ${idx}`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-110" />
-                   
-                   {/* Hover Overlay with Action Icons */}
-                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                     <button onClick={() => onImageClick(img)} className="p-3 bg-white/20 backdrop-blur-md border border-white/30 rounded-full text-white hover:bg-white/40 transition-colors shadow-lg" title="View Fullscreen">
+                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                     <button onClick={() => onImageClick(img)} className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-lg" title="View Fullscreen">
                        <Maximize className="w-5 h-5" />
-                     </button>
-                     <button className="p-3 bg-white/20 backdrop-blur-md border border-white/30 rounded-full text-white hover:bg-white/40 transition-colors shadow-lg" title="Download Asset">
-                       <DocumentDownload className="w-5 h-5" />
                      </button>
                    </div>
                  </div>
                ))}
              </div>
-
-             <button className="mt-auto w-full py-4 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-ui text-[10px] uppercase tracking-widest font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-               <DocumentDownload className="w-5 h-5" />
-               Download All Assets (.zip)
-             </button>
            </div>
         ) : p.designImageUrl ? (
-          <div className="relative flex-1 flex items-center justify-center group/img min-h-[300px]">
-            <img src={p.designImageUrl} alt="Reference" className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover/img:scale-105" />
+          <div className="relative flex-1 flex items-center justify-center group/img min-h-[340px] bg-black">
+            <img src={p.designImageUrl} alt="Reference" className="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover/img:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
             
-            {/* Hover Overlay with Action Icons */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-4">
-              <button onClick={() => onImageClick(p.designImageUrl)} className="p-4 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-lg" title="View Fullscreen">
+            {/* Hover Action */}
+            <div className="absolute inset-0 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-4 z-10">
+              <button onClick={() => onImageClick(p.designImageUrl)} className="p-4 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-2xl border border-white/40" title="View Fullscreen">
                 <Maximize className="w-6 h-6" />
               </button>
-              <button className="p-4 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-lg" title="Download Asset">
-                <DocumentDownload className="w-6 h-6" />
-              </button>
+            </div>
+            
+            <div className="absolute bottom-4 left-6 right-6 flex justify-between items-center z-10">
+              <span className="font-ui text-[9px] uppercase tracking-widest font-black text-amber-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-md border border-amber-400/30">
+                📷 Reference Design
+              </span>
             </div>
           </div>
         ) : (
-          <div className="text-gray-400 flex flex-col items-center justify-center flex-1 min-h-[300px]">
-            <Gallery className="w-12 h-12 mb-2 opacity-30" />
-            <span className="font-ui text-[10px] uppercase tracking-widest font-bold">No Reference Image</span>
+          <div className="text-gray-400 flex flex-col items-center justify-center flex-1 min-h-[340px] bg-gray-100">
+            <Gallery className="w-14 h-14 mb-2 text-gray-300" />
+            <span className="font-ui text-[10px] uppercase tracking-widest font-bold text-gray-400">No Custom Photo</span>
           </div>
         )}
-        
-        {/* Status Badge Over Image */}
-        <div className="absolute top-6 left-6 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full text-gray-900 font-ui text-[10px] uppercase tracking-widest font-black shadow-lg">
-          {statusLabel}
-        </div>
       </div>
 
-      {/* Details (Right/Bottom) */}
-      <div className="lg:w-3/5 p-8 md:p-12 flex flex-col">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <p className="font-ui text-[10px] uppercase tracking-widest font-black text-indigo-600 mb-2">#{o.orderNumber || 'Task'}</p>
-            <h2 className={`font-display font-black text-4xl leading-none ${isCompleted ? 'text-gray-500' : 'text-gray-900'}`}>{task.productName}</h2>
+      {/* Details (Right Column) */}
+      <div className="lg:w-3/5 p-8 md:p-10 flex flex-col justify-between">
+        
+        {/* Step Progress Bar */}
+        <div className="mb-6 bg-gray-50 border border-gray-200/80 p-3 rounded-2xl">
+          <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest mb-2 px-1">
+            <span className={stepIndex >= 1 ? 'text-amber-700' : 'text-gray-400'}>1. Accepted</span>
+            <span className={stepIndex >= 2 ? 'text-indigo-700' : 'text-gray-400'}>2. Production</span>
+            <span className={stepIndex >= 3 ? 'text-emerald-700' : 'text-gray-400'}>3. Ready</span>
           </div>
-          <div className="text-right shrink-0 bg-gray-50 px-6 py-4 rounded-2xl border border-gray-100">
-            <p className="font-ui text-[9px] uppercase tracking-widest font-bold text-gray-500 mb-1">Required Qty</p>
-            <p className="font-display font-black text-4xl text-gray-900">{task.quantity}</p>
+          <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden flex">
+            <div className={`h-full transition-all duration-500 ${stepIndex >= 1 ? 'bg-amber-500 w-1/3' : 'w-0'}`} />
+            <div className={`h-full transition-all duration-500 ${stepIndex >= 2 ? 'bg-indigo-600 w-1/3' : 'w-0'}`} />
+            <div className={`h-full transition-all duration-500 ${stepIndex >= 3 ? 'bg-emerald-500 w-1/3' : 'w-0'}`} />
+          </div>
+        </div>
+
+        {/* Order ID & Title */}
+        <div className="flex justify-between items-start mb-6 gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-mono text-xs font-black text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-lg">
+                #{o.orderNumber || 'Task'}
+              </span>
+              {o.orderNumber && (
+                <button 
+                  onClick={copyOrderId} 
+                  className="text-gray-400 hover:text-indigo-600 transition-colors p-1"
+                  title="Copy Order ID"
+                >
+                  {copied ? <TickSquare className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
+            <h2 className={`font-display font-black text-3xl md:text-4xl leading-tight ${isCompleted ? 'text-gray-500' : 'text-gray-900'}`}>{task.productName}</h2>
+          </div>
+          <div className="text-right shrink-0 bg-amber-50/70 border border-amber-200/80 px-5 py-3 rounded-2xl shadow-sm">
+            <p className="font-ui text-[8px] uppercase tracking-widest font-black text-amber-800 mb-0.5">Required Qty</p>
+            <p className="font-display font-black text-3xl text-amber-950">{task.quantity}</p>
           </div>
         </div>
 
         {/* SLA & Location */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className={`p-5 rounded-2xl border ${isUrgent && !isCompleted ? 'bg-rose-50 border-rose-200' : isCompleted ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
-            <p className={`font-ui text-[9px] uppercase tracking-widest font-bold mb-2 flex items-center gap-2 ${isUrgent && !isCompleted ? 'text-rose-600' : isCompleted ? 'text-emerald-600' : 'text-gray-500'}`}>
-              <Clock className="w-4 h-4"/> {isCompleted ? 'Delivery Status' : 'Delivery SLA'}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className={`p-4 rounded-2xl border ${isUrgent && !isCompleted ? 'bg-rose-50 border-rose-200' : isCompleted ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50/50 border-amber-200/70'}`}>
+            <p className={`font-ui text-[9px] uppercase tracking-widest font-black mb-1 flex items-center gap-1.5 ${isUrgent && !isCompleted ? 'text-rose-600' : isCompleted ? 'text-emerald-600' : 'text-amber-800'}`}>
+              <Clock className="w-3.5 h-3.5"/> {isCompleted ? 'Delivery Status' : 'Target SLA'}
             </p>
-            <p className={`font-display font-bold text-2xl ${isUrgent && !isCompleted ? 'text-rose-600' : isCompleted ? 'text-emerald-600' : 'text-gray-900'}`}>{timeLeftStr}</p>
-            {!isCompleted && <p className="font-ui text-[10px] font-bold text-gray-500 mt-1">{targetDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>}
+            <p className={`font-display font-black text-xl ${isUrgent && !isCompleted ? 'text-rose-600' : isCompleted ? 'text-emerald-600' : 'text-gray-900'}`}>{timeLeftStr}</p>
+            {!isCompleted && o.targetDate && (
+              <p className="font-ui text-[10px] font-bold text-amber-900/80 mt-1">
+                📅 {formatDayLabel(o.targetDate)} ({formatDate(o.targetDate)}) · {formatTime(o.targetDate)}
+              </p>
+            )}
           </div>
-          <div className="p-5 rounded-2xl bg-gray-50 border border-gray-100">
-            <p className="font-ui text-[9px] uppercase tracking-widest font-bold text-gray-500 mb-2 flex items-center gap-2">
-              <Location className="w-4 h-4"/> Destination
+
+          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200/80">
+            <p className="font-ui text-[9px] uppercase tracking-widest font-black text-gray-500 mb-1 flex items-center gap-1.5">
+              <Location className="w-3.5 h-3.5 text-indigo-600"/> Destination
             </p>
-            <p className="font-display font-bold text-xl text-gray-900">{o.branch?.name}</p>
-            <p className="font-ui text-[10px] font-bold text-gray-500 mt-1">Deliver to Kitchen</p>
+            <p className="font-display font-black text-lg text-gray-900 leading-tight">{o.branch?.name || 'Main Kitchen'}</p>
+            <p className="font-ui text-[9px] font-bold text-gray-500 mt-1">Deliver to Decorator Counter</p>
           </div>
         </div>
 
-        {/* Notes / Masterpiece Context & Salesperson Instructions */}
+        {/* Sales Instructions Box */}
         {(task.instructions || p.notes) && !isCompleted && (
-          <div className="mb-8 p-6 bg-purple-50 rounded-2xl border border-purple-200 flex gap-4 text-purple-950 shadow-sm">
+          <div className="mb-6 p-5 bg-purple-50/80 rounded-2xl border-2 border-purple-200/80 flex gap-3.5 text-purple-950 shadow-sm">
             <Danger className="w-6 h-6 text-purple-600 shrink-0 mt-0.5" />
             <div>
-              <p className="font-ui text-[9px] uppercase tracking-widest font-black text-purple-700 mb-2">
-                📝 Sales Instructions & Requirements ({p.productName || task.productName})
+              <p className="font-ui text-[9px] uppercase tracking-widest font-black text-purple-800 mb-1">
+                💬 Sales Instructions & Special Requirements
               </p>
-              <p className="font-editorial italic text-lg text-purple-900 leading-relaxed font-bold">
+              <p className="font-editorial italic text-base text-purple-900 font-bold leading-relaxed">
                 &quot;{task.instructions || p.notes}&quot;
               </p>
             </div>
           </div>
         )}
 
-        {/* Photographers: Upload Work Dropzone */}
-        {isPhotographer && !isCompleted && btnAction === 'READY_FOR_PICKUP' && (
-          <div className="mb-8 border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-            <p className="font-display font-bold text-xl text-gray-900 mb-4">Upload Deliverables</p>
-            <CloudinaryUploader 
-              onUploadSuccess={(urls) => onUpdate(task.id, 'READY_FOR_PICKUP', urls[0])}
-              maxFiles={1}
-              label="Upload Work"
-            />
-          </div>
-        )}
-
-        {/* Action Bar */}
-        <div className="mt-auto pt-6 border-t border-gray-100">
-          {(!isPhotographer || btnAction !== 'READY_FOR_PICKUP') && (
+        {/* Action Button */}
+        <div className="pt-4 border-t border-gray-100 mt-auto">
+          {s === 'ready' || s === 'ready_for_pickup' || isCompleted ? (
+            <div className="w-full py-5 rounded-2xl bg-emerald-100/80 border-2 border-emerald-300 text-emerald-800 font-ui text-[11px] uppercase tracking-widest font-black flex items-center justify-center gap-2 shadow-sm">
+              <TickCircle className="w-5 h-5 text-emerald-600" />
+              Ready for Pickup (Submitted to Branch)
+            </div>
+          ) : (
             <button 
               disabled={isCompleted}
               onClick={() => onUpdate(task.id, btnAction)}
-              className={`w-full py-6 rounded-2xl font-ui text-[11px] uppercase tracking-widest font-black transition-transform ${!isCompleted && 'active:scale-[0.98]'} ${btnColor}`}
+              className={`w-full py-5 rounded-2xl font-ui text-[11px] uppercase tracking-[0.2em] font-black transition-all duration-300 active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 ${
+                btnAction === 'ACCEPTED' 
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20' 
+                  : btnAction === 'MAKING' 
+                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20' 
+                  : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30'
+              }`}
             >
+              {btnAction === 'ACCEPTED' && <Flash className="w-4 h-4" />}
+              {btnAction === 'MAKING' && <Play className="w-4 h-4" />}
+              {btnAction === 'READY_FOR_PICKUP' && <BagTick className="w-4 h-4" />}
               {btnLabel}
             </button>
           )}
         </div>
+
       </div>
     </motion.div>
   );
