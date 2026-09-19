@@ -39,22 +39,42 @@ export const POST = withApiHandler(async ({ req, params, appRole }) => {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
   if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
   const body = await req.json();
   const payload = VendorTaskSchema.safeParse(body);
   if (!payload.success) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
 
+  // Map vendorType ('photo' | 'flower' | 'acrylic') to Prisma role ('VENDOR_PHOTO' | 'VENDOR_FLORIST' | 'VENDOR_ACRYLIC')
+  let targetRole = 'VENDOR_FLORIST';
+  if (payload.data.vendorType === 'photo' || payload.data.vendorType === 'VENDOR_PHOTO') targetRole = 'VENDOR_PHOTO';
+  if (payload.data.vendorType === 'acrylic' || payload.data.vendorType === 'VENDOR_ACRYLIC') targetRole = 'VENDOR_ACRYLIC';
+
+  // Find vendor user (e.g. Vikas Bhai for VENDOR_FLORIST, Amit for VENDOR_PHOTO, Samir for VENDOR_ACRYLIC)
+  const vendorUser = await prisma.user.findFirst({
+    where: { role: targetRole as any, status: { not: 'SUSPENDED' } }
+  });
+
+  const vendorId = payload.data.vendorId || vendorUser?.id;
+
   const task = await prisma.vendorTask.create({
     data: {
       orderId,
       vendorType: payload.data.vendorType,
       instructions: payload.data.instructions,
-      vendorId: payload.data.vendorId,
-      status: payload.data.status
+      vendorId: vendorId,
+      status: payload.data.status || 'accepted'
     }
   });
+
+  // Also update OrderItems with assignedVendorId so vendor dashboard queries find them
+  if (vendorId) {
+    await prisma.orderItem.updateMany({
+      where: { orderId },
+      data: { assignedVendorId: vendorId }
+    });
+  }
 
   return NextResponse.json({ success: true, data: task });
 });

@@ -36,8 +36,14 @@ export default function LoginClient({ staffList, branchList }: { staffList: Staf
   const [isLoading, setIsLoading] = useState(false);
 
   // Derived filtered staff
+  const FAKE_VENDOR_NAMES = ["vendor photo", "vendor florist", "vendor acrylic"];
+
   const filteredStaff = staffList.filter(s => {
     if (s.role !== selectedRole) return false;
+    // Exclude dummy placeholder vendor names so only real vendors (Amit, Samir, Vikas Bhai) show
+    if (selectedRole === "vendor" && FAKE_VENDOR_NAMES.includes(s.name.toLowerCase().trim())) {
+      return false;
+    }
     // Admins and global delivery staff have no branch restriction
     if (selectedRole === "admin" || selectedRole === "vendor") return true;
     // Global staff (null branchId) appear under any branch selection

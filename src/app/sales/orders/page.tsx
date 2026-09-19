@@ -1165,9 +1165,9 @@ function VendorAssignModal({ order, onClose, onWhatsApp }: { order: Order; onClo
         {/* Partner Selection Cards */}
         <div className="grid grid-cols-3 gap-3 w-full mb-5">
           {[
-            { name: "PrintMagic Studio", type: "photo" as const, icon: "📷", desc: "Photo Prints" },
-            { name: "Blossom Florist", type: "flower" as const, icon: "🌸", desc: "Fresh Flowers" },
-            { name: "LaserCut Pro", type: "acrylic" as const, icon: "✨", desc: "Acrylic Toppers" }
+            { name: "Amit Hemrajani", type: "photo" as const, icon: "📷", desc: "Photo Prints" },
+            { name: "Vikas Bhai", type: "flower" as const, icon: "🌸", desc: "Fresh Flowers" },
+            { name: "Samir", type: "acrylic" as const, icon: "✨", desc: "Acrylic Toppers" }
           ].map(v => {
             const isSelected = selectedVendors.some(sv => sv.name === v.name && sv.type === v.type);
             return (
