@@ -98,6 +98,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   const [toast, setToast] = useState<{ id: string; title: string; message: string; variant: 'info' | 'success' | 'warning' } | null>(null);
   const [referenceImages, setReferenceImages] = useState<string[]>(() => getInitialState('referenceImages', []));
   const [printImage, setPrintImage] = useState<string>("");
+  const [isPhotoCakeOption, setIsPhotoCakeOption] = useState<boolean>(isPhotoCake || false);
   const [tierConfig, setTierConfig] = useState<string>("");
   const [overridePrice, setOverridePrice] = useState<string>("");
 
@@ -382,12 +383,42 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
                 </p>
               </div>
 
+              {/* Photo Cake Edible Print Section */}
+              <div className="space-y-3 bg-purple-500/10 p-4 rounded-2xl border border-purple-500/30">
+                <label className="font-ui text-xs font-bold uppercase tracking-wider text-purple-950 flex items-center justify-between cursor-pointer">
+                  <span className="flex items-center gap-2">
+                    <GalleryAdd className="w-4 h-4 text-purple-600" />
+                    Include Edible Photo Print? (Photo Cake)
+                  </span>
+                  <input 
+                    type="checkbox" 
+                    checked={isPhotoCakeOption} 
+                    onChange={(e) => setIsPhotoCakeOption(e.target.checked)} 
+                    className="w-5 h-5 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                  />
+                </label>
+                {isPhotoCakeOption && (
+                  <div className="mt-2 pt-2 border-t border-purple-500/20">
+                    <p className="text-[11px] text-purple-900 font-bold mb-2">Upload Customer Photo for Sugar Sheet Printing (Photo Vendor Amit):</p>
+                    <CloudinaryUploader
+                      maxFiles={3}
+                      folder="edible_prints"
+                      existingImages={printImage ? printImage.split(',') : []}
+                      onUploadSuccess={(urls) => setPrintImage(urls.join(','))}
+                    />
+                    {printImage && (
+                      <p className="text-xs text-purple-700 font-bold mt-2">✓ Photo attached for sugar sheet print</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Reference Images (Hidden for Design Cakes since they already have a design) */}
               {!(product.categoryId === 'design' || product.designId || product.category?.name === 'Design Cake') && (
                 <div className="space-y-3">
                   <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
                     <GalleryAdd className="w-4 h-4 text-primary" />
-                    Reference Images
+                    Cake Design Reference Images
                     <span className="text-muted-foreground normal-case text-[10px]">(Optional - Max 3)</span>
                   </label>
                   <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
