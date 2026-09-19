@@ -353,13 +353,32 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           {/* Custom Cake Fields */}
           {isCustom && (
             <div className="space-y-6 pt-2 border-t border-border/40">
+              {/* Price Input for Sales / POS Staff */}
+              <div className="space-y-2 bg-amber-500/10 p-4 rounded-2xl border border-amber-500/30">
+                <label className="font-ui text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center justify-between">
+                  <span>💰 Custom Cake Price (₹)</span>
+                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">(Sales / POS Input)</span>
+                </label>
+                <input 
+                  type="number"
+                  min="0"
+                  value={overridePrice}
+                  onChange={(e) => setOverridePrice(e.target.value)}
+                  placeholder="Enter agreed price (e.g. 1850)..."
+                  className="w-full rounded-xl border-2 border-amber-500/40 bg-background px-4 py-3 h-12 text-lg font-black text-foreground focus:outline-none focus:border-amber-600 transition-colors"
+                />
+                <p className="text-[11px] font-medium text-amber-900/80">
+                  Enter the price quoted to the customer. Leave blank if submitting an online quote request.
+                </p>
+              </div>
+
               {/* Custom Order & Quote Info Notice */}
-              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
+              <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-amber-800 font-bold text-xs uppercase tracking-wider">🍰 Custom Cake Design Request</span>
+                  <span className="text-primary font-bold text-xs uppercase tracking-wider">🍰 Custom Cake Design Request</span>
                 </div>
-                <p className="text-xs text-amber-950 font-medium leading-relaxed">
-                  Custom cakes have no fixed price. Select your desired weight & flavour, upload your reference design photo, and submit your request. Our Master Chef & Sales team will inspect your design and send you an exact price quote for confirmation.
+                <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                  Select your desired weight & flavour, upload your reference design photo, and enter the price above or submit for chef approval.
                 </p>
               </div>
 
@@ -398,7 +417,11 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           {editingCartItem ? (
             "Update Custom Request"
           ) : isCustom ? (
-            "Submit Custom Cake Request"
+            overridePrice && !isNaN(Number(overridePrice)) && Number(overridePrice) > 0 ? (
+              `Add Custom Cake to Cart — ₹${Number(overridePrice)}`
+            ) : (
+              "Submit Custom Cake Request"
+            )
           ) : (
             `Add to Cart — ₹${finalPrice}`
           )}

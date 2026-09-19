@@ -17,6 +17,7 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
   const { items: cart, updateItemConfig } = useCart()
   const item = cart.find(i => i.cartItemId === cartItemId)
   
+  const [price, setPrice] = React.useState<number>(item?.price || 0)
   const [weight, setWeight] = React.useState(item?.weight || 1)
   const [flavor, setFlavor] = React.useState(item?.flavor || "")
   const [messageOnCake, setMessageOnCake] = React.useState(item?.messageOnCake || "")
@@ -49,6 +50,7 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
 
   const handleSave = () => {
     updateItemConfig(cartItemId, {
+      price,
       weight,
       flavor,
       messageOnCake,
@@ -121,6 +123,17 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
           {activeTab === 'config' && (
             <div className="space-y-4">
               <div className="flex gap-4">
+                <div className="flex-1 space-y-2 bg-amber-50 border border-amber-200 p-2.5 rounded-lg">
+                  <label className="text-xs font-bold text-amber-900 block">Custom Cake Price (₹)</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    value={price || ''} 
+                    onChange={e => setPrice(Math.max(0, Number(e.target.value) || 0))} 
+                    placeholder="Enter agreed price..." 
+                    className="w-full p-2 bg-white border border-amber-300 rounded text-base font-black text-amber-950 focus:outline-none focus:ring-1 focus:ring-amber-500" 
+                  />
+                </div>
                 <div className="flex-1 space-y-2">
                   <label className="text-sm font-bold">Weight (kg)</label>
                   <input type="number" step="0.5" min="0.5" value={weight} onChange={e => setWeight(Number(e.target.value))} className="w-full p-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
