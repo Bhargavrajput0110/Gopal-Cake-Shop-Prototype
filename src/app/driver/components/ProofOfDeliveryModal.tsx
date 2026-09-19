@@ -26,13 +26,22 @@ export function ProofOfDeliveryModal({ onClose, onConfirm, expectedAmount, payme
   return (
     <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
       <div className="bg-card w-full max-w-sm rounded-2xl border-2 border-primary shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="p-4 border-b bg-muted/30 flex justify-between items-center">
-          <div>
-            <h3 className="font-serif font-black text-lg text-foreground">Proof of Delivery</h3>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Complete Task</p>
+        <div className="p-4 border-b bg-muted/30 flex justify-between items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={onClose} 
+              className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-xs font-bold flex items-center gap-1 transition-all active:scale-95 shrink-0"
+              title="Go back to tasks"
+            >
+              ← Back
+            </button>
+            <div>
+              <h3 className="font-serif font-black text-base sm:text-lg text-foreground leading-tight">Proof of Delivery</h3>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-primary">Complete Task</p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-muted rounded-full">
-            <CloseSquare className="w-5 h-5 text-muted-foreground" />
+          <button onClick={onClose} className="p-1.5 hover:bg-muted rounded-full shrink-0" title="Close">
+            <CloseSquare className="w-6 h-6 text-muted-foreground" />
           </button>
         </div>
 
@@ -133,13 +142,20 @@ export function ProofOfDeliveryModal({ onClose, onConfirm, expectedAmount, payme
           </div>
         </div>
 
-        <div className="p-4 border-t bg-muted/10">
+        <div className="p-4 border-t bg-muted/10 flex gap-3">
+          <button 
+            type="button"
+            onClick={onClose}
+            className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95"
+          >
+            Cancel
+          </button>
           <Button 
-            className="w-full h-14 text-sm font-black uppercase tracking-widest rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg disabled:opacity-50" 
+            className="flex-1 h-12 text-xs sm:text-sm font-black uppercase tracking-widest rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg disabled:opacity-50" 
             disabled={!hasPhoto}
             onClick={() => onConfirm(paymentMode === 'CASH' ? cashCollected : expectedAmount, notes, paymentMode)}
           >
-            Confirm & Complete Delivery
+            Confirm & Complete
           </Button>
         </div>
       </div>
