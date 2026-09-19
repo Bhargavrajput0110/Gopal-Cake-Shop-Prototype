@@ -86,6 +86,7 @@ export default function VendorTasks() {
         const mapped = json.data.map((item: any) => ({
           id: item.id,
           vendorId: item.assignedVendor?.id || "UNKNOWN",
+          instructions: item.instructions || item.notes || "",
           order: {
             orderNumber: item.order?.orderNumber || "Task",
             branch: { name: item.order?.branch?.name || "Kitchen" },
@@ -96,7 +97,7 @@ export default function VendorTasks() {
           status: item.status,
           parentItem: {
             productName: item.parentItem?.productName || item.productName || "Unknown Item",
-            notes: item.notes || item.parentItem?.notes || "",
+            notes: item.instructions || item.notes || item.parentItem?.notes || "",
             designImageUrl: item.parentItem?.designImageUrl || item.designImageUrl || item.image || "",
             gallery: (item.parentItem?.media && item.parentItem.media.length > 0)
               ? item.parentItem.media.map((m: any) => m.url)
@@ -398,13 +399,17 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
           </div>
         </div>
 
-        {/* Notes / Masterpiece Context */}
-        {p.notes && !isCompleted && (
-          <div className="mb-8 p-6 bg-amber-50 rounded-2xl border border-amber-100 flex gap-4">
-            <Danger className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
+        {/* Notes / Masterpiece Context & Salesperson Instructions */}
+        {(task.instructions || p.notes) && !isCompleted && (
+          <div className="mb-8 p-6 bg-purple-50 rounded-2xl border border-purple-200 flex gap-4 text-purple-950 shadow-sm">
+            <Danger className="w-6 h-6 text-purple-600 shrink-0 mt-0.5" />
             <div>
-              <p className="font-ui text-[9px] uppercase tracking-widest font-black text-amber-700 mb-2">Designer Notes ({p.productName})</p>
-              <p className="font-editorial italic text-lg text-amber-900 leading-relaxed">{p.notes}</p>
+              <p className="font-ui text-[9px] uppercase tracking-widest font-black text-purple-700 mb-2">
+                📝 Sales Instructions & Requirements ({p.productName || task.productName})
+              </p>
+              <p className="font-editorial italic text-lg text-purple-900 leading-relaxed font-bold">
+                &quot;{task.instructions || p.notes}&quot;
+              </p>
             </div>
           </div>
         )}
