@@ -14,7 +14,7 @@ function CustomPageContent() {
   const editingCartItem = editId ? items.find(i => i.cartItemId === editId) : undefined;
 
   const customProduct = {
-    id: "custom-build",
+    id: "custom-cake-studio",
     name: "Build Your Custom Cake",
     basePrice: 600,
     category: { name: "Bespoke Creation" },

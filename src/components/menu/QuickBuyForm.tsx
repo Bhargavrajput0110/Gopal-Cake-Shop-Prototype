@@ -353,27 +353,37 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           {/* Custom Cake Fields */}
           {isCustom && (
             <div className="space-y-6 pt-2 border-t border-border/40">
-
+              {/* Custom Order & Quote Info Notice */}
+              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-amber-800 font-bold text-xs uppercase tracking-wider">💡 Custom Cake Quote & Pricing</span>
+                </div>
+                <p className="text-xs text-amber-950 font-medium leading-relaxed">
+                  {referenceImages.length > 0 
+                    ? `Reference photo attached. Estimated base price is ₹${finalPrice}. Our Master Chef will review your design photo and confirm the final quote price within 15 minutes.` 
+                    : `Standard estimate starts at ₹${finalPrice}. You can add to cart now or attach reference photos for a custom quote.`}
+                </p>
+              </div>
 
               {/* Reference Images (Hidden for Design Cakes since they already have a design) */}
               {!(product.categoryId === 'design' || product.designId || product.category?.name === 'Design Cake') && (
                 <div className="space-y-3">
-                <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                  <GalleryAdd className="w-4 h-4 text-primary" />
-                  Reference Images
-                  <span className="text-muted-foreground normal-case text-[10px]">(Optional - Max 3)</span>
-                </label>
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-                  <CloudinaryUploader
-                    maxFiles={3}
-                    folder="custom_references"
-                    existingImages={referenceImages}
-                    onUploadSuccess={(urls) => setReferenceImages(urls)}
-                  />
-                  {referenceImages.length > 0 && (
-                    <p className="text-xs text-emerald-600 font-bold mt-2">{referenceImages.length} image(s) uploaded</p>
-                  )}
-                </div>
+                  <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                    <GalleryAdd className="w-4 h-4 text-primary" />
+                    Reference Images
+                    <span className="text-muted-foreground normal-case text-[10px]">(Optional - Max 3)</span>
+                  </label>
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                    <CloudinaryUploader
+                      maxFiles={3}
+                      folder="custom_references"
+                      existingImages={referenceImages}
+                      onUploadSuccess={(urls) => setReferenceImages(urls)}
+                    />
+                    {referenceImages.length > 0 && (
+                      <p className="text-xs text-emerald-600 font-bold mt-2">{referenceImages.length} image(s) uploaded</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -387,7 +397,17 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           onClick={handleAddToCart}
           className="w-full h-13 py-3 rounded-2xl bg-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/90 text-white font-ui font-bold text-sm tracking-widest uppercase shadow-lg shadow-[var(--brand-deep-rose)]/20 hover:-translate-y-1 transition-all"
         >
-          {editingCartItem ? "Update Item" : (isCustom && product.id === 'custom-cake-studio' && !overridePrice) ? "Add to Quote Request" : `Add to Cart - ₹${finalPrice}`}
+          {editingCartItem ? (
+            "Update Item"
+          ) : isCustom ? (
+            referenceImages.length > 0 ? (
+              `Submit Custom Quote Request — Est. ₹${finalPrice}`
+            ) : (
+              `Add Custom Cake to Cart — Est. ₹${finalPrice}`
+            )
+          ) : (
+            `Add to Cart — ₹${finalPrice}`
+          )}
         </Button>
       </div>
 
