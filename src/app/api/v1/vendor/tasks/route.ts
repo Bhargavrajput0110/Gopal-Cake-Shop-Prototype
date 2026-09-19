@@ -93,19 +93,30 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
   }));
 
   // Map VendorTasks
-  const mappedVendorTasks = vendorTasks.map((vt: any) => ({
-    id: vt.id,
-    vendorId: vt.vendorId || user.id,
-    instructions: vt.instructions || "",
-    order: {
-      orderNumber: vt.order?.orderNumber || "Task",
-      branch: { name: vt.order?.branch?.name || "Kitchen" },
-      targetDate: vt.order?.targetDate
-    },
-    productName: vt.order?.items?.[0]?.productName || "Custom Fulfillment Assignment",
-    quantity: vt.order?.items?.[0]?.quantity || 1,
-    status: vt.status || 'accepted'
-  }));
+  const mappedVendorTasks = vendorTasks.map((vt: any) => {
+    const firstItem = vt.order?.items?.[0] || {};
+    const imgUrl = firstItem.designImageUrl || firstItem.image || firstItem.parentItem?.designImageUrl || "";
+    return {
+      id: vt.id,
+      vendorId: vt.vendorId || user.id,
+      instructions: vt.instructions || "",
+      order: {
+        orderNumber: vt.order?.orderNumber || "Task",
+        branch: { name: vt.order?.branch?.name || "Kitchen" },
+        targetDate: vt.order?.targetDate
+      },
+      productName: firstItem.productName || "Custom Fulfillment Assignment",
+      quantity: firstItem.quantity || 1,
+      status: vt.status || 'accepted',
+      designImageUrl: imgUrl,
+      parentItem: {
+        productName: firstItem.productName || "Custom Assignment",
+        notes: vt.instructions || "",
+        designImageUrl: imgUrl,
+        gallery: firstItem.media ? firstItem.media.map((m: any) => m.url) : null
+      }
+    };
+  });
 
   // Combine unique tasks
   const allTasks = [...mappedOrderItems];

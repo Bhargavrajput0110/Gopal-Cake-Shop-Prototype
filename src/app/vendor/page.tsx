@@ -53,6 +53,50 @@ const useSLA = (timeTarget: string | undefined, isCompleted: boolean) => {
   return { timeLeftStr, isUrgent };
 };
 
+// Synthesize Zomato/Blinkit style audio chime sound
+function playOrderChime() {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc1.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // A5
+    gain1.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start();
+    osc1.stop(ctx.currentTime + 0.6);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function triggerPhoneNotification(orderNumber: string, productName: string, instructions: string) {
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    if (Notification.permission === 'granted') {
+      new Notification(`🔔 New Order Assignment! #${orderNumber}`, {
+        body: `${productName} — "${instructions || 'Custom task assigned'}"`,
+        icon: '/images/gopal-cakes-logo.png',
+        tag: orderNumber
+      });
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          new Notification(`🔔 New Order Assignment! #${orderNumber}`, {
+            body: `${productName} — "${instructions || 'Custom task assigned'}"`,
+            icon: '/images/gopal-cakes-logo.png',
+            tag: orderNumber
+          });
+        }
+      });
+    }
+  }
+}
+
 export default function VendorTasks() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -63,6 +107,8 @@ export default function VendorTasks() {
   const [activeVendor, setActiveVendor] = useState<{id: string, name: string, type: string} | null>(null);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'ACTIVE' | 'COMPLETED'>('ACTIVE');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const prevTaskIdsRef = useState<string[]>([]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -73,52 +119,84 @@ export default function VendorTasks() {
         name: session.user.name || "Vendor Studio",
         type: session.user.role || "Vendor Partner"
       });
+      // Request phone notification permission on load
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
     }
   }, [session, status, router]);
 
-  const fetchTasks = async () => {
-    setIsLoading(true);
+  const fetchTasks = async (showLoading = false) => {
+    if (showLoading) setIsLoading(true);
     try {
       const res = await fetch(`/api/v1/vendor/tasks`);
       const json = await res.json();
       
       if (json.success) {
-        // Map backend schema to UI format
-        const mapped = json.data.map((item: any) => ({
-          id: item.id,
-          vendorId: item.assignedVendor?.id || "UNKNOWN",
-          instructions: item.instructions || item.notes || "",
-          order: {
-            orderNumber: item.order?.orderNumber || "Task",
-            branch: { name: item.order?.branch?.name || "Kitchen" },
-            targetDate: item.order?.targetDate
-          },
-          productName: item.productName,
-          quantity: item.quantity,
-          status: item.status,
-          parentItem: {
-            productName: item.parentItem?.productName || item.productName || "Unknown Item",
-            notes: item.instructions || item.notes || item.parentItem?.notes || "",
-            designImageUrl: item.parentItem?.designImageUrl || item.designImageUrl || item.image || "",
-            gallery: (item.parentItem?.media && item.parentItem.media.length > 0)
-              ? item.parentItem.media.map((m: any) => m.url)
-              : (item.media && item.media.length > 0)
-              ? item.media.map((m: any) => m.url)
-              : null
+        // Check for new tasks to trigger chime and push notification
+        const currentIds = json.data.map((item: any) => item.id);
+        const prevIds = prevTaskIdsRef[0];
+        
+        if (prevIds.length > 0) {
+          const newTasks = json.data.filter((item: any) => !prevIds.includes(item.id));
+          if (newTasks.length > 0) {
+            if (soundEnabled) playOrderChime();
+            const firstNew = newTasks[0];
+            triggerPhoneNotification(
+              firstNew.order?.orderNumber || 'Task',
+              firstNew.productName || firstNew.parentItem?.productName || 'New Task',
+              firstNew.instructions || firstNew.notes || ''
+            );
+            setToastMessage(`🔔 NEW ORDER ASSIGNED TO YOUR STUDIO!`);
           }
-        }));
+        }
+        prevTaskIdsRef[1](currentIds);
+
+        // Map backend schema to UI format
+        const mapped = json.data.map((item: any) => {
+          const imgUrl = item.parentItem?.designImageUrl || item.designImageUrl || item.image || item.order?.items?.[0]?.designImageUrl || item.order?.items?.[0]?.image || "";
+          return {
+            id: item.id,
+            vendorId: item.assignedVendor?.id || "UNKNOWN",
+            instructions: item.instructions || item.notes || "",
+            designImageUrl: imgUrl,
+            order: {
+              orderNumber: item.order?.orderNumber || "Task",
+              branch: { name: item.order?.branch?.name || "Kitchen" },
+              targetDate: item.order?.targetDate
+            },
+            productName: item.productName || item.parentItem?.productName || "Custom Fulfillment Task",
+            quantity: item.quantity || 1,
+            status: item.status,
+            parentItem: {
+              productName: item.parentItem?.productName || item.productName || "Custom Task",
+              notes: item.instructions || item.notes || item.parentItem?.notes || "",
+              designImageUrl: imgUrl,
+              gallery: (item.parentItem?.media && item.parentItem.media.length > 0)
+                ? item.parentItem.media.map((m: any) => m.url)
+                : (item.media && item.media.length > 0)
+                ? item.media.map((m: any) => m.url)
+                : null
+            }
+          };
+        });
         setTasks(mapped);
       }
     } catch (e) {
       console.error(e);
-      setToastMessage("Failed to load tasks");
+      if (showLoading) setToastMessage("Failed to load tasks");
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (activeVendor) fetchTasks();
+    if (activeVendor) {
+      fetchTasks(true);
+      // Auto poll every 12 seconds for new order assignments
+      const interval = setInterval(() => fetchTasks(false), 12000);
+      return () => clearInterval(interval);
+    }
   }, [activeVendor]);
 
   const onUpdate = async (id: string, action: string, mediaUrl?: string) => {
