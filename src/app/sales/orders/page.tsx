@@ -770,6 +770,22 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                 &quot;{order.customerInstructions}&quot;
               </div>
             )}
+            {order.vendorTasks && order.vendorTasks.length > 0 && (
+              <div className="mt-2.5 p-2.5 bg-purple-50 border border-purple-200 rounded-xl text-purple-950 text-xs font-bold space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-purple-700 block">
+                  🤝 Assigned Partners ({order.vendorTasks.length}):
+                </span>
+                {order.vendorTasks.map((vt, idx) => (
+                  <div key={idx} className="flex flex-col text-[11px] text-purple-900 bg-white/70 p-2 rounded-lg border border-purple-100">
+                    <div className="flex items-center justify-between font-extrabold">
+                      <span>{vt.vendorName || vt.vendorType}</span>
+                      <span className="text-[9px] uppercase px-1.5 py-0.5 bg-purple-200 text-purple-800 rounded font-black">{vt.status}</span>
+                    </div>
+                    {vt.instructions && <p className="text-[11px] font-medium text-purple-800 mt-0.5 italic">&quot;{vt.instructions}&quot;</p>}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col justify-between">
@@ -1048,6 +1064,24 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 function VendorAssignModal({ order, onClose, onWhatsApp }: { order: Order; onClose: () => void; onWhatsApp: (msg: string) => void }) {
   const { updateOrderFields } = useOrders();
   const [selectedVendors, setSelectedVendors] = useState<Array<{name: string, type: "photo"|"flower"|"acrylic"}>>([]);
+  const [vendorNotes, setVendorNotes] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (order.vendorTasks) {
+      const initialNotes: Record<string, string> = {};
+      const initialSelected: Array<{name: string, type: "photo"|"flower"|"acrylic"}> = [];
+      order.vendorTasks.forEach(vt => {
+        if (vt.vendorName) {
+          initialSelected.push({ name: vt.vendorName, type: vt.vendorType as any });
+        }
+        if (vt.instructions) {
+          initialNotes[vt.vendorType] = vt.instructions;
+        }
+      });
+      if (initialSelected.length > 0) setSelectedVendors(initialSelected);
+      if (Object.keys(initialNotes).length > 0) setVendorNotes(initialNotes);
+    }
+  }, [order]);
 
   const handleToggleVendor = (vendorName: string, vendorType: "photo" | "flower" | "acrylic") => {
     setSelectedVendors(prev => {
@@ -1060,36 +1094,58 @@ function VendorAssignModal({ order, onClose, onWhatsApp }: { order: Order; onClo
   const handleConfirmVendorAssignment = () => {
     const newTasks = [...(order.vendorTasks || [])];
     selectedVendors.forEach(v => {
+      const userNote = vendorNotes[v.type]?.trim() || `Assigned to ${v.name} by Sales`;
       const existingIndex = newTasks.findIndex(vt => vt.vendorType === v.type);
+      
       if (existingIndex >= 0) {
-        newTasks[existingIndex] = { ...newTasks[existingIndex], status: 'accepted', vendorName: v.name };
+        newTasks[existingIndex] = {
+          ...newTasks[existingIndex],
+          status: 'accepted',
+          vendorName: v.name,
+          instructions: userNote,
+          notes: [
+            ...(newTasks[existingIndex].notes || []),
+            { text: userNote, timestamp: new Date().toISOString(), read: false }
+          ]
+        };
       } else {
-        newTasks.push({ vendorType: v.type, status: 'accepted', vendorName: v.name, instructions: 'Assigned manually by Sales' });
+        newTasks.push({
+          vendorType: v.type,
+          status: 'accepted',
+          vendorName: v.name,
+          instructions: userNote,
+          notes: [
+            { text: userNote, timestamp: new Date().toISOString(), read: false }
+          ]
+        });
       }
     });
     
     updateOrderFields(order.id, { vendorTasks: newTasks });
-    if(selectedVendors.length > 0) onWhatsApp(`Notified partners for Order ${order.id}.`);
+    if (selectedVendors.length > 0) {
+      onWhatsApp(`Notified ${selectedVendors.map(v => v.name).join(', ')} with instructions.`);
+    }
     onClose();
   };
 
   return (
-    <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex flex-col items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-[2rem] shadow-2xl relative w-full max-w-lg flex flex-col items-center overflow-hidden">
+    <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex flex-col items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-2xl relative w-full max-w-lg flex flex-col items-center max-h-[90vh] overflow-y-auto my-auto border border-border">
         {/* Elegant top decoration */}
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-purple-400 via-purple-600 to-indigo-600" />
         
-        <button onClick={onClose} className="absolute top-6 right-6 text-muted-foreground hover:text-foreground bg-secondary p-2 rounded-full transition-all hover:scale-110 active:scale-95"><CloseSquare className="w-5 h-5" /></button>
+        <button onClick={onClose} className="absolute top-5 right-5 text-muted-foreground hover:text-foreground bg-secondary p-2 rounded-full transition-all hover:scale-110 active:scale-95"><CloseSquare className="w-5 h-5" /></button>
         
-        <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-           <Reserve className="w-8 h-8 text-purple-600" />
+        <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mb-3 shrink-0">
+           <Reserve className="w-7 h-7 text-purple-600" />
         </div>
-        <h3 className="font-serif text-3xl font-black text-[#3E2723] mb-2 text-center">Assign Partners</h3>
-        <p className="text-xs font-bold text-muted-foreground mb-8 uppercase tracking-widest text-center">
-          Select fulfillment partners for {order.id}
+        <h3 className="font-serif text-2xl sm:text-3xl font-black text-[#3E2723] mb-1 text-center">Assign Partners</h3>
+        <p className="text-[11px] font-bold text-muted-foreground mb-6 uppercase tracking-widest text-center">
+          Select fulfillment partners for #{order.orderNumber || order.id.slice(-6)}
         </p>
         
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full mb-8">
+        {/* Partner Selection Cards */}
+        <div className="grid grid-cols-3 gap-3 w-full mb-5">
           {[
             { name: "PrintMagic Studio", type: "photo" as const, icon: "📷", desc: "Photo Prints" },
             { name: "Blossom Florist", type: "flower" as const, icon: "🌸", desc: "Fresh Flowers" },
@@ -1097,25 +1153,62 @@ function VendorAssignModal({ order, onClose, onWhatsApp }: { order: Order; onClo
           ].map(v => {
             const isSelected = selectedVendors.some(sv => sv.name === v.name && sv.type === v.type);
             return (
-              <button key={v.name} onClick={() => handleToggleVendor(v.name, v.type)} className={`border-2 rounded-2xl p-5 flex flex-col items-center gap-2 transition-all hover:scale-105 shadow-sm relative ${isSelected ? 'bg-purple-50 border-purple-500 shadow-purple-500/20' : 'bg-white border-border hover:bg-gray-50'}`}>
-                <span className="w-12 h-12 bg-white border border-border rounded-full flex items-center justify-center shadow-sm text-gray-800 font-black text-2xl">{v.icon}</span>
-                <span className="font-bold text-sm text-gray-900 text-center leading-tight">{v.name}</span>
-                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest text-center">{v.desc}</span>
-                {isSelected && <TickCircle className="w-6 h-6 text-purple-600 absolute -top-3 -right-3 bg-white rounded-full" />}
+              <button 
+                key={v.name} 
+                onClick={() => handleToggleVendor(v.name, v.type)} 
+                className={`border-2 rounded-2xl p-3 sm:p-4 flex flex-col items-center gap-1.5 transition-all active:scale-95 shadow-xs relative ${isSelected ? 'bg-purple-50 border-purple-500 shadow-purple-500/20' : 'bg-white border-border hover:bg-gray-50'}`}
+              >
+                <span className="w-10 h-10 bg-white border border-border rounded-full flex items-center justify-center shadow-xs text-gray-800 font-black text-xl">{v.icon}</span>
+                <span className="font-bold text-xs text-gray-900 text-center leading-tight">{v.name}</span>
+                <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest text-center">{v.desc}</span>
+                {isSelected && <TickCircle className="w-5 h-5 text-purple-600 absolute -top-2 -right-2 bg-white rounded-full shadow-sm" />}
               </button>
             );
           })}
         </div>
+
+        {/* Dynamic Instructions & Notes Input for Each Selected Vendor */}
+        {selectedVendors.length > 0 && (
+          <div className="w-full mb-6 space-y-3 bg-purple-50/70 p-4 rounded-2xl border border-purple-200 animate-in fade-in duration-300">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
+                📝 Partner Instructions / Notes:
+              </span>
+              <span className="text-[9px] font-bold text-purple-700 bg-purple-200/80 px-2 py-0.5 rounded-full">
+                Sent to Vendor
+              </span>
+            </div>
+
+            {selectedVendors.map(v => (
+              <div key={v.type} className="space-y-1 bg-white p-3 rounded-xl border border-purple-200/80 shadow-xs">
+                <label className="text-xs font-bold text-gray-900 flex items-center justify-between">
+                  <span>{v.name} <span className="text-purple-600 font-normal">({v.type === 'photo' ? 'Photo Print' : v.type === 'flower' ? 'Flowers' : 'Acrylic'})</span></span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={vendorNotes[v.type] || ""}
+                  onChange={(e) => setVendorNotes(prev => ({ ...prev, [v.type]: e.target.value }))}
+                  placeholder={`Write note for ${v.name} (e.g. Red roses only, 6x4 photo glossy, gold acrylic font)...`}
+                  className="w-full text-xs font-medium p-2.5 rounded-lg border border-gray-200 bg-gray-50/50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all resize-none"
+                />
+              </div>
+            ))}
+          </div>
+        )}
         
-        <button onClick={handleConfirmVendorAssignment} disabled={selectedVendors.length===0} className="w-full py-4 bg-purple-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-purple-700 disabled:opacity-50 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2">
+        <button 
+          onClick={handleConfirmVendorAssignment} 
+          disabled={selectedVendors.length===0} 
+          className="w-full py-3.5 bg-purple-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-purple-700 disabled:opacity-50 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 shrink-0"
+        >
           {selectedVendors.length > 0 ? (
-             <>Confirm {selectedVendors.length} Partner{selectedVendors.length!==1?'s':''}</>
+             <>Confirm & Send Notes ({selectedVendors.length})</>
           ) : (
              <>Select a Partner</>
           )}
         </button>
       </div>
     </motion.div>
-  )
+  );
 }
 
