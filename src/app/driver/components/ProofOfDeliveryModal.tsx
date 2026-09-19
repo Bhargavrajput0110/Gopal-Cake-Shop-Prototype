@@ -1,15 +1,17 @@
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
-import { Camera, CloseSquare, TickSquare } from "iconsax-react"
+import { Camera, CloseSquare, TickSquare, Mobile, Money } from "iconsax-react"
 
 interface ProofOfDeliveryModalProps {
   onClose: () => void
-  onConfirm: (cashCollected: number, notes: string) => void
+  onConfirm: (cashCollected: number, notes: string, paymentMethod?: 'CASH' | 'UPI') => void
   expectedAmount: number
   paymentStatus: string
 }
 
 export function ProofOfDeliveryModal({ onClose, onConfirm, expectedAmount, paymentStatus }: ProofOfDeliveryModalProps) {
+  const isCod = expectedAmount > 0 || paymentStatus === 'COD'
+  const [paymentMode, setPaymentMode] = React.useState<'CASH' | 'UPI'>('UPI')
   const [cashCollected, setCashCollected] = React.useState<number>(expectedAmount)
   const [notes, setNotes] = React.useState('')
   const [hasPhoto, setHasPhoto] = React.useState(false)
@@ -18,71 +20,126 @@ export function ProofOfDeliveryModal({ onClose, onConfirm, expectedAmount, payme
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setHasPhoto(true)
-      // Actual implementation would upload to Cloudinary/Media Engine here.
     }
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-card w-full max-w-sm rounded-xl border-2 border-primary shadow-2xl overflow-hidden flex flex-col">
+      <div className="bg-card w-full max-w-sm rounded-2xl border-2 border-primary shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="p-4 border-b bg-muted/30 flex justify-between items-center">
-          <h3 className="font-black text-lg">Proof of Delivery</h3>
+          <div>
+            <h3 className="font-serif font-black text-lg text-foreground">Proof of Delivery</h3>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Complete Task</p>
+          </div>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-full">
-            <CloseSquare className="w-5 h-5" />
+            <CloseSquare className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+        <div className="p-5 space-y-5 flex-1 overflow-y-auto">
+          {/* Payment Collection Toggle (If Pending Balance > 0 or COD) */}
+          {isCod && (
+            <div className="bg-amber-50/80 border-2 border-amber-200 p-4 rounded-2xl space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-black text-amber-900 uppercase tracking-widest">Collect Payment</span>
+                <span className="text-xs font-black text-amber-700 bg-amber-200/60 px-2 py-0.5 rounded-full">
+                  ₹{expectedAmount} DUE
+                </span>
+              </div>
+
+              {/* Mode Selector */}
+              <div className="flex gap-2 p-1 bg-amber-100/60 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMode('UPI')}
+                  className={`flex-1 py-2 font-bold text-[10px] uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                    paymentMode === 'UPI' ? 'bg-sky-600 text-white shadow-sm' : 'text-amber-900 hover:bg-amber-200/50'
+                  }`}
+                >
+                  <Mobile className="w-4 h-4" /> UPI QR Code
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMode('CASH')}
+                  className={`flex-1 py-2 font-bold text-[10px] uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                    paymentMode === 'CASH' ? 'bg-emerald-600 text-white shadow-sm' : 'text-amber-900 hover:bg-amber-200/50'
+                  }`}
+                >
+                  <Money className="w-4 h-4" /> Cash Collection
+                </button>
+              </div>
+
+              {/* UPI QR Display */}
+              {paymentMode === 'UPI' ? (
+                <div className="bg-white p-3 rounded-xl border border-sky-100 flex flex-col items-center text-center space-y-2 shadow-sm">
+                  <span className="font-bold text-[10px] uppercase tracking-wider text-sky-900">
+                    Scan Paytm UPI QR (GOPAL BAKERY)
+                  </span>
+                  <div className="w-36 h-36 bg-white p-1 rounded-xl border-2 border-sky-200 shadow-inner">
+                    <img 
+                      src="/images/gopal_bakery_upi_qr.jpg" 
+                      alt="Paytm UPI QR Code" 
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  </div>
+                  <div className="text-[9px] font-bold text-sky-800 tracking-wide">
+                    UPI ID: <span className="font-mono font-black">paytmqr69rnay@ptys</span> | 9712632132
+                  </div>
+                </div>
+              ) : (
+                /* Cash Input */
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-amber-900 uppercase tracking-wider block">Cash Received (₹)</label>
+                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-amber-300">
+                    <span className="text-xl font-black text-amber-900">₹</span>
+                    <input 
+                      type="number" 
+                      value={cashCollected}
+                      onChange={(e) => setCashCollected(Number(e.target.value))}
+                      className="w-full bg-transparent text-xl font-black outline-none text-amber-900"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Photo Capture */}
           <div>
-            <label className="text-sm font-bold block mb-2">Delivery Photo (Required)</label>
+            <label className="text-xs font-bold block mb-2 text-foreground">Delivery Photo (Required)</label>
             <button 
-              className={`w-full h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 transition-colors ${hasPhoto ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50 text-muted-foreground'}`}
+              type="button"
+              className={`w-full h-28 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 transition-all ${
+                hasPhoto ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-border hover:border-primary/50 text-muted-foreground'
+              }`}
               onClick={() => fileInputRef.current?.click()}
             >
-              {hasPhoto ? <TickSquare className="w-8 h-8" /> : <Camera className="w-8 h-8" />}
-              <span className="font-bold">{hasPhoto ? 'Photo Attached' : 'Tap to Take Photo'}</span>
+              {hasPhoto ? <TickSquare className="w-7 h-7 text-emerald-600" /> : <Camera className="w-7 h-7" />}
+              <span className="font-bold text-xs">{hasPhoto ? 'Photo Attached ✅' : 'Tap to Take Photo'}</span>
             </button>
             <input type="file" accept="image/*" capture="environment" className="hidden" ref={fileInputRef} onChange={handlePhotoUpload} />
           </div>
 
-          {/* Payment Collection */}
-          {paymentStatus === 'COD' && (
-            <div className="bg-warning/10 border-2 border-warning/30 p-4 rounded-xl space-y-2">
-              <label className="text-sm font-black text-warning-foreground uppercase tracking-wider block">Collect Cash</label>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-black">₹</span>
-                <input 
-                  type="number" 
-                  value={cashCollected}
-                  onChange={(e) => setCashCollected(Number(e.target.value))}
-                  className="w-full bg-transparent text-2xl font-black outline-none border-b-2 border-warning/50 focus:border-warning py-1"
-                />
-              </div>
-              <p className="text-xs font-bold text-muted-foreground">Expected: ₹{expectedAmount}</p>
-            </div>
-          )}
-
           {/* Notes */}
           <div>
-            <label className="text-sm font-bold block mb-2">Delivery Notes (Optional)</label>
+            <label className="text-xs font-bold block mb-1 text-foreground">Delivery Notes (Optional)</label>
             <textarea 
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-muted border-none rounded-xl p-3 resize-none focus:ring-2 ring-primary"
+              className="w-full bg-muted/50 border border-border/60 rounded-xl p-3 text-xs resize-none focus:ring-2 ring-primary outline-none"
               rows={2}
-              placeholder="E.g., Left with security guard"
+              placeholder="E.g., Delivered to customer at front door"
             />
           </div>
         </div>
 
         <div className="p-4 border-t bg-muted/10">
           <Button 
-            className="w-full h-14 text-lg font-black" 
+            className="w-full h-14 text-sm font-black uppercase tracking-widest rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg disabled:opacity-50" 
             disabled={!hasPhoto}
-            onClick={() => onConfirm(cashCollected, notes)}
+            onClick={() => onConfirm(paymentMode === 'CASH' ? cashCollected : expectedAmount, notes, paymentMode)}
           >
-            Confirm Delivered
+            Confirm & Complete Delivery
           </Button>
         </div>
       </div>

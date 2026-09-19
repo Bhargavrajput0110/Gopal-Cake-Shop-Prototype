@@ -27,6 +27,25 @@ interface DriverState {
   optimisticUpdateTask: (orderId: string, updates: Partial<DriverOrderDTO>) => void
 }
 
+const STATUS_RANK: Record<string, number> = {
+  'NEW': 1,
+  'WAITING_FOR_CHEF': 1,
+  'CHEF_ACCEPTED': 1,
+  'MAKING': 1,
+  'DECORATING': 1,
+  'READY_FOR_PICKUP': 1,
+  'ACCEPTED': 2,
+  'START_TRIP': 2,
+  'ON_THE_WAY': 3,
+  'ON_THE_WAY_TO_VENDOR': 3,
+  'PICKED_UP': 3,
+  'OUT_FOR_DELIVERY': 3,
+  'DELIVERING_TO_BRANCH': 3,
+  'DELIVERED': 4,
+  'COMPLETED': 4,
+  'FAILED_DELIVERY': 4
+}
+
 export const useDriverStore = create<DriverState>()(
   persist(
     (set, get) => ({
@@ -36,7 +55,30 @@ export const useDriverStore = create<DriverState>()(
       lastSyncAt: null,
       activeDriver: null,
       
-      setTasks: (tasks) => set({ tasks }),
+      setTasks: (incomingTasks) => {
+        const currentTasks = get().tasks
+        const currentMap = new Map(currentTasks.map(t => [t.id, t]))
+
+        const merged = incomingTasks.map(incoming => {
+          const existing = currentMap.get(incoming.id)
+          if (!existing) return incoming
+
+          const existingRank = STATUS_RANK[existing.status] || 0
+          const incomingRank = STATUS_RANK[incoming.status] || 0
+
+          // Prevent state regression: if local task is further along in status pipeline, keep local status!
+          if (existingRank > incomingRank) {
+            return {
+              ...incoming,
+              status: existing.status,
+              assignedDriverId: existing.assignedDriverId || incoming.assignedDriverId
+            }
+          }
+          return incoming
+        })
+
+        set({ tasks: merged })
+      },
       
       setOnlineStatus: (isOnline) => set({ isOnline }),
       
