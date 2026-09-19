@@ -439,14 +439,14 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
                ))}
              </div>
            </div>
-        ) : p.designImageUrl ? (
+        ) : (p.designImageUrl || task.designImageUrl || task.image) ? (
           <div className="relative flex-1 flex items-center justify-center group/img min-h-[340px] bg-black">
-            <img src={p.designImageUrl} alt="Reference" className="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover/img:scale-105" />
+            <img src={p.designImageUrl || task.designImageUrl || task.image} alt="Reference" className="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover/img:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
             
             {/* Hover Action */}
             <div className="absolute inset-0 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-4 z-10">
-              <button onClick={() => onImageClick(p.designImageUrl)} className="p-4 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-2xl border border-white/40" title="View Fullscreen">
+              <button onClick={() => onImageClick(p.designImageUrl || task.designImageUrl || task.image)} className="p-4 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-2xl border border-white/40" title="View Fullscreen">
                 <Maximize className="w-6 h-6" />
               </button>
             </div>
@@ -458,9 +458,18 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
             </div>
           </div>
         ) : (
-          <div className="text-gray-400 flex flex-col items-center justify-center flex-1 min-h-[340px] bg-gray-100">
-            <Gallery className="w-14 h-14 mb-2 text-gray-300" />
-            <span className="font-ui text-[10px] uppercase tracking-widest font-bold text-gray-400">No Custom Photo</span>
+          <div className="flex-1 flex flex-col justify-center p-8 bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white relative overflow-hidden min-h-[340px]">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="w-12 h-12 bg-amber-400/10 border border-amber-400/20 rounded-2xl flex items-center justify-center mb-4 text-amber-300 font-bold text-xl">
+              📝
+            </div>
+            <span className="font-ui text-[9px] uppercase tracking-widest font-black text-amber-400 mb-1">Requirement Specification</span>
+            <h3 className="font-display font-black text-2xl text-white mb-3">{task.productName}</h3>
+            <div className="bg-white/10 border border-white/15 p-4 rounded-xl mb-4 backdrop-blur-md">
+              <p className="font-ui text-[8px] uppercase tracking-widest font-black text-purple-300 mb-1">Custom Notes</p>
+              <p className="font-editorial italic text-amber-200 text-sm font-bold leading-relaxed">&quot;{task.instructions || p.notes || "Fulfill as per salesperson requirements."}&quot;</p>
+            </div>
+            <p className="font-ui text-[9px] font-bold text-gray-400">No reference image attached. Fulfill according to text specification above.</p>
           </div>
         )}
       </div>

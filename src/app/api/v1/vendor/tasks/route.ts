@@ -94,8 +94,10 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
 
   // Map VendorTasks
   const mappedVendorTasks = vendorTasks.map((vt: any) => {
-    const firstItem = vt.order?.items?.[0] || {};
-    const imgUrl = firstItem.designImageUrl || firstItem.image || firstItem.parentItem?.designImageUrl || "";
+    const items = vt.order?.items || [];
+    const itemWithImage = items.find((i: any) => i.designImageUrl || i.image || i.parentItem?.designImageUrl) || items[0] || {};
+    const imgUrl = itemWithImage.designImageUrl || itemWithImage.image || itemWithImage.parentItem?.designImageUrl || "";
+    
     return {
       id: vt.id,
       vendorId: vt.vendorId || user.id,
@@ -105,15 +107,15 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
         branch: { name: vt.order?.branch?.name || "Kitchen" },
         targetDate: vt.order?.targetDate
       },
-      productName: firstItem.productName || "Custom Fulfillment Assignment",
-      quantity: firstItem.quantity || 1,
+      productName: itemWithImage.productName || "Custom Fulfillment Assignment",
+      quantity: itemWithImage.quantity || 1,
       status: vt.status || 'accepted',
       designImageUrl: imgUrl,
       parentItem: {
-        productName: firstItem.productName || "Custom Assignment",
+        productName: itemWithImage.productName || "Custom Assignment",
         notes: vt.instructions || "",
         designImageUrl: imgUrl,
-        gallery: firstItem.media ? firstItem.media.map((m: any) => m.url) : null
+        gallery: itemWithImage.media ? itemWithImage.media.map((m: any) => m.url) : null
       }
     };
   });
