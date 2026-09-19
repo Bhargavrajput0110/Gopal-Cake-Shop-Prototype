@@ -155,7 +155,7 @@ export default function VendorTasks() {
     return <div className="flex justify-center items-center h-screen bg-gray-950"><Refresh2 className="animate-spin w-12 h-12 text-gray-500" /></div>;
   }
 
-  const myTasks = tasks.filter(t => t.vendorId === activeVendor.id);
+  const myTasks = tasks;
   const displayedTasks = myTasks.filter(t => activeTab === 'ACTIVE' ? t.status !== 'COMPLETED' : t.status === 'COMPLETED');
 
   // STUDIO DASHBOARD
