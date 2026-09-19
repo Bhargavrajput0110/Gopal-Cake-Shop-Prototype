@@ -172,10 +172,16 @@ export default function DriverDashboard() {
         queryClient.invalidateQueries({ queryKey: ['driver-tasks', activeDriver?.id] })
         setToastMessage(`Task successfully updated!`);
         setTimeout(() => setToastMessage(null), 3000);
-      } catch (err) {
-        console.error("Action failed, queueing:", err)
-        queueAction(payload)
-        setToastMessage(`Action queued (Network error)`);
+      } catch (err: any) {
+        console.error("Action failed:", err);
+        const errMsg = err?.message || String(err);
+        if (errMsg.includes('CONCURRENCY_ERROR') || errMsg.includes('Conflict')) {
+          setToastMessage(`Order status already updated. Refreshing...`);
+          queryClient.invalidateQueries({ queryKey: ['driver-tasks', activeDriver?.id] });
+        } else {
+          queueAction(payload);
+          setToastMessage(`Action queued (Network error)`);
+        }
         setTimeout(() => setToastMessage(null), 3000);
       }
     }

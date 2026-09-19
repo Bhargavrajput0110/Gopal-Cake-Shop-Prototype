@@ -266,10 +266,12 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       });
       const data = await response.json();
       if (!data.success) {
-        if (data.error?.httpStatus === 409 || response.status === 409) {
-          alert(data.error?.message || data.message || 'Conflict: This order was recently changed by someone else.');
+        const rawMsg = data.error?.message || data.message || '';
+        if (data.error?.httpStatus === 409 || response.status === 409 || rawMsg.includes('CONCURRENCY_ERROR')) {
+          console.warn('[OrderContext] Concurrency conflict:', rawMsg);
+          alert('Order status was recently updated by another team member. Syncing latest updates...');
         } else {
-          alert(data.error?.message || data.message || 'Failed to update order status.');
+          alert(rawMsg || 'Failed to update order status.');
         }
       }
       // Always refetch to sync authoritative state

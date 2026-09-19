@@ -130,7 +130,16 @@ export class OrderTransitionService {
         })
 
         if (updatedOrder.count === 0) {
-          throw new Error('CONCURRENCY_ERROR: Order state has changed since read.')
+          // Check if DB is already at target nextState concurrently (e.g. driver double-click or rapid state sync)
+          const reCheckOrder = await tx.order.findUnique({
+            where: { id: orderId },
+            select: { status: true }
+          })
+          if (reCheckOrder && reCheckOrder.status === nextState) {
+            console.log(`[Idempotent/Concurrency] Order ${orderId} is already at status ${nextState}. Proceeding gracefully.`)
+          } else {
+            throw new Error('CONCURRENCY_ERROR: Order status was updated by another team member.')
+          }
         }
       }
 
