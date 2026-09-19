@@ -29,10 +29,8 @@ export const PATCH = withApiHandler(async (ctx) => {
       if (!newDriverId) newDriverId = user.id
       break
     case 'START_TRIP':
-      newStatus = 'ON_THE_WAY'
-      break
     case 'PICKED_UP':
-      newStatus = 'ON_THE_WAY'
+      newStatus = 'OUT_FOR_DELIVERY'
       break
     case 'DELIVERED':
       newStatus = 'DELIVERED'

@@ -69,7 +69,7 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
     }
 
     // IF TASK IS ALREADY PICKED UP / OUT FOR DELIVERY -> SHOW "DELIVERED"
-    if (['PICKED_UP', 'DELIVERING_TO_BRANCH', 'OUT_FOR_DELIVERY', 'ON_THE_WAY'].includes(item.status)) {
+    if (['PICKED_UP', 'DELIVERING_TO_BRANCH', 'OUT_FOR_DELIVERY', 'ON_THE_WAY', 'ON_THE_WAY_TO_VENDOR'].includes(item.status)) {
       return (
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
