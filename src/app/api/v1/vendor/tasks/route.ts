@@ -50,10 +50,19 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     orderBy: { createdAt: 'asc' }
   });
 
+  // Determine vendor type string from appRole
+  const roleVendorType = appRole === 'VENDOR_FLORIST' ? 'flower'
+    : appRole === 'VENDOR_PHOTO' ? 'photo'
+    : appRole === 'VENDOR_ACRYLIC' ? 'acrylic'
+    : null;
+
   // 2. Fetch VendorTask table entries for this vendor
   const vendorTasks = await prisma.vendorTask.findMany({
     where: {
-      vendorId: { in: vendorUserIds },
+      OR: [
+        { vendorId: { in: vendorUserIds } },
+        ...(roleVendorType ? [{ vendorType: roleVendorType }] : [])
+      ],
       status: { notIn: ['DELIVERED', 'CANCELLED'] }
     },
     include: {
