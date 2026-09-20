@@ -6,8 +6,13 @@ import QuoteCheckoutClient from './QuoteCheckoutClient';
 export default async function QuotePage({ params }: { params: any }) {
   const { id } = await params; // orderNumber
 
-  const order = await prisma.order.findUnique({
-    where: { orderNumber: id },
+  const order = await prisma.order.findFirst({
+    where: {
+      OR: [
+        { orderNumber: id },
+        { id: id }
+      ]
+    },
     include: {
       items: {
         include: { media: true }
@@ -16,7 +21,7 @@ export default async function QuotePage({ params }: { params: any }) {
     }
   });
 
-  if (!order || order.type !== 'QUOTE') {
+  if (!order || (order.type !== 'QUOTE' && order.status !== 'QUOTE_DRAFT' && order.status !== 'QUOTE_SENT')) {
     notFound();
   }
 

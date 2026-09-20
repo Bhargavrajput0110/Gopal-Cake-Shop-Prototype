@@ -623,6 +623,10 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
   };
 
   const handleSendQuote = async () => {
+    if (quotePrice <= 0) {
+      alert("Please enter a valid quote price greater than ₹0.");
+      return;
+    }
     setSubmittingQuote(true);
     try {
       const finalTotal = Math.max(0, quotePrice - selectedDiscount);
@@ -632,14 +636,14 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
       });
       await updateOrderStatus(order.id, "QUOTE_SENT", false, "Salesperson", { discount: selectedDiscount, basePrice: quotePrice });
       
-      let msg = `Sent quote of ₹${finalTotal} to customer via WhatsApp.`;
-      if (selectedDiscount > 0) msg = `Sent quote of ₹${finalTotal} (included ₹${selectedDiscount} discount) to customer via WhatsApp.`;
+      let msg = `Automated WhatsApp quote of ₹${finalTotal} sent via Meta Cloud API to customer (${order.customerPhone}).`;
+      if (selectedDiscount > 0) msg = `Automated WhatsApp quote of ₹${finalTotal} (included ₹${selectedDiscount} discount) sent via Meta Cloud API.`;
       
       onWhatsApp(msg);
       onMutated();
     } catch (e) {
       console.error(e);
-      alert("Failed to send quote");
+      alert("Failed to send automated quote");
     } finally {
       setSubmittingQuote(false);
     }
@@ -801,9 +805,17 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                 <div className="text-right">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">Payment</p>
                   <div className="flex flex-col items-end gap-0.5">
-                    <p className="text-xs font-bold text-muted-foreground">Total: ₹{order.grandTotal}</p>
-                    {order.pendingBalance > 0 ? (
+                    <p className="text-xs font-bold text-muted-foreground">Total: ₹{order.grandTotal || 0}</p>
+                    {order.status === "QUOTE_DRAFT" ? (
+                      <p className="text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md mt-0.5">Quote Requested</p>
+                    ) : order.status === "QUOTE_SENT" ? (
+                      <p className="text-xs font-black text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md mt-0.5">Quote Sent (Due: ₹{order.pendingBalance || order.grandTotal})</p>
+                    ) : order.status === "CANCELLED" ? (
+                      <p className="text-xs font-black text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md mt-0.5">Cancelled</p>
+                    ) : order.pendingBalance > 0 ? (
                       <p className="text-xs font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded-md mt-0.5">Due: ₹{order.pendingBalance}</p>
+                    ) : order.grandTotal === 0 ? (
+                      <p className="text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md mt-0.5">Quote Pending</p>
                     ) : (
                       <p className="text-xs font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md mt-0.5">Paid Full</p>
                     )}
@@ -866,12 +878,28 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
             {/* Zomato / Blinkit Partner Style 1-Tap Action Bar */}
             <div className="mt-4 pt-3 border-t border-gray-200 flex flex-wrap gap-2 items-center">
               {/* Primary Workflow Button */}
+              {order.status === "QUOTE_SENT" && (
+                <button 
+                  onClick={async () => {
+                    try {
+                      await updateOrderStatus(order.id, "QUOTE_SENT", false, "Salesperson", { basePrice: order.grandTotal });
+                      onWhatsApp(`Automated WhatsApp quote re-sent via Meta API to ${order.customerPhone}`);
+                      onMutated();
+                    } catch (e) {
+                      alert("Failed to re-send automated quote");
+                    }
+                  }} 
+                  className="flex-1 min-w-[150px] bg-[#25D366] text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-[#128C7E] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Resend Automated Quote (Meta API)
+                </button>
+              )}
               {order.status==="NEW" && (
                 <button onClick={handleApprove} className="flex-1 min-w-[120px] bg-emerald-600 text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
                   <TickCircle className="w-5 h-5" /> Approve
                 </button>
               )}
-              {order.pendingBalance > 0 && order.status !== "NEW" && !(["COMPLETED","CANCELLED"] as string[]).includes(order.status as string) && (
+              {order.pendingBalance > 0 && !(["NEW","QUOTE_DRAFT","QUOTE_SENT","COMPLETED","CANCELLED"] as string[]).includes(order.status as string) && (
 
                 <button onClick={handleCollectPayment} className="flex-1 min-w-[140px] bg-amber-500 text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-amber-600 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
                   <Gift className="w-5 h-5" /> Collect ₹{order.pendingBalance}

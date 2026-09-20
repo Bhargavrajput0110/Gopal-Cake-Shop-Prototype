@@ -122,12 +122,14 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       }
     }
 
+    const newTotal = updates.totalAmount !== undefined ? updates.totalAmount : updates.grandTotal;
+
     const updatedOrder = await prisma.order.update({
       where: { id },
       data: {
         customerNotes: updates.customerInstructions !== undefined ? updates.customerInstructions : undefined,
         targetDate: updates.timeTarget !== undefined && updates.timeTarget !== null ? new Date(updates.timeTarget) : undefined,
-        totalAmount: updates.totalAmount !== undefined ? updates.totalAmount : undefined,
+        totalAmount: newTotal !== undefined ? newTotal : undefined,
       }
     })
 

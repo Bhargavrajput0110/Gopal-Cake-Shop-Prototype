@@ -76,7 +76,7 @@ export class OrderTransitionService {
     // Idempotency check: if already in the target state for this action, just return success.
     // Skip this check for the PICKUP re-notification case above.
     const targetConfig = STATE_MACHINE.find((t: any) => t.action === action)
-    if (!isPickupReNotification && targetConfig && currentState === targetConfig.next) {
+    if (!isPickupReNotification && action !== 'send-quote' && targetConfig && currentState === targetConfig.next) {
       console.log(`[Idempotent] Order ${orderId} is already in state ${currentState} for action ${action}`)
       return
     }
@@ -140,7 +140,7 @@ export class OrderTransitionService {
       // 1. Update Order Status Conditionally
       // For PICKUP re-notification (READY_FOR_PICKUP → READY_FOR_PICKUP), skip the status update
       // because the order is already in the right state — we just need to fire the notification.
-      if (!isPickupReNotification) {
+      if (!isPickupReNotification && currentState !== nextState) {
         const updatedOrder = await tx.order.updateMany({
           where: { 
             id: orderId,

@@ -19,6 +19,8 @@ export interface SendTemplateParams {
   variables: (string | { name: string; text: string })[];
   /** Pre-uploaded Meta media_id — only for IMAGE-header template variants */
   mediaId?: string;
+  /** Dynamic URL parameter for template buttons (e.g. orderId / orderNumber) */
+  buttonUrlParam?: string;
 }
 
 export interface MediaUploadResult {

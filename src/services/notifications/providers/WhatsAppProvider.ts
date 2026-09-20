@@ -74,7 +74,7 @@ export class WhatsAppProvider implements NotificationProvider {
    * Never throws — maps all outcomes to ProviderResult.
    */
   async sendTemplate(params: SendTemplateParams): Promise<ProviderResult> {
-    const { phone, templateName, language, variables, mediaId } = params;
+    const { phone, templateName, language, variables, mediaId, buttonUrlParam } = params;
 
     // Normalise phone: strip non-digits, then ensure proper international format
     // e.g. "0757584977" → "91757584977" (Indian mobile)
@@ -94,9 +94,9 @@ export class WhatsAppProvider implements NotificationProvider {
         type: 'body',
         parameters: variables.map((v: any) => {
           if (typeof v === 'object' && v !== null && 'name' in v) {
-            return { type: 'text', parameter_name: v.name, text: v.text };
+            return { type: 'text', parameter_name: v.name, text: String(v.text).replace(/[\r\n]+/g, ', ') };
           }
-          return { type: 'text', text: v }; // Fallback for old templates
+          return { type: 'text', text: String(v).replace(/[\r\n]+/g, ', ') }; // Fallback for old templates
         }),
       },
     ];
@@ -106,6 +106,16 @@ export class WhatsAppProvider implements NotificationProvider {
       components.unshift({
         type: 'header',
         parameters: [{ type: 'image', image: { id: mediaId } }],
+      });
+    }
+
+    // If template has a dynamic URL button parameter, append button component
+    if (buttonUrlParam) {
+      components.push({
+        type: 'button',
+        sub_type: 'url',
+        index: 0,
+        parameters: [{ type: 'text', text: buttonUrlParam }],
       });
     }
 

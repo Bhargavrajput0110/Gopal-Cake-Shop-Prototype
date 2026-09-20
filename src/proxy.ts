@@ -148,6 +148,13 @@ export default auth(function proxy(req: NextRequest) {
   const pathname = nextUrl.pathname;
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
   
+  // ── 0. Canonical Domain Redirect (*.vercel.app → gopalcakeshop.com) ──────
+  const host = req.headers.get('host') || '';
+  if (host.includes('vercel.app')) {
+    const canonicalUrl = new URL(pathname + nextUrl.search, 'https://gopalcakeshop.com');
+    return NextResponse.redirect(canonicalUrl, 301);
+  }
+
   // ── 0. Inject Correlation ID ────────────────────────────────────────────────
   const requestHeaders = new Headers(req.headers);
   let correlationId = requestHeaders.get('x-request-id');

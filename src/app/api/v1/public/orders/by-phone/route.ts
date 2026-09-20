@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     where: { phone },
     include: {
       orders: {
-        where: { type: 'ORDER' },
+        where: { type: { in: ['ORDER', 'QUOTE'] } },
         orderBy: { createdAt: 'desc' },
         take: 20,
         select: {

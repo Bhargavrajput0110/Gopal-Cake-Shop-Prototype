@@ -57,7 +57,7 @@ export type TransitionConfig = {
 
 export const STATE_MACHINE: TransitionConfig[] = [
   { action: 'checkout', current: 'DRAFT', next: 'NEW', roles: ['CUSTOMER', 'SALESPERSON', 'MANAGER'] },
-  { action: 'send-quote', current: 'QUOTE_DRAFT', next: 'QUOTE_SENT', roles: ['SALESPERSON', 'MANAGER', 'ADMIN'] },
+  { action: 'send-quote', current: ['QUOTE_DRAFT', 'QUOTE_SENT'], next: 'QUOTE_SENT', roles: ['SALESPERSON', 'MANAGER', 'ADMIN'] },
   { action: 'approve', current: 'NEW', next: 'WAITING_FOR_CHEF', roles: ['SALESPERSON', 'MANAGER', 'ADMIN'] },
   { action: 'chef-accept', current: 'WAITING_FOR_CHEF', next: 'CHEF_ACCEPTED', roles: ['CHEF', 'ADMIN'] },
   { action: 'start-making', current: 'CHEF_ACCEPTED', next: 'MAKING', roles: ['CHEF', 'ADMIN'] },

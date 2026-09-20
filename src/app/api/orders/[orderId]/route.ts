@@ -7,8 +7,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ orderId:
     const { orderId } = resolvedParams;
 
     // Fetch the actual order from Prisma with all relations
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { id: orderId },
+          { orderNumber: orderId }
+        ]
+      },
       include: {
         customer: true,
         branch: true,

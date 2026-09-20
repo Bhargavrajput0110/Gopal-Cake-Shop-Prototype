@@ -239,8 +239,9 @@ export class StorefrontEngine {
         unitPrice = item.overridePrice
       }
 
-      // If it's a Quote, line price should be 0 because the Sales team will set it later
-      if (payload.type === 'QUOTE') {
+      // If it's a Quote from the public website, line price should be 0 because the Sales team will set it later.
+      // If it's from POS/Sales, respect the provided or calculated price.
+      if (payload.type === 'QUOTE' && context.source === OrderSource.WEBSITE) {
         unitPrice = 0
       }
 
@@ -337,8 +338,8 @@ export class StorefrontEngine {
       }
     }
 
-    // Force delivery charge to 0 for Quotes
-    if (payload.type === 'QUOTE') {
+    // Force delivery charge to 0 for Quotes requested via website
+    if (payload.type === 'QUOTE' && context.source === OrderSource.WEBSITE) {
       deliveryCharge = 0
     }
 

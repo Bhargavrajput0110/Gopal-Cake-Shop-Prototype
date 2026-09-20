@@ -152,13 +152,12 @@ export class NotificationDataAggregator {
     const referenceDescription =
       referenceImages.length > 0 ? 'Design Reference Attached' : 'No Design Reference';
 
-    // Resolve selected image (reference first, then product)
-    const selectedImageUrl = referenceImages[0] ?? productImages[0] ?? undefined;
+    // Resolve selected image (reference first, then product, then fallback to default)
+    const DEFAULT_IMAGE_URL = 'https://avatars.githubusercontent.com/u/9919?s=200&v=4';
+    const selectedImageUrl = referenceImages[0] ?? productImages[0] ?? DEFAULT_IMAGE_URL;
     const selectedImageType = referenceImages[0]
       ? 'REFERENCE'
-      : productImages[0]
-      ? 'PRODUCT'
-      : undefined;
+      : 'PRODUCT';
 
     // ── Payment ───────────────────────────────────────────────────────────────
     const summary = await FinancialService.calculateFinancialSummary(order);

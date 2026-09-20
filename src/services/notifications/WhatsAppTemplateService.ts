@@ -52,6 +52,8 @@ export interface TemplateSelection {
   /** If set, caller must upload this image and pass the media_id in the header */
   imageUrl?: string;
   imageType?: 'REFERENCE' | 'PRODUCT';
+  /** Dynamic URL parameter for template buttons (e.g. orderId / orderNumber) */
+  buttonUrlParam?: string;
 }
 
 // ─── Service ─────────────────────────────────────────────────────────────────
@@ -83,10 +85,7 @@ export class WhatsAppTemplateService {
       // Triggered when sales sends a quote to customer
       case 'QUOTE_CREATED': {
         if (isDelivery) {
-          // quote_created — 11 variables:
-          // customer_name, order_id, order_date, order_details, message_on_cake,
-          // special_instructions, order_total, amount_paid, payment_summary,
-          // delivery_address, delivery_datetime
+          // quote_created — 11 variables
           return {
             templateName: 'quote_created',
             templateVersion: TEMPLATE_VERSION,
@@ -96,7 +95,9 @@ export class WhatsAppTemplateService {
               { name: 'order_id', text: order.displayId },
               { name: 'order_date', text: order.date },
               { name: 'order_details', text: order.items },
-              { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
+              { name: 'message_on_cake', text: customization.messageOnCake || 'None' },
+              { name: 'special_instructions', text: customization.specialInstructions || 'None' },
+              { name: 'order_total', text: payment.total },
               { name: 'amount_paid', text: payment.amountPaid },
               { name: 'payment_summary', text: payment.paymentSummary },
               { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
@@ -104,12 +105,10 @@ export class WhatsAppTemplateService {
             ],
             imageUrl: _meta.selectedImageUrl,
             imageType: _meta.selectedImageType,
+            buttonUrlParam: order.displayId,
           };
         } else {
-          // quote_created_pickup — 12 variables:
-          // customer_name, order_id, order_date, order_details, message_on_cake,
-          // special_instructions, order_total, amount_paid, payment_summary,
-          // store_name, store_address, pickup_datetime
+          // quote_created_pickup — 12 variables
           return {
             templateName: 'quote_created_pickup',
             templateVersion: TEMPLATE_VERSION,
@@ -119,7 +118,9 @@ export class WhatsAppTemplateService {
               { name: 'order_id', text: order.displayId },
               { name: 'order_date', text: order.date },
               { name: 'order_details', text: order.items },
-              { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
+              { name: 'message_on_cake', text: customization.messageOnCake || 'None' },
+              { name: 'special_instructions', text: customization.specialInstructions || 'None' },
+              { name: 'order_total', text: payment.total },
               { name: 'amount_paid', text: payment.amountPaid },
               { name: 'payment_summary', text: payment.paymentSummary },
               { name: 'store_name', text: fulfillment.storeName ?? 'Gopal Cake Shop' },
@@ -128,6 +129,7 @@ export class WhatsAppTemplateService {
             ],
             imageUrl: _meta.selectedImageUrl,
             imageType: _meta.selectedImageType,
+            buttonUrlParam: order.displayId,
           };
         }
       }

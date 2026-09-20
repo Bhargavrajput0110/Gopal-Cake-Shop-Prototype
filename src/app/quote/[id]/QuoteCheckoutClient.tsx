@@ -41,8 +41,12 @@ export default function QuoteCheckoutClient({ quote }: { quote: any }) {
         throw new Error(data.error || 'Checkout failed');
       }
 
-      // Success! Refresh the page to show the success state
-      router.refresh();
+      // Success! Redirect to Razorpay payment link
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        router.refresh();
+      }
     } catch (err: any) {
       alert(err.message);
       setIsProcessing(false);

@@ -53,21 +53,44 @@ export async function GET(req: Request) {
           });
         }
 
-        // 4. Update order status from DRAFT to NEW since payment succeeded
-        if (payment.order.status === 'DRAFT') {
-          await prisma.order.update({
-            where: { id: orderId },
-            data: { status: 'NEW' }
-          });
+        // 4. Update order status from DRAFT or QUOTE_SENT to NEW since payment succeeded
+        if (payment.order.status === 'DRAFT' || payment.order.status === 'QUOTE_SENT') {
+          const isQuote = payment.order.status === 'QUOTE_SENT';
           
-          await prisma.timeline.create({
-            data: {
-              orderId,
-              action: 'PAYMENT_RECEIVED',
-              status: 'NEW',
-              nextState: 'NEW',
-              note: `Online payment received via Razorpay, order moved to NEW.`,
+          await prisma.$transaction(async (tx) => {
+            // Update order status
+            await tx.order.update({
+              where: { id: orderId },
+              data: { status: 'NEW' }
+            });
+            
+            // If it was a quote, update order items to WAITING_FOR_CHEF
+            if (isQuote) {
+              await tx.orderItem.updateMany({
+                where: { orderId },
+                data: { status: 'WAITING_FOR_CHEF' }
+              });
+              
+              // Also update child items
+              const parentItems = await tx.orderItem.findMany({ where: { orderId }, select: { id: true } });
+              const parentIds = parentItems.map(p => p.id);
+              if (parentIds.length > 0) {
+                await tx.orderItem.updateMany({
+                  where: { parentItemId: { in: parentIds } },
+                  data: { status: 'WAITING_FOR_CHEF' }
+                });
+              }
             }
+            
+            await tx.timeline.create({
+              data: {
+                orderId,
+                action: isQuote ? 'QUOTE_CONVERTED' : 'PAYMENT_RECEIVED',
+                status: 'NEW',
+                nextState: 'NEW',
+                note: `Online payment received via Razorpay, order moved to NEW.`,
+              }
+            });
           });
           
           // Emit socket event to notify Sales Desk

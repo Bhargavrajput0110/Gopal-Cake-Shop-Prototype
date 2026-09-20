@@ -225,6 +225,7 @@ export class NotificationDispatcher {
       language: selection.language,
       variables: selection.variables,
       mediaId,
+      buttonUrlParam: selection.buttonUrlParam,
     });
 
     // 7. Record outcome
