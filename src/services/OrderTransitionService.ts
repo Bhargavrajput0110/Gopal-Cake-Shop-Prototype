@@ -30,11 +30,33 @@ export class OrderTransitionService {
       throw new Error('ORDER_NOT_FOUND')
     }
 
-    // Allow cross-branch overrides for drivers if they are assigned to the order
-    if (branchId && role !== 'ADMIN' && toBranchId(order.branchId) !== toBranchId(branchId)) {
+    // Allow cross-branch overrides for drivers if assigned, OR staff at destination/source branch of an inter-branch transfer
+    const normOrderBranch = toBranchId(order.branchId)
+    const normUserBranch = branchId ? toBranchId(branchId) : null
+
+    if (normUserBranch && role !== 'ADMIN' && normOrderBranch !== normUserBranch) {
+      let isAllowed = false
       if (role === 'DELIVERY' && order.driverId === actorId) {
-        // Allow driver to transition their assigned order
+        isAllowed = true
       } else {
+        const transfer = await prisma.branchTransfer.findFirst({
+          where: {
+            OR: [
+              { orderId: order.id },
+              { orderId: order.orderNumber }
+            ]
+          }
+        })
+        if (transfer) {
+          const normFrom = toBranchId(transfer.fromBranchId)
+          const normTo = toBranchId(transfer.toBranchId)
+          if (normUserBranch === normFrom || normUserBranch === normTo) {
+            isAllowed = true
+          }
+        }
+      }
+
+      if (!isAllowed) {
         console.log(`[FORBIDDEN] order.branchId: ${order.branchId}, user.branchId: ${branchId}, role: ${role}`)
         throw new Error('FORBIDDEN')
       }
@@ -43,13 +65,13 @@ export class OrderTransitionService {
     const currentState = order.status as OrderStatus
 
     // Special case: PICKUP order already in READY_FOR_PICKUP + action = 'ready'
-    // This happens when a Varasiya salesperson clicks "Notify Customer" after an inter-branch
+    // This happens when a salesperson clicks "Notify Customer" after an inter-branch
     // transfer delivery. The order stays in READY_FOR_PICKUP — we must NOT idempotency-skip
     // because the customer WhatsApp notification needs to be fired NOW.
     const isPickupReNotification =
       action === 'ready' &&
       currentState === 'READY_FOR_PICKUP' &&
-      order.deliveryType === 'PICKUP'
+      (order.deliveryType?.toUpperCase() === 'PICKUP')
 
     // Idempotency check: if already in the target state for this action, just return success.
     // Skip this check for the PICKUP re-notification case above.
@@ -189,11 +211,10 @@ export class OrderTransitionService {
       driverId: (order as any).driverId ?? null,
     }).catch(err => console.error(`[OrderTransitionService] In-app notification failed for ${orderId}:`, err))
 
-    // Check if customer WhatsApp ORDER_READY notification should be suppressed due to active Inter-Branch Transfer or Factory location
+    // Check if customer WhatsApp ORDER_READY notification should be suppressed due to active Inter-Branch Transfer
     let shouldSendCustomerWhatsApp = true;
     const isReadyAction = (typeof action === 'string' && action.toLowerCase().includes('ready')) || nextState === 'READY_FOR_PICKUP';
-    if (isReadyAction && (order.deliveryType === 'PICKUP' || (order as any).deliveryType === 'pickup')) {
-      const canonicalBranch = toBranchId(order.branchId);
+    if (isReadyAction && (order.deliveryType?.toUpperCase() === 'PICKUP')) {
       const activeTransfer = await prisma.branchTransfer.findFirst({
         where: {
           OR: [
@@ -203,9 +224,11 @@ export class OrderTransitionService {
           status: { in: ['PENDING', 'ACCEPTED', 'IN_TRANSIT'] }
         }
       });
-      if (canonicalBranch === 'uma' || activeTransfer) {
+      // Suppress ONLY IF an active inter-branch transfer is currently in transit AND this is NOT an explicit store re-notification / store ready action
+      const isStoreStaffAction = normUserBranch && normUserBranch !== 'uma';
+      if (activeTransfer && !isPickupReNotification && !isStoreStaffAction) {
         shouldSendCustomerWhatsApp = false;
-        console.log(`[OrderTransitionService] Suppressed customer WhatsApp ORDER_READY for order ${orderId} — branch: ${canonicalBranch}, activeTransfer: ${!!activeTransfer}`);
+        console.log(`[OrderTransitionService] Suppressed customer WhatsApp ORDER_READY for order ${orderId} — activeTransfer: ${activeTransfer.id}`);
       }
     }
 

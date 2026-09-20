@@ -11,7 +11,7 @@ import { NotificationToast } from '@/components/ui/NotificationToast';
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
 import { GalleryAdd } from "iconsax-react";
 
-export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake = false, editingCartItem }: { product: any, onClose?: () => void, isCustom?: boolean, isPhotoCake?: boolean, editingCartItem?: any }) {
+export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake = false, editingCartItem, isPOSMode = false }: { product: any, onClose?: () => void, isCustom?: boolean, isPhotoCake?: boolean, editingCartItem?: any, isPOSMode?: boolean }) {
   const { addItem, updateItemConfig, setIsCartOpen } = useCart();
   const flavours = getActiveFlavours();
 
@@ -354,24 +354,26 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           {/* Custom Cake Fields */}
           {isCustom && (
             <div className="space-y-6 pt-2 border-t border-border/40">
-              {/* Price Input for Sales / POS Staff */}
-              <div className="space-y-2 bg-amber-500/10 p-4 rounded-2xl border border-amber-500/30">
-                <label className="font-ui text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center justify-between">
-                  <span>💰 Custom Cake Price (₹)</span>
-                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">(Sales / POS Input)</span>
-                </label>
-                <input 
-                  type="number"
-                  min="0"
-                  value={overridePrice}
-                  onChange={(e) => setOverridePrice(e.target.value)}
-                  placeholder="Enter agreed price (e.g. 1850)..."
-                  className="w-full rounded-xl border-2 border-amber-500/40 bg-background px-4 py-3 h-12 text-lg font-black text-foreground focus:outline-none focus:border-amber-600 transition-colors"
-                />
-                <p className="text-[11px] font-medium text-amber-900/80">
-                  Enter the price quoted to the customer. Leave blank if submitting an online quote request.
-                </p>
-              </div>
+              {/* Price Input — ONLY visible in Sales POS, never shown to customers */}
+              {isPOSMode && (
+                <div className="space-y-2 bg-amber-500/10 p-4 rounded-2xl border border-amber-500/30">
+                  <label className="font-ui text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center justify-between">
+                    <span>💰 Custom Cake Price (₹)</span>
+                    <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">(Sales / POS Input)</span>
+                  </label>
+                  <input 
+                    type="number"
+                    min="0"
+                    value={overridePrice}
+                    onChange={(e) => setOverridePrice(e.target.value)}
+                    placeholder="Enter agreed price (e.g. 1850)..."
+                    className="w-full rounded-xl border-2 border-amber-500/40 bg-background px-4 py-3 h-12 text-lg font-black text-foreground focus:outline-none focus:border-amber-600 transition-colors"
+                  />
+                  <p className="text-[11px] font-medium text-amber-900/80">
+                    Enter the price quoted to the customer. Leave blank if submitting an online quote request.
+                  </p>
+                </div>
+              )}
 
               {/* Custom Order & Quote Info Notice */}
               <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl">

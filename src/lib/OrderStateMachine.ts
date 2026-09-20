@@ -103,7 +103,8 @@ export class OrderStateMachine {
       throw new Error(`Permission denied: Role '${role}' is not allowed to perform action '${action}'`)
     }
 
-    if (config.allowedDeliveryTypes && !config.allowedDeliveryTypes.includes(deliveryType)) {
+    const normDeliveryType = (deliveryType ? (deliveryType as string).toUpperCase() : 'PICKUP') as DeliveryType
+    if (config.allowedDeliveryTypes && !config.allowedDeliveryTypes.includes(normDeliveryType)) {
       throw new Error(`Invalid action: Action '${action}' is not allowed for delivery type '${deliveryType}'`)
     }
 

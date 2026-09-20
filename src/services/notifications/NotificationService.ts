@@ -77,7 +77,7 @@ export class NotificationService {
         select: { id: true, orderNumber: true, branchId: true, deliveryType: true }
       });
 
-      if (dbOrder && (dbOrder.deliveryType === 'PICKUP' || (dbOrder as any).deliveryType === 'pickup')) {
+      if (dbOrder && (dbOrder.deliveryType?.toUpperCase() === 'PICKUP')) {
         const canonicalBranch = toBranchId(dbOrder.branchId);
 
         const activeTransfer = await prisma.branchTransfer.findFirst({
@@ -90,8 +90,12 @@ export class NotificationService {
           }
         });
 
-        if (canonicalBranch === 'uma' || activeTransfer) {
-          LoggerService.info(`[NotificationService] Suppressing customer WhatsApp for order ${orderId} — canonicalBranch: ${canonicalBranch}, activeTransfer: ${!!activeTransfer}`);
+        // Do not suppress if this is an explicit store notification / re-notification
+        const note = payload.note || '';
+        const isExplicitStoreNotification = note.includes('Salesperson confirmed') || note.includes('arrived at final pickup branch');
+
+        if (activeTransfer && !isExplicitStoreNotification) {
+          LoggerService.info(`[NotificationService] Suppressing customer WhatsApp for order ${orderId} — activeTransfer: ${activeTransfer.id}`);
           effectiveRules = effectiveRules.filter((r) => !(r.recipientRole === 'CUSTOMER' && r.channel === 'WHATSAPP'));
         }
       }

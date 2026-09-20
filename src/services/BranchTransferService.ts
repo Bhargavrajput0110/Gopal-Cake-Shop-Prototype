@@ -2,6 +2,9 @@ import { PrismaClient, Prisma, TransferStatus, TimelineEventType, OrderStatus } 
 import { prisma } from '@/lib/prisma';
 import { toBranchId, BRANCHES } from '@/lib/branches';
 import { TimelineService } from './TimelineService';
+import { OrderTransitionService } from './OrderTransitionService';
+import { outboxProcessor } from './event-bus/OutboxProcessor';
+import { registerSubscribers } from './event-bus/EventSubscribers';
 
 async function resolveDbBranchId(rawBranch: string, tx: any): Promise<string> {
   const canonical = toBranchId(rawBranch);
@@ -361,6 +364,35 @@ export class BranchTransferService {
         }
       });
 
+      return { updated, orderId: transfer.orderId, orderStatus: updatedOrder.status, orderDeliveryType: updatedOrder.deliveryType };
+    }).then(async ({ updated, orderId, orderStatus, orderDeliveryType }) => {
+      // 5. If order is READY_FOR_PICKUP and this is a PICKUP order, auto-fire customer WhatsApp notification.
+      //    The OrderTransitionService.transitionState('ready') has a special re-notification path:
+      //    when action='ready' and currentState=READY_FOR_PICKUP, it skips the status update but
+      //    still fires the WhatsApp outbox event — now at the CORRECT final pickup branch.
+      if (orderStatus === 'READY_FOR_PICKUP' && (orderDeliveryType?.toUpperCase() === 'PICKUP')) {
+        try {
+          await OrderTransitionService.transitionState({
+            orderId,
+            action: 'ready' as any,
+            actorId: params.receivedBy,
+            appRole: (params.role?.toUpperCase() || 'SALESPERSON') as any,
+            branchId: params.branchId,
+            note: 'Auto-notification: Cake arrived at final pickup branch via inter-branch transfer. Customer notified for pickup.'
+          });
+          // Kick off outbox so notification sends in background
+          try {
+            registerSubscribers();
+            outboxProcessor.poll().catch((e: any) => console.error('[BranchTransferService] Background outbox poll failed after transfer receive:', e?.message));
+          } catch (e: any) {
+            console.error('[BranchTransferService] Outbox trigger failed:', e?.message);
+          }
+          console.log(`[BranchTransferService] Auto-fired customer WhatsApp for order ${orderId} after transfer received at ${params.branchId}.`);
+        } catch (e: any) {
+          // Non-fatal — log and continue. Transfer is still marked RECEIVED successfully.
+          console.error(`[BranchTransferService] Failed to auto-notify customer after transfer receive for order ${orderId}:`, e?.message);
+        }
+      }
       return updated;
     });
   }

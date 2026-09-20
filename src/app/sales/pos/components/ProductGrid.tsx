@@ -86,6 +86,7 @@ export function ProductGrid({ products, categories = [], designs = [], isLoading
             key={selectedProduct.id}
             product={selectedProduct} 
             onClose={() => setSelectedProduct(null)} 
+            isPOSMode={true}
             isCustom={
               !(Boolean(selectedProduct.isPhotoCake) || selectedProduct.name.toLowerCase().includes('photo') || (selectedProduct.category?.name || "").toLowerCase().includes('photo')) &&
               (selectedProduct.id === 'custom-cake-studio' || selectedProduct.isCustomizable || selectedProduct.name.toLowerCase().includes('custom'))
