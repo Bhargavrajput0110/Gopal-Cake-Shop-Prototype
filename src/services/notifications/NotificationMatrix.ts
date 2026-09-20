@@ -25,7 +25,13 @@ export interface NotificationRule {
  * WhatsApp template selection by delivery type is handled in WhatsAppTemplateService.
  */
 export const NotificationMatrix: Record<string, NotificationRule[]> = {
-  // Quote created -> customer receives quote notification
+  // Customer submitted a custom cake quote from website — alert Sales to review & price it
+  'QUOTE_CREATED': [
+    { recipientRole: 'SALES', channel: 'IN_APP', templateName: '🎂 New Custom Cake Quote Request' },
+    { recipientRole: 'MANAGER', channel: 'IN_APP', templateName: '🎂 New Custom Cake Quote Request' },
+  ],
+
+  // Sales sends the priced quote to the customer via WhatsApp
   'send-quote': [
     { recipientRole: 'CUSTOMER', channel: 'WHATSAPP', templateName: 'QUOTE_CREATED' },
   ],
