@@ -7,6 +7,7 @@ import { fetchClient } from '@/lib/api/client'
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader"
 
 import { formatTime, formatDate, formatDayLabel } from '@/lib/formatTime'
+import { toBranchShortName } from '@/lib/branches'
 
 interface DeliveryJobCardProps {
   order: DriverOrderDTO
@@ -185,6 +186,25 @@ export function DeliveryJobCard({ order, isActiveRoute = false }: DeliveryJobCar
         </div>
       )}
 
+      {/* Inter-Branch Transfer Task Banner */}
+      {((order as any).transfers?.length > 0 || (order as any).isTransfer || (order as any).transferFrom) && (
+        <div className="bg-amber-600 text-white p-4 border-b-2 border-amber-700 flex flex-col gap-1.5 shadow-inner">
+          <div className="flex items-center justify-between font-black text-xs uppercase tracking-widest">
+            <span className="flex items-center gap-1.5">
+              🚚 INTER-BRANCH STORE TRANSFER TASK
+            </span>
+            <span className="bg-amber-900 text-amber-100 px-2 py-0.5 rounded text-[9px] font-black">
+              {(order as any).transfers?.[0]?.status || "TRANSFER IN TRANSIT"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between font-extrabold text-xs mt-1 bg-amber-700/80 p-2.5 rounded-xl border border-amber-500/50">
+            <span>Pick Up: {toBranchShortName((order as any).transfers?.[0]?.fromBranchId || (order as any).transferFrom || "Origin Store")} Outlet</span>
+            <span className="text-amber-200 text-base">➔</span>
+            <span>Deliver To: {toBranchShortName((order as any).transfers?.[0]?.toBranchId || (order as any).transferTo || (order as any).branchId || "Destination Store") } Outlet (Store Pickup)</span>
+          </div>
+        </div>
+      )}
+
       {/* 1. Customer & Address Block */}
       <div className="p-6 bg-gray-50">
         <div className="flex justify-between items-start mb-4">
@@ -207,7 +227,11 @@ export function DeliveryJobCard({ order, isActiveRoute = false }: DeliveryJobCar
 
         <div className="flex gap-4 items-start">
           <Location className="w-6 h-6 text-gray-400 shrink-0 mt-1" />
-          <p className="font-bold text-gray-700 text-lg leading-snug">{order.formattedAddress || "Store Pickup"}</p>
+          <p className="font-bold text-gray-700 text-lg leading-snug">
+            {(order as any).transfers?.length > 0
+              ? `Transfer from ${toBranchShortName((order as any).transfers[0].fromBranchId)} Outlet to ${toBranchShortName((order as any).transfers[0].toBranchId)} Outlet`
+              : (order.formattedAddress || "Store Pickup")}
+          </p>
         </div>
       </div>
 
