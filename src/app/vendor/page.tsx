@@ -172,7 +172,9 @@ export default function VendorTasks() {
               productName: item.parentItem?.productName || item.productName || "Custom Task",
               notes: item.instructions || item.notes || item.parentItem?.notes || "",
               designImageUrl: imgUrl,
-              gallery: (item.parentItem?.media && item.parentItem.media.length > 0)
+              gallery: (item.parentItem?.gallery && item.parentItem.gallery.length > 0)
+                ? item.parentItem.gallery
+                : (item.parentItem?.media && item.parentItem.media.length > 0)
                 ? item.parentItem.media.map((m: any) => m.url)
                 : (item.media && item.media.length > 0)
                 ? item.media.map((m: any) => m.url)
