@@ -43,6 +43,7 @@ export interface CheckoutItem {
   boxCount?: number
   estimatedPrepMinutes?: number
   referenceImages?: string[]
+  printImage?: string
 }
 
 export interface CheckoutPayload {
@@ -293,12 +294,12 @@ export class StorefrontEngine {
         status: payload.type === 'QUOTE' ? OrderItemStatus.PENDING : OrderItemStatus.WAITING_FOR_CHEF,
         estimatedPrepMinutes: item.estimatedPrepMinutes || 0,
         childItems: childItemsToCreate.length > 0 ? { create: childItemsToCreate } : undefined,
-        media: item.referenceImages && item.referenceImages.length > 0 ? {
-          create: item.referenceImages.map(url => ({
-            type: MediaType.REFERENCE,
-            url
-          }))
-        } : undefined
+        media: {
+          create: [
+            ...(item.referenceImages || []).map(url => ({ type: MediaType.REFERENCE, url })),
+            ...(item.printImage ? [{ type: MediaType.PRODUCTION, url: item.printImage }] : [])
+          ]
+        }
       }
     })
 
