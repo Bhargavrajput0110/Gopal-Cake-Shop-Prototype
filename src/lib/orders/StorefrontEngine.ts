@@ -167,6 +167,11 @@ export class StorefrontEngine {
 
       // MOCK product for designs and custom cakes
       if (!product && (design || item.designId || item.productId === 'custom-cake-studio' || item.productId.startsWith('custom-'))) {
+         let autoRequiredVendors = (item as any).requiredVendors || []
+         if (design?.isPhotoCake && !autoRequiredVendors.includes('VENDOR_PHOTO')) {
+            autoRequiredVendors.push('VENDOR_PHOTO')
+         }
+         
          product = {
             id: item.productId,
             name: design?.name || item.designName || 'Custom Cake',
@@ -175,7 +180,7 @@ export class StorefrontEngine {
             availableForSale: true,
             isArchived: false,
             thumbnail: design?.imageUrl || item.designImageUrl || null,
-            requiredVendors: (item as any).requiredVendors || []
+            requiredVendors: autoRequiredVendors
          } as any
       }
 
