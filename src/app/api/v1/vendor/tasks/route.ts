@@ -46,6 +46,7 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
   const orderItems = await prisma.orderItem.findMany({
     where: orderItemWhere,
     include: {
+      media: true,
       order: {
         select: {
           orderNumber: true,
@@ -74,7 +75,9 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     include: {
       order: {
         include: {
-          items: true,
+          items: {
+            include: { media: true, parentItem: { include: { media: true } } }
+          },
           branch: { select: { name: true } }
         }
       },
