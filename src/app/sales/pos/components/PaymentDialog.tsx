@@ -150,8 +150,16 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
           flavor: item.flavor,
           messageOnCake: item.messageOnCake,
           overridePrice: item.price,
-          designId: item.productId.startsWith('custom-') ? item.productId : undefined,
-          designName: item.productId.startsWith('custom-') ? item.name : undefined,
+          frontendPrice: item.price,
+          designId: item.designId || (item.productId.startsWith('custom-') ? item.productId : undefined),
+          designName: item.designName || (item.productId.startsWith('custom-') ? item.name : undefined),
+          designCode: item.designCode,
+          designImageUrl: item.designImageUrl,
+          shape: item.shape,
+          notes: item.notes,
+          boxCount: item.boxCount,
+          referenceImages: item.referenceImages,
+          requiredVendors: item.requiredVendors,
         })),
         payments: [
           {
