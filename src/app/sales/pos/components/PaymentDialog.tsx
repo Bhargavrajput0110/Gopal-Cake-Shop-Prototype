@@ -159,6 +159,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
           notes: item.notes,
           boxCount: item.boxCount,
           referenceImages: item.referenceImages,
+          printImage: item.printImage,
           requiredVendors: item.requiredVendors,
         })),
         payments: [
