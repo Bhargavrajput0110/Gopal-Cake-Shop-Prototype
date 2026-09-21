@@ -254,11 +254,16 @@ export class StorefrontEngine {
 
       // Generate Child Items for Vendors if product requires them
       const childItemsToCreate: any[] = []
-      if (product.requiredVendors && product.requiredVendors.length > 0) {
-        for (const vRole of product.requiredVendors) {
+      
+      const dbRequiredVendors = (product as any)?.requiredVendors || []
+      const itemRequiredVendors = (item as any).requiredVendors || []
+      const mergedRequiredVendors = Array.from(new Set([...dbRequiredVendors, ...itemRequiredVendors]))
+
+      if (mergedRequiredVendors.length > 0) {
+        for (const vRole of mergedRequiredVendors) {
           const vendor = allVendors.find(v => v.role === vRole)
           childItemsToCreate.push({
-            productName: `${vRole.replace('VENDOR_', '')} Component`,
+            productName: `${(vRole as string).replace('VENDOR_', '')} Component`,
             price: 0,
             quantity: item.quantity,
             weight: 0,
