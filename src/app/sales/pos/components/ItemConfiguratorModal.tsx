@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useQuery } from "@tanstack/react-query"
 import { fetchClient } from "@/lib/api/client"
 import { ALL_FLAVOURS, getFlavourSurcharge } from "@/lib/flavours"
+import CloudinaryUploader from "@/components/ui/CloudinaryUploader"
 
 interface ItemConfiguratorModalProps {
   cartItemId: string
@@ -64,26 +65,6 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
       requiredVendors
     })
     onClose()
-  }
-
-  const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files) return
-    
-    const newImages = [...referenceImages]
-    for (let i = 0; i < files.length; i++) {
-      if (newImages.length >= 3) {
-        alert("Maximum 3 reference images allowed.")
-        break
-      }
-      const file = files[i]
-      if (file.size > 5 * 1024 * 1024) {
-        alert("File size exceeds 5MB limit.")
-        continue
-      }
-      newImages.push(URL.createObjectURL(file))
-    }
-    setReferenceImages(newImages)
   }
 
   return (
@@ -257,36 +238,15 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
             <div className="space-y-4">
               <div className="p-4 bg-muted/30 border border-border rounded-xl">
                 <h3 className="font-bold text-sm mb-2">Upload Customer References</h3>
-                <p className="text-xs text-muted-foreground mb-4">Max 3 images. Allowed formats: JPG, PNG, WEBP. Max size: 5MB.</p>
+                <p className="text-xs text-muted-foreground mb-4">Max 8 images. Uploaded securely to Cloudinary.</p>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {referenceImages.map((img, idx) => (
-                    <div key={idx} className="relative aspect-square rounded-lg border border-border overflow-hidden group">
-                      <img src={img} className="w-full h-full object-cover" alt={`Reference ${idx + 1}`} />
-                      <button 
-                        onClick={() => setReferenceImages(referenceImages.filter((_, i) => i !== idx))}
-                        className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <CloseSquare className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  
-                  {referenceImages.length < 3 && (
-                    <div className="aspect-square rounded-lg border-2 border-dashed border-border flex items-center justify-center relative hover:bg-muted/50 transition-colors">
-                      <input 
-                        type="file" 
-                        accept="image/jpeg,image/png,image/webp"
-                        multiple
-                        onChange={handleReferenceUpload}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                      />
-                      <div className="text-center">
-                        <DocumentUpload className="w-6 h-6 text-muted-foreground mx-auto mb-1" />
-                        <span className="text-xs font-bold text-muted-foreground">Upload</span>
-                      </div>
-                    </div>
-                  )}
+                <div className="w-full">
+                  <CloudinaryUploader 
+                    existingImages={referenceImages}
+                    maxFiles={8}
+                    onUploadSuccess={(urls) => setReferenceImages(urls)} 
+                    folder="gopal-cakes/references"
+                  />
                 </div>
               </div>
             </div>
