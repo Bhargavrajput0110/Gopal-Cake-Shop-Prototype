@@ -112,33 +112,45 @@ export function Hero() {
 
         {/* Main headline */}
         <div className="-mb-2 md:-mb-4">
-          <motion.h1
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="font-display text-white leading-none drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)]"
+          <h1
+            className="font-display text-white leading-none drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)] flex overflow-hidden"
             style={{
               fontSize: "clamp(3.5rem, 12vw, 13rem)",
             }}
           >
-            Gopal
-          </motion.h1>
+            {"Gopal".split("").map((char, i) => (
+              <motion.span
+                key={i}
+                initial={{ y: "100%", opacity: 0 }}
+                animate={{ y: "0%", opacity: 1 }}
+                transition={{ duration: 1, delay: 0.4 + i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                style={{ display: "inline-block" }}
+              >
+                {char}
+              </motion.span>
+            ))}
+          </h1>
         </div>
 
         <div className="mb-6 md:mb-10">
-          <motion.div
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 1, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
-            className="flex items-baseline gap-4 md:gap-6"
-          >
+          <div className="flex items-baseline gap-4 md:gap-6 overflow-hidden">
             <h2
-              className="font-display text-[var(--brand-champagne)] leading-none drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)] lowercase"
+              className="font-display text-[var(--brand-champagne)] leading-none drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)] lowercase flex"
               style={{ fontSize: "clamp(3rem, 10vw, 11rem)" }}
             >
-              cakes
+              {"cakes".split("").map((char, i) => (
+                <motion.span
+                  key={i}
+                  initial={{ y: "100%", opacity: 0 }}
+                  animate={{ y: "0%", opacity: 1 }}
+                  transition={{ duration: 1, delay: 0.8 + i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ display: "inline-block" }}
+                >
+                  {char}
+                </motion.span>
+              ))}
             </h2>
-          </motion.div>
+          </div>
         </div>
 
         {/* Bottom Section: Description, CTA, and Stats */}
@@ -193,6 +205,21 @@ export function Hero() {
             ))}
           </div>
         </motion.div>
+      </motion.div>
+
+      {/* ── Scroll Indicator ── */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5, duration: 1 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2"
+      >
+        <span className="font-ui text-[9px] uppercase tracking-[0.25em] text-white/50">Scroll</span>
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          className="w-px h-12 bg-gradient-to-b from-white/50 to-transparent"
+        />
       </motion.div>
 
       {/* ── Gold thin line at bottom ── */}

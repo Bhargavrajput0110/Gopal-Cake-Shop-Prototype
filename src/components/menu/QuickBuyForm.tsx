@@ -119,7 +119,11 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
 
   const handleFlavourChange = (val: string) => {
     setSelectedFlavour(val);
-    if (val !== 'original' && val !== 'Classic' && val !== '') {
+    const weightVal = parseFloat(selectedWeight || "0");
+    const weightKg = (selectedWeight || "").toLowerCase().includes("kg") ? weightVal : ((selectedWeight || "").toLowerCase().includes("g") ? weightVal / 1000 : weightVal);
+    const surcharge = val ? getFlavourSurcharge(val, weightKg) : 0;
+    
+    if (surcharge > 0) {
       setToast({
         id: Date.now().toString(),
         title: 'Premium Flavour Selected',

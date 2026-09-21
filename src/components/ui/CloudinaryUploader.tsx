@@ -20,16 +20,25 @@ export default function CloudinaryUploader({
   existingImages = []
 }: CloudinaryUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [previewUrls, setPreviewUrls] = useState<string[]>(existingImages);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
+    setErrorMsg(null);
     const files = Array.from(e.target.files);
     
     if (previewUrls.length + files.length > maxFiles) {
-      alert(`You can only upload up to ${maxFiles} images here.`);
+      setErrorMsg(`You can only upload up to ${maxFiles} images here.`);
+      return;
+    }
+
+    const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
+    const oversizedFiles = files.filter(f => f.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      setErrorMsg(`Image size too large. Each image must be under 8MB.`);
       return;
     }
 
@@ -40,7 +49,7 @@ export default function CloudinaryUploader({
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
     if (!cloudName || !uploadPreset) {
-      alert("Cloudinary credentials are missing in the environment!");
+      setErrorMsg("Cloudinary credentials are missing in the environment!");
       setIsUploading(false);
       return;
     }
@@ -62,16 +71,16 @@ export default function CloudinaryUploader({
           newUrls.push(data.secure_url);
         } else {
           console.error("Cloudinary upload error:", data);
-          alert("Failed to upload an image.");
+          setErrorMsg(data.error?.message || "Failed to upload an image.");
         }
       }
 
       const updatedUrls = [...previewUrls, ...newUrls];
       setPreviewUrls(updatedUrls);
       onUploadSuccess(updatedUrls);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload failed", error);
-      alert("Upload failed. Check console.");
+      setErrorMsg(error.message || "Upload failed. Check console.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -112,9 +121,16 @@ export default function CloudinaryUploader({
           <p className="text-sm font-bold text-foreground">
             {isUploading ? "Uploading..." : label}
           </p>
-          <p className="text-xs text-muted-foreground font-medium">
-            {isUploading ? "Please wait..." : `Max ${maxFiles} images. PNG, JPG.`}
+          <p className="text-xs text-muted-foreground font-medium text-center">
+            {isUploading ? "Please wait..." : `Max ${maxFiles} images. PNG/JPG (Up to 8MB/ea).`}
           </p>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {errorMsg && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-xl text-sm font-bold">
+          {errorMsg}
         </div>
       )}
 

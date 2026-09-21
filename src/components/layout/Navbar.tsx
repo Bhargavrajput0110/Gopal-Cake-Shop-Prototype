@@ -145,7 +145,7 @@ export function Navbar() {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`relative font-ui text-[11px] font-semibold uppercase tracking-[0.14em] transition-all duration-250 group ${
+                  className={`relative font-ui text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group ${
                     showScrolledNavbar
                       ? "text-[var(--foreground)]/65 hover:text-[var(--brand-deep-rose)]"
                       : "text-white/75 hover:text-white"
@@ -153,7 +153,7 @@ export function Navbar() {
                 >
                   {link.name}
                   {/* Animated underline */}
-                  <span className={`absolute -bottom-0.5 left-0 h-px w-0 group-hover:w-full transition-all duration-300 ${
+                  <span className={`absolute -bottom-1 left-0 h-[1.5px] w-0 group-hover:w-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                     showScrolledNavbar ? "bg-[var(--brand-deep-rose)]" : "bg-white/70"
                   }`} />
                 </Link>

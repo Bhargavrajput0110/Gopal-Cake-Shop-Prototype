@@ -87,7 +87,7 @@ function FeaturedProductCard({ product }: { product: any }) {
           duration: 0.7,
           ease: [0.16, 1, 0.3, 1],
         }}
-        className="group flex flex-col break-inside-avoid relative"
+        className="group flex flex-col break-inside-avoid relative product-card"
         style={{ perspective: "1000px" }}
       >
         {/* Image Container with 3D Tilt */}
@@ -440,7 +440,7 @@ export function FeaturedProducts() {
   }, [activeCategory, allProducts]);
 
   return (
-    <section className="py-28 md:py-36 bg-[var(--background)] overflow-hidden relative">
+    <section className="py-32 md:py-48 bg-[var(--background)] overflow-hidden relative">
       {/* Background decoration */}
       <div
         className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full opacity-[0.04] -z-10 blur-3xl"

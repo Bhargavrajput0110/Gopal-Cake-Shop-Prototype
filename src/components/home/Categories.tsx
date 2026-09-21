@@ -56,7 +56,7 @@ const CATEGORIES = [
 
 export function Categories() {
   return (
-    <section className="py-28 md:py-36 bg-[var(--background)] overflow-hidden">
+    <section className="py-32 md:py-48 bg-[var(--background)] overflow-hidden">
       <div className="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
 
         {/* ── Editorial Header ── */}
@@ -105,7 +105,7 @@ export function Categories() {
           >
             <Link
               href={`/menu?category=${CATEGORIES[0].slug}`}
-              className="relative group flex flex-col h-full min-h-[380px] lg:min-h-full rounded-3xl overflow-hidden bg-[var(--muted)] block"
+              className="relative group flex flex-col h-full min-h-[380px] lg:min-h-full rounded-3xl overflow-hidden bg-[var(--muted)] block product-card"
             >
               <Image
                 src={CATEGORIES[0].image}
@@ -161,7 +161,7 @@ export function Categories() {
               >
                 <Link
                   href={`/menu?category=${cat.slug}`}
-                  className="relative group flex h-full min-h-[200px] lg:min-h-[370px] rounded-[2rem] overflow-hidden bg-[var(--muted)] block"
+                  className="relative group flex h-full min-h-[200px] lg:min-h-[370px] rounded-[2rem] overflow-hidden bg-[var(--muted)] block product-card"
                 >
                   <Image
                     src={cat.image}
