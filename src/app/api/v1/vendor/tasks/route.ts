@@ -91,7 +91,10 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     
     const cakeImg = item.designImageUrl || item.image || item.parentItem?.designImageUrl || "";
     const customerPhoto = productionMedia?.url || item.image || item.designImageUrl || "";
-    const mediaUrls = itemMedia.map((m: any) => m.url);
+    const mediaUrls = [
+      ...itemMedia.map((m: any) => m.url),
+      ...parentMedia.map((m: any) => m.url)
+    ];
     
     const gallery = Array.from(new Set([cakeImg, customerPhoto, ...mediaUrls].filter(Boolean)));
     return {
@@ -125,11 +128,15 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     const notesJson = typeof vt.notes === 'object' && vt.notes !== null ? vt.notes : {};
     
     const itemMedia = itemWithImage.media || [];
+    const parentMedia = itemWithImage.parentItem?.media || [];
     const productionMedia = itemMedia.find((m: any) => m.type === 'PRODUCTION');
 
     const cakeImg = notesJson.designImageUrl || itemWithImage.designImageUrl || itemWithImage.image || itemWithImage.parentItem?.designImageUrl || "";
     const customerPhoto = notesJson.photoUrl || productionMedia?.url || itemWithImage.designImageUrl || itemWithImage.image || "";
-    const mediaUrls = itemMedia.map((m: any) => m.url);
+    const mediaUrls = [
+      ...itemMedia.map((m: any) => m.url),
+      ...parentMedia.map((m: any) => m.url)
+    ];
 
     const gallery = Array.from(new Set([cakeImg, customerPhoto, ...mediaUrls].filter(Boolean)));
 
