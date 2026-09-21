@@ -129,7 +129,7 @@ export default function VendorTasks() {
   const fetchTasks = async (showLoading = false) => {
     if (showLoading) setIsLoading(true);
     try {
-      const res = await fetch(`/api/v1/vendor/tasks`);
+      const res = await fetch(`/api/v1/vendor/tasks`, { cache: 'no-store' });
       const json = await res.json();
       
       if (json.success) {
