@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { CloudPlus, CloseSquare, Refresh2, Gallery } from "iconsax-react";
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CloudinaryUploaderProps {
   onUploadSuccess: (urls: string[]) => void;
@@ -23,6 +24,24 @@ export default function CloudinaryUploader({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [previewUrls, setPreviewUrls] = useState<string[]>(existingImages);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loadingText, setLoadingText] = useState("Preparing image...");
+
+  useEffect(() => {
+    if (!isUploading) return;
+    const messages = [
+      "Sprinkling some sugar...",
+      "Whipping the frosting...",
+      "Baking the pixels...",
+      "Prepping for edible print...",
+      "Almost done..."
+    ];
+    let i = 0;
+    const interval = setInterval(() => {
+      i = (i + 1) % messages.length;
+      setLoadingText(messages[i]);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [isUploading]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -101,7 +120,7 @@ export default function CloudinaryUploader({
       {previewUrls.length < maxFiles && (
         <div 
           onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-secondary/30 hover:bg-secondary/70 ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+          className={`relative border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-secondary/30 hover:bg-secondary/70 min-h-[140px] ${isUploading ? 'pointer-events-none border-primary/40 bg-primary/5' : ''}`}
         >
           <input 
             type="file" 
@@ -112,18 +131,50 @@ export default function CloudinaryUploader({
             onChange={handleFileChange}
           />
           
-          {isUploading ? (
-            <Refresh2 className="w-8 h-8 text-primary animate-spin mb-2" />
-          ) : (
-            <CloudPlus className="w-8 h-8 text-muted-foreground mb-2" />
-          )}
-          
-          <p className="text-sm font-bold text-foreground">
-            {isUploading ? "Uploading..." : label}
-          </p>
-          <p className="text-xs text-muted-foreground font-medium text-center">
-            {isUploading ? "Please wait..." : `Max ${maxFiles} images. PNG/JPG (Up to 8MB/ea).`}
-          </p>
+          <AnimatePresence mode="wait">
+            {isUploading ? (
+              <motion.div 
+                key="uploading"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="flex flex-col items-center justify-center gap-3 w-full"
+              >
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Gallery className="w-4 h-4 text-primary animate-pulse" />
+                  </div>
+                </div>
+                <div className="flex flex-col items-center justify-center min-h-[40px]">
+                  <motion.p 
+                    key={loadingText}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="text-sm font-bold text-primary text-center"
+                  >
+                    {loadingText}
+                  </motion.p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Please wait</p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="idle"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center justify-center gap-2"
+              >
+                <CloudPlus className="w-8 h-8 text-muted-foreground mb-1" />
+                <p className="text-sm font-bold text-foreground">{label}</p>
+                <p className="text-xs text-muted-foreground font-medium text-center">
+                  Max {maxFiles} images. PNG/JPG (Up to 8MB/ea).
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
