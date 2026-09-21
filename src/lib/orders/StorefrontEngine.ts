@@ -305,7 +305,11 @@ export class StorefrontEngine {
         media: {
           create: [
             ...(item.referenceImages || []).map(url => ({ type: MediaType.REFERENCE, url })),
-            ...(item.printImage ? [{ type: MediaType.PRODUCTION, url: item.printImage }] : [])
+            // printImage may be a comma-joined list of URLs (from QuickBuyForm photo cake upload)
+            ...(item.printImage
+              ? item.printImage.split(',').filter(Boolean).map(url => ({ type: MediaType.REFERENCE, url: url.trim() }))
+              : []
+            )
           ]
         }
       }
