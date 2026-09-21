@@ -159,6 +159,8 @@ export class StorefrontEngine {
 
     let subtotal = 0
     let totalTax = 0
+    const allChildItemsToCreate: any[] = []
+
     const orderItemsData = payload.items.map(item => {
       let product = products.find(p => p.id === item.productId)
       const design = designs.find(d => d.id === item.productId)
@@ -259,7 +261,7 @@ export class StorefrontEngine {
       totalTax += lineTax
 
       // Generate Child Items for Vendors if product requires them
-      const childItemsToCreate: any[] = []
+      const parentItemId = crypto.randomUUID()
       
       const dbRequiredVendors = (product as any)?.requiredVendors || []
       const itemRequiredVendors = (item as any).requiredVendors || []
@@ -268,7 +270,8 @@ export class StorefrontEngine {
       if (mergedRequiredVendors.length > 0) {
         for (const vRole of mergedRequiredVendors) {
           const vendor = allVendors.find(v => v.role === vRole)
-          childItemsToCreate.push({
+          allChildItemsToCreate.push({
+            parentItemId,
             productName: `${(vRole as string).replace('VENDOR_', '')} Component`,
             price: 0,
             quantity: item.quantity,
@@ -280,6 +283,7 @@ export class StorefrontEngine {
       }
 
       return {
+        id: parentItemId,
         productId: isRealProduct ? product.id : undefined,
         productName: product.name,
         price: unitPrice,
@@ -298,7 +302,6 @@ export class StorefrontEngine {
         boxCount: item.boxCount || 1,
         status: payload.type === 'QUOTE' ? OrderItemStatus.PENDING : OrderItemStatus.WAITING_FOR_CHEF,
         estimatedPrepMinutes: item.estimatedPrepMinutes || 0,
-        childItems: childItemsToCreate.length > 0 ? { create: childItemsToCreate } : undefined,
         media: {
           create: [
             ...(item.referenceImages || []).map(url => ({ type: MediaType.REFERENCE, url })),
@@ -500,6 +503,15 @@ export class StorefrontEngine {
         },
         include: { items: true, customer: true, branch: true, payments: true }
       })
+
+      if (allChildItemsToCreate.length > 0) {
+        await tx.orderItem.createMany({
+          data: allChildItemsToCreate.map(c => ({
+            ...c,
+            orderId: newOrder.id
+          }))
+        })
+      }
 
       // Update Coupon Usage
       if (couponId) {
