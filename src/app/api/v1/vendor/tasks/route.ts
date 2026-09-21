@@ -21,12 +21,30 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     vendorUserIds = Array.from(new Set([user.id, ...sameRoleVendors.map(v => v.id)]));
   }
 
+  // Determine vendor type string from appRole
+  const roleVendorType = appRole === 'VENDOR_FLORIST' ? 'flower'
+    : appRole === 'VENDOR_PHOTO' ? 'photo'
+    : appRole === 'VENDOR_ACRYLIC' ? 'acrylic'
+    : null;
+
+  let orderItemWhere: any = { status: { notIn: ['DELIVERED', 'CANCELLED'] } };
+  if (isVendor) {
+    orderItemWhere.assignedVendorId = { in: vendorUserIds };
+  } else if (isStaff) {
+    orderItemWhere.assignedVendorId = { not: null };
+  }
+
+  let vendorTaskWhere: any = { status: { notIn: ['DELIVERED', 'CANCELLED'] } };
+  if (isVendor) {
+    vendorTaskWhere.OR = [
+      { vendorId: { in: vendorUserIds } },
+      ...(roleVendorType ? [{ vendorType: roleVendorType }] : [])
+    ];
+  }
+
   // 1. Fetch assigned OrderItems
   const orderItems = await prisma.orderItem.findMany({
-    where: {
-      assignedVendorId: { in: vendorUserIds },
-      status: { notIn: ['DELIVERED', 'CANCELLED'] }
-    },
+    where: orderItemWhere,
     include: {
       order: {
         select: {
@@ -50,21 +68,9 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     orderBy: { createdAt: 'asc' }
   });
 
-  // Determine vendor type string from appRole
-  const roleVendorType = appRole === 'VENDOR_FLORIST' ? 'flower'
-    : appRole === 'VENDOR_PHOTO' ? 'photo'
-    : appRole === 'VENDOR_ACRYLIC' ? 'acrylic'
-    : null;
-
-  // 2. Fetch VendorTask table entries for this vendor
+  // 2. Fetch VendorTask table entries
   const vendorTasks = await prisma.vendorTask.findMany({
-    where: {
-      OR: [
-        { vendorId: { in: vendorUserIds } },
-        ...(roleVendorType ? [{ vendorType: roleVendorType }] : [])
-      ],
-      status: { notIn: ['DELIVERED', 'CANCELLED'] }
-    },
+    where: vendorTaskWhere,
     include: {
       order: {
         include: {
