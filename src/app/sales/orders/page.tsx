@@ -707,6 +707,13 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
           
+          {/* Badge indicating this is the Design Reference */}
+          {allRefImages.length > 0 && (
+            <div className="absolute top-0 left-0 w-full bg-blue-600/90 text-white text-[9px] font-black uppercase tracking-widest text-center py-1 backdrop-blur-sm shadow-sm z-10">
+              Design Ref
+            </div>
+          )}
+
           <div className="absolute top-2 left-2 flex flex-wrap gap-1">
             <span className="bg-black/60 backdrop-blur-md text-white px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
               🔍 Tap to Zoom
