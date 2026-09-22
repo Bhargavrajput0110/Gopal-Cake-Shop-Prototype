@@ -549,6 +549,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
   const [isHandingOver, setIsHandingOver] = useState(false);
   const [isNotifyingReady, setIsNotifyingReady] = useState(false);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
+  const [refImageModal, setRefImageModal] = useState<{ images: string[]; idx: number } | null>(null);
   
   // Reusable intent-based animation layer
   const animation = useOrderTransitionAnimation(order.id, order.status);
@@ -664,7 +665,9 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
     return s.replace(/_/g," ");
   };
 
-  const cakeImageUrl = order.cakeImage || "https://images.unsplash.com/photo-1562777717-b6c338435d72?auto=format&fit=crop&q=80&w=600&h=600";
+  // Use first reference image as thumbnail if no cakeImage, so salesperson sees the customer's ref photo
+  const allRefImages = order.items.flatMap((i: any) => i.referenceImages || []);
+  const cakeImageUrl = order.cakeImage || allRefImages[0] || "https://images.unsplash.com/photo-1562777717-b6c338435d72?auto=format&fit=crop&q=80&w=600&h=600";
 
   return (
     <>
@@ -751,12 +754,24 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                     {(item as any).flavor && <span className="ml-1 text-xs text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">• {(item as any).flavor}</span>}
                   </p>
                   {(item as any).referenceImages && (item as any).referenceImages.length > 0 && (
-                    <div className="flex gap-2 mt-1 flex-wrap">
-                      {(item as any).referenceImages.map((img: string, idx: number) => (
-                        <a key={idx} href={img} target="_blank" rel="noreferrer" className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 hover:bg-blue-100 flex items-center gap-1">
-                          🖼️ Ref Image {idx + 1}
-                        </a>
+                    <div className="flex gap-2 mt-1.5 flex-wrap items-center">
+                      {/* Small preview thumbnails (max 3) */}
+                      {(item as any).referenceImages.slice(0, 3).map((img: string, idx: number) => (
+                        <button
+                          key={idx}
+                          onClick={() => setRefImageModal({ images: (item as any).referenceImages, idx })}
+                          className="w-8 h-8 rounded-md overflow-hidden border-2 border-blue-300 hover:border-blue-500 transition-all shadow-sm shrink-0"
+                          title={`View reference photo ${idx + 1}`}
+                        >
+                          <img src={img} alt={`Ref ${idx + 1}`} className="w-full h-full object-cover" />
+                        </button>
                       ))}
+                      <button
+                        onClick={() => setRefImageModal({ images: (item as any).referenceImages, idx: 0 })}
+                        className="text-[10px] font-black bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 flex items-center gap-1 transition-colors shadow-sm"
+                      >
+                        🖼️ View {(item as any).referenceImages.length} Photo{(item as any).referenceImages.length > 1 ? 's' : ''}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1081,6 +1096,63 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                   Close View
                 </button>
               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reference Images Lightbox */}
+      <AnimatePresence>
+        {refImageModal && (
+          <motion.div
+            initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+            onClick={() => setRefImageModal(null)}
+            className="fixed inset-0 bg-black/95 backdrop-blur-md z-[400] flex flex-col items-center justify-center p-4"
+          >
+            <button onClick={() => setRefImageModal(null)} className="absolute top-6 right-6 text-white bg-white/20 p-3 rounded-full hover:bg-white/30 transition-all z-10">
+              <CloseSquare className="w-6 h-6" />
+            </button>
+            <div className="flex flex-col items-center gap-4 max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+              <p className="text-white/60 font-bold text-xs uppercase tracking-widest">
+                📸 Reference Photo {refImageModal.idx + 1} of {refImageModal.images.length} — {order.orderNumber}
+              </p>
+              <img
+                src={refImageModal.images[refImageModal.idx]}
+                alt={`Reference ${refImageModal.idx + 1}`}
+                className="max-h-[65vh] max-w-full rounded-2xl border-2 border-white/20 shadow-2xl object-contain"
+              />
+              {/* Navigation */}
+              <div className="flex items-center gap-3">
+                <button
+                  disabled={refImageModal.idx === 0}
+                  onClick={() => setRefImageModal(prev => prev ? { ...prev, idx: prev.idx - 1 } : null)}
+                  className="px-4 py-2 bg-white/20 text-white rounded-xl font-bold text-sm disabled:opacity-30 hover:bg-white/30 transition-colors"
+                >← Prev</button>
+                {/* Dot indicators */}
+                <div className="flex gap-1.5">
+                  {refImageModal.images.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setRefImageModal(prev => prev ? { ...prev, idx: i } : null)}
+                      className={`w-2 h-2 rounded-full transition-all ${i === refImageModal.idx ? 'bg-white scale-125' : 'bg-white/40'}`}
+                    />
+                  ))}
+                </div>
+                <button
+                  disabled={refImageModal.idx === refImageModal.images.length - 1}
+                  onClick={() => setRefImageModal(prev => prev ? { ...prev, idx: prev.idx + 1 } : null)}
+                  className="px-4 py-2 bg-white/20 text-white rounded-xl font-bold text-sm disabled:opacity-30 hover:bg-white/30 transition-colors"
+                >Next →</button>
+              </div>
+              <a
+                href={refImageModal.images[refImageModal.idx]}
+                download={`ref-photo-${refImageModal.idx + 1}.jpg`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-colors"
+              >
+                ⬇️ Download This Photo
+              </a>
             </div>
           </motion.div>
         )}

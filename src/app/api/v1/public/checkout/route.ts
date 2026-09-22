@@ -51,6 +51,15 @@ const handler = async (ctx: HandlerContext) => {
   const body = await ctx.req.json()
   const data = CheckoutSchema.parse(body)
 
+  // MANDATORY: Website orders (non-quotes) MUST be paid via Razorpay.
+  // Reject if someone tries to bypass payment by sending no paymentMethod.
+  if (data.type !== 'QUOTE' && data.paymentMethod !== PaymentMethod.RAZORPAY) {
+    return NextResponse.json(
+      { success: false, error: 'Online orders require advance payment via Razorpay. Please complete payment to place your order.' },
+      { status: 400 }
+    )
+  }
+
   // 1. Resolve Customer via CustomerSearchService
   const customer = await CustomerSearchService.resolveCustomer({
     phone: data.customer.phone,
@@ -73,12 +82,13 @@ const handler = async (ctx: HandlerContext) => {
       notes: item.notes,
       shape: item.shape,
       referenceImages: item.referenceImages,
+      printImage: item.printImage,
       overridePrice: item.price,
     })),
     deliveryType: data.deliveryType,
     targetDate: data.deliveryDate,
     deliveryAddress: formattedAddress,
-    paymentMethod: data.paymentMethod || PaymentMethod.CASH,
+    paymentMethod: data.paymentMethod || PaymentMethod.RAZORPAY,
     paymentType: data.paymentType || PaymentType.FULL,
     idempotencyKey: data.idempotencyKey,
     isFarDistance: data.isFarDistance,
