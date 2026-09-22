@@ -243,6 +243,20 @@ function SalesDashboardContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, page, filter, search, dateFilter, customDate, activeBranch]);
 
+  // Polling fallback: when Socket.IO is unavailable (Vercel/serverless),
+  // poll every 30 seconds so new orders always appear automatically.
+  useEffect(() => {
+    const isSocketConnected = socket && (socket as any).connected;
+    if (isSocketConnected) return; // Socket is live — no need to poll
+
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, page, filter, search, dateFilter, customDate, activeBranch]);
+
   const unapprovedCount = serverOrders.filter(o => o.status === "NEW").length;
   const priorityAlertCount = serverOrders.filter(o => 
     (o.status === "NEW" || o.status === "QUOTE_DRAFT") && o.priorityLevel !== "normal"
