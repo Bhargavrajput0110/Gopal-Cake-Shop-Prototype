@@ -218,7 +218,7 @@ export class NotificationDispatcher {
     }
 
     // 6. Send the template
-    const result = await provider.sendTemplate({
+    let result = await provider.sendTemplate({
       phone,
       templateName: selection.templateName,
       templateVersion: selection.templateVersion,
@@ -227,6 +227,25 @@ export class NotificationDispatcher {
       mediaId,
       buttonUrlParam: selection.buttonUrlParam,
     });
+
+    // 6b. Image-fallback resilience: if we sent with an image and got a parameter/image error,
+    //     retry once without the image so the notification ALWAYS reaches the customer.
+    //     Meta error codes: #132018 = parameter issue, #131008 = missing required param
+    const isImageRelatedError = !result.success && mediaId &&
+      (result.error?.includes('#132018') || result.error?.includes('#131008') || result.error?.includes('#132012'));
+
+    if (isImageRelatedError) {
+      LoggerService.warn(`[NotificationDispatcher] Image caused failure for ${selection.templateName}. Retrying WITHOUT image to guarantee delivery.`);
+      result = await provider.sendTemplate({
+        phone,
+        templateName: selection.templateName,
+        templateVersion: selection.templateVersion,
+        language: selection.language,
+        variables: selection.variables,
+        // No mediaId — text-only fallback
+        buttonUrlParam: selection.buttonUrlParam,
+      });
+    }
 
     // 7. Record outcome
     if (result.success) {

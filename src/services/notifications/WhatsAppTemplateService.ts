@@ -313,7 +313,7 @@ export class WhatsAppTemplateService {
             { name: 'order_date', text: order.date },
             { name: 'order_details', text: order.items },
           ],
-            imageUrl: _meta.selectedImageUrl,
+          // NOTE: order_cancelled template has NO image header — do not pass imageUrl
         };
       }
 
