@@ -103,8 +103,6 @@ export class WhatsAppTemplateService {
               { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
               { name: 'delivery_datetime', text: fulfillment.deliveryDateTime ?? 'TBD' },
             ],
-            imageUrl: _meta.selectedImageUrl,
-            imageType: _meta.selectedImageType,
             buttonUrlParam: order.displayId,
           };
         } else {
