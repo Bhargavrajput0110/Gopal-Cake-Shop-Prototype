@@ -432,35 +432,83 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
              </div>
              
              <div className="grid grid-cols-2 gap-3 mb-4">
-               {p.gallery.map((img: string, idx: number) => {
-                 const isFirst = idx === 0;
-                 const label = isFirst ? "🎂 Cake Design" : "📸 Customer Photo (Print)";
-                 return (
-                   <div key={idx} className={`relative overflow-hidden rounded-xl shadow-md border border-white/20 group/img ${p.gallery.length === 1 || (idx === 0 && p.gallery.length % 2 !== 0) ? 'col-span-2 aspect-[4/3]' : 'aspect-square'}`}>
-                     <img src={img} alt={`Asset ${idx}`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-110" />
-                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                       <button onClick={() => onImageClick(img)} className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-lg" title="View Fullscreen">
-                         <Maximize className="w-5 h-5" />
-                       </button>
-                       <span className="font-ui text-[8px] font-black uppercase tracking-widest text-amber-300">{label}</span>
-                     </div>
-                     <div className="absolute top-2 left-2 px-2.5 py-1 bg-black/70 backdrop-blur-md rounded-lg font-ui text-[8px] font-black text-amber-300 border border-amber-400/30">
-                       {label}
-                     </div>
-                   </div>
-                 );
-               })}
-             </div>
+                {p.gallery.map((img: string, idx: number) => {
+                  const isCakeDesign = idx === 0 && (p.designImageUrl || task.designImageUrl);
+                  const label = isCakeDesign ? "🎂 Cake Design" : "📸 Customer Photo (Print)";
+                  return (
+                    <div key={idx} className={`relative overflow-hidden rounded-xl shadow-md border group/img ${isCakeDesign ? 'border-amber-400/30' : 'border-blue-400/30'} ${p.gallery.length === 1 || (idx === 0 && p.gallery.length % 2 !== 0) ? 'col-span-2 aspect-[4/3]' : 'aspect-square'}`}>
+                      <img src={img} alt={`Asset ${idx}`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-110" />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                        <button onClick={() => onImageClick(img)} className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-lg" title="View Fullscreen">
+                          <Maximize className="w-5 h-5" />
+                        </button>
+                        {!isCakeDesign && (
+                          <a
+                            href={img}
+                            download={`customer-photo-${idx}.jpg`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2.5 bg-blue-500/80 backdrop-blur-md rounded-full text-white hover:bg-blue-500 transition-colors shadow-lg"
+                            title="Download this photo"
+                          >
+                            <DocumentDownload className="w-4 h-4" />
+                          </a>
+                        )}
+                        <span className="font-ui text-[8px] font-black uppercase tracking-widest text-amber-300">{label}</span>
+                      </div>
+                      <div className={`absolute top-2 left-2 px-2.5 py-1 backdrop-blur-md rounded-lg font-ui text-[8px] font-black border ${isCakeDesign ? 'bg-black/70 text-amber-300 border-amber-400/30' : 'bg-blue-900/80 text-blue-200 border-blue-400/30'}`}>
+                        {label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
 
-             <a 
-               href={p.gallery[1] || p.gallery[0]} 
-               target="_blank" 
-               rel="noopener noreferrer"
-               className="mt-auto w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl font-ui text-[10px] uppercase tracking-widest font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg"
-             >
-               <DocumentDownload className="w-4 h-4" />
-               Download Photo for Printing
-             </a>
+              {/* Download Buttons Row */}
+              <div className="mt-auto flex flex-col gap-2">
+                {/* Download ALL Customer Photos (excludes Cake Design) */}
+                {p.gallery.filter((_: string, i: number) => !(i === 0 && (p.designImageUrl || task.designImageUrl))).length > 0 && (
+                  <button
+                    onClick={async () => {
+                      const customerPhotos = p.gallery.filter((_: string, i: number) => !(i === 0 && (p.designImageUrl || task.designImageUrl)));
+                      for (let i = 0; i < customerPhotos.length; i++) {
+                        const url = customerPhotos[i];
+                        try {
+                          const res = await fetch(url);
+                          const blob = await res.blob();
+                          const a = document.createElement('a');
+                          a.href = URL.createObjectURL(blob);
+                          a.download = `customer-photo-${i + 1}.jpg`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(a.href);
+                          // Small delay between downloads so browser doesn't block
+                          if (i < customerPhotos.length - 1) await new Promise(r => setTimeout(r, 400));
+                        } catch {
+                          window.open(url, '_blank');
+                        }
+                      }
+                    }}
+                    className="w-full py-3.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-ui text-[10px] uppercase tracking-widest font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg"
+                  >
+                    <DocumentDownload className="w-4 h-4" />
+                    Download All Customer Photos ({p.gallery.filter((_: string, i: number) => !(i === 0 && (p.designImageUrl || task.designImageUrl))).length})
+                  </button>
+                )}
+                {/* Also keep individual cake design download */}
+                {(p.designImageUrl || task.designImageUrl) && (
+                  <a
+                    href={p.designImageUrl || task.designImageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/30 rounded-xl font-ui text-[9px] uppercase tracking-widest font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                  >
+                    <DocumentDownload className="w-3.5 h-3.5" />
+                    View Cake Design Reference
+                  </a>
+                )}
+              </div>
            </div>
         ) : (p.designImageUrl || task.designImageUrl || task.image) ? (
           <div className="relative flex-1 flex items-center justify-center group/img min-h-[340px] bg-black">
