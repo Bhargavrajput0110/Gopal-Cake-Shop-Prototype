@@ -31,6 +31,10 @@ const handler = async (ctx: HandlerContext) => {
       case 'CONFIRMED':
       case 'WAITING_FOR_CHEF':
         return 'Order Received'
+      case 'QUOTE_DRAFT':
+        return 'Quote Pending'
+      case 'QUOTE_SENT':
+        return 'Quote Sent (Awaiting Payment)'
       case 'CHEF_ACCEPTED':
       case 'MAKING':
       case 'DECORATING':

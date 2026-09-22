@@ -356,11 +356,7 @@ export class StorefrontEngine {
         }
       }
     }
-
-    // Force delivery charge to 0 for Quotes requested via website
-    if (payload.type === 'QUOTE' && context.source === OrderSource.WEBSITE) {
-      deliveryCharge = 0
-    }
+    // (Removed: We no longer force deliveryCharge to 0 for Quotes, so the delivery fee is preserved)
 
     // 4. Coupons & Discounts Calculation
     let discount = 0

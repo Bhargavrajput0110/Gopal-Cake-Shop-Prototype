@@ -75,6 +75,7 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
   // Determine stage (0 to 4)
   const getStageIndex = (status: string) => {
     const s = status.toLowerCase();
+    if (s.includes('quote_draft') || s.includes('quote_sent')) return 0;
     if (s.includes('received') || s.includes('new')) return 0;
     if (s.includes('preparing') || s.includes('making') || s.includes('chef') || s.includes('baking')) return 1;
     if (s.includes('ready')) return 2;
@@ -86,7 +87,14 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
   const currentStage = getStageIndex(order.status);
   const isDelivered = currentStage === 4;
 
-  const stages = [
+  const isQuote = order.status?.includes('Quote');
+
+  const stages = isQuote ? [
+    { title: "Requested",  subtitle: "We've received your design",  icon: Clock },
+    { title: "Reviewing",  subtitle: "Chef is checking feasibility", icon: Reserve },
+    { title: "Quote Ready", subtitle: "Awaiting your approval",  icon: Receipt21 },
+    { title: "Confirmed",  subtitle: "Order placed",   icon: TickCircle },
+  ] : [
     { title: "Confirmed",  subtitle: "We've received it",  icon: Clock },
     { title: "Preparing",  subtitle: "Chef is baking",     icon: Reserve },
     { title: "Ready",      subtitle: "Awaiting dispatch",  icon: Box },
@@ -338,7 +346,27 @@ export default function TrackOrderPage({ params }: { params: Promise<{ id: strin
               </div>
             ))}
 
-            {(order.balanceDue ?? 0) > 0 ? (
+            {order.status === 'Quote Pending' ? (
+              <div className="flex items-center gap-3 pt-4 border-t border-white/10">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+                  <Clock className="w-4 h-4 text-amber-400" variant="Bold" />
+                </div>
+                <div>
+                  <p className="font-ui text-[10px] uppercase tracking-[0.15em] font-black text-amber-400">Quote Pending</p>
+                  <p className="font-editorial italic text-[10px] text-gray-500">Chef is reviewing your request.</p>
+                </div>
+              </div>
+            ) : order.status === 'Quote Sent (Awaiting Payment)' ? (
+              <div className="flex items-center gap-3 pt-4 border-t border-white/10">
+                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+                  <Warning2 className="w-4 h-4 text-purple-400" variant="Bold" />
+                </div>
+                <div>
+                  <p className="font-ui text-[10px] uppercase tracking-[0.15em] font-black text-purple-400">Action Required</p>
+                  <p className="font-editorial italic text-[10px] text-gray-500">Please pay ₹{order.balanceDue} to confirm your order.</p>
+                </div>
+              </div>
+            ) : (order.balanceDue ?? 0) > 0 ? (
               <div className="flex justify-between items-center pt-4 border-t border-white/10">
                 <div>
                   <p className="font-ui text-[10px] uppercase tracking-[0.15em] font-black text-amber-400">Balance Due</p>
