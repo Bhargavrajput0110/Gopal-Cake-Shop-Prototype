@@ -161,7 +161,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // Initialize Supabase Realtime + fetch initial orders
+  // Initialize Supabase Realtime + fetch initial orders + setup fallback polling
   useEffect(() => {
     // Fetch orders immediately on component mount
     refetchOrders();
@@ -183,8 +183,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         }
       });
 
+    // Fallback polling: Ensure UI refreshes every 30s for serverless/RLS issues on live site
+    const interval = setInterval(() => {
+      refetchOrders();
+    }, 30000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -768,11 +768,12 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                     {(item as any).flavor && <span className="ml-1 text-xs text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">• {(item as any).flavor}</span>}
                   </p>
                   {(item as any).referenceImages && (item as any).referenceImages.length > 0 && (
-                    <div className="flex gap-2 mt-1.5 flex-wrap items-center">
+                    <div className="flex gap-2 mt-1.5 flex-wrap items-center bg-gray-50 p-2 rounded-lg border border-gray-200">
+                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mr-1">Design Ref:</span>
                       {/* Small preview thumbnails (max 3) */}
                       {(item as any).referenceImages.slice(0, 3).map((img: string, idx: number) => (
                         <button
-                          key={idx}
+                          key={`ref-${idx}`}
                           onClick={() => setRefImageModal({ images: (item as any).referenceImages, idx })}
                           className="w-8 h-8 rounded-md overflow-hidden border-2 border-blue-300 hover:border-blue-500 transition-all shadow-sm shrink-0"
                           title={`View reference photo ${idx + 1}`}
@@ -782,9 +783,32 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                       ))}
                       <button
                         onClick={() => setRefImageModal({ images: (item as any).referenceImages, idx: 0 })}
-                        className="text-[10px] font-black bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 flex items-center gap-1 transition-colors shadow-sm"
+                        className="text-[10px] font-black bg-blue-600 text-white px-2 py-1 rounded-lg hover:bg-blue-700 flex items-center gap-1 transition-colors shadow-sm"
                       >
-                        🖼️ View {(item as any).referenceImages.length} Photo{(item as any).referenceImages.length > 1 ? 's' : ''}
+                        {(item as any).referenceImages.length} Photo{(item as any).referenceImages.length > 1 ? 's' : ''}
+                      </button>
+                    </div>
+                  )}
+
+                  {(item as any).printImages && (item as any).printImages.length > 0 && (
+                    <div className="flex gap-2 mt-1.5 flex-wrap items-center bg-purple-50 p-2 rounded-lg border border-purple-200">
+                      <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest mr-1">Photo Print:</span>
+                      {/* Small preview thumbnails (max 3) */}
+                      {(item as any).printImages.slice(0, 3).map((img: string, idx: number) => (
+                        <button
+                          key={`print-${idx}`}
+                          onClick={() => setRefImageModal({ images: (item as any).printImages, idx })}
+                          className="w-8 h-8 rounded-md overflow-hidden border-2 border-purple-400 hover:border-purple-600 transition-all shadow-sm shrink-0"
+                          title={`View print photo ${idx + 1}`}
+                        >
+                          <img src={img} alt={`Print ${idx + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setRefImageModal({ images: (item as any).printImages, idx: 0 })}
+                        className="text-[10px] font-black bg-purple-600 text-white px-2 py-1 rounded-lg hover:bg-purple-700 flex items-center gap-1 transition-colors shadow-sm"
+                      >
+                        {(item as any).printImages.length} Print{(item as any).printImages.length > 1 ? 's' : ''}
                       </button>
                     </div>
                   )}

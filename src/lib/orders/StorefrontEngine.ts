@@ -306,8 +306,9 @@ export class StorefrontEngine {
           create: [
             ...(item.referenceImages || []).map(url => ({ type: MediaType.REFERENCE, url })),
             // printImage may be a comma-joined list of URLs (from QuickBuyForm photo cake upload)
+            // Stored as PRODUCTION media so Photo Vendors can see it separated from the Chef's Reference image
             ...(item.printImage
-              ? item.printImage.split(',').filter(Boolean).map(url => ({ type: MediaType.REFERENCE, url: url.trim() }))
+              ? item.printImage.split(',').filter(Boolean).map(url => ({ type: MediaType.PRODUCTION, url: url.trim() }))
               : []
             )
           ]
