@@ -13,9 +13,11 @@ export class OrderTransitionService {
     appRole: AppRole,
     branchId: string | null,
     note?: string,
-    reasonCode?: string
+    reasonCode?: string,
+    basePrice?: number,
+    discount?: number
   }): Promise<void> {
-    const { orderId, action, actorId, appRole, branchId, note, reasonCode } = params
+    const { orderId, action, actorId, appRole, branchId, note, reasonCode, basePrice, discount } = params
     const role = appRole
 
     // Read the current order to get its state and delivery type
@@ -141,14 +143,23 @@ export class OrderTransitionService {
       // For PICKUP re-notification (READY_FOR_PICKUP → READY_FOR_PICKUP), skip the status update
       // because the order is already in the right state — we just need to fire the notification.
       if (!isPickupReNotification && currentState !== nextState) {
+        const updateData: any = {
+          status: nextState
+        }
+
+        // If this action carries pricing details (like send-quote), update the amounts
+        if (basePrice !== undefined) {
+          updateData.baseAmount = basePrice
+          updateData.discount = discount ?? 0
+          updateData.totalAmount = Math.max(0, basePrice - (discount || 0)) + Number(order.deliveryCharge || 0)
+        }
+
         const updatedOrder = await tx.order.updateMany({
           where: { 
             id: orderId,
             status: currentState // Concurrency check
           },
-          data: {
-            status: nextState
-          }
+          data: updateData
         })
 
         if (updatedOrder.count === 0) {

@@ -32,7 +32,9 @@ export const POST = withApiHandler(async ({ req, params, appRole, branchId, user
     appRole: appRole as any,
     branchId,
     note: parsed.note,
-    reasonCode: parsed.reasonCode
+    reasonCode: parsed.reasonCode,
+    basePrice: parsed.basePrice,
+    discount: parsed.discount
   })
 
   // Trigger outbox polling in background so API response returns instantly (<50ms)

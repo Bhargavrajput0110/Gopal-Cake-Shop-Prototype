@@ -681,6 +681,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
   // Use first reference image as thumbnail if no cakeImage, so salesperson sees the customer's ref photo
   const allRefImages = order.items.flatMap((i: any) => i.referenceImages || []);
+  const allPrintImages = order.items.flatMap((i: any) => i.printImages || []);
   const cakeImageUrl = order.cakeImage || allRefImages[0] || "https://images.unsplash.com/photo-1562777717-b6c338435d72?auto=format&fit=crop&q=80&w=600&h=600";
 
   return (
@@ -714,10 +715,15 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
             </div>
           )}
 
-          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-            <span className="bg-black/60 backdrop-blur-md text-white px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+          <div className="absolute top-2 left-2 flex flex-col gap-1">
+            <span className="bg-black/60 backdrop-blur-md text-white px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm w-fit">
               🔍 Tap to Zoom
             </span>
+            {allPrintImages.length > 0 && (
+              <span className="bg-purple-600/90 backdrop-blur-md text-white px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm w-fit border border-purple-400">
+                🖨️ Photo Print
+              </span>
+            )}
           </div>
 
           {order.isSurprise && (
