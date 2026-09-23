@@ -780,6 +780,16 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                     {item.weight&&<span className="text-muted-foreground font-semibold"> ({item.weight})</span>}
                     {(item as any).flavor && <span className="ml-1 text-xs text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">• {(item as any).flavor}</span>}
                   </p>
+                  {/* 🎂 MESSAGE ON CAKE — most critical field, always visible */}
+                  {(item as any).messageOnCake && (
+                    <div className="mt-1.5 flex items-start gap-1.5 bg-rose-50 border border-rose-300 rounded-xl px-3 py-2 shadow-sm">
+                      <span className="text-rose-500 text-sm shrink-0 mt-0.5">🎂</span>
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-rose-600 block leading-none mb-0.5">Message on Cake</span>
+                        <span className="text-xs font-black text-rose-900 font-mono">&quot;{(item as any).messageOnCake}&quot;</span>
+                      </div>
+                    </div>
+                  )}
                   {(item as any).referenceImages && (item as any).referenceImages.length > 0 && (
                     <div className="flex gap-2 mt-1.5 flex-wrap items-center bg-gray-50 p-2 rounded-lg border border-gray-200">
                       <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mr-1">Design Ref:</span>

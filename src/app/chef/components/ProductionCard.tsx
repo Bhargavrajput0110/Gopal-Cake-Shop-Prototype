@@ -129,6 +129,17 @@ export function ProductionCard({ item, queueNumber }: ProductionCardProps) {
           </div>
         </div>
 
+        {/* 🎂 MESSAGE ON CAKE — always visible, critical for chef */}
+        {item.messageOnCake && (
+          <div className="mt-2 flex items-start gap-2 bg-rose-50 border-2 border-rose-300 rounded-xl px-3 py-2.5">
+            <span className="text-lg shrink-0 leading-none">🎂</span>
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-widest text-rose-600 block leading-none mb-0.5">Write on Cake</span>
+              <span className="font-mono font-black text-rose-900 text-sm">&quot;{item.messageOnCake}&quot;</span>
+            </div>
+          </div>
+        )}
+
         {/* Expanded Details */}
         {expanded && (
           <div className="mt-3 pt-3 border-t border-border space-y-2 text-sm animate-in slide-in-from-top-2 duration-200">

@@ -163,6 +163,7 @@ export class OrderService {
               weight: i.weight ? `${i.weight}kg` : undefined,
               flavor: i.flavor || undefined,
               notes: i.notes || undefined,
+              messageOnCake: i.messageOnCake || undefined,
               image: i.image || product?.thumbnail || undefined,
               referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
               printImages: printImages.length > 0 ? printImages : undefined,
