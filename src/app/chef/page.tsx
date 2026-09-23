@@ -387,7 +387,17 @@ export default function ChefDashboardPage() {
                   <div className="flex-1 min-w-0">
                     <p className={`font-black text-gray-900 text-lg leading-tight ${isChecked ? 'line-through' : ''}`}>{item.name}</p>
                     {item.weight && <p className="font-bold text-gray-500 text-xs uppercase mt-0.5">{item.weight}</p>}
-                    {item.notes && <p className={`mt-2 font-bold text-sm p-2 rounded-lg ${isChecked ? 'bg-gray-200 text-gray-600' : 'bg-rose-100 text-rose-800'}`}>* {item.notes}</p>}
+                    {/* 🎂 MESSAGE ON CAKE — huge unmissable banner */}
+                    {item.messageOnCake && (
+                      <div className="mt-2 bg-rose-600 text-white rounded-xl px-3 py-2.5 flex items-center gap-2.5 shadow-lg">
+                        <span className="text-2xl shrink-0">🎂</span>
+                        <div>
+                          <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-80 leading-none mb-0.5">Write on Cake</p>
+                          <p className="font-black text-base font-mono leading-tight">&quot;{item.messageOnCake}&quot;</p>
+                        </div>
+                      </div>
+                    )}
+                    {item.notes && <p className={`mt-2 font-bold text-sm p-2 rounded-lg ${isChecked ? 'bg-gray-200 text-gray-600' : 'bg-amber-100 text-amber-900'}`}>📝 {item.notes}</p>}
                   </div>
                 </div>
               );

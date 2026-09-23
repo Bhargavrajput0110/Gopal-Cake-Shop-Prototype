@@ -77,7 +77,7 @@ export type Order = {
     longitude?: number;
   };
   branch: string;
-  items: { id?: string; name: string; qty: number; weight?: string; notes?: string; productId?: string; referenceImages?: string[]; printImages?: string[] }[];
+  items: { id?: string; name: string; qty: number; weight?: string; notes?: string; messageOnCake?: string; productId?: string; referenceImages?: string[]; printImages?: string[] }[];
   subtotal: number;
   discount: number;
   tax: number;
