@@ -1,11 +1,12 @@
 "use client"
 
 import { AppSidebar, AppTopbar, SALES_NAV_CONFIG } from "@/components/navigation"
-import { ClipboardText, Monitor, Location, Convert3DCube, Shop } from "iconsax-react"
+import { ClipboardText, Monitor, Location, Convert3DCube, Shop, Routing } from "iconsax-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { SessionProvider } from "next-auth/react"
+import { PushNotificationManager } from "@/components/notifications/PushNotificationManager"
 
 export default function SalesLayout({
   children,
@@ -19,11 +20,13 @@ export default function SalesLayout({
     { name: "Orders", href: "/sales/orders", icon: ClipboardText },
     { name: "POS", href: "/sales/pos", icon: Monitor },
     { name: "Delivery", href: "/sales/delivery", icon: Location },
+    { name: "Vendors", href: "/sales/vendors", icon: Routing },
     { name: "Transfers", href: "/sales/transfers", icon: Convert3DCube },
   ];
 
   return (
     <SessionProvider>
+      <PushNotificationManager />
       <div className="min-h-screen mesh-bg pb-16 md:pb-0">
         <AppSidebar config={SALES_NAV_CONFIG} />
         <div className="md:pl-64 flex flex-col min-h-screen">
