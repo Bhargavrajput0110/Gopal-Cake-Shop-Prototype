@@ -225,8 +225,19 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
   }
 
 
+  // Generate time slots (9:00 AM to 10:00 PM)
+  const timeSlots = Array.from({ length: 27 }, (_, i) => {
+    const hours24 = Math.floor(i / 2) + 9;
+    const mins = i % 2 === 0 ? '00' : '30';
+    const ampm = hours24 >= 12 ? 'PM' : 'AM';
+    const hours12 = hours24 > 12 ? hours24 - 12 : hours24;
+    const time24 = `${String(hours24).padStart(2, '0')}:${mins}`;
+    const time12 = `${hours12}:${mins} ${ampm}`;
+    return { value: time24, label: time12 };
+  });
+
   return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4 md:p-8">
+    <div className="fixed inset-0 z-[200] bg-background/80 backdrop-blur-md flex items-center justify-center p-4 md:p-8">
       <div className="bg-white w-full max-w-5xl rounded-[2.5rem] border border-border/50 shadow-[0_32px_64px_-12px_rgba(74,59,53,0.15)] overflow-hidden flex flex-col h-full max-h-[90vh] animate-in fade-in zoom-in-95 duration-300">
         
         {/* Header */}
@@ -241,7 +252,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
         </div>
         
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 pb-32 md:pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             
             {/* LEFT COLUMN: Customer & Order Details */}
@@ -261,7 +272,15 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest flex items-center gap-1"><Clock className="w-3 h-3"/> Target Time</label>
-                    <input type="time" value={targetTime} onChange={e => setTargetTime(e.target.value)} className="w-full bg-secondary/5 border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-3 py-3 font-serif text-lg transition-colors rounded-t-lg" />
+                    <select 
+                      value={targetTime} 
+                      onChange={e => setTargetTime(e.target.value)} 
+                      className="w-full bg-secondary/5 border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-3 py-3 font-serif text-lg transition-colors rounded-t-lg"
+                    >
+                      {timeSlots.map(slot => (
+                        <option key={slot.value} value={slot.value}>{slot.label}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
