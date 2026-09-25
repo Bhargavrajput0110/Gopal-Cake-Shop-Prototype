@@ -69,7 +69,7 @@ export function AppSidebar({ config }: AppSidebarProps) {
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <item.icon className="w-4 h-4 shrink-0" />
+                    <item.icon className="w-4 h-4 shrink-0" color="currentColor" />
                     <span>{item.name}</span>
                   </div>
                   {item.badge != null && (

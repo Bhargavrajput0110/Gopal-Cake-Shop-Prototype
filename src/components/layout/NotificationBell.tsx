@@ -91,7 +91,7 @@ export function NotificationBell() {
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
         id="notification-bell-btn"
       >
-        <Notification className="w-5 h-5" variant="Bold" />
+        <Notification className="w-5 h-5" variant="Bold" color="currentColor" />
         <AnimatePresence>
           {unreadCount > 0 && (
             <motion.span

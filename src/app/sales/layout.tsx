@@ -47,7 +47,7 @@ export default function SalesLayout({
               return (
                 <Link key={item.name} href={item.href} className="flex flex-col items-center gap-1 p-1">
                   <div className={`p-1.5 rounded-full transition-colors ${isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
-                    <Icon className="w-6 h-6" variant={isActive ? "Bold" : "Linear"} />
+                    <Icon className="w-6 h-6" variant={isActive ? "Bold" : "Linear"} color="currentColor" />
                   </div>
                   <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
                     {item.name}

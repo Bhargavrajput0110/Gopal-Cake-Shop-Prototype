@@ -39,7 +39,7 @@ export function MobileNav({ config }: MobileNavProps) {
         className="md:hidden p-2 -ml-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
         aria-label="Open navigation menu"
       >
-        <HambergerMenu className="w-6 h-6" />
+        <HambergerMenu className="w-6 h-6" color="currentColor" />
       </button>
 
       {/* Overlay */}
@@ -70,7 +70,7 @@ export function MobileNav({ config }: MobileNavProps) {
             className="p-2 text-foreground/60 hover:text-destructive rounded-lg transition-colors"
             aria-label="Close navigation menu"
           >
-            <CloseSquare className="w-5 h-5" />
+            <CloseSquare className="w-5 h-5" color="currentColor" />
           </button>
         </div>
 
@@ -97,7 +97,7 @@ export function MobileNav({ config }: MobileNavProps) {
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                     )}
                   >
-                    <item.icon className="w-5 h-5 shrink-0" />
+                    <item.icon className="w-5 h-5 shrink-0" color="currentColor" />
                     <span>{item.name}</span>
                     {item.badge != null && (
                       <span
@@ -123,14 +123,14 @@ export function MobileNav({ config }: MobileNavProps) {
             onClick={() => setIsOpen(false)}
             className="flex items-center gap-3 p-3 rounded-xl font-semibold text-sm text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
           >
-            <Home2 className="w-4 h-4 shrink-0" />
+            <Home2 className="w-4 h-4 shrink-0" color="currentColor" />
             Back to Website
           </Link>
           <button
             onClick={handleSignOut}
             className="flex items-center gap-3 p-3 rounded-xl font-semibold text-sm text-destructive bg-destructive/10 hover:bg-destructive/20 w-full transition-colors"
           >
-            <Logout className="w-4 h-4 shrink-0" />
+            <Logout className="w-4 h-4 shrink-0" color="currentColor" />
             Sign Out
           </button>
         </div>
