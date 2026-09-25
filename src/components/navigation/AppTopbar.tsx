@@ -33,7 +33,7 @@ export function AppTopbar({
   return (
     <header
       className={cn(
-        "h-16 glass-panel border-b-0 border-l-0 border-r-0 sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 shrink-0",
+        "h-16 glass-panel border-b-0 border-l-0 border-r-0 sticky top-0 z-[100] flex items-center justify-between px-4 sm:px-6 shrink-0",
         className
       )}
     >

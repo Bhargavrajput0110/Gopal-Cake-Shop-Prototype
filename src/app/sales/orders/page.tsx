@@ -134,7 +134,7 @@ function SalesDashboardContent() {
     try {
       const params = new URLSearchParams();
       params.append("page", page.toString());
-      params.append("limit", "20");
+      params.append("limit", "50");
       params.append("branch", activeBranch);
       
       let statusParams = "";

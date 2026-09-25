@@ -78,7 +78,7 @@ export function toBranchId(raw?: string | null): BranchId {
   }
   if (lower.includes('uma')) return 'uma';
   if (lower.includes('elor') || lower.includes('ellor') || lower.includes('vfrn9eq5')) return 'elora';
-  if (lower.includes('varas') || lower.includes('waras') || lower.includes('kv1mr41f') || lower.includes('cmswuii')) return 'varasiya';
+  if (lower.includes('varas') || lower.includes('waras') || lower.includes('kv1mr41f')) return 'varasiya';
   if (lower.includes('khand') || lower.includes('3977ajl1z')) return 'khanderao';
   return 'varasiya';
 }
@@ -87,7 +87,7 @@ export function toBranchId(raw?: string | null): BranchId {
 export function toBranchDisplayName(id?: string | null): string {
   if (!id) return 'Varasiya Factory';
   const lower = id.toLowerCase().trim();
-  if (lower.includes('varas') || lower.includes('waras') || lower.includes('kv1mr41f') || lower.includes('cmswuii')) return 'Varasiya Factory';
+  if (lower.includes('varas') || lower.includes('waras') || lower.includes('kv1mr41f')) return 'Varasiya Factory';
   if (lower.includes('khand') || lower.includes('3977ajl1z')) return 'Khanderao Branch';
   if (lower.includes('uma')) return 'Uma Branch (Main Outlet)';
   if (lower.includes('elor') || lower.includes('ellor') || lower.includes('vfrn9eq5')) return 'Ellora Park Branch';
@@ -102,7 +102,7 @@ export function toBranchDisplayName(id?: string | null): string {
 export function toBranchShortName(id?: string | null): string {
   if (!id) return 'Varasiya';
   const lower = id.toLowerCase().trim();
-  if (lower.includes('varas') || lower.includes('waras') || lower.includes('kv1mr41f') || lower.includes('cmswuii')) return 'Varasiya';
+  if (lower.includes('varas') || lower.includes('waras') || lower.includes('kv1mr41f')) return 'Varasiya';
   if (lower.includes('khand') || lower.includes('3977ajl1z')) return 'Khanderao';
   if (lower.includes('uma')) return 'Uma';
   if (lower.includes('elor') || lower.includes('ellor') || lower.includes('vfrn9eq5')) return 'Ellora Park';
