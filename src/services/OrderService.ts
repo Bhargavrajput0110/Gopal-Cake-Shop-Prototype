@@ -66,12 +66,12 @@ export class OrderService {
     if (filters?.startDate || filters?.endDate) {
       whereClause.targetDate = {}
       if (filters?.startDate) {
-        whereClause.targetDate.gte = new Date(filters.startDate)
+        // Parse the incoming YYYY-MM-DD string as midnight IST (+05:30)
+        whereClause.targetDate.gte = new Date(`${filters.startDate}T00:00:00+05:30`)
       }
       if (filters?.endDate) {
-        const end = new Date(filters.endDate)
-        end.setHours(23, 59, 59, 999)
-        whereClause.targetDate.lte = end
+        // Parse the incoming YYYY-MM-DD string as 23:59:59 IST (+05:30)
+        whereClause.targetDate.lte = new Date(`${filters.endDate}T23:59:59.999+05:30`)
       }
     }
     if (filters?.dueSoon) {

@@ -765,7 +765,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                   {(order as any).transferHistory.map((th: any, i: number) => (
                     <span key={i} className="flex items-center gap-1.5 shrink-0">
                       <span className="text-emerald-400 text-[10px] font-black">➔</span>
-                      <span className="text-xs font-bold text-emerald-900">{th.to}</span>
+                      <span className="text-xs font-bold text-emerald-900">{toBranchShortName(th.to)}</span>
                     </span>
                   ))}
                 </div>
