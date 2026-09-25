@@ -233,8 +233,21 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
     const hours12 = hours24 > 12 ? hours24 - 12 : hours24;
     const time24 = `${String(hours24).padStart(2, '0')}:${mins}`;
     const time12 = `${hours12}:${mins} ${ampm}`;
-    return { value: time24, label: time12 };
+    return { value: time24, label: time12, hours24, minsNum: parseInt(mins) };
+  }).filter(slot => {
+    if (targetDate === todayStr) {
+      if (slot.hours24 < now.getHours()) return false;
+      if (slot.hours24 === now.getHours() && slot.minsNum < now.getMinutes()) return false;
+    }
+    return true;
   });
+
+  // Ensure targetTime is valid after changing dates
+  React.useEffect(() => {
+    if (timeSlots.length > 0 && !timeSlots.find(s => s.value === targetTime)) {
+      setTargetTime(timeSlots[0].value);
+    }
+  }, [targetDate, timeSlots, targetTime]);
 
   return (
     <div className="fixed inset-0 z-[200] bg-background/80 backdrop-blur-md flex items-center justify-center p-4 md:p-8">

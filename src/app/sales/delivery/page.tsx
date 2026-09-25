@@ -125,6 +125,9 @@ export default function DeliveryCoordinationPage() {
                   <p className="font-medium text-foreground">
                     {order.items.map(i => `${i.qty}x ${i.name}`).join(", ")}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 font-bold">
+                    Target: {new Date(order.timeTarget).toLocaleDateString()} {new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                   <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
                     <Location className="w-3.5 h-3.5 text-primary" /> Deliver to: {order.delivery?.address || "Address Not Available"}
                   </p>
@@ -182,6 +185,9 @@ export default function DeliveryCoordinationPage() {
                 <div className="flex justify-between items-end">
                   <div>
                     <p className="font-medium text-foreground">{order.items.map(i => i.name).join(", ")}</p>
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 font-bold">
+                      Target: {new Date(order.timeTarget).toLocaleDateString()} {new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-1">Assigned to: <span className="font-bold text-foreground">{order.assignedDriverName || "Unknown"}</span></p>
                   </div>
                 </div>

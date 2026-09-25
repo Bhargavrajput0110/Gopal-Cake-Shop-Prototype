@@ -46,6 +46,7 @@ export const NotificationMatrix: Record<string, NotificationRule[]> = {
   'CREATED_VIA_STOREFRONT': [
     { recipientRole: 'CUSTOMER', channel: 'WHATSAPP', templateName: 'ORDER_APPROVED' },
     { recipientRole: 'CHEF', channel: 'IN_APP', templateName: 'New POS Order — Awaiting Chef' },
+    { recipientRole: 'SALES', channel: 'IN_APP', templateName: 'POS Order Created Successfully' },
   ],
 
   // Chef accepts the order

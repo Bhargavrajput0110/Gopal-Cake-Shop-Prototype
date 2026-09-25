@@ -4,6 +4,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
+import { createPortal } from "react-dom"
+import { useEffect } from "react"
 import { HambergerMenu, CloseSquare, Logout, Home2 } from "iconsax-react"
 import { cn } from "@/lib/utils"
 import type { AppConfig } from "./navigation.types"
@@ -18,6 +20,9 @@ export function MobileNav({ config }: MobileNavProps) {
   const pathname = usePathname()
   const sessionObj = useSession ? useSession() : null
   const session = sessionObj?.data
+
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
   const displayName = session?.user?.name || config.user?.name || 'Staff'
   const displayRole = (session?.user as any)?.role || config.user?.role || 'Staff'
@@ -43,7 +48,9 @@ export function MobileNav({ config }: MobileNavProps) {
       </button>
 
       {/* Overlay */}
-      {isOpen && (
+      {mounted && createPortal(
+        <>
+          {isOpen && (
         <div
           className="fixed inset-0 z-[9998] bg-black/40 md:hidden"
           onClick={() => setIsOpen(false)}
@@ -133,8 +140,11 @@ export function MobileNav({ config }: MobileNavProps) {
             <Logout className="w-4 h-4 shrink-0" color="currentColor" />
             Sign Out
           </button>
-        </div>
-      </div>
+                    </div>
+          </div>
+        </>,
+        document.body
+      )}
     </>
   )
 }
