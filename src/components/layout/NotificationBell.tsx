@@ -87,11 +87,11 @@ export function NotificationBell() {
       {/* Bell Button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative p-2 text-foreground/70 hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+        className="relative p-2.5 bg-white shadow-sm border border-border rounded-full text-primary hover:bg-primary hover:text-white transition-all flex items-center justify-center"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
         id="notification-bell-btn"
       >
-        <Notification className="w-5 h-5" />
+        <Notification className="w-5 h-5" variant="Bold" />
         <AnimatePresence>
           {unreadCount > 0 && (
             <motion.span
@@ -99,7 +99,7 @@ export function NotificationBell() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
-              className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 border-2 border-card"
+              className="absolute -top-1 -right-1 min-w-[20px] h-[20px] bg-rose-600 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-white shadow-sm"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </motion.span>
