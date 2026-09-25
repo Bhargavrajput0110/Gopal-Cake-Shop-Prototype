@@ -201,7 +201,7 @@ export function ProductGrid({ products, categories = [], designs = [], isLoading
                         name: design.name,
                         basePrice: Number(design.basePrice || 800),
                         thumbnail: design.imageUrl,
-                        isCustomizable: true,
+                        isCustomizable: false, // Design cakes have fixed prices — NOT a custom quote order
                         designId: design.id,
                         designCode: design.code,
                         minWeight: design.recommendedWeight,
