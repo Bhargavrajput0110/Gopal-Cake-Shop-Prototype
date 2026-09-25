@@ -33,7 +33,9 @@ export function PushNotificationManager() {
   useEffect(() => {
     // If logged in and supported, ensure we are subscribed
     if (session?.user && isSupported && !subscription) {
-      subscribeUser();
+      if (Notification.permission === 'granted') {
+        subscribeUser();
+      }
     }
   }, [session, isSupported, subscription]);
 
@@ -94,5 +96,14 @@ export function PushNotificationManager() {
     }
   }
 
-  return null; // This is a logic-only component
+  if (isSupported && typeof window !== 'undefined' && window.Notification?.permission === 'default') {
+    return (
+      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-primary text-primary-foreground p-4 rounded-2xl shadow-xl z-[9999] flex items-center justify-between animate-in slide-in-from-bottom-5">
+         <span className="text-sm font-bold">Enable Push Notifications</span>
+         <button onClick={subscribeUser} className="bg-white text-primary px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm hover:bg-white/90">Enable</button>
+      </div>
+    );
+  }
+
+  return null;
 }

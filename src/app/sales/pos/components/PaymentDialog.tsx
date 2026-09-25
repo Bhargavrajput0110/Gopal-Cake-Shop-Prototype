@@ -22,8 +22,9 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
   // Fulfillment Time & Location
   const actualNow = new Date()
   const todayStr = actualNow.toISOString().split('T')[0]
+  const currentTimeStr = actualNow.toTimeString().slice(0, 5)
   const [targetDate, setTargetDate] = React.useState<string>(todayStr)
-  const [targetTime, setTargetTime] = React.useState<string>("IMMEDIATE")
+  const [targetTime, setTargetTime] = React.useState<string>(currentTimeStr)
   
   // Delivery distance & pricing
   const [deliveryDistanceKm, setDeliveryDistanceKm] = React.useState<number | undefined>(undefined)
@@ -136,8 +137,18 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
     setIsSubmitting(true)
     
     try {
-      const isImmediate = targetTime === 'IMMEDIATE'
-      const finalTargetDate = isImmediate ? actualNow.toISOString() : new Date(`${targetDate}T${targetTime}:00`).toISOString()
+      const finalTargetDate = new Date(`${targetDate}T${targetTime}:00`).toISOString()
+
+      if (targetDate === todayStr) {
+        const [h, m] = targetTime.split(':').map(Number);
+        const curH = actualNow.getHours();
+        const curM = actualNow.getMinutes();
+        if (h < curH || (h === curH && m < curM)) {
+          setCheckoutError("Cannot schedule an order for a past time today.");
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
       const payload = {
         customerId: 'walk-in',
@@ -225,30 +236,15 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
   }
 
 
-  // Generate time slots (9:00 AM to 10:00 PM)
-  const timeSlots = [
-    { value: 'IMMEDIATE', label: 'Right Now (Immediate)' },
-    ...Array.from({ length: 27 }, (_, i) => {
-      const hours24 = Math.floor(i / 2) + 9;
-      const mins = i % 2 === 0 ? '00' : '30';
-      const ampm = hours24 >= 12 ? 'PM' : 'AM';
-      const hours12 = hours24 > 12 ? hours24 - 12 : hours24;
-      const time24 = `${String(hours24).padStart(2, '0')}:${mins}`;
-      const time12 = `${hours12}:${mins} ${ampm}`;
-      return { value: time24, label: time12, hours24, minsNum: parseInt(mins) };
-    }).filter(slot => {
-      if (targetDate === todayStr) {
-        if (slot.hours24 < actualNow.getHours()) return false;
-        if (slot.hours24 === actualNow.getHours() && slot.minsNum <= actualNow.getMinutes()) return false;
-      }
-      return true;
-    })
-  ];
-
   // Ensure targetTime is valid after changing dates
   React.useEffect(() => {
-    if (timeSlots.length > 0 && !timeSlots.find(s => s.value === targetTime)) {
-      setTargetTime(timeSlots[0].value);
+    if (targetDate === todayStr) {
+      const [h, m] = targetTime.split(':').map(Number);
+      const curH = actualNow.getHours();
+      const curM = actualNow.getMinutes();
+      if (h < curH || (h === curH && m < curM)) {
+        setTargetTime(currentTimeStr);
+      }
     }
   }, [targetDate]);
 
@@ -288,15 +284,13 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest flex items-center gap-1"><Clock className="w-3 h-3"/> Target Time</label>
-                    <select 
+                    <input 
+                      type="time"
                       value={targetTime} 
-                      onChange={e => setTargetTime(e.target.value)} 
+                      onChange={e => setTargetTime(e.target.value)}
+                      min={targetDate === todayStr ? currentTimeStr : undefined}
                       className="w-full bg-secondary/5 border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-3 py-3 font-serif text-lg transition-colors rounded-t-lg"
-                    >
-                      {timeSlots.map(slot => (
-                        <option key={slot.value} value={slot.value}>{slot.label}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
               </div>
