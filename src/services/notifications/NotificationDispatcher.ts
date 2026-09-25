@@ -360,7 +360,8 @@ export class NotificationDispatcher {
             try {
               await webpush.sendNotification(
                 { endpoint: sub.endpoint, keys: { auth: sub.auth, p256dh: sub.p256dh } },
-                JSON.stringify({ title: inApp.title, body: inApp.message, url: linkUrl || '/' })
+                JSON.stringify({ title: inApp.title, body: inApp.message, url: linkUrl || '/' }),
+                { headers: { Urgency: 'high' } }
               );
             } catch (pushErr: any) {
               if (pushErr.statusCode === 404 || pushErr.statusCode === 410) {
