@@ -175,5 +175,17 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     }
   });
 
-  return NextResponse.json({ success: true, data: allTasks });
+  // Fetch all vendors to display in the UI even if they have no active tasks
+  let allVendors: any[] = [];
+  if (isStaff) {
+    allVendors = await prisma.user.findMany({
+      where: { 
+        role: { in: ['VENDOR_FLORIST', 'VENDOR_PHOTO', 'VENDOR_ACRYLIC'] },
+        status: { not: 'SUSPENDED' }
+      },
+      select: { id: true, name: true, role: true, phone: true }
+    });
+  }
+
+  return NextResponse.json({ success: true, data: allTasks, vendors: allVendors });
 });

@@ -7,6 +7,7 @@ import { format } from "date-fns";
 
 export default function VendorManagementPage() {
   const [tasks, setTasks] = useState<any[]>([]);
+  const [vendors, setVendors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,6 +19,7 @@ export default function VendorManagementPage() {
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Failed to fetch vendor tasks");
       setTasks(json.data);
+      if (json.vendors) setVendors(json.vendors);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -32,6 +34,10 @@ export default function VendorManagementPage() {
   const photographers = useMemo(() => tasks.filter(t => t.assignedVendor?.role === "VENDOR_PHOTO"), [tasks]);
   const florists = useMemo(() => tasks.filter(t => t.assignedVendor?.role === "VENDOR_FLORIST"), [tasks]);
   const acrylics = useMemo(() => tasks.filter(t => t.assignedVendor?.role === "VENDOR_ACRYLIC"), [tasks]);
+
+  const photoVendors = useMemo(() => vendors.filter(v => v.role === "VENDOR_PHOTO"), [vendors]);
+  const floristVendors = useMemo(() => vendors.filter(v => v.role === "VENDOR_FLORIST"), [vendors]);
+  const acrylicVendors = useMemo(() => vendors.filter(v => v.role === "VENDOR_ACRYLIC"), [vendors]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -67,6 +73,28 @@ export default function VendorManagementPage() {
     </div>
   );
 
+  const renderVendorList = (vList: any[]) => {
+    if (vList.length === 0) return null;
+    return (
+      <div className="mb-4 pb-4 border-b border-border/50">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Registered Vendors</p>
+        <div className="flex flex-wrap gap-2">
+          {vList.map(v => (
+            <div key={v.id} className="bg-white border border-border px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
+              <div className="w-5 h-5 rounded-full bg-secondary/30 flex items-center justify-center text-xs font-bold text-primary">
+                {v.name.charAt(0)}
+              </div>
+              <div>
+                <p className="text-xs font-bold leading-none">{v.name}</p>
+                {v.phone && <p className="text-[9px] text-muted-foreground mt-0.5">{v.phone}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -96,7 +124,7 @@ export default function VendorManagementPage() {
         </div>
       )}
 
-      {isLoading && !error && tasks.length === 0 ? (
+      {isLoading && !error && tasks.length === 0 && vendors.length === 0 ? (
         <div className="h-[50vh] flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -108,15 +136,18 @@ export default function VendorManagementPage() {
               <h3 className="font-bold flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
                 <Camera className="w-5 h-5" /> Photographers
               </h3>
-              <span className="text-xs bg-secondary px-2 py-1 rounded-full font-bold">{photographers.length} Active</span>
+              <span className="text-xs bg-secondary px-2 py-1 rounded-full font-bold">{photographers.length} Tasks</span>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col">
+              {renderVendorList(photoVendors)}
               {photographers.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-muted-foreground">
+                <div className="flex-1 flex items-center justify-center text-muted-foreground">
                   <p className="text-sm font-medium">No active tasks</p>
                 </div>
               ) : (
-                photographers.map(t => renderTaskCard(t, 'border-border'))
+                <div className="space-y-4">
+                  {photographers.map(t => renderTaskCard(t, 'border-border'))}
+                </div>
               )}
             </div>
           </div>
@@ -127,15 +158,18 @@ export default function VendorManagementPage() {
               <h3 className="font-bold flex items-center gap-2 text-rose-600 dark:text-rose-400">
                 <Reserve className="w-5 h-5" /> Florists
               </h3>
-              <span className="text-xs bg-rose-500 text-white px-2 py-1 rounded-full font-bold">{florists.length} Active</span>
+              <span className="text-xs bg-rose-500 text-white px-2 py-1 rounded-full font-bold">{florists.length} Tasks</span>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col">
+              {renderVendorList(floristVendors)}
               {florists.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-muted-foreground">
+                <div className="flex-1 flex items-center justify-center text-muted-foreground">
                   <p className="text-sm font-medium">No active tasks</p>
                 </div>
               ) : (
-                florists.map(t => renderTaskCard(t, 'border-rose-500/30'))
+                <div className="space-y-4">
+                  {florists.map(t => renderTaskCard(t, 'border-rose-500/30'))}
+                </div>
               )}
             </div>
           </div>
@@ -146,15 +180,18 @@ export default function VendorManagementPage() {
               <h3 className="font-bold flex items-center gap-2 text-blue-600 dark:text-blue-400">
                 <MagicStar className="w-5 h-5" /> Acrylic Toppers
               </h3>
-              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-bold">{acrylics.length} Active</span>
+              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-bold">{acrylics.length} Tasks</span>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col">
+              {renderVendorList(acrylicVendors)}
               {acrylics.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-muted-foreground">
+                <div className="flex-1 flex items-center justify-center text-muted-foreground">
                   <p className="text-sm font-medium">No active tasks</p>
                 </div>
               ) : (
-                acrylics.map(t => renderTaskCard(t, 'border-blue-500/30'))
+                <div className="space-y-4">
+                  {acrylics.map(t => renderTaskCard(t, 'border-blue-500/30'))}
+                </div>
               )}
             </div>
           </div>

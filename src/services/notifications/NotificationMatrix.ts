@@ -42,6 +42,12 @@ export const NotificationMatrix: Record<string, NotificationRule[]> = {
     { recipientRole: 'CHEF', channel: 'IN_APP', templateName: 'Order Approved — Awaiting Chef' },
   ],
 
+  // POS creates the order instantly (bypasses approve step)
+  'CREATED_VIA_STOREFRONT': [
+    { recipientRole: 'CUSTOMER', channel: 'WHATSAPP', templateName: 'ORDER_APPROVED' },
+    { recipientRole: 'CHEF', channel: 'IN_APP', templateName: 'New POS Order — Awaiting Chef' },
+  ],
+
   // Chef accepts the order
   'chef-accept': [
     { recipientRole: 'BRANCH_STAFF', channel: 'IN_APP', templateName: 'Chef Accepted Order' },
