@@ -4,8 +4,13 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const withPWA = withPWAInit({
   dest: "public",
-  disable: false, // Force enable PWA for testing
+  disable: false,
   register: true,
+  // CRITICAL: Do NOT cache Next.js JS chunks or HTML pages.
+  // The service worker was causing stale code to be served even after deployments.
+  // Only cache static assets (images, fonts, etc.) that never change.
+  skipWaiting: true,     // Immediately activate new SW when deployed
+  clientsClaim: true,   // Take over all open tabs immediately on new SW
 });
 
 const nextConfig: NextConfig = {
