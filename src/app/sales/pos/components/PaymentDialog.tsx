@@ -22,10 +22,44 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
   // Fulfillment Time & Location
   const actualNow = new Date()
   const todayStr = actualNow.toISOString().split('T')[0]
-  const currentTimeStr = actualNow.toTimeString().slice(0, 5)
+
+  // Generate time slots from NOW to 10:00 PM in 30-min intervals (12hr format)
+  const generateTimeSlots = (forDate: string) => {
+    const slots: { value: string; label: string }[] = []
+    const startHour = 9 // shop opens 9 AM
+    const endHour = 22  // shop closes 10 PM
+
+    for (let h = startHour; h <= endHour; h++) {
+      for (const m of [0, 30]) {
+        if (h === endHour && m === 30) break
+        // If today, skip past times
+        if (forDate === todayStr) {
+          if (h < actualNow.getHours()) continue
+          if (h === actualNow.getHours() && m <= actualNow.getMinutes()) continue
+        }
+        const ampm = h >= 12 ? 'PM' : 'AM'
+        const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h
+        const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+        const label = `${h12}:${String(m).padStart(2, '0')} ${ampm}`
+        slots.push({ value: val, label })
+      }
+    }
+    return slots
+  }
+
   const [targetDate, setTargetDate] = React.useState<string>(todayStr)
-  const [targetTime, setTargetTime] = React.useState<string>(currentTimeStr)
-  
+  const timeSlots = generateTimeSlots(targetDate)
+  const defaultTime = timeSlots[0]?.value || '10:00'
+  const [targetTime, setTargetTime] = React.useState<string>(defaultTime)
+
+  // When date changes, reset to first valid slot
+  React.useEffect(() => {
+    const slots = generateTimeSlots(targetDate)
+    if (!slots.find(s => s.value === targetTime)) {
+      setTargetTime(slots[0]?.value || '10:00')
+    }
+  }, [targetDate])
+
   // Delivery distance & pricing
   const [deliveryDistanceKm, setDeliveryDistanceKm] = React.useState<number | undefined>(undefined)
   const [deliveryLatitude, setDeliveryLatitude] = React.useState<number | null>(null)
@@ -139,17 +173,6 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
     try {
       const finalTargetDate = new Date(`${targetDate}T${targetTime}:00`).toISOString()
 
-      if (targetDate === todayStr) {
-        const [h, m] = targetTime.split(':').map(Number);
-        const curH = actualNow.getHours();
-        const curM = actualNow.getMinutes();
-        if (h < curH || (h === curH && m < curM)) {
-          setCheckoutError("Cannot schedule an order for a past time today.");
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
       const payload = {
         customerId: 'walk-in',
         customerName: customer.name.trim(),
@@ -237,16 +260,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
 
 
   // Ensure targetTime is valid after changing dates
-  React.useEffect(() => {
-    if (targetDate === todayStr) {
-      const [h, m] = targetTime.split(':').map(Number);
-      const curH = actualNow.getHours();
-      const curM = actualNow.getMinutes();
-      if (h < curH || (h === curH && m < curM)) {
-        setTargetTime(currentTimeStr);
-      }
-    }
-  }, [targetDate]);
+
 
   return (
     <div className="fixed inset-0 z-[200] bg-background/80 backdrop-blur-md flex items-center justify-center p-4 md:p-8">
@@ -284,13 +298,19 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest flex items-center gap-1"><Clock className="w-3 h-3"/> Target Time</label>
-                    <input 
-                      type="time"
-                      value={targetTime} 
+                    <select
+                      value={targetTime}
                       onChange={e => setTargetTime(e.target.value)}
-                      min={targetDate === todayStr ? currentTimeStr : undefined}
-                      className="w-full bg-secondary/5 border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-3 py-3 font-serif text-lg transition-colors rounded-t-lg"
-                    />
+                      className="w-full bg-secondary/5 border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-3 py-3 font-serif text-lg transition-colors rounded-t-lg appearance-none"
+                    >
+                      {timeSlots.length === 0 ? (
+                        <option value="">No times available</option>
+                      ) : (
+                        timeSlots.map(slot => (
+                          <option key={slot.value} value={slot.value}>{slot.label}</option>
+                        ))
+                      )}
+                    </select>
                   </div>
                 </div>
               </div>

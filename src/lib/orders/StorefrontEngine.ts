@@ -524,7 +524,7 @@ export class StorefrontEngine {
 
       // Record Timeline Event
       const isQuote = payload.type === 'QUOTE';
-      await tx.timeline.create({
+      const timelineEvent = await tx.timeline.create({
         data: {
           orderId: newOrder.id,
           action: isQuote ? 'QUOTE_CREATED' : 'CREATED_VIA_STOREFRONT',
@@ -533,6 +533,25 @@ export class StorefrontEngine {
           note: isQuote ? `Quote generated via ${context.source}` : `Order received via ${context.source}`,
         }
       })
+
+      // Publish TIMELINE_CREATED outbox event so NotificationService fires
+      if (!isQuote) {
+        await tx.outbox.create({
+          data: {
+            eventId: timelineEvent.id,
+            eventType: 'TIMELINE_CREATED',
+            eventVersion: '1.0',
+            aggregateId: newOrder.id,
+            payload: {
+              ...timelineEvent,
+              orderId: newOrder.id,
+              orderNumber: newOrder.orderNumber,
+              branchId: newOrder.branchId,
+            } as any,
+            status: 'PENDING',
+          }
+        })
+      }
 
       // Record Forensic AuditLog
       await tx.auditLog.create({

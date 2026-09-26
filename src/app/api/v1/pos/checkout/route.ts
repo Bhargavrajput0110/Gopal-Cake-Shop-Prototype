@@ -5,6 +5,8 @@ import { OrderSource, PaymentMethod, PaymentType, DeliveryType } from '@prisma/c
 import { PosCheckoutSchema } from '@/dtos/OrderSchemas'
 import { withApiHandler, HandlerContext } from '@/lib/withApiHandler'
 import { errorResponse } from '@/lib/apiUtils'
+import { outboxProcessor } from '@/services/event-bus/OutboxProcessor'
+import { registerSubscribers } from '@/services/event-bus/EventSubscribers'
 
 const handler = async (ctx: HandlerContext) => {
   const { req, user, appRole, requestId } = ctx
@@ -85,6 +87,11 @@ const handler = async (ctx: HandlerContext) => {
   // 4. Process Checkout
   // Note: withApiHandler catches exceptions and turns them into 500 automatically
   const order = await StorefrontEngine.processCheckout(context, payload)
+
+  // 5. Immediately fire outbox poll so notifications (WhatsApp + Push) go out NOW
+  //    — don't await: fire-and-forget so the API responds fast
+  registerSubscribers()
+  outboxProcessor.poll().catch((err) => console.error('[POS] Outbox poll failed:', err))
 
   return NextResponse.json({ 
     success: true, 
