@@ -32,6 +32,20 @@ const handler = async (ctx: HandlerContext) => {
   const resolved = await CustomerSearchService.resolveCustomer({ phone: cleanPhone, name: customerName })
   const customerId = resolved.id
 
+  // Convert global POS vendor assignments into item-level required vendors for StorefrontEngine
+  if (data.vendorAssignments && data.items.length > 0) {
+    const v = data.vendorAssignments;
+    const globalVendors: string[] = [];
+    if (v.photoVendorRequired) globalVendors.push('VENDOR_PHOTO');
+    if (v.acrylicVendorRequired) globalVendors.push('VENDOR_ACRYLIC');
+    if (v.floralVendorRequired) globalVendors.push('VENDOR_FLORIST');
+    
+    if (globalVendors.length > 0) {
+      if (!data.items[0].requiredVendors) data.items[0].requiredVendors = [];
+      data.items[0].requiredVendors = Array.from(new Set([...data.items[0].requiredVendors, ...globalVendors]));
+    }
+  }
+
   const payload: CheckoutPayload = {
     customerId,
     branchId: data.branchId || 'default-branch',

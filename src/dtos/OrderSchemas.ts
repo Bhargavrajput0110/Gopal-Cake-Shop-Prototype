@@ -65,6 +65,11 @@ export const PosCheckoutSchema = z.object({
   }).optional(),
   deliveryDistanceKm: z.number().optional(),
   isFarDistance: z.boolean().optional(),
+  vendorAssignments: z.object({
+    photoVendorRequired: z.string().nullable().optional(),
+    acrylicVendorRequired: z.string().nullable().optional(),
+    floralVendorRequired: z.string().nullable().optional(),
+  }).optional(),
 })
 
 export type CreateDraftOrderDTO = z.infer<typeof CreateDraftOrderSchema>

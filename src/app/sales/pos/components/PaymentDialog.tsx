@@ -23,11 +23,27 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
   const actualNow = new Date()
   const todayStr = actualNow.toISOString().split('T')[0]
 
-  // Generate current time for default value
-  const nowTimeStr = `${String(actualNow.getHours()).padStart(2, '0')}:${String(actualNow.getMinutes()).padStart(2, '0')}`
-
   const [targetDate, setTargetDate] = React.useState<string>(todayStr)
-  const [targetTime, setTargetTime] = React.useState<string>(nowTimeStr)
+  
+  // Custom 12-hour time state
+  const currentHour = actualNow.getHours()
+  const currentMin = actualNow.getMinutes()
+  
+  // Round up to next 5 minutes
+  const roundedMin = Math.ceil(currentMin / 5) * 5
+  let defaultHour12 = currentHour % 12 || 12
+  let defaultAmPm = currentHour >= 12 ? 'PM' : 'AM'
+  let defaultMinStr = String(roundedMin % 60).padStart(2, '0')
+  
+  if (roundedMin >= 60) {
+    const nextHour = currentHour + 1;
+    defaultHour12 = nextHour % 12 || 12;
+    defaultAmPm = nextHour >= 12 && nextHour < 24 ? 'PM' : 'AM';
+  }
+
+  const [selHour, setSelHour] = React.useState<string>(String(defaultHour12))
+  const [selMin, setSelMin] = React.useState<string>(defaultMinStr)
+  const [selAmPm, setSelAmPm] = React.useState<string>(defaultAmPm)
 
   // Delivery distance & pricing
   const [deliveryDistanceKm, setDeliveryDistanceKm] = React.useState<number | undefined>(undefined)
@@ -140,11 +156,17 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
     setIsSubmitting(true)
     
     try {
-      const finalTargetDate = new Date(`${targetDate}T${targetTime}:00`)
+      // Convert 12-hour format back to 24-hour for the date object
+      let h24 = parseInt(selHour, 10);
+      if (selAmPm === 'PM' && h24 !== 12) h24 += 12;
+      if (selAmPm === 'AM' && h24 === 12) h24 = 0;
+      
+      const targetTimeStr = `${String(h24).padStart(2, '0')}:${selMin}:00`;
+      const finalTargetDate = new Date(`${targetDate}T${targetTimeStr}`)
       
       // Hard block: never allow a past time to be submitted
       if (finalTargetDate.getTime() < Date.now() - 60000) { // 1 min grace
-        setCheckoutError(`Cannot place an order for a past time (${targetTime}). Please select a future time.`)
+        setCheckoutError(`Cannot place an order for a past time (${selHour}:${selMin} ${selAmPm}). Please select a future time.`)
         setIsSubmitting(false)
         return
       }
@@ -276,12 +298,35 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest flex items-center gap-1"><Clock className="w-3 h-3"/> Target Time</label>
-                    <input
-                      type="time"
-                      value={targetTime}
-                      onChange={e => setTargetTime(e.target.value)}
-                      className="w-full bg-secondary/5 border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-3 py-3 font-serif text-lg transition-colors rounded-t-lg"
-                    />
+                    <div className="flex gap-2">
+                      <select 
+                        value={selHour} 
+                        onChange={e => setSelHour(e.target.value)}
+                        className="flex-1 bg-secondary/5 border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-2 py-3 font-serif text-lg transition-colors rounded-t-lg appearance-none text-center"
+                      >
+                        {[...Array(12)].map((_, i) => (
+                          <option key={i+1} value={i+1}>{i+1}</option>
+                        ))}
+                      </select>
+                      <span className="text-xl font-serif font-bold self-center">:</span>
+                      <select 
+                        value={selMin} 
+                        onChange={e => setSelMin(e.target.value)}
+                        className="flex-1 bg-secondary/5 border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-2 py-3 font-serif text-lg transition-colors rounded-t-lg appearance-none text-center"
+                      >
+                        {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                      <select 
+                        value={selAmPm} 
+                        onChange={e => setSelAmPm(e.target.value)}
+                        className="flex-1 bg-secondary/5 border-0 border-b-2 border-border/40 focus:border-primary focus:ring-0 px-2 py-3 font-serif text-lg transition-colors rounded-t-lg appearance-none text-center font-bold"
+                      >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
