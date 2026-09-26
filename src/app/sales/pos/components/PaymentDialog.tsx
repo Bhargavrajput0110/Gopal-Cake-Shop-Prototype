@@ -171,7 +171,16 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
     setIsSubmitting(true)
     
     try {
-      const finalTargetDate = new Date(`${targetDate}T${targetTime}:00`).toISOString()
+      const finalTargetDate = new Date(`${targetDate}T${targetTime}:00`)
+      
+      // Hard block: never allow a past time to be submitted
+      if (finalTargetDate.getTime() < Date.now() - 60000) { // 1 min grace
+        setCheckoutError(`Cannot place an order for a past time (${targetTime}). Please select a future time.`)
+        setIsSubmitting(false)
+        return
+      }
+
+      const finalTargetISO = finalTargetDate.toISOString()
 
       const payload = {
         customerId: 'walk-in',
@@ -203,7 +212,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
           }
         ],
         paymentType,
-        targetDate: finalTargetDate,
+        targetDate: finalTargetISO,
         branchId: activeBranch,
         deliveryType: orderType,
         address: orderType === 'DELIVERY' ? address : undefined,
