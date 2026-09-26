@@ -19,7 +19,7 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
   const item = cart.find(i => i.cartItemId === cartItemId)
   
   const [price, setPrice] = React.useState<number>(item?.price || 0)
-  const [weight, setWeight] = React.useState(item?.weight || 1)
+  const [weight, setWeight] = React.useState<string>(String(item?.weight || 1))
   const [flavor, setFlavor] = React.useState(item?.flavor || "")
   const [messageOnCake, setMessageOnCake] = React.useState(item?.messageOnCake || "")
   const [shape, setShape] = React.useState(item?.shape || "")
@@ -52,7 +52,7 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
   const handleSave = () => {
     updateItemConfig(cartItemId, {
       price,
-      weight,
+      weight: parseFloat(weight) || 1,
       flavor,
       messageOnCake,
       shape,
@@ -117,7 +117,16 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
                 </div>
                 <div className="flex-1 space-y-2">
                   <label className="text-sm font-bold">Weight (kg)</label>
-                  <input type="number" step="0.5" min="0.5" value={weight} onChange={e => setWeight(Number(e.target.value))} className="w-full p-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    value={weight}
+                    onFocus={e => { if (e.target.value === '1' || e.target.value === '0') setWeight('') }}
+                    onBlur={e => { if (!e.target.value || parseFloat(e.target.value) <= 0) setWeight('1') }}
+                    onChange={e => setWeight(e.target.value)}
+                    className="w-full p-2 bg-background border border-input rounded text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
                 </div>
                 <div className="flex-1 space-y-2">
                   <label className="text-sm font-bold">Box Count</label>
@@ -254,10 +263,10 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
         </div>
 
         <div className="p-4 border-t border-border bg-muted/20 flex flex-col gap-3">
-          {flavor && getFlavourSurcharge(flavor, weight) > 0 && (
+          {flavor && getFlavourSurcharge(flavor, parseFloat(weight) || 1) > 0 && (
             <div className="flex justify-between items-center bg-primary/10 text-primary p-2 rounded-lg text-sm font-bold">
               <span>Premium Flavour Surcharge</span>
-              <span>+₹{getFlavourSurcharge(flavor, weight)}</span>
+              <span>+₹{getFlavourSurcharge(flavor, parseFloat(weight) || 1)}</span>
             </div>
           )}
           <div className="flex justify-between gap-2">
