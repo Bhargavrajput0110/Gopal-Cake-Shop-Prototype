@@ -120,6 +120,7 @@ export class NotificationDataAggregator {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
+      timeZone: 'Asia/Kolkata',
     }); // "27 Aug 2026"
 
     const items = order.items
@@ -184,6 +185,8 @@ export class NotificationDataAggregator {
           year: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
+          hour12: true,
+          timeZone: 'Asia/Kolkata', // Vercel runs UTC — force IST for customer-facing times
         })
       : 'To be confirmed';
 
