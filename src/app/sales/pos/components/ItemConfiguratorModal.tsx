@@ -68,7 +68,14 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
     if (w > 0) basePricePerKg.current = val / w
   }
 
+  const [flavorError, setFlavorError] = React.useState(false)
+
   const handleSave = () => {
+    if (!flavor) {
+      setFlavorError(true)
+      setActiveTab("config")
+      return
+    }
     updateItemConfig(cartItemId, {
       price,
       weight: parseFloat(weight) || 1,
@@ -162,19 +169,20 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
 
               {/* Flavor only */}
               <div className="space-y-1.5">
-                <label className="text-sm font-bold">Flavor</label>
+                <label className="text-sm font-bold text-rose-600">Flavor *</label>
                 <select
                   value={flavor}
-                  onChange={e => setFlavor(e.target.value)}
-                  className="w-full p-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  onChange={e => { setFlavor(e.target.value); setFlavorError(false); }}
+                  className={`w-full p-2.5 bg-background border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${flavorError ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-input'}`}
                 >
-                  <option value="">Standard Flavor (no surcharge)</option>
+                  <option value="" disabled>Select a Flavor (Required)</option>
                   {ALL_FLAVOURS.map((f, i) => (
                     <option key={`${f.id}-${i}`} value={f.name}>
                       {f.name} {f.surchargePerHalfKg ? `(+₹${f.surchargePerHalfKg}/500g)` : ""}
                     </option>
                   ))}
                 </select>
+                {flavorError && <p className="text-[10px] text-rose-600 font-bold">Please select a flavor before adding to cart.</p>}
               </div>
 
               {/* Message on Cake */}
