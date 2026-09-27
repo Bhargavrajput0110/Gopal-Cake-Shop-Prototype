@@ -103,6 +103,7 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     return {
       id: item.id,
       vendorId: item.assignedVendor?.id || user.id,
+      assignedVendor: item.assignedVendor,
       instructions: item.instructions || item.notes || "",
       designImageUrl: cakeImg,
       customerPhotoUrl: customerPhoto,
@@ -146,6 +147,7 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     return {
       id: vt.id,
       vendorId: vt.vendorId || user.id,
+      assignedVendor: vt.vendor,
       instructions: vt.instructions || "",
       order: {
         orderNumber: vt.order?.orderNumber || "Task",
