@@ -122,6 +122,8 @@ export class WhatsAppTemplateService {
               { name: 'delivery_datetime',    text: fulfillment.deliveryDateTime ?? 'TBD' },
               { name: 'contact_info',         text: contactInfo },
             ],
+            imageUrl: _meta.selectedImageUrl,
+            imageType: _meta.selectedImageType,
             buttonUrlParam: order.displayId,
           };
         } else {
