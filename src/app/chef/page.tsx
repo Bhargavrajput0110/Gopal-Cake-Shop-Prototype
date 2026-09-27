@@ -386,7 +386,10 @@ export default function ChefDashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`font-black text-gray-900 text-lg leading-tight ${isChecked ? 'line-through' : ''}`}>{item.name}</p>
-                    {item.weight && <p className="font-bold text-gray-500 text-xs uppercase mt-0.5">{item.weight}</p>}
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {item.weight && <p className="font-bold text-gray-500 text-xs uppercase bg-gray-100 px-2 py-0.5 rounded">{item.weight}</p>}
+                      {item.flavor && <p className="font-bold text-[var(--brand-champagne-dark,#8B3A52)] text-xs uppercase bg-[var(--brand-champagne,#F6E9D8)] px-2 py-0.5 rounded">{item.flavor}</p>}
+                    </div>
                     {/* 🎂 MESSAGE ON CAKE — huge unmissable banner */}
                     {item.messageOnCake && (
                       <div className="mt-2 bg-rose-600 text-white rounded-xl px-3 py-2.5 flex items-center gap-2.5 shadow-lg">
@@ -493,20 +496,20 @@ export default function ChefDashboardPage() {
           </div>
           
           {/* Header Stats */}
-          <div className="hidden lg:flex items-center gap-6 bg-gray-800 border border-gray-700 rounded-xl px-5 py-1.5">
+          <div className="flex items-center gap-3 md:gap-6 bg-gray-800 border border-gray-700 rounded-xl px-3 md:px-5 py-1.5 overflow-x-auto w-full md:w-auto">
             <div className="flex flex-col items-center">
               <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Today</span>
-              <span className="text-lg font-black text-white">{statsTotal}</span>
+              <span className="text-sm md:text-lg font-black text-white">{statsTotal}</span>
             </div>
             <div className="w-px h-6 bg-gray-700"></div>
             <div className="flex flex-col items-center">
               <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Active</span>
-              <span className="text-lg font-black text-amber-400">{statsActive}</span>
+              <span className="text-sm md:text-lg font-black text-amber-400">{statsActive}</span>
             </div>
             <div className="w-px h-6 bg-gray-700"></div>
             <div className="flex flex-col items-center">
-              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Completed</span>
-              <span className="text-lg font-black text-emerald-400">{statsCompleted}</span>
+              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Done</span>
+              <span className="text-sm md:text-lg font-black text-emerald-400">{statsCompleted}</span>
             </div>
           </div>
 
