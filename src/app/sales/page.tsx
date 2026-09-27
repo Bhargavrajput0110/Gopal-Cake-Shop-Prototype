@@ -28,8 +28,8 @@ export default function SalesOverviewPage() {
   const ordersToday = branchOrders.length;
   const pendingSwap = branchOrders.filter(o => o.transferHistory?.length).length; // Approximated
   const unreadVendorNotes = branchOrders.reduce((acc, order) => {
-    return acc + (order.vendorTasks?.reduce((taskAcc, task) => {
-      return taskAcc + (task.notes?.filter(n => !n.read).length || 0);
+    return acc + (order.vendorTasks?.reduce((taskAcc: number, task: any) => {
+      return taskAcc + (Array.isArray(task.notes) ? task.notes.filter((n: any) => !n.read).length : 0);
     }, 0) || 0);
   }, 0);
 
