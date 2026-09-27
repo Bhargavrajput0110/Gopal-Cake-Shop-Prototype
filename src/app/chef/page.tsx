@@ -149,14 +149,27 @@ export default function ChefDashboardPage() {
     localStorage.setItem("kds_mute", String(next));
   };
 
+  // Global AudioContext singleton
+  const getAudioCtx = () => {
+    if (typeof window === 'undefined') return null;
+    if (!(window as any).kdsAudioCtx) {
+      (window as any).kdsAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return (window as any).kdsAudioCtx;
+  };
+
   // Click handler to unlock browser AudioContext autoplay policy
   useEffect(() => {
     const handleGesture = () => {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      if (ctx.state === "suspended") ctx.resume();
+      const ctx = getAudioCtx();
+      if (ctx && ctx.state === "suspended") ctx.resume();
     };
-    window.addEventListener("click", handleGesture);
-    return () => window.removeEventListener("click", handleGesture);
+    window.addEventListener("click", handleGesture, { once: true });
+    window.addEventListener("touchstart", handleGesture, { once: true });
+    return () => {
+      window.removeEventListener("click", handleGesture);
+      window.removeEventListener("touchstart", handleGesture);
+    };
   }, []);
 
   // Priority Beep
@@ -170,7 +183,8 @@ export default function ChefDashboardPage() {
         if (Date.now() - lastPlayed < 3500) return; // Dedupe cross-tab
         localStorage.setItem("kds_priority_beep_time", Date.now().toString());
         
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const ctx = getAudioCtx();
+        if (!ctx) return;
         if (ctx.state === "suspended") ctx.resume();
         const osc = ctx.createOscillator();
         osc.type = "square";
@@ -213,7 +227,8 @@ export default function ChefDashboardPage() {
           const lastChime = parseInt(localStorage.getItem("kds_new_order_chime") || "0");
           if (Date.now() - lastChime > 2000) { // Dedupe cross-tab within 2s window
             localStorage.setItem("kds_new_order_chime", Date.now().toString());
-            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const ctx = getAudioCtx();
+            if (!ctx) return;
             if (ctx.state === "suspended") ctx.resume();
             
             // Double pleasant chime
