@@ -750,6 +750,14 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
               }`}>
                 {statusLabel(order.status)}
               </span>
+              {/* Fulfillment type badge — always visible */}
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest border ${
+                order.orderType === 'delivery'
+                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              }`}>
+                {order.orderType === 'delivery' ? '🚚 Delivery' : '🏪 Pickup'}
+              </span>
               {order.delayLevel==="delayed" && <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1 animate-pulse"><Warning2 className="w-3 h-3"/>Delayed</span>}
               {order.delayLevel==="warning" && <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><Warning2 className="w-3 h-3"/>Issue</span>}
               {isLocked && !(["COMPLETED","CANCELLED"] as string[]).includes(order.status as string) && <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><Lock1 className="w-3 h-3"/>Locked</span>}
