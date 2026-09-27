@@ -8,6 +8,7 @@ export function WarningSiren() {
   const { orders } = useOrders();
   const [sirenActive, setSirenActive] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
   const audioCtx = useRef<AudioContext | null>(null);
 
   // 1. Unlock Audio Context on first user interaction
@@ -19,9 +20,16 @@ export function WarningSiren() {
       if (audioCtx.current.state === "suspended") {
         audioCtx.current.resume();
       }
+      setAudioUnlocked(true);
     };
     window.addEventListener("click", unlock, { once: true });
     window.addEventListener("touchstart", unlock, { once: true });
+    
+    // Check if it's already running
+    if (audioCtx.current && audioCtx.current.state === "running") {
+      setAudioUnlocked(true);
+    }
+    
     return () => {
       window.removeEventListener("click", unlock);
       window.removeEventListener("touchstart", unlock);
@@ -35,13 +43,16 @@ export function WarningSiren() {
       const isUrgent = orders.some((o) => {
         if (!o.timeTarget) return false;
         
-        // Ignore orders that are already fully completed or ready
+        // Ignore orders that are already being worked on or completed
         const ignoreStatuses = [
+          "CHEF_ACCEPTED",
+          "MAKING",
+          "DECORATING",
+          "ASSIGNED_TO_DRIVER",
           "COMPLETED",
           "DELIVERED",
           "CANCELLED",
           "FAILED_DELIVERY",
-          "READY_FOR_PICKUP",
           "PICKED_UP",
           "QUOTE_DRAFT",
           "QUOTE_SENT",
@@ -121,6 +132,18 @@ export function WarningSiren() {
 
     return () => clearInterval(intervalId);
   }, [sirenActive, isMuted]);
+
+  if (!audioUnlocked) {
+    return (
+      <div className="fixed inset-0 z-[999999] bg-black/80 backdrop-blur-sm flex items-center justify-center cursor-pointer">
+        <div className="bg-white p-8 rounded-3xl text-center shadow-2xl animate-pulse">
+          <div className="text-6xl mb-4">👆</div>
+          <h2 className="text-2xl font-black uppercase tracking-tight text-gray-900">Tap to Start Shift</h2>
+          <p className="text-gray-500 font-bold mt-2 text-sm uppercase tracking-widest">Enables Siren & Notifications</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!sirenActive) return null;
 
