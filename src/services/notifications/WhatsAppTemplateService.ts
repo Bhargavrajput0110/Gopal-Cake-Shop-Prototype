@@ -79,6 +79,13 @@ export class WhatsAppTemplateService {
       minute: '2-digit',
     });
 
+    // For POS / SALES orders — append branch + owner contact at end of payment_summary
+    // Online orders keep payment_summary unchanged.
+    const isPosOrder = ['POS', 'SALES', 'ADMIN', 'WHATSAPP', 'INSTAGRAM', 'PHONE'].includes(_meta.orderSource);
+    const paymentSummary = isPosOrder
+      ? `${payment.paymentSummary} | Branch (${_meta.branchShortName}): ${_meta.branchPhone} | Owner Rishi Bhai: ${_meta.ownerPhone}`
+      : payment.paymentSummary;
+
     switch (type) {
 
       // ── QUOTE_CREATED ───────────────────────────────────────────────────────
@@ -99,7 +106,7 @@ export class WhatsAppTemplateService {
               { name: 'special_instructions', text: customization.specialInstructions || 'None' },
               { name: 'order_total', text: payment.total },
               { name: 'amount_paid', text: payment.amountPaid },
-              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'payment_summary', text: paymentSummary },
               { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
               { name: 'delivery_datetime', text: fulfillment.deliveryDateTime ?? 'TBD' },
             ],
@@ -120,7 +127,7 @@ export class WhatsAppTemplateService {
               { name: 'special_instructions', text: customization.specialInstructions || 'None' },
               { name: 'order_total', text: payment.total },
               { name: 'amount_paid', text: payment.amountPaid },
-              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'payment_summary', text: paymentSummary },
               { name: 'store_name', text: fulfillment.storeName ?? 'Gopal Cake Shop' },
               { name: 'store_address', text: fulfillment.storeAddress ?? 'TBD' },
               { name: 'pickup_datetime', text: fulfillment.pickupDateTime ?? 'TBD' },
@@ -150,7 +157,7 @@ export class WhatsAppTemplateService {
               { name: 'order_details', text: order.items },
               { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
               { name: 'amount_paid', text: payment.amountPaid },
-              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'payment_summary', text: paymentSummary },
               { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
               { name: 'delivery_datetime', text: fulfillment.deliveryDateTime ?? 'TBD' },
             ],
@@ -173,7 +180,7 @@ export class WhatsAppTemplateService {
               { name: 'order_details', text: order.items },
               { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
               { name: 'amount_paid', text: payment.amountPaid },
-              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'payment_summary', text: paymentSummary },
               { name: 'store_name', text: fulfillment.storeName ?? 'Gopal Cake Shop' },
               { name: 'store_address', text: fulfillment.storeAddress ?? 'TBD' },
               { name: 'pickup_datetime', text: fulfillment.pickupDateTime ?? 'TBD' },
@@ -200,7 +207,7 @@ export class WhatsAppTemplateService {
               { name: 'order_id', text: order.displayId },
               { name: 'order_details', text: order.items },
               { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
-              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'payment_summary', text: paymentSummary },
               { name: 'delivery_address', text: fulfillment.deliveryAddress ?? 'TBD' },
               { name: 'delivery_datetime', text: fulfillment.deliveryDateTime ?? 'TBD' },
             ],
@@ -220,7 +227,7 @@ export class WhatsAppTemplateService {
               { name: 'order_id', text: order.displayId },
               { name: 'order_details', text: order.items },
               { name: 'message_on_cake', text: customization.messageOnCake || 'None' },{ name: 'special_instructions', text: customization.specialInstructions || 'None' },{ name: 'order_total', text: payment.total },
-              { name: 'payment_summary', text: payment.paymentSummary },
+              { name: 'payment_summary', text: paymentSummary },
               { name: 'store_name', text: fulfillment.storeName ?? 'Gopal Cake Shop' },
               { name: 'store_address', text: fulfillment.storeAddress ?? 'TBD' },
               { name: 'pickup_datetime', text: fulfillment.pickupDateTime ?? 'TBD' },

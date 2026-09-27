@@ -11,6 +11,7 @@
 import { prisma } from '@/lib/prisma';
 import { LoggerService } from '@/services/LoggerService';
 import { FinancialService } from '@/services/FinancialService';
+import { getBranchPhone, toBranchShortName } from '@/lib/branches';
 
 // ─── Canonical DTO ────────────────────────────────────────────────────────────
 
@@ -71,6 +72,14 @@ export interface OrderNotificationData {
     /** Resolved from referenceImages[0] ?? productImages[0] — undefined if none */
     selectedImageUrl?: string;
     selectedImageType?: 'REFERENCE' | 'PRODUCT';
+    /** Branch phone for POS/SALES orders */
+    branchPhone?: string;
+    /** Branch short name for POS/SALES orders */
+    branchShortName?: string;
+    /** Owner contact (Rishi Bhai) */
+    ownerPhone: string;
+    /** Order source — used to decide whether to show contact info */
+    orderSource: string;
   };
 }
 
@@ -229,6 +238,10 @@ export class NotificationDataAggregator {
       _meta: {
         selectedImageUrl,
         selectedImageType: selectedImageType as 'REFERENCE' | 'PRODUCT' | undefined,
+        branchPhone: getBranchPhone(order.branchId),
+        branchShortName: toBranchShortName(order.branchId),
+        ownerPhone: '+91 97126 32132',
+        orderSource: order.source || 'WEBSITE',
       },
     };
   }

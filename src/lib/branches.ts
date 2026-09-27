@@ -13,6 +13,7 @@ export interface Branch {
   displayName: string;
   shortName: string;
   address: string;
+  phone: string;
   /** Legacy display names that map to this branch (used by the API) */
   aliases: string[];
 }
@@ -23,6 +24,7 @@ export const BRANCHES: Branch[] = [
     displayName: 'Uma Branch (Main Outlet)',
     shortName: 'Uma',
     address: 'B-9, Sunil Society, Behind Zavernagar Bus Stand Ward, Uma Char Rasta, Vadodara, Gujarat 390019',
+    phone: '+91 97126 32132',
     aliases: ['Uma Char Rasta', 'Uma Branch', 'uma', 'B_UMA', 'UMA'],
   },
   {
@@ -30,20 +32,23 @@ export const BRANCHES: Branch[] = [
     displayName: 'Khanderao Branch',
     shortName: 'Khanderao',
     address: '76W2+WQ9, Palace Rd, Khanderao Market Char Rasta, Prabhat Nagar, Mandvi, Vadodara, Gujarat 390001',
+    phone: '+91 92659 76305',
     aliases: ['Khanderao Market', 'Khanderao Branch (HQ)', 'Khanderao Branch', 'B_KHM', 'cmswuiita00011su3977ajl1z', 'CMSWUIITA00011SU3977AJL1Z', '3977ajl1z'],
   },
   {
     id: 'varasiya',
-    displayName: 'Varasiya Factory',
-    shortName: 'Varasiya',
+    displayName: 'Warashiya Factory',
+    shortName: 'Warashiya',
     address: 'Opp T-8, Behind Hari Seva School, Warashia Colony, Vadodara, Gujarat 390006',
-    aliases: ['Varasiya Factory Outlet', 'Factory Warashiya', 'B_VAR', 'cmswuiiu000021su3kv1mr41f', 'cmswuiic00021su3kv1mr41f', 'CMSWUIIU000021SU3KV1MR41F', 'CMSWUIIC00021SU3KV1MR41F', 'kv1mr41f'],
+    phone: '+91 96622 19666',
+    aliases: ['Varasiya Factory Outlet', 'Varasiya Factory', 'Factory Warashiya', 'Factory Varasiya', 'B_VAR', 'cmswuiiu000021su3kv1mr41f', 'cmswuiic00021su3kv1mr41f', 'CMSWUIIU000021SU3KV1MR41F', 'CMSWUIIC00021SU3KV1MR41F', 'kv1mr41f'],
   },
   {
     id: 'elora',
     displayName: 'Ellora Park Branch',
     shortName: 'Ellora Park',
     address: 'Shop No.1, Ellora Park Rd, Nr. Neo Mobile & Jalaram Lassi, Opp. Shakti Farsan, Odhavpura, Ellora Park, Hari Nagar, Vadodara, Gujarat 390023',
+    phone: '+91 94091 57804',
     aliases: ['Elora Park Branch', 'Ellora Park', 'Ellora Park Branch', 'B_ELL', 'cmswuiiun00031su3vfrn9eq5', 'CMSWUIIUN00031SU3VFRN9EQ5', 'vfrn9eq5'],
   },
 ];
@@ -85,9 +90,9 @@ export function toBranchId(raw?: string | null): BranchId {
 
 /** Get display name for a branch ID */
 export function toBranchDisplayName(id?: string | null): string {
-  if (!id) return 'Varasiya Factory';
+  if (!id) return 'Warashiya Factory';
   const lower = id.toLowerCase().trim();
-  if (lower.includes('varas') || lower.includes('waras') || lower.includes('kv1mr41f')) return 'Varasiya Factory';
+  if (lower.includes('varas') || lower.includes('waras') || lower.includes('kv1mr41f')) return 'Warashiya Factory';
   if (lower.includes('khand') || lower.includes('3977ajl1z')) return 'Khanderao Branch';
   if (lower.includes('uma')) return 'Uma Branch (Main Outlet)';
   if (lower.includes('elor') || lower.includes('ellor') || lower.includes('vfrn9eq5')) return 'Ellora Park Branch';
@@ -95,14 +100,14 @@ export function toBranchDisplayName(id?: string | null): string {
   const canonical = toBranchId(id);
   const found = BRANCHES.find(b => b.id === canonical);
   if (found) return found.displayName;
-  return 'Varasiya Factory';
+  return 'Warashiya Factory';
 }
 
 /** Get short name for a branch ID */
 export function toBranchShortName(id?: string | null): string {
-  if (!id) return 'Varasiya';
+  if (!id) return 'Warashiya';
   const lower = id.toLowerCase().trim();
-  if (lower.includes('varas') || lower.includes('waras') || lower.includes('kv1mr41f')) return 'Varasiya';
+  if (lower.includes('varas') || lower.includes('waras') || lower.includes('kv1mr41f')) return 'Warashiya';
   if (lower.includes('khand') || lower.includes('3977ajl1z')) return 'Khanderao';
   if (lower.includes('uma')) return 'Uma';
   if (lower.includes('elor') || lower.includes('ellor') || lower.includes('vfrn9eq5')) return 'Ellora Park';
@@ -110,7 +115,14 @@ export function toBranchShortName(id?: string | null): string {
   const canonical = toBranchId(id);
   const found = BRANCHES.find(b => b.id === canonical);
   if (found) return found.shortName;
-  return 'Varasiya';
+  return 'Warashiya';
+}
+
+/** Get the phone number for a branch */
+export function getBranchPhone(rawBranchId?: string | null): string {
+  const canonical = toBranchId(rawBranchId);
+  const found = BRANCHES.find(b => b.id === canonical);
+  return found?.phone ?? '+91 97126 32132';
 }
 
 /** Get branch prefix code for order numbers (UMA: Uma, KHM: Khanderao, WAR: Varasiya, ELR: Ellora Park) */
