@@ -148,10 +148,14 @@ export class OrderNotificationService {
         break
       }
       case 'transfer-request': {
-        // Branch transfer → notify managers of the target branch
-        const managers = await getUsers('MANAGER', branchId)
+        // Branch transfer → notify sales and managers of the target branch
+        const [sales, managers] = await Promise.all([
+          getUsers('SALESPERSON', branchId),
+          getUsers('MANAGER', branchId),
+        ])
+        const userIds = [...sales, ...managers].map((u) => u.id)
         await notify(
-          managers.map((u) => u.id),
+          userIds,
           `Transfer Request — #${orderNumber}`,
           'A branch transfer request is awaiting your approval.'
         )
