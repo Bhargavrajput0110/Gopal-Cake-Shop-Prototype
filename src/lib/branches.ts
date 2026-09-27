@@ -113,19 +113,19 @@ export function toBranchShortName(id?: string | null): string {
   return 'Varasiya';
 }
 
-/** Get numeric branch code (001: Uma, 002: Khanderao, 003: Warashiya, 004: Ellora Park) */
+/** Get branch prefix code for order numbers (UMA: Uma, KHM: Khanderao, WAR: Varasiya, ELR: Ellora Park) */
 export function getBranchNumericCode(rawBranchId?: string | null): string {
   const canonical = toBranchId(rawBranchId);
   switch (canonical) {
-    case 'uma': return '001';
-    case 'khanderao': return '002';
-    case 'varasiya': return '003';
-    case 'elora': return '004';
-    default: return '001';
+    case 'uma':       return 'UMA';
+    case 'khanderao': return 'KHM';
+    case 'varasiya':  return 'WAR';
+    case 'elora':     return 'ELR';
+    default:          return 'UMA';
   }
 }
 
-/** Generate 100% sequential order number starting from 0001 per branch (e.g. 001-0001, 003-0001) */
+/** Generate 100% sequential order number starting from 0001 per branch (e.g. UMA-0001, KHM-0001) */
 export async function generateSequentialOrderNumber(tx: any, rawBranchId?: string | null): Promise<string> {
   const code = getBranchNumericCode(rawBranchId);
   const count = await tx.order.count({
