@@ -411,6 +411,15 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
     }
   };
 
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleUpdate = async () => {
+    if (isUpdating || isCompleted) return;
+    setIsUpdating(true);
+    await onUpdate(task.id, btnAction);
+    setIsUpdating(false);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 30 }} 
@@ -610,8 +619,8 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
           </div>
         </div>
 
-        {/* Sales Instructions Box */}
-        {(task.instructions || p.notes) && !isCompleted && (
+        {/* Sales Instructions Box (Always show if missing, using fallback) */}
+        {!isCompleted && (
           <div className="mb-6 p-5 bg-purple-50/80 rounded-2xl border-2 border-purple-200/80 flex gap-3.5 text-purple-950 shadow-sm">
             <Danger className="w-6 h-6 text-purple-600 shrink-0 mt-0.5" />
             <div>
@@ -619,7 +628,7 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
                 💬 Sales Instructions & Special Requirements
               </p>
               <p className="font-editorial italic text-base text-purple-900 font-bold leading-relaxed">
-                &quot;{task.instructions || p.notes}&quot;
+                &quot;{task.instructions || p.notes || "Fulfill as per standard branch requirements."}&quot;
               </p>
             </div>
           </div>
@@ -634,9 +643,10 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
             </div>
           ) : (
             <button 
-              disabled={isCompleted}
-              onClick={() => onUpdate(task.id, btnAction)}
+              disabled={isCompleted || isUpdating}
+              onClick={handleUpdate}
               className={`w-full py-5 rounded-2xl font-ui text-[11px] uppercase tracking-[0.2em] font-black transition-all duration-300 active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 ${
+                isUpdating ? 'opacity-50 cursor-not-allowed bg-gray-500 text-white' :
                 btnAction === 'ACCEPTED' 
                   ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20' 
                   : btnAction === 'MAKING' 
@@ -644,10 +654,16 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
                   : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30'
               }`}
             >
-              {btnAction === 'ACCEPTED' && <Flash className="w-4 h-4" />}
-              {btnAction === 'MAKING' && <Play className="w-4 h-4" />}
-              {btnAction === 'READY_FOR_PICKUP' && <BagTick className="w-4 h-4" />}
-              {btnLabel}
+              {isUpdating ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  {btnAction === 'ACCEPTED' && <Flash className="w-4 h-4" />}
+                  {btnAction === 'MAKING' && <Play className="w-4 h-4" />}
+                  {btnAction === 'READY_FOR_PICKUP' && <BagTick className="w-4 h-4" />}
+                </>
+              )}
+              {isUpdating ? 'UPDATING...' : btnLabel}
             </button>
           )}
         </div>
