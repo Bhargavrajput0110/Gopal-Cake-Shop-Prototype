@@ -111,10 +111,19 @@ export default function BranchTransferPage() {
   const { data: outgoing, mutate: mutateOutgoing } = useSWR(`/api/v1/transfers?mode=outgoing`, fetcher);
 
   const rawOrders = ordersData?.data || (Array.isArray(ordersData) ? ordersData : []);
-  const localOrders = rawOrders.filter((o: any) => TRANSFERABLE_STATUSES.includes(o.status));
+  const outgoingTransfers = Array.isArray(outgoing) ? outgoing : [];
+  // Exclude orders that already have a PENDING or IN_TRANSIT transfer
+  const activeTransferOrderIds = new Set(
+    outgoingTransfers
+      .filter((t: any) => t.status === 'PENDING' || t.status === 'IN_TRANSIT')
+      .map((t: any) => t.order?.id || t.orderId)
+  );
+  const localOrders = rawOrders.filter((o: any) =>
+    TRANSFERABLE_STATUSES.includes(o.status) && !activeTransferOrderIds.has(o.id)
+  );
 
   const filteredActiveOrders = localOrders.filter((o: any) => matchesOrderQuery(o, search));
-  const filteredOutgoing = Array.isArray(outgoing) ? outgoing.filter((t: any) => matchesTransferQuery(t, search)) : [];
+  const filteredOutgoing = outgoingTransfers.filter((t: any) => matchesTransferQuery(t, search));
   const filteredIncoming = Array.isArray(incoming) ? incoming.filter((t: any) => matchesTransferQuery(t, search)) : [];
 
   const handleRefresh = () => {
@@ -240,7 +249,20 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
   const [transferTarget, setTransferTarget] = useState<string>(availableBranches[0]?.id || "varasiya");
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [newTargetDate, setNewTargetDate] = useState<string>("");
+  // Custom 12-hour time picker state
+  const [pickerDate, setPickerDate] = useState(''); // YYYY-MM-DD
+  const [pickerHour, setPickerHour] = useState('12');
+  const [pickerMinute, setPickerMinute] = useState('00');
+  const [pickerAmPm, setPickerAmPm] = useState<'AM'|'PM'>('AM');
+
+  // Derive newTargetDate ISO string from picker state
+  const newTargetDate = (() => {
+    if (!pickerDate) return '';
+    let h = parseInt(pickerHour, 10);
+    if (pickerAmPm === 'AM') { if (h === 12) h = 0; }
+    else { if (h !== 12) h += 12; }
+    return `${pickerDate}T${String(h).padStart(2,'0')}:${pickerMinute}:00`;
+  })();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -250,14 +272,17 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
         setTransferTarget(availableBranches[0].id);
       }
       const target = order.timeTarget || order.targetDate || order.expectedDeliveryDate;
-      if (target) {
-        const d = new Date(target);
-        if (!isNaN(d.getTime())) {
-          setNewTargetDate(toLocalInputValue(d));
-          return;
-        }
+      const d = target ? new Date(target) : new Date();
+      if (!isNaN(d.getTime())) {
+        const pad = (n: number) => String(n).padStart(2,'0');
+        setPickerDate(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`);
+        const rawH = d.getHours();
+        const isPM = rawH >= 12;
+        const h12 = rawH % 12 === 0 ? 12 : rawH % 12;
+        setPickerHour(String(h12));
+        setPickerMinute(pad(d.getMinutes()));
+        setPickerAmPm(isPM ? 'PM' : 'AM');
       }
-      setNewTargetDate(toLocalInputValue(new Date()));
     }
   }, [showModal, order, activeBranch]);
 
@@ -319,7 +344,7 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
         <p className="text-xs text-muted-foreground">
           Pickup:{" "}
           {order.timeTarget || order.pickupTime || order.targetDate
-            ? new Date(order.timeTarget || order.pickupTime || order.targetDate).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })
+            ? new Date(order.timeTarget || order.pickupTime || order.targetDate).toLocaleString("en-IN", { day: '2-digit', month: '2-digit', year: '2-digit', hour: 'numeric', minute: '2-digit', hour12: true })
             : "ASAP"}
         </p>
       </div>
@@ -382,18 +407,34 @@ function LocalOrderCard({ order, activeBranch, onTransfer }: any) {
                       Adjust Timeline
                       {hasOriginalDate && originalDateObj && (
                         <span className="ml-2 text-gray-400 font-normal normal-case tracking-normal block">
-                          (customer deadline: {originalDateObj.toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })})
+                          (customer deadline: {originalDateObj.toLocaleString("en-IN", { day: '2-digit', month: '2-digit', year: '2-digit', hour: 'numeric', minute: '2-digit', hour12: true })})
                         </span>
                       )}
                     </p>
-                    <input
-                      type="datetime-local"
-                      value={newTargetDate}
-                      onChange={e => setNewTargetDate(e.target.value)}
-                      className={`w-full bg-white border rounded-lg px-3 py-2 text-sm font-bold mb-1 focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
-                        isTimeDelayed ? "border-amber-400" : "border-gray-200"
-                      }`}
-                    />
+                    {/* Custom 12-hour time picker */}
+                    <div className={`w-full bg-white border rounded-lg px-3 py-2 mb-1 grid grid-cols-4 gap-1 ${
+                        isTimeDelayed ? 'border-amber-400' : 'border-gray-200'
+                      }`}>
+                      <input
+                        type="date"
+                        value={pickerDate}
+                        onChange={e => setPickerDate(e.target.value)}
+                        className="col-span-2 bg-transparent text-sm font-bold focus:outline-none"
+                      />
+                      <div className="flex gap-1 col-span-2">
+                        <select value={pickerHour} onChange={e => setPickerHour(e.target.value)} className="flex-1 bg-transparent text-sm font-bold focus:outline-none text-center">
+                          {[12,1,2,3,4,5,6,7,8,9,10,11].map(h => <option key={h} value={String(h)}>{String(h).padStart(2,'0')}</option>)}
+                        </select>
+                        <span className="text-sm font-bold self-center">:</span>
+                        <select value={pickerMinute} onChange={e => setPickerMinute(e.target.value)} className="flex-1 bg-transparent text-sm font-bold focus:outline-none text-center">
+                          {['00','05','10','15','20','25','30','35','40','45','50','55'].map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        <select value={pickerAmPm} onChange={e => setPickerAmPm(e.target.value as 'AM'|'PM')} className="flex-1 bg-transparent text-sm font-bold focus:outline-none text-center">
+                          <option value="AM">AM</option>
+                          <option value="PM">PM</option>
+                        </select>
+                      </div>
+                    </div>
                     <div className="min-h-6 mb-4">
                       {isTimeDelayed ? (
                         <span className="text-[10px] text-amber-600 font-bold flex items-center gap-1">
@@ -475,7 +516,7 @@ function TransferCard({ transfer, type, mutate }: any) {
           <span className="text-emerald-500">➔</span>
           <span>{toBranchShortName(transfer.toBranchId)}</span>
         </div>
-        <p className="text-xs text-muted-foreground">{new Date(transfer.createdAt).toLocaleString()}</p>
+        <p className="text-xs text-muted-foreground">{new Date(transfer.createdAt).toLocaleString("en-IN", { day: '2-digit', month: '2-digit', year: '2-digit', hour: 'numeric', minute: '2-digit', hour12: true })}</p>
       </div>
 
       <div className="shrink-0 pt-2 md:pt-0 flex flex-col gap-2 justify-center">
