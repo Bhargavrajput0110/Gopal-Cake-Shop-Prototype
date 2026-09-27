@@ -286,6 +286,7 @@ export default function ChefDashboardPage() {
   const TicketCard = ({ order, isQueue = false, isReady = false }: { order: Order, isQueue?: boolean, isReady?: boolean }) => {
     const isUrgent = order.priorityLevel === "high" || order.priorityLevel === "vip";
     const { timeLeftStr, progress, status } = useSLA(order.timeTarget, order.createdAt);
+    const [isUpdating, setIsUpdating] = useState(false);
     
     // Theme logic based on KDS standard
     let cardClass = "bg-white border-2 border-gray-200 shadow-md";
@@ -436,16 +437,32 @@ export default function ChefDashboardPage() {
         {/* Ticket Footer Actions */}
         <div className="p-4 bg-gray-50 border-t-2 border-gray-200 flex gap-2">
           {isQueue ? (
-            <button onClick={() => handleAcceptOrder(order)} className={`flex-1 py-4 font-black uppercase tracking-widest text-sm rounded-xl transition-transform active:scale-95 text-white ${isUrgent ? 'bg-rose-600 shadow-[0_4px_15px_rgba(225,29,72,0.4)]' : 'bg-gray-900 shadow-md'}`}>
-              Accept Order
+            <button 
+              disabled={isUpdating}
+              onClick={async () => {
+                if (isUpdating) return;
+                setIsUpdating(true);
+                await handleAcceptOrder(order);
+                setIsUpdating(false);
+              }} 
+              className={`flex-1 py-4 font-black uppercase tracking-widest text-sm rounded-xl transition-transform active:scale-95 text-white disabled:opacity-50 disabled:cursor-wait ${isUrgent ? 'bg-rose-600 shadow-[0_4px_15px_rgba(225,29,72,0.4)]' : 'bg-gray-900 shadow-md'}`}>
+              {isUpdating ? 'ACCEPTING...' : 'Accept Order'}
             </button>
           ) : !isReady ? (
             <>
-              <button onClick={() => setShowMissingModal(order)} className="flex-1 py-4 bg-white border-2 border-rose-200 text-rose-700 font-black uppercase tracking-widest text-xs rounded-xl hover:bg-rose-50 active:scale-95 flex flex-col items-center justify-center gap-1">
+              <button disabled={isUpdating} onClick={() => setShowMissingModal(order)} className="flex-1 py-4 bg-white border-2 border-rose-200 text-rose-700 font-black uppercase tracking-widest text-xs rounded-xl hover:bg-rose-50 active:scale-95 flex flex-col items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-wait">
                 <Warning2 className="w-5 h-5" /> Issue
               </button>
-              <button onClick={() => handleMarkReady(order)} className="flex-[2] py-4 bg-emerald-500 text-white font-black uppercase tracking-widest text-sm rounded-xl hover:bg-emerald-600 shadow-md active:scale-95 flex items-center justify-center gap-2">
-                <TickCircle className="w-6 h-6" /> Mark Ready
+              <button 
+                disabled={isUpdating}
+                onClick={async () => {
+                  if (isUpdating) return;
+                  setIsUpdating(true);
+                  await handleMarkReady(order);
+                  setIsUpdating(false);
+                }} 
+                className="flex-[2] py-4 bg-emerald-500 text-white font-black uppercase tracking-widest text-sm rounded-xl hover:bg-emerald-600 shadow-md active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-wait">
+                {isUpdating ? <span className="animate-pulse">UPDATING...</span> : <><TickCircle className="w-6 h-6" /> Mark Ready</>}
               </button>
             </>
           ) : (
