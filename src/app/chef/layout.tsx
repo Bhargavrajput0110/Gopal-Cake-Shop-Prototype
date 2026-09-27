@@ -3,6 +3,7 @@
 import { AppTopbar, CHEF_NAV_CONFIG } from "@/components/navigation"
 
 import { SessionProvider } from "next-auth/react"
+import { WarningSiren } from "@/components/notifications/WarningSiren"
 
 export default function ChefLayout({
   children,
@@ -11,6 +12,7 @@ export default function ChefLayout({
 }) {
   return (
     <SessionProvider>
+      <WarningSiren />
       <div className="h-screen flex flex-col bg-background">
         {/* Chef KDS is full-width — no sidebar, but has a topbar for context/sign-out */}
         <AppTopbar config={CHEF_NAV_CONFIG} showSearch={false} />

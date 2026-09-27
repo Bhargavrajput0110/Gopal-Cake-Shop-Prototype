@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation"
 
 import { SessionProvider } from "next-auth/react"
 import { PushNotificationManager } from "@/components/notifications/PushNotificationManager"
+import { WarningSiren } from "@/components/notifications/WarningSiren"
 
 export default function SalesLayout({
   children,
@@ -27,6 +28,7 @@ export default function SalesLayout({
   return (
     <SessionProvider>
       <PushNotificationManager />
+      <WarningSiren />
       <div className="min-h-screen mesh-bg pb-16 md:pb-0">
         <AppSidebar config={SALES_NAV_CONFIG} />
         <div className="md:pl-64 flex flex-col min-h-screen">

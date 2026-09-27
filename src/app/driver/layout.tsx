@@ -4,6 +4,7 @@ import { AppTopbar } from "@/components/navigation"
 import { DELIVERY_NAV_CONFIG } from "@/components/navigation/nav-configs"
 
 import { SessionProvider } from "next-auth/react"
+import { WarningSiren } from "@/components/notifications/WarningSiren"
 
 export default function DriverLayout({
   children,
@@ -12,6 +13,7 @@ export default function DriverLayout({
 }) {
   return (
     <SessionProvider>
+      <WarningSiren />
       <div className="h-screen flex flex-col bg-background">
         <AppTopbar config={DELIVERY_NAV_CONFIG} showSearch={false} />
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
