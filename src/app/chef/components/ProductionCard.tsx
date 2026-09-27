@@ -111,7 +111,14 @@ export function ProductionCard({ item, queueNumber }: ProductionCardProps) {
           <div className="flex-1 min-w-0">
             <h4 className="font-bold text-foreground text-sm leading-tight mb-1">{item.productName}</h4>
             <div className="flex flex-wrap gap-1">
-              <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded text-[10px] font-bold">{item.weight}kg</span>
+              <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded text-[10px] font-bold">
+                {item.weight < 1 ? `${item.weight * 1000}g` : `${item.weight}kg`}
+              </span>
+              {item.flavor && (
+                <span className="bg-[var(--brand-champagne)]/20 text-[#8B3A52] px-1.5 py-0.5 rounded text-[10px] font-bold">
+                  Flavor: {item.flavor}
+                </span>
+              )}
               {item.boxCount > 1 && (
                 <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded text-[10px] font-bold">{item.boxCount} Boxes</span>
               )}

@@ -38,8 +38,8 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
       const invoiceItems = (order.items || []).map((item: any) => ({
         name: item.productName || item.name || 'Custom Cake',
         qty: Number(item.quantity || item.qty || 1),
-        weight: item.weight || '1kg',
-        flavor: item.flavor || item.flavour || 'Standard',
+        weight: parseNumber(item.weight || 1) < 1 ? `${parseNumber(item.weight || 1) * 1000}g` : `${parseNumber(item.weight || 1)}kg`,
+        flavor: item.flavor || item.flavour || '',
         price: Number(item.price || 0)
       }));
 
@@ -226,7 +226,7 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
                 <span>₹{(parseNumber(item.price) * parseNumber(item.quantity)).toFixed(2)}</span>
               </div>
               <div className="pl-3 text-[10px] text-gray-600 space-y-0.5 mt-0.5">
-                <div>Weight: <span className="font-bold">{item.weight || '1kg'}</span> {item.flavor ? `| Flavor: ${item.flavor}` : ''}</div>
+                <div>Weight: <span className="font-bold">{parseNumber(item.weight || 1) < 1 ? `${parseNumber(item.weight || 1) * 1000}g` : `${parseNumber(item.weight || 1)}kg`}</span> {item.flavor ? `| Flavor: ${item.flavor}` : ''}</div>
                 {item.designName && (
                   <div>Design: <span className="italic">{item.designName}</span> {item.designCode ? `(${item.designCode})` : ''}</div>
                 )}

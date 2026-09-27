@@ -180,8 +180,15 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
-          weight: item.weight || 1,
-          flavor: item.flavor,
+          weight: (() => {
+            const w = item.variant || item.weight || "1kg";
+            if (typeof w === 'number') return w;
+            const str = String(w).toLowerCase();
+            if (str.includes('kg')) return parseFloat(str) || 1;
+            if (str.includes('g')) return (parseFloat(str) || 1000) / 1000;
+            return parseFloat(str) || 1;
+          })(),
+          flavor: item.flavor || undefined,
           messageOnCake: item.messageOnCake,
           overridePrice: item.price,
           frontendPrice: item.price,
