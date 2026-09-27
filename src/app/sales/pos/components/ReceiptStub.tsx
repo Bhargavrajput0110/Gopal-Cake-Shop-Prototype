@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { fetchClient } from "@/lib/api/client"
 import { Printer, DocumentDownload, TickCircle, CloseSquare } from "iconsax-react"
 import { generateInvoicePDF } from "@/lib/invoice"
+import { toBranchDisplayName, getBranchPhone } from "@/lib/branches"
 
 interface ReceiptStubProps {
   orderId: string
@@ -156,14 +157,10 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
           <h1 className="text-xl font-black uppercase tracking-widest font-serif text-[#3E2723]">Gopal Cake Shop</h1>
           <p className="text-[10px] font-bold text-[#C5A059] uppercase tracking-wider mt-0.5">Crafting Sweet Moments Since 1990</p>
           <p className="text-[11px] font-bold mt-1 text-gray-800">
-            {order.branchId === 'uma' ? 'Uma Branch' :
-             order.branchId === 'khanderao' ? 'Khanderao Branch' :
-             order.branchId === 'elora' || order.branchId === 'ellora' ? 'Ellora Park Branch' :
-             order.branchId === 'varasiya' || order.branchId === 'warashiya' ? 'Varasiya Factory' :
-             (order.branch?.name?.replace(/ Branch/i, '') + ' Branch' || 'Uma Branch')}
+            {toBranchDisplayName(order.branchId)}
           </p>
           <p className="text-[10px] text-gray-600 leading-tight">{order.branch?.address || "Waghodia Road, Vadodara, Gujarat"}</p>
-          <p className="text-[10px] text-gray-600">Ph: {order.branchId === 'uma' ? '+91 9712632132' : order.branch?.phone ? `+91 ${order.branch.phone}` : "+91 9898616894"}</p>
+          <p className="text-[10px] text-gray-600">Ph: {getBranchPhone(order.branchId)}</p>
           <p className="text-[9px] font-mono mt-1 text-gray-500">GSTIN: 24AAAFG0000A1Z2</p>
         </div>
 
