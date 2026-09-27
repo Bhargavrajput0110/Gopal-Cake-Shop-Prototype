@@ -72,11 +72,22 @@ export class BranchTransferService {
       const activeTransfer = await tx.branchTransfer.findFirst({
         where: {
           orderId: params.orderId,
-          status: { in: ['PENDING', 'ACCEPTED', 'IN_TRANSIT'] }
+          status: { in: ['PENDING', 'IN_TRANSIT'] }
         }
       });
       if (activeTransfer) {
-        throw new Error('An active transfer already exists for this order.');
+        if (activeTransfer.status === 'PENDING') {
+          // Auto-cancel the pending transfer if a new one is requested
+          await tx.branchTransfer.update({
+            where: { id: activeTransfer.id },
+            data: { 
+              status: 'REJECTED', 
+              notes: activeTransfer.notes ? `${activeTransfer.notes}\n[Auto-cancelled: superseded by new transfer]` : '[Auto-cancelled: superseded by new transfer]'
+            }
+          });
+        } else {
+          throw new Error('An active transfer is currently IN_TRANSIT. Wait for the driver to arrive before transferring again.');
+        }
       }
 
       // Resolve valid foreign keys for Branch and User tables in DB
