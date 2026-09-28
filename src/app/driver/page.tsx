@@ -70,14 +70,59 @@ export default function DriverDashboard() {
     enabled: isOnline && !!activeDriver
   })
 
+  const previousTaskIds = React.useRef<Set<string>>(new Set())
+
+  const playNewTaskChime = () => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      
+      const playChimeTone = (freq: number, startTime: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq; osc.type = "sine";
+        gain.gain.setValueAtTime(0.3, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.6);
+        osc.start(startTime); osc.stop(startTime + 0.6);
+      };
+      
+      // Happy notification double-chime (D5 then F#5)
+      playChimeTone(587.33, ctx.currentTime); 
+      playChimeTone(739.99, ctx.currentTime + 0.2); 
+    } catch (e) {
+      console.log('Audio playback failed', e);
+    }
+  }
+
   React.useEffect(() => {
+    let newTasksList = [];
     if (data && data.success && data.data) {
-      setTasks(data.data)
+      newTasksList = data.data;
     } else if (data && Array.isArray(data)) {
-      // Fallback in case of raw array response
-      setTasks(data as any)
-    } else {
-      setTasks([])
+      newTasksList = data as any;
+    }
+    
+    setTasks(newTasksList);
+    
+    if (newTasksList.length > 0) {
+      const currentTaskIds = new Set<string>(newTasksList.map((t: any) => String(t.id)));
+      
+      // If we already loaded tasks previously, check for new ones
+      if (previousTaskIds.current.size > 0) {
+        const hasNewTask = newTasksList.some((t: any) => !previousTaskIds.current.has(t.id));
+        if (hasNewTask) {
+          playNewTaskChime();
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('New Task Available!', {
+              body: 'A new delivery, pickup, or transfer task has been added to your queue.',
+            });
+          }
+        }
+      }
+      
+      previousTaskIds.current = currentTaskIds;
     }
   }, [data, setTasks])
 
