@@ -516,7 +516,16 @@ function TransferCard({ transfer, type, mutate }: any) {
           <span className="text-emerald-500">➔</span>
           <span>{toBranchShortName(transfer.toBranchId)}</span>
         </div>
-        <p className="text-xs text-muted-foreground">{new Date(transfer.createdAt).toLocaleString("en-IN", { day: '2-digit', month: '2-digit', year: '2-digit', hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+        <div className="flex flex-col gap-1 mt-2">
+          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+            <span className="text-amber-600">🎯 DUE:</span> 
+            <span className="text-gray-900">{transfer.order?.timeTarget ? new Date(transfer.order.timeTarget).toLocaleString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : "N/A"}</span>
+          </p>
+          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+            <span className="text-blue-600">📥 REC'D:</span>
+            <span className="text-gray-600">{new Date(transfer.createdAt).toLocaleString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+          </p>
+        </div>
       </div>
 
       <div className="shrink-0 pt-2 md:pt-0 flex flex-col gap-2 justify-center">
