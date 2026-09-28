@@ -83,9 +83,19 @@ export const GET = withApiHandler(async (ctx) => {
 
   const payload: any[] = [];
 
-  // 1. Process Inter-Branch Transfers for Drivers (Uma delivery person delivering Store Pickup cakes 1.5 hours earlier to target branch)
-  activeTransfers.forEach((transfer) => {
-    const order = transfer.order as any;
+  // Keep only the latest active transfer per order to prevent duplicate driver tasks if chained
+  const latestTransfersMap = new Map();
+  activeTransfers.forEach(t => {
+    const existing = latestTransfersMap.get(t.orderId);
+    if (!existing || new Date(t.createdAt) > new Date(existing.createdAt)) {
+      latestTransfersMap.set(t.orderId, t);
+    }
+  });
+  const uniqueTransfers = Array.from(latestTransfersMap.values());
+
+  // 1. Process Inter-Branch Transfers for Drivers
+  uniqueTransfers.forEach((transfer: any) => {
+    const order = transfer.order;
     if (!order) return;
 
     // Only show in driver pool when cake is actually ready — not while chef is still making it
@@ -101,25 +111,26 @@ export const GET = withApiHandler(async (ctx) => {
     const toBranchName = toBranchShortName(transfer.toBranchId);
 
     if (order.deliveryType === 'PICKUP') {
+      const formattedTransferTime = transferTargetTime.toLocaleTimeString('en-IN', {hour: 'numeric', minute: '2-digit', hour12: true});
       payload.push({
         id: `transfer-${transfer.id}`,
         taskType: 'BRANCH_TRANSFER',
         orderNumber: order.orderNumber,
         status: transfer.status === 'IN_TRANSIT' ? 'OUT_FOR_DELIVERY' : 'READY_FOR_PICKUP',
         deliveryType: 'BRANCH_TRANSFER',
-        targetDate: transferTargetTime.toISOString(),
+        targetDate: customerTarget.toISOString(),
         customerTargetDate: customerTarget.toISOString(),
         createdAt: transfer.createdAt,
-        notes: `STORE PICKUP INTER-BRANCH TRANSFER: Deliver to ${fromBranchName} branch 1-2 hours before customer pickup time. ₹0 extra charged to customer.`,
+        notes: `STORE PICKUP INTER-BRANCH TRANSFER: Deliver to ${toBranchName} branch by ${formattedTransferTime} (1.5 hrs before customer pickup). ₹0 extra charged to customer.`,
         assignedDriverId: order.driverId,
-        timeTarget: transferTargetTime.toISOString(),
+        timeTarget: customerTarget.toISOString(),
         totalAmount: 0,
         paidAmount: 0,
         extraFeeToCustomer: 0,
-        formattedAddress: `Deliver to Store Branch: ${fromBranchName} Branch Store`,
-        pickupLocation: `${toBranchName} Branch (Central Factory)`,
-        dropoffLocation: `${fromBranchName} Branch Store`,
-        customerName: `${fromBranchName} Store Counter`,
+        formattedAddress: `Deliver to Store Branch: ${toBranchName} Branch Store`,
+        pickupLocation: `${fromBranchName} Branch (Central Factory)`,
+        dropoffLocation: `${toBranchName} Branch Store`,
+        customerName: `${toBranchName} Store Counter`,
         customerPhone: order.customer?.phone || "",
         items: order.items.map((item: any) => ({
           id: item.id,
