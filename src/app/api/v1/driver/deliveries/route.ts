@@ -103,45 +103,51 @@ export const GET = withApiHandler(async (ctx) => {
 
     if (driverId && order.driverId && order.driverId !== driverId) return;
 
-    // Calculate inter-branch delivery target time: 1.5 hours BEFORE customer pickup time
-    const customerTarget = new Date(order.targetDate);
-    const transferTargetTime = new Date(customerTarget.getTime() - 90 * 60 * 1000); // 1.5 hours earlier
-
     const fromBranchName = toBranchShortName(transfer.fromBranchId);
     const toBranchName = toBranchShortName(transfer.toBranchId);
+    const customerTarget = new Date(order.targetDate);
 
-    if (order.deliveryType === 'PICKUP') {
-      const formattedTransferTime = transferTargetTime.toLocaleTimeString('en-IN', {hour: 'numeric', minute: '2-digit', hour12: true});
-      payload.push({
-        id: `transfer-${transfer.id}`,
-        taskType: 'BRANCH_TRANSFER',
-        orderNumber: order.orderNumber,
-        status: transfer.status === 'IN_TRANSIT' ? 'OUT_FOR_DELIVERY' : 'READY_FOR_PICKUP',
-        deliveryType: 'BRANCH_TRANSFER',
-        targetDate: customerTarget.toISOString(),
-        customerTargetDate: customerTarget.toISOString(),
-        createdAt: transfer.createdAt,
-        notes: `STORE PICKUP INTER-BRANCH TRANSFER: Deliver to ${toBranchName} branch by ${formattedTransferTime} (1.5 hrs before customer pickup). ₹0 extra charged to customer.`,
-        assignedDriverId: order.driverId,
-        timeTarget: customerTarget.toISOString(),
-        totalAmount: 0,
-        paidAmount: 0,
-        extraFeeToCustomer: 0,
-        formattedAddress: `Deliver to Store Branch: ${toBranchName} Branch Store`,
-        pickupLocation: `${fromBranchName} Branch (Central Factory)`,
-        dropoffLocation: `${toBranchName} Branch Store`,
-        customerName: `${toBranchName} Store Counter`,
-        customerPhone: order.customer?.phone || "",
-        items: order.items.map((item: any) => ({
-          id: item.id,
-          productName: item.productName || item.name || 'Cake',
-          quantity: item.quantity,
-          flavor: item.flavor || null,
-          boxCount: item.boxCount || 1,
-          status: item.status
-        }))
-      });
-    }
+    // For store-pickup orders, driver must arrive 1.5hrs early so the counter is stocked in time.
+    // For delivery orders, the driver should arrive as close to customerTarget as possible.
+    const isPickupOrder = order.deliveryType === 'PICKUP';
+    const internalDeadline = isPickupOrder
+      ? new Date(customerTarget.getTime() - 90 * 60 * 1000)
+      : customerTarget;
+
+    const formattedDeadline = internalDeadline.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const notePrefix = isPickupOrder
+      ? `INTER-BRANCH TRANSFER (STORE PICKUP): Deliver to ${toBranchName} by ${formattedDeadline} (1.5 hrs before customer pickup time).`
+      : `INTER-BRANCH TRANSFER (HOME DELIVERY): Move order to ${toBranchName} for final delivery by ${formattedDeadline}.`;
+
+    payload.push({
+      id: `transfer-${transfer.id}`,
+      taskType: 'BRANCH_TRANSFER',
+      orderNumber: order.orderNumber,
+      status: transfer.status === 'IN_TRANSIT' ? 'OUT_FOR_DELIVERY' : 'READY_FOR_PICKUP',
+      deliveryType: 'BRANCH_TRANSFER',
+      targetDate: customerTarget.toISOString(),
+      customerTargetDate: customerTarget.toISOString(),
+      createdAt: transfer.createdAt,
+      notes: notePrefix + ' ₹0 extra charged to customer.',
+      assignedDriverId: order.driverId,
+      timeTarget: customerTarget.toISOString(),
+      totalAmount: 0,
+      paidAmount: 0,
+      extraFeeToCustomer: 0,
+      formattedAddress: `${toBranchName} Branch`,
+      pickupLocation: `${fromBranchName}`,
+      dropoffLocation: `${toBranchName}`,
+      customerName: `${toBranchName} Counter`,
+      customerPhone: order.customer?.phone || "",
+      items: order.items.map((item: any) => ({
+        id: item.id,
+        productName: item.productName || item.name || 'Cake',
+        quantity: item.quantity,
+        flavor: item.flavor || null,
+        boxCount: item.boxCount || 1,
+        status: item.status
+      }))
+    });
   });
 
   orders.forEach((rawOrder) => {
