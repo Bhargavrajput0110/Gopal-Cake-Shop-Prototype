@@ -43,6 +43,12 @@ const handler = async (ctx: HandlerContext) => {
     if (globalVendors.length > 0) {
       if (!data.items[0].requiredVendors) data.items[0].requiredVendors = [];
       data.items[0].requiredVendors = Array.from(new Set([...data.items[0].requiredVendors, ...globalVendors]));
+      // Also attach the per-vendor notes so they flow through to child items
+      (data.items[0] as any).vendorNotes = {
+        VENDOR_PHOTO: v.photoVendorRequired || '',
+        VENDOR_ACRYLIC: v.acrylicVendorRequired || '',
+        VENDOR_FLORIST: v.floralVendorRequired || '',
+      };
     }
   }
 

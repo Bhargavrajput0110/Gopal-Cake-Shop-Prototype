@@ -48,12 +48,11 @@ export const POST = withApiHandler(async ({ req, params, appRole }) => {
   const payload = VendorTaskSchema.safeParse(body);
   if (!payload.success) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
 
-  // Map vendorType ('photo' | 'flower' | 'acrylic') to Prisma role ('VENDOR_PHOTO' | 'VENDOR_FLORIST' | 'VENDOR_ACRYLIC')
+  // Map vendorType ('photo' | 'flower' | 'acrylic') to Prisma role
   let targetRole = 'VENDOR_FLORIST';
   if (payload.data.vendorType === 'photo' || payload.data.vendorType === 'VENDOR_PHOTO') targetRole = 'VENDOR_PHOTO';
   if (payload.data.vendorType === 'acrylic' || payload.data.vendorType === 'VENDOR_ACRYLIC') targetRole = 'VENDOR_ACRYLIC';
 
-  // Find vendor user (e.g. Vikas Bhai for VENDOR_FLORIST, Amit for VENDOR_PHOTO, Samir for VENDOR_ACRYLIC)
   const vendorUser = await prisma.user.findFirst({
     where: { role: targetRole as any, status: { not: 'SUSPENDED' } }
   });
@@ -84,6 +83,42 @@ export const POST = withApiHandler(async ({ req, params, appRole }) => {
       where: { orderId },
       data: { assignedVendorId: vendorId }
     });
+
+    // Send in-app + push notification to the vendor
+    try {
+      const eventId = `vendor-assigned-${task.id}-${vendorId}`;
+      await prisma.inAppNotification.upsert({
+        where: { eventId },
+        update: {},
+        create: {
+          eventId,
+          userId: vendorId,
+          title: `New Assignment — #${order.orderNumber}`,
+          message: `You have a new ${payload.data.vendorType} assignment. ${payload.data.instructions || 'Check your vendor dashboard.'}`,
+          priority: 'HIGH',
+          linkUrl: '/vendor',
+        }
+      });
+
+      // Emit SSE to vendor dashboard if connected (real-time bell ring)
+      const { globalEventEmitter } = await import('@/lib/EventEmitter');
+      globalEventEmitter.emit('notification', { userId: vendorId });
+
+      // Web Push notification to vendor's phone home screen
+      try {
+        const { PushNotificationService } = await import('@/services/notifications/PushNotificationService');
+        await PushNotificationService.sendToUsers([vendorId], {
+          title: `🎂 New Order Assignment!`,
+          body: `Order #${order.orderNumber} — ${payload.data.instructions || 'Check your vendor dashboard.'}`,
+          url: '/vendor',
+          tag: `vendor-order-${orderId}`,
+        });
+      } catch (pushErr) {
+        console.warn('[vendor-tasks] Push notification failed (non-fatal):', pushErr);
+      }
+    } catch (notifErr) {
+      console.warn('[vendor-tasks] In-app notification failed (non-fatal):', notifErr);
+    }
   }
 
   return NextResponse.json({ success: true, data: task });

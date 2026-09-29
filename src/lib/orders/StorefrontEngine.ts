@@ -268,15 +268,19 @@ export class StorefrontEngine {
       const mergedRequiredVendors = Array.from(new Set([...dbRequiredVendors, ...itemRequiredVendors]))
 
       if (mergedRequiredVendors.length > 0) {
+        const vendorNotes: Record<string, string> = (item as any).vendorNotes || {};
         for (const vRole of mergedRequiredVendors) {
           const vendor = allVendors.find(v => v.role === vRole)
+          const vendorNote = vendorNotes[vRole as string] || '';
           allChildItemsToCreate.push({
             parentItemId,
             productName: `${(vRole as string).replace('VENDOR_', '')} Component`,
             price: 0,
             quantity: item.quantity,
-            weight: 0,
-            status: OrderItemStatus.WAITING_FOR_CHEF, // Will be mapped to 'Pending' for vendors
+            weight: null, // vendor components have no weight — prevents "1kg" showing on receipt
+            notes: vendorNote || null,
+            instructions: vendorNote || null,
+            status: OrderItemStatus.WAITING_FOR_CHEF,
             assignedVendorId: vendor ? vendor.id : null,
           })
         }

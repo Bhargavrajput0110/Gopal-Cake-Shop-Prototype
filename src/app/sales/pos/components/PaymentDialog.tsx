@@ -476,13 +476,13 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                       <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-amber-600 block mt-1">Laser Cut Vendor</span>
                     </div>
                     {vendorSupplies.acrylic.selected && (
-                      <input 
-                        type="text"
+                      <textarea
+                        rows={2}
                         onClick={e => e.stopPropagation()}
                         value={vendorSupplies.acrylic.note}
                         onChange={e => setVendorSupplies(prev => ({ ...prev, acrylic: { ...prev.acrylic, note: e.target.value } }))}
-                        placeholder="e.g. 'Happy 25th Anniversary'"
-                        className="mt-3 text-[11px] font-sans bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-amber-600 w-full shadow-inner placeholder:text-muted-foreground/60"
+                        placeholder="e.g. 'Happy 25th Anniversary' — press Enter for new line"
+                        className="mt-3 text-[11px] font-sans bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-amber-600 w-full shadow-inner placeholder:text-muted-foreground/60 resize-none"
                       />
                     )}
                   </div>
@@ -505,13 +505,13 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                       <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-emerald-600 block mt-1">Florist Partner</span>
                     </div>
                     {vendorSupplies.floral.selected && (
-                      <input 
-                        type="text"
+                      <textarea
+                        rows={2}
                         onClick={e => e.stopPropagation()}
                         value={vendorSupplies.floral.note}
                         onChange={e => setVendorSupplies(prev => ({ ...prev, floral: { ...prev.floral, note: e.target.value } }))}
-                        placeholder="e.g. Red roses & baby breath"
-                        className="mt-3 text-[11px] font-sans bg-white border border-emerald-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-emerald-600 w-full shadow-inner placeholder:text-muted-foreground/60"
+                        placeholder="e.g. Red roses & baby breath — press Enter for new line"
+                        className="mt-3 text-[11px] font-sans bg-white border border-emerald-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-emerald-600 w-full shadow-inner placeholder:text-muted-foreground/60 resize-none"
                       />
                     )}
                   </div>

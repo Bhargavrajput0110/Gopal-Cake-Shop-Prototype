@@ -590,10 +590,12 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
             </div>
             <h2 className={`font-display font-black text-3xl md:text-4xl leading-tight ${isCompleted ? 'text-gray-500' : 'text-gray-900'}`}>{task.productName}</h2>
           </div>
+          {task.quantity > 1 && (
           <div className="text-right shrink-0 bg-amber-50/70 border border-amber-200/80 px-5 py-3 rounded-2xl shadow-sm">
             <p className="font-ui text-[8px] uppercase tracking-widest font-black text-amber-800 mb-0.5">Required Qty</p>
             <p className="font-display font-black text-3xl text-amber-950">{task.quantity}</p>
           </div>
+          )}
         </div>
 
         {/* SLA & Location */}

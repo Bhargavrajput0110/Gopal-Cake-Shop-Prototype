@@ -216,14 +216,19 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
             <span>Item & Specifications</span>
             <span>Amount</span>
           </div>
-          {order.items?.map((item: any, idx: number) => (
+          {(order.items?.filter((item: any) => !item.parentItemId) || []).map((item: any, idx: number) => (
             <div key={item.id || idx} className="mb-2.5 pb-2 border-b border-gray-100 last:border-b-0 font-mono">
               <div className="flex justify-between font-bold text-gray-900 text-[12px]">
                 <span>{item.quantity}x {item.productName || item.name}</span>
                 <span>₹{(parseNumber(item.price) * parseNumber(item.quantity)).toFixed(2)}</span>
               </div>
               <div className="pl-3 text-[10px] text-gray-600 space-y-0.5 mt-0.5">
-                <div>Weight: <span className="font-bold">{parseNumber(item.weight || 1) < 1 ? `${parseNumber(item.weight || 1) * 1000}g` : `${parseNumber(item.weight || 1)}kg`}</span> {item.flavor ? `| Flavor: ${item.flavor}` : ''}</div>
+                {parseNumber(item.weight) > 0 && (
+                  <div>Weight: <span className="font-bold">{parseNumber(item.weight) < 1 ? `${parseNumber(item.weight) * 1000}g` : `${parseNumber(item.weight)}kg`}</span> {item.flavor ? `| Flavor: ${item.flavor}` : ''}</div>
+                )}
+                {!parseNumber(item.weight) && item.flavor && (
+                  <div>Flavor: <span className="font-bold">{item.flavor}</span></div>
+                )}
                 {item.designName && (
                   <div>Design: <span className="italic">{item.designName}</span> {item.designCode ? `(${item.designCode})` : ''}</div>
                 )}
