@@ -244,9 +244,11 @@ export default function DriverDashboard() {
   const pendingTasks = myTasks.filter(d => !['DELIVERED', 'FAILED_DELIVERY', 'COMPLETED'].includes(d.status))
   const completedTasks = myTasks.filter(d => ['DELIVERED', 'FAILED_DELIVERY', 'COMPLETED'].includes(d.status))
   
-  const customerCount = pendingTasks.filter(t => t.taskType === 'CUSTOMER_DELIVERY').length
-  const vendorCount = pendingTasks.filter(t => t.taskType === 'VENDOR_PICKUP').length
-  const branchCount = pendingTasks.filter(t => t.taskType === 'BRANCH_TRANSFER').length
+  // TODAY'S TASK COUNTS: from ALL tasks (not just mine) to show full day workload
+  const allActiveTasks = tasks.filter(t => !['DELIVERED', 'FAILED_DELIVERY', 'COMPLETED'].includes(t.status))
+  const customerCount = allActiveTasks.filter(t => t.taskType === 'CUSTOMER_DELIVERY').length
+  const vendorCount = allActiveTasks.filter(t => t.taskType === 'VENDOR_PICKUP').length
+  const branchCount = allActiveTasks.filter(t => t.taskType === 'BRANCH_TRANSFER').length
 
   // Driver Login Screen is removed since auth is handled at the layout level or middleware.
   if (!activeDriver) {
@@ -299,20 +301,20 @@ export default function DriverDashboard() {
         </div>
       </header>
 
-      {/* Summary Pills */}
+      {/* Summary Pills — TODAY'S TASK OVERVIEW */}
       <div className="px-6 pt-6 pb-2">
         <h2 className="text-xs font-bold text-foreground/50 uppercase tracking-widest mb-3">Today's Tasks</h2>
         <div className="flex flex-wrap gap-2">
-           <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg text-blue-700 font-bold text-[10px] uppercase tracking-widest">
+           <div className="flex items-center gap-2 bg-blue-600 border border-blue-700 px-3 py-1.5 rounded-lg text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
               <Shop className="w-3.5 h-3.5" /> Vendor Pickups ({vendorCount})
            </div>
-           <div className="flex items-center gap-2 bg-purple-50 border border-purple-100 px-3 py-1.5 rounded-lg text-purple-700 font-bold text-[10px] uppercase tracking-widest">
+           <div className="flex items-center gap-2 bg-purple-600 border border-purple-700 px-3 py-1.5 rounded-lg text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
               <User className="w-3.5 h-3.5" /> Customer Deliveries ({customerCount})
            </div>
-           <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 px-3 py-1.5 rounded-lg text-orange-700 font-bold text-[10px] uppercase tracking-widest">
+           <div className="flex items-center gap-2 bg-orange-500 border border-orange-600 px-3 py-1.5 rounded-lg text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
               <ArrowRight className="w-3.5 h-3.5" /> Branch Transfers ({branchCount})
            </div>
-           <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg text-emerald-700 font-bold text-[10px] uppercase tracking-widest">
+           <div className="flex items-center gap-2 bg-emerald-500 border border-emerald-600 px-3 py-1.5 rounded-lg text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
               <TickCircle className="w-3.5 h-3.5" /> Completed ({completedTasks.length})
            </div>
         </div>

@@ -212,6 +212,7 @@ export default function VendorTasks() {
       const res = await fetch(`/api/v1/vendor/tasks/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ action, mediaUrl })
       });
       const data = await res.json();
@@ -242,7 +243,12 @@ export default function VendorTasks() {
   }
 
   const myTasks = tasks;
-  const displayedTasks = myTasks.filter(t => activeTab === 'ACTIVE' ? t.status !== 'COMPLETED' : t.status === 'COMPLETED');
+  const COMPLETED_STATUSES = ['COMPLETED', 'DELIVERED', 'ready', 'ready_for_pickup', 'READY_FOR_PICKUP'];
+  const displayedTasks = myTasks.filter(t => 
+    activeTab === 'ACTIVE' 
+      ? !COMPLETED_STATUSES.includes((t.status || '').toLowerCase()) && t.status !== 'READY_FOR_PICKUP' && t.status !== 'DELIVERED'
+      : COMPLETED_STATUSES.includes((t.status || '').toLowerCase()) || t.status === 'DELIVERED' || t.status === 'READY_FOR_PICKUP'
+  );
 
   // STUDIO DASHBOARD
   return (

@@ -35,7 +35,8 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
   // === 1. OrderItems assigned to this vendor ===
   let orderItemWhere: any = {
     parentItemId: { not: null },  // ONLY child items — never show main cake
-    status: { notIn: ['DELIVERED', 'CANCELLED'] }
+    // Show all statuses — vendor sees active + completed in history tab
+    status: { notIn: ['CANCELLED'] }
   };
   if (isVendor) {
     orderItemWhere.assignedVendorId = { in: vendorUserIds };
@@ -74,7 +75,7 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
   });
 
   // === 2. VendorTask table entries ===
-  let vendorTaskWhere: any = { status: { notIn: ['delivered', 'DELIVERED', 'cancelled', 'CANCELLED'] } };
+  let vendorTaskWhere: any = { status: { notIn: ['cancelled', 'CANCELLED'] } };
   if (isVendor) {
     const conditions: any[] = [];
     if (vendorUserIds.length > 0) conditions.push({ vendorId: { in: vendorUserIds } });
