@@ -12,7 +12,10 @@ export const PATCH = withApiHandler(async (ctx) => {
   const { action, notes } = await ctx.req.json()
   const itemId = params.orderId
 
-  const item = await db.orderItem.findUnique({ where: { id: itemId }, include: { order: true } })
+  const item = await db.orderItem.findUnique({
+    where: { id: itemId },
+    include: { order: { include: { branch: true, items: true } } }
+  })
   if (!item) return NextResponse.json({ error: 'Item not found' }, { status: 404 })
 
   if (appRole === 'DELIVERY' && item.order.driverId && item.order.driverId !== user.id) {
@@ -24,25 +27,21 @@ export const PATCH = withApiHandler(async (ctx) => {
   switch (action) {
     case 'ACCEPTED':
     case 'START_TRIP':
-      // Just keep as READY_FOR_PICKUP, timeline will reflect driver states
       newStatus = 'READY_FOR_PICKUP'
       break
     case 'PICKED_UP':
-      newStatus = 'READY_FOR_PICKUP' // Still ready for pickup/delivery
+      newStatus = 'READY_FOR_PICKUP'
       break
     case 'DELIVERED':
-      // Delivered to branch! 
       newStatus = 'DELIVERED'
       break
     case 'FAILED_DELIVERY':
-      // Failed to pick up or deliver
-      // newStatus = 'CANCELLED'? No, let's just log it in timeline.
       break
     default:
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   }
 
-  // Idempotency check: We check if the action was already recorded as the latest timeline event for this item
+  // Idempotency check
   const latestTimeline = await db.timeline.findFirst({
     where: { orderItemId: item.id },
     orderBy: { createdAt: 'desc' }
@@ -67,8 +66,8 @@ export const PATCH = withApiHandler(async (ctx) => {
       u = await tx.orderItem.update({
         where: { id: itemId },
         data: { status: newStatus as any },
-        include: { order: true }
-      });
+        include: { order: { include: { branch: true, items: true } } }
+      }) as any;
     }
 
     await TimelineService.create({
@@ -89,6 +88,75 @@ export const PATCH = withApiHandler(async (ctx) => {
 
     return u;
   });
+
+  // When driver delivers vendor items to branch, notify the chef that they can now assemble
+  if (action === 'DELIVERED') {
+    try {
+      const order = item.order;
+      const branchName = order.branch?.name || 'the branch';
+
+      // Check if ALL vendor child items for this order are now DELIVERED
+      const allChildItems = (order.items || []).filter((i: any) => i.parentItemId !== null && i.assignedVendorId !== null);
+      const allDelivered = allChildItems.length > 0 && allChildItems.every((i: any) => 
+        i.id === itemId ? true : i.status === 'DELIVERED'
+      );
+
+      // Notify the assigned chef (or all chefs at that branch)
+      const chefs = await db.user.findMany({
+        where: {
+          OR: [
+            { id: (order as any).assignedChefId ?? 'none' },
+            { role: 'CHEF', branchId: order.branchId, status: 'ACTIVE' }
+          ]
+        }
+      });
+
+      const itemName = item.productName || 'Vendor Component';
+      const notifTitle = allDelivered
+        ? `✅ All vendor items delivered to ${branchName} — Ready to assemble!`
+        : `📦 ${itemName} delivered to ${branchName}`;
+      const notifMsg = allDelivered
+        ? `All acrylic/floral components have arrived. Order #${order.orderNumber} is ready for final assembly.`
+        : `${user.name || 'The driver'} has delivered "${itemName}" for Order #${order.orderNumber}. Please check the counter.`;
+
+      for (const chef of chefs) {
+        await db.inAppNotification.create({
+          data: {
+            eventId: `vendor-delivered-${itemId}-${chef.id}`,
+            userId: chef.id,
+            title: notifTitle,
+            message: notifMsg,
+            priority: allDelivered ? 'HIGH' : 'NORMAL',
+            linkUrl: `/sales/orders/${order.id}`,
+          }
+        }).catch(() => {/* ignore duplicate */});
+      }
+
+      // Also SSE push
+      const { globalEventEmitter } = await import('@/lib/EventEmitter');
+      chefs.forEach(chef => globalEventEmitter.emit('notification', { userId: chef.id }));
+
+      // Push notification to chef's phone
+      if (chefs.length > 0) {
+        try {
+          const { PushNotificationService } = await import('@/services/notifications/PushNotificationService');
+          await PushNotificationService.sendToUsers(
+            chefs.map(c => c.id),
+            {
+              title: notifTitle,
+              body: notifMsg,
+              url: `/sales/orders/${order.id}`,
+              tag: `vendor-delivered-${itemId}`,
+            }
+          );
+        } catch (pushErr) {
+          console.warn('[vendor-status] Push to chef failed (non-fatal):', pushErr);
+        }
+      }
+    } catch (notifErr) {
+      console.warn('[vendor-status] Chef notification failed (non-fatal):', notifErr);
+    }
+  }
 
   return NextResponse.json({ success: true, data: updatedItem })
 })
