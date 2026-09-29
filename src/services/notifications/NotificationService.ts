@@ -60,6 +60,16 @@ export class NotificationService {
       }
     }
 
+    // Ensure we have the orderNumber to avoid displaying raw CUIDs in push notifications
+    let finalOrderNumber = payload.orderNumber;
+    if (!finalOrderNumber && orderId) {
+      const dbOrderQuick = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { orderNumber: true }
+      });
+      if (dbOrderQuick) finalOrderNumber = dbOrderQuick.orderNumber;
+    }
+
     // Guard: skip WhatsApp entirely if DTO build failed
     let effectiveRules = orderData
       ? rules
@@ -107,7 +117,7 @@ export class NotificationService {
       try {
         let recipientId: string | undefined;
         let recipientPhone: string | undefined;
-        const msg = `Order ${payload.orderNumber || orderId}: ${rule.templateName}`;
+        const msg = `Order ${finalOrderNumber || orderId}: ${rule.templateName}`;
 
         if (rule.recipientRole === 'CUSTOMER' && orderData) {
           recipientPhone = orderData.customer.phone;
