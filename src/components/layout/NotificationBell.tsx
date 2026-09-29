@@ -78,8 +78,16 @@ export function NotificationBell() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications-inbox'] }),
   })
 
+  const { mutate: markAllReadMutate } = useMutation({
+    mutationFn: () =>
+      fetchClient(`/notifications/inbox`, {
+        method: 'PATCH',
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications-inbox'] }),
+  })
+
   const markAllRead = () => {
-    notifications.filter((n) => !n.isRead).forEach((n) => markRead(n.id))
+    markAllReadMutate()
   }
 
   return (

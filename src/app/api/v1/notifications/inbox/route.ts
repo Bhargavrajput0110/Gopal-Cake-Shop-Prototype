@@ -20,7 +20,7 @@ export const GET = withApiHandler(async (ctx) => {
     where,
     orderBy: [
       { isRead: 'asc' },
-      { priority: 'desc' }, // assuming HIGH > NORMAL > LOW string comparison or mapped
+      { priority: 'desc' },
       { createdAt: 'desc' }
     ],
     take: 50
@@ -35,3 +35,18 @@ export const GET = withApiHandler(async (ctx) => {
     data: validNotifications
   })
 })
+
+// Bulk mark-all-read — single DB call instead of N individual requests
+export const PATCH = withApiHandler(async (ctx) => {
+  const { count } = await prisma.inAppNotification.updateMany({
+    where: {
+      userId: ctx.user.id,
+      isRead: false,
+      isDismissed: false
+    },
+    data: { isRead: true }
+  })
+
+  return NextResponse.json({ success: true, updated: count })
+})
+

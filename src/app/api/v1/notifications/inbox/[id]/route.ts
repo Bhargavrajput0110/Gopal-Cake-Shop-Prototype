@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 const UpdateNotificationSchema = z.object({
-  action: z.enum(['read', 'dismiss'])
+  action: z.string().transform(s => s.toLowerCase()).pipe(z.enum(['read', 'dismiss']))
 })
 
 export const PATCH = withApiHandler(async (ctx) => {
