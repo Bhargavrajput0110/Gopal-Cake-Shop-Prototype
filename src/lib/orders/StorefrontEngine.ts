@@ -277,9 +277,8 @@ export class StorefrontEngine {
             productName: `${(vRole as string).replace('VENDOR_', '')} Component`,
             price: 0,
             quantity: item.quantity,
-            weight: null, // vendor components have no weight — prevents "1kg" showing on receipt
+            weight: 0, // use 0 not null since weight is Float (not nullable) in schema
             notes: vendorNote || null,
-            instructions: vendorNote || null,
             status: OrderItemStatus.WAITING_FOR_CHEF,
             assignedVendorId: vendor ? vendor.id : null,
           })

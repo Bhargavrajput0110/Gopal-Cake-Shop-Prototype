@@ -43,7 +43,7 @@ export const PATCH = withApiHandler(async (ctx: HandlerContext) => {
   // 1. Try finding in OrderItem first
   const item = await prisma.orderItem.findUnique({
     where: { id: params.id },
-    include: { order: true }
+    include: { order: { include: { branch: true } } }
   });
 
   if (item) {
@@ -67,13 +67,52 @@ export const PATCH = withApiHandler(async (ctx: HandlerContext) => {
       return u;
     });
 
+    // When vendor marks READY_FOR_PICKUP, notify all delivery staff to come and pick up
+    if (action === 'READY_FOR_PICKUP') {
+      try {
+        const deliveryUsers = await prisma.user.findMany({
+          where: { role: 'DELIVERY', status: 'ACTIVE' }
+        });
+        if (deliveryUsers.length > 0) {
+          const branchName = item.order.branch?.name || 'the branch';
+          const productName = item.productName || 'vendor item';
+          const { PushNotificationService } = await import('@/services/notifications/PushNotificationService');
+          await PushNotificationService.sendToUsers(
+            deliveryUsers.map(d => d.id),
+            {
+              title: `📦 Vendor Pickup Ready!`,
+              body: `${user.name || 'A vendor'} has ${productName} ready for pickup → deliver to ${branchName}. Check Driver Dashboard.`,
+              url: '/driver',
+              tag: `vendor-pickup-${item.id}`,
+            }
+          );
+
+          // Also create in-app notification for each driver
+          for (const driver of deliveryUsers) {
+            await prisma.inAppNotification.create({
+              data: {
+                eventId: `vendor-ready-${item.id}-${driver.id}`,
+                userId: driver.id,
+                title: `📦 Vendor Ready for Pickup`,
+                message: `${user.name || 'Vendor'} has "${productName}" ready. Collect and deliver to ${branchName}.`,
+                priority: 'HIGH',
+                linkUrl: '/driver',
+              }
+            }).catch(() => {/* ignore duplicate */});
+          }
+        }
+      } catch (notifErr) {
+        console.warn('[vendor-task-ready] Push to drivers failed (non-fatal):', notifErr);
+      }
+    }
+
     return NextResponse.json({ success: true, data: updated });
   }
 
   // 2. If not found in OrderItem, try VendorTask table
   const vendorTask = await prisma.vendorTask.findUnique({
     where: { id: params.id },
-    include: { order: true }
+    include: { order: { include: { branch: true } } }
   });
 
   if (vendorTask) {
@@ -98,6 +137,30 @@ export const PATCH = withApiHandler(async (ctx: HandlerContext) => {
 
       return vt;
     });
+
+    // Same: notify drivers when VendorTask is marked ready
+    if (action === 'READY_FOR_PICKUP') {
+      try {
+        const deliveryUsers = await prisma.user.findMany({
+          where: { role: 'DELIVERY', status: 'ACTIVE' }
+        });
+        if (deliveryUsers.length > 0) {
+          const branchName = vendorTask.order.branch?.name || 'the branch';
+          const { PushNotificationService } = await import('@/services/notifications/PushNotificationService');
+          await PushNotificationService.sendToUsers(
+            deliveryUsers.map(d => d.id),
+            {
+              title: `📦 Vendor Pickup Ready!`,
+              body: `${user.name || 'A vendor'} is ready. Collect from vendor → deliver to ${branchName}. Check Driver Dashboard.`,
+              url: '/driver',
+              tag: `vendor-pickup-vt-${vendorTask.id}`,
+            }
+          );
+        }
+      } catch (notifErr) {
+        console.warn('[vendor-task-ready] Push to drivers failed (non-fatal):', notifErr);
+      }
+    }
 
     return NextResponse.json({ success: true, data: updatedTask });
   }

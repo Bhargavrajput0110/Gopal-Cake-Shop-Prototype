@@ -84,6 +84,22 @@ export const POST = withApiHandler(async ({ req, params, appRole }) => {
       data: { assignedVendorId: vendorId }
     });
 
+    // Also patch the notes/instructions on child items that match this vendor type
+    // so Samir/Vikas see the salesperson's instructions (not the fallback text)
+    if (payload.data.instructions) {
+      const vendorRoleKeyword = targetRole.replace('VENDOR_', '').toLowerCase();
+      await prisma.orderItem.updateMany({
+        where: {
+          orderId,
+          parentItemId: { not: null },
+          productName: { contains: vendorRoleKeyword, mode: 'insensitive' }
+        },
+        data: {
+          notes: payload.data.instructions
+        }
+      });
+    }
+
     // Send in-app + push notification to the vendor
     try {
       const eventId = `vendor-assigned-${task.id}-${vendorId}`;

@@ -547,7 +547,12 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
             <h3 className="font-display font-black text-2xl text-white mb-3">{task.productName}</h3>
             <div className="bg-white/10 border border-white/15 p-4 rounded-xl mb-4 backdrop-blur-md">
               <p className="font-ui text-[8px] uppercase tracking-widest font-black text-purple-300 mb-1">Custom Notes</p>
-              <p className="font-editorial italic text-amber-200 text-sm font-bold leading-relaxed">&quot;{task.instructions || p.notes || "Fulfill as per salesperson requirements."}&quot;</p>
+              <p className="font-editorial italic text-amber-200 text-sm font-bold leading-relaxed whitespace-pre-wrap">
+                {task.instructions || p.notes 
+                  ? `"${task.instructions || p.notes}"`
+                  : <span className="text-white/50 not-italic font-normal text-xs">No special instructions added.</span>
+                }
+              </p>
             </div>
             <p className="font-ui text-[9px] font-bold text-gray-400">No reference image attached. Fulfill according to text specification above.</p>
           </div>
@@ -621,16 +626,16 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
           </div>
         </div>
 
-        {/* Sales Instructions Box (Always show if missing, using fallback) */}
-        {!isCompleted && (
+        {/* Sales Instructions Box — only show if Sanket Bhai provided real instructions */}
+        {!isCompleted && (task.instructions || p.notes) && (
           <div className="mb-6 p-5 bg-purple-50/80 rounded-2xl border-2 border-purple-200/80 flex gap-3.5 text-purple-950 shadow-sm">
             <Danger className="w-6 h-6 text-purple-600 shrink-0 mt-0.5" />
             <div>
               <p className="font-ui text-[9px] uppercase tracking-widest font-black text-purple-800 mb-1">
                 💬 Sales Instructions & Special Requirements
               </p>
-              <p className="font-editorial italic text-base text-purple-900 font-bold leading-relaxed">
-                &quot;{task.instructions || p.notes || "Fulfill as per standard branch requirements."}&quot;
+              <p className="font-editorial italic text-base text-purple-900 font-bold leading-relaxed whitespace-pre-wrap">
+                &quot;{task.instructions || p.notes}&quot;
               </p>
             </div>
           </div>

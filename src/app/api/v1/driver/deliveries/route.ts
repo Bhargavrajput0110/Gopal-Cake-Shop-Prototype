@@ -39,7 +39,7 @@ export const GET = withApiHandler(async (ctx) => {
     }
   }
 
-  const [orders, activeTransfers] = await Promise.all([
+  const [orders, activeTransfers, vendorReadyOrders] = await Promise.all([
     db.order.findMany({
       where: {
         deliveryType: 'DELIVERY',
@@ -62,14 +62,10 @@ export const GET = withApiHandler(async (ctx) => {
         },
         ledgerEntries: true
       },
-      orderBy: {
-        targetDate: 'asc'
-      }
+      orderBy: { targetDate: 'asc' }
     }),
     db.branchTransfer.findMany({
-      where: {
-        status: { in: ['ACCEPTED', 'IN_TRANSIT'] }
-      },
+      where: { status: { in: ['ACCEPTED', 'IN_TRANSIT'] } },
       include: {
         order: {
           include: {
@@ -78,8 +74,40 @@ export const GET = withApiHandler(async (ctx) => {
           }
         }
       }
+    }),
+    // Also fetch STORE PICKUP / any order that has vendor items ready (acrylic, floral, photo)
+    db.order.findMany({
+      where: {
+        items: {
+          some: {
+            parentItemId: { not: null },
+            status: { in: ['READY_FOR_PICKUP', 'DELIVERED'] },
+            assignedVendorId: { not: null }
+          }
+        },
+        ...branchFilter
+      },
+      include: {
+        customer: true,
+        branch: { select: { name: true, address: true } },
+        items: {
+          include: {
+            childItems: {
+              include: { assignedVendor: { select: { name: true } } }
+            },
+            assignedVendor: { select: { name: true } }
+          }
+        },
+        ledgerEntries: true
+      },
+      orderBy: { targetDate: 'asc' }
     })
   ])
+
+  // Merge orders + vendorReadyOrders (de-duplicate by ID)
+  const allOrdersMap = new Map();
+  [...orders, ...vendorReadyOrders].forEach(o => allOrdersMap.set(o.id, o));
+  const allOrders = Array.from(allOrdersMap.values());
 
   const payload: any[] = [];
 
@@ -150,7 +178,7 @@ export const GET = withApiHandler(async (ctx) => {
     });
   });
 
-  orders.forEach((rawOrder) => {
+  allOrders.forEach((rawOrder) => {
     const order = rawOrder as any;
     // 2. Process Vendor Pickups (from child items)
     order.items.forEach((parentItem: any) => {
