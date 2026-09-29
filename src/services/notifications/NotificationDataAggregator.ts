@@ -214,6 +214,11 @@ export class NotificationDataAggregator {
             pickupDateTime: targetDateFormatted,
           };
 
+    const allNotes = [
+      order.customerNotes,
+      ...order.items.map(i => i.notes)
+    ].filter(Boolean).join(' | ');
+
     return {
       customer,
       order: {
@@ -223,7 +228,7 @@ export class NotificationDataAggregator {
       },
       customization: {
         messageOnCake: order.items.map(i => i.messageOnCake).filter(Boolean).join(', ') || 'None',
-        specialInstructions: order.customerNotes || 'None',
+        specialInstructions: allNotes || 'None',
         referenceDescription,
         media: { productImages, referenceImages },
       },
