@@ -29,32 +29,13 @@ export function NotificationBell() {
   const panelRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
 
-  // Close panel on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    if (open) document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
-
-  // Connect to SSE stream — auto-reconnects on drop
-  useSSE({
-    onNotification: () => {
-      // Flash the bell when a new notification arrives
-      queryClient.invalidateQueries({ queryKey: ['notifications-inbox'] })
-    },
-  })
-
   const { data } = useQuery({
     queryKey: ['notifications-inbox'],
     queryFn: () =>
       fetchClient<{ success: boolean; data: InAppNotification[] }>(
         '/notifications/inbox?unreadOnly=false'
       ),
-    refetchInterval: 60_000, // Polling fallback if SSE drops
+    refetchInterval: 60_000,
   })
 
   const notifications = data?.data ?? []
@@ -84,6 +65,32 @@ export function NotificationBell() {
         method: 'PATCH',
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications-inbox'] }),
+  })
+
+  // Close panel on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    if (open) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  // Auto mark-all-read when panel is opened so stale count clears immediately
+  useEffect(() => {
+    if (open && unreadCount > 0) {
+      markAllReadMutate()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  // Connect to SSE stream — auto-reconnects on drop
+  useSSE({
+    onNotification: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications-inbox'] })
+    },
   })
 
   const markAllRead = () => {

@@ -135,12 +135,12 @@ export function WarningSiren() {
 
   if (!audioUnlocked) {
     return (
-      <div className="fixed inset-0 z-[999999] bg-black/80 backdrop-blur-sm flex items-center justify-center cursor-pointer">
-        <div className="bg-white p-8 rounded-3xl text-center shadow-2xl animate-pulse">
-          <div className="text-6xl mb-4">👆</div>
-          <h2 className="text-2xl font-black uppercase tracking-tight text-gray-900">Tap to Start Shift</h2>
-          <p className="text-gray-500 font-bold mt-2 text-sm uppercase tracking-widest">Enables Siren & Notifications</p>
-        </div>
+      <div
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9999] bg-amber-500 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 cursor-pointer animate-bounce"
+        title="Tap anywhere to enable siren & audio alerts"
+      >
+        <span className="text-xl">🔔</span>
+        <span className="font-black text-xs uppercase tracking-widest">Tap anywhere to enable alerts</span>
       </div>
     );
   }
