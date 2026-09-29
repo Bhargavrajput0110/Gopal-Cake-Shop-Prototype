@@ -13,7 +13,6 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
 
   let vendorUserIds = [user.id];
   if (isVendor) {
-    // Find all active vendor users with the same vendor role (e.g., Vikas Bhai for VENDOR_FLORIST)
     const sameRoleVendors = await prisma.user.findMany({
       where: { role: appRole as any, status: { not: 'SUSPENDED' } },
       select: { id: true }
@@ -21,28 +20,33 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     vendorUserIds = Array.from(new Set([user.id, ...sameRoleVendors.map(v => v.id)]));
   }
 
-  // Determine vendor type string from appRole
+  // Map role → vendorType string (used in VendorTask.vendorType)
   const roleVendorType = appRole === 'VENDOR_FLORIST' ? 'flower'
     : appRole === 'VENDOR_PHOTO' ? 'photo'
     : appRole === 'VENDOR_ACRYLIC' ? 'acrylic'
     : null;
 
-  let orderItemWhere: any = { status: { notIn: ['DELIVERED', 'CANCELLED'] } };
+  // Map role → exact productName in OrderItem
+  const roleProductName = appRole === 'VENDOR_FLORIST' ? 'FLORIST Component'
+    : appRole === 'VENDOR_PHOTO' ? 'PHOTO Component'
+    : appRole === 'VENDOR_ACRYLIC' ? 'ACRYLIC Component'
+    : null;
+
+  // === 1. OrderItems assigned to this vendor ===
+  let orderItemWhere: any = {
+    parentItemId: { not: null },  // ONLY child items — never show main cake
+    status: { notIn: ['DELIVERED', 'CANCELLED'] }
+  };
   if (isVendor) {
     orderItemWhere.assignedVendorId = { in: vendorUserIds };
+    // Also filter by product name to prevent cross-contamination
+    if (roleProductName) {
+      orderItemWhere.productName = roleProductName;
+    }
   } else if (isStaff) {
     orderItemWhere.assignedVendorId = { not: null };
   }
 
-  let vendorTaskWhere: any = { status: { notIn: ['DELIVERED', 'CANCELLED'] } };
-  if (isVendor) {
-    vendorTaskWhere.OR = [
-      { vendorId: { in: vendorUserIds } },
-      ...(roleVendorType ? [{ vendorType: roleVendorType }] : [])
-    ];
-  }
-
-  // 1. Fetch assigned OrderItems
   const orderItems = await prisma.orderItem.findMany({
     where: orderItemWhere,
     include: {
@@ -69,13 +73,22 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     orderBy: { createdAt: 'asc' }
   });
 
-  // 2. Fetch VendorTask table entries
+  // === 2. VendorTask table entries ===
+  let vendorTaskWhere: any = { status: { notIn: ['delivered', 'DELIVERED', 'cancelled', 'CANCELLED'] } };
+  if (isVendor) {
+    const conditions: any[] = [];
+    if (vendorUserIds.length > 0) conditions.push({ vendorId: { in: vendorUserIds } });
+    if (roleVendorType) conditions.push({ vendorType: roleVendorType });
+    if (conditions.length > 0) vendorTaskWhere.OR = conditions;
+  }
+
   const vendorTasks = await prisma.vendorTask.findMany({
     where: vendorTaskWhere,
     include: {
       order: {
         include: {
           items: {
+            where: { parentItemId: { not: null } }, // only fetch child items from order
             include: { media: true, parentItem: { include: { media: true } } }
           },
           branch: { select: { name: true } }
@@ -86,25 +99,22 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     orderBy: { createdAt: 'asc' }
   });
 
-  // Map OrderItems
+  // === 3. Map OrderItems ===
   const mappedOrderItems = orderItems.map((item: any) => {
     const parentMedia = item.parentItem?.media || [];
     const itemMedia = item.media || [];
     const productionMedia = parentMedia.find((m: any) => m.type === 'PRODUCTION') || itemMedia.find((m: any) => m.type === 'PRODUCTION');
-    
     const cakeImg = item.designImageUrl || item.image || item.parentItem?.designImageUrl || "";
     const customerPhoto = productionMedia?.url || item.image || item.designImageUrl || "";
-    const mediaUrls = [
-      ...itemMedia.map((m: any) => m.url),
-      ...parentMedia.map((m: any) => m.url)
-    ];
-    
-    const gallery = Array.from(new Set([cakeImg, customerPhoto, ...mediaUrls].filter(Boolean)));
+    const gallery = Array.from(new Set([cakeImg, customerPhoto, ...itemMedia.map((m: any) => m.url), ...parentMedia.map((m: any) => m.url)].filter(Boolean)));
+
     return {
       id: item.id,
+      sourceType: 'ORDER_ITEM',
+      orderItemId: item.id,
       vendorId: item.assignedVendor?.id || user.id,
       assignedVendor: item.assignedVendor,
-      instructions: item.instructions || item.notes || "",
+      instructions: item.notes || "",
       designImageUrl: cakeImg,
       customerPhotoUrl: customerPhoto,
       order: {
@@ -114,10 +124,10 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
       },
       productName: item.productName,
       quantity: item.quantity,
-      status: item.status || 'accepted',
+      status: item.status || 'CHEF_ACCEPTED',
       parentItem: {
-        productName: item.productName || "Custom Assignment",
-        notes: item.instructions || item.notes || "",
+        productName: item.parentItem?.productName || item.productName || "Custom Assignment",
+        notes: item.notes || item.parentItem?.notes || "",
         designImageUrl: cakeImg,
         customerPhotoUrl: customerPhoto,
         gallery: gallery
@@ -125,27 +135,38 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     };
   });
 
-  // Map VendorTasks
+  // === 4. Map VendorTasks — find the CORRECT child item by type ===
+  const vendorTypeToProductName: Record<string, string> = {
+    'flower': 'FLORIST Component',
+    'photo': 'PHOTO Component',
+    'acrylic': 'ACRYLIC Component',
+    'VENDOR_FLORIST': 'FLORIST Component',
+    'VENDOR_PHOTO': 'PHOTO Component',
+    'VENDOR_ACRYLIC': 'ACRYLIC Component',
+  };
+
   const mappedVendorTasks = vendorTasks.map((vt: any) => {
+    const expectedName = vendorTypeToProductName[vt.vendorType] || '';
     const items = vt.order?.items || [];
-    const itemWithImage = items.find((i: any) => i.designImageUrl || i.image || i.parentItem?.designImageUrl) || items[0] || {};
+
+    // Find the CORRECT child item matching this vendor type
+    const matchingChildItem = items.find((i: any) =>
+      i.productName === expectedName
+    ) || items[0] || {};
+
     const notesJson = typeof vt.notes === 'object' && vt.notes !== null ? vt.notes : {};
-    
-    const itemMedia = itemWithImage.media || [];
-    const parentMedia = itemWithImage.parentItem?.media || [];
+    const itemMedia = matchingChildItem.media || [];
+    const parentMedia = matchingChildItem.parentItem?.media || [];
     const productionMedia = itemMedia.find((m: any) => m.type === 'PRODUCTION');
 
-    const cakeImg = notesJson.designImageUrl || itemWithImage.designImageUrl || itemWithImage.image || itemWithImage.parentItem?.designImageUrl || "";
-    const customerPhoto = notesJson.photoUrl || productionMedia?.url || itemWithImage.designImageUrl || itemWithImage.image || "";
-    const mediaUrls = [
-      ...itemMedia.map((m: any) => m.url),
-      ...parentMedia.map((m: any) => m.url)
-    ];
-
-    const gallery = Array.from(new Set([cakeImg, customerPhoto, ...mediaUrls].filter(Boolean)));
+    const cakeImg = notesJson.designImageUrl || matchingChildItem.designImageUrl || matchingChildItem.image || matchingChildItem.parentItem?.designImageUrl || "";
+    const customerPhoto = notesJson.photoUrl || productionMedia?.url || matchingChildItem.designImageUrl || matchingChildItem.image || "";
+    const gallery = Array.from(new Set([cakeImg, customerPhoto, ...itemMedia.map((m: any) => m.url), ...parentMedia.map((m: any) => m.url)].filter(Boolean)));
 
     return {
       id: vt.id,
+      sourceType: 'VENDOR_TASK',
+      vendorTaskId: vt.id,
       vendorId: vt.vendorId || user.id,
       assignedVendor: vt.vendor,
       instructions: vt.instructions || "",
@@ -154,13 +175,14 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
         branch: { name: vt.order?.branch?.name || "Kitchen" },
         targetDate: vt.order?.targetDate
       },
-      productName: itemWithImage.productName || "Custom Fulfillment Assignment",
-      quantity: itemWithImage.quantity || 1,
+      // Show the CORRECT component name — not whatever item[0] is
+      productName: expectedName || vt.vendorType + ' Component',
+      quantity: matchingChildItem.quantity || 1,
       status: vt.status || 'accepted',
       designImageUrl: cakeImg,
       customerPhotoUrl: customerPhoto,
       parentItem: {
-        productName: itemWithImage.productName || "Custom Assignment",
+        productName: matchingChildItem.parentItem?.productName || vt.order?.orderNumber || "Custom Assignment",
         notes: vt.instructions || "",
         designImageUrl: cakeImg,
         customerPhotoUrl: customerPhoto,
@@ -169,19 +191,32 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     };
   });
 
-  // Combine unique tasks
-  const allTasks = [...mappedOrderItems];
+  // === 5. De-duplicate: prefer OrderItem over VendorTask for same order+vendorType ===
+  // Key = orderId (from orderNumber) + productName to avoid showing both sources for same assignment
+  const seen = new Set<string>();
+  const allTasks: any[] = [];
+
+  // OrderItems first (they are the authoritative source after fix)
+  mappedOrderItems.forEach(t => {
+    const key = `${t.order.orderNumber}__${t.productName}`;
+    seen.add(key);
+    allTasks.push(t);
+  });
+
+  // VendorTasks only if we haven't seen this order+type already
   mappedVendorTasks.forEach(vt => {
-    if (!allTasks.some(t => t.id === vt.id)) {
+    const key = `${vt.order.orderNumber}__${vt.productName}`;
+    if (!seen.has(key)) {
+      seen.add(key);
       allTasks.push(vt);
     }
   });
 
-  // Fetch all vendors to display in the UI even if they have no active tasks
+  // Fetch all vendors for staff view
   let allVendors: any[] = [];
   if (isStaff) {
     allVendors = await prisma.user.findMany({
-      where: { 
+      where: {
         role: { in: ['VENDOR_FLORIST', 'VENDOR_PHOTO', 'VENDOR_ACRYLIC'] },
         status: { not: 'SUSPENDED' }
       },

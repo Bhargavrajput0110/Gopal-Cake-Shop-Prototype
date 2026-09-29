@@ -48,10 +48,19 @@ export const POST = withApiHandler(async ({ req, params, appRole }) => {
   const payload = VendorTaskSchema.safeParse(body);
   if (!payload.success) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
 
-  // Map vendorType ('photo' | 'flower' | 'acrylic') to Prisma role
+  // Map vendorType to Prisma role
   let targetRole = 'VENDOR_FLORIST';
   if (payload.data.vendorType === 'photo' || payload.data.vendorType === 'VENDOR_PHOTO') targetRole = 'VENDOR_PHOTO';
   if (payload.data.vendorType === 'acrylic' || payload.data.vendorType === 'VENDOR_ACRYLIC') targetRole = 'VENDOR_ACRYLIC';
+
+  // Map vendorType to the productName we create for child OrderItems
+  // IMPORTANT: these must match exactly what StorefrontEngine creates
+  const vendorTypeToProductName: Record<string, string> = {
+    'VENDOR_FLORIST': 'FLORIST Component',
+    'VENDOR_PHOTO': 'PHOTO Component',
+    'VENDOR_ACRYLIC': 'ACRYLIC Component',
+  };
+  const expectedProductName = vendorTypeToProductName[targetRole];
 
   const vendorUser = await prisma.user.findFirst({
     where: { role: targetRole as any, status: { not: 'SUSPENDED' } }
@@ -63,49 +72,57 @@ export const POST = withApiHandler(async ({ req, params, appRole }) => {
   const cakeDesignImage = payload.data.designImageUrl || firstItem?.designImageUrl || firstItem?.image || "";
   const customerPhotoToPrint = payload.data.photoUrl || firstItem?.designImageUrl || firstItem?.image || "";
 
-  const task = await prisma.vendorTask.create({
-    data: {
-      orderId,
-      vendorType: payload.data.vendorType,
-      instructions: payload.data.instructions,
-      vendorId: vendorId,
-      status: payload.data.status || 'accepted',
-      notes: {
-        designImageUrl: cakeDesignImage,
-        photoUrl: customerPhotoToPrint
-      }
-    }
+  // Upsert VendorTask (avoid duplicate tasks for same order+type)
+  const existingTask = await prisma.vendorTask.findFirst({
+    where: { orderId, vendorType: payload.data.vendorType }
   });
 
-  // Also update OrderItems with assignedVendorId so vendor dashboard queries find them
-  if (vendorId) {
-    await prisma.orderItem.updateMany({
-      where: { orderId },
-      data: { assignedVendorId: vendorId }
+  let task;
+  if (existingTask) {
+    task = await prisma.vendorTask.update({
+      where: { id: existingTask.id },
+      data: {
+        instructions: payload.data.instructions,
+        vendorId: vendorId,
+        status: 'accepted',
+        notes: { designImageUrl: cakeDesignImage, photoUrl: customerPhotoToPrint }
+      }
     });
+  } else {
+    task = await prisma.vendorTask.create({
+      data: {
+        orderId,
+        vendorType: payload.data.vendorType,
+        instructions: payload.data.instructions,
+        vendorId: vendorId,
+        status: 'accepted',
+        notes: { designImageUrl: cakeDesignImage, photoUrl: customerPhotoToPrint }
+      }
+    });
+  }
 
-    // Also patch the notes/instructions on child items that match this vendor type
-    // so Samir/Vikas see the salesperson's instructions (not the fallback text)
-    if (payload.data.instructions) {
-      const vendorRoleKeyword = targetRole.replace('VENDOR_', '').toLowerCase();
-      await prisma.orderItem.updateMany({
-        where: {
-          orderId,
-          parentItemId: { not: null },
-          productName: { contains: vendorRoleKeyword, mode: 'insensitive' }
-        },
-        data: {
-          notes: payload.data.instructions
-        }
-      });
-    }
+  // Update ONLY the child OrderItem matching this vendor type (not ALL order items!)
+  if (vendorId && expectedProductName) {
+    await prisma.orderItem.updateMany({
+      where: {
+        orderId,
+        parentItemId: { not: null },   // only child items, not the main cake
+        productName: expectedProductName // only the right component type
+      },
+      data: {
+        assignedVendorId: vendorId,
+        notes: payload.data.instructions || null
+      }
+    });
+  }
 
-    // Send in-app + push notification to the vendor
+  // Send in-app + push notification to the vendor
+  if (vendorId) {
     try {
       const eventId = `vendor-assigned-${task.id}-${vendorId}`;
       await prisma.inAppNotification.upsert({
         where: { eventId },
-        update: {},
+        update: { message: `You have a new ${payload.data.vendorType} assignment. ${payload.data.instructions || 'Check your vendor dashboard.'}` },
         create: {
           eventId,
           userId: vendorId,
@@ -116,11 +133,11 @@ export const POST = withApiHandler(async ({ req, params, appRole }) => {
         }
       });
 
-      // Emit SSE to vendor dashboard if connected (real-time bell ring)
+      // Emit SSE to vendor dashboard if connected
       const { globalEventEmitter } = await import('@/lib/EventEmitter');
       globalEventEmitter.emit('notification', { userId: vendorId });
 
-      // Web Push notification to vendor's phone home screen
+      // Web Push notification to vendor's phone
       try {
         const { PushNotificationService } = await import('@/services/notifications/PushNotificationService');
         await PushNotificationService.sendToUsers([vendorId], {

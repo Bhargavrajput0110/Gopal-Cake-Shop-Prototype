@@ -1234,6 +1234,8 @@ function VendorAssignModal({ order, onClose, onWhatsApp }: { order: Order; onClo
   const { updateOrderFields } = useOrders();
   const [selectedVendors, setSelectedVendors] = useState<Array<{name: string, type: "photo"|"flower"|"acrylic"}>>([]);
   const [vendorNotes, setVendorNotes] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (order.vendorTasks) {
@@ -1261,58 +1263,47 @@ function VendorAssignModal({ order, onClose, onWhatsApp }: { order: Order; onClo
   };
 
   const handleConfirmVendorAssignment = async () => {
-    const newTasks = [...(order.vendorTasks || [])];
-    selectedVendors.forEach(v => {
-      const userNote = vendorNotes[v.type]?.trim() || `Assigned to ${v.name} by Sales`;
-      const existingIndex = newTasks.findIndex(vt => vt.vendorType === v.type);
-      
-      if (existingIndex >= 0) {
-        newTasks[existingIndex] = {
-          ...newTasks[existingIndex],
-          status: 'accepted',
-          vendorName: v.name,
-          instructions: userNote,
-          notes: [
-            ...(newTasks[existingIndex].notes || []),
-            { text: userNote, timestamp: new Date().toISOString(), read: false }
-          ]
-        };
-      } else {
-        newTasks.push({
-          vendorType: v.type,
-          status: 'accepted',
-          vendorName: v.name,
-          instructions: userNote,
-          notes: [
-            { text: userNote, timestamp: new Date().toISOString(), read: false }
-          ]
-        });
-      }
-    });
-    
-    await updateOrderFields(order.id, { vendorTasks: newTasks });
-
-    // Persist each assigned vendor task via backend API to ensure real-time vendor delivery
+    if (selectedVendors.length === 0) return;
+    setIsLoading(true);
+    setError(null);
     try {
+      // Persist each assigned vendor task via backend API
       for (const v of selectedVendors) {
         const userNote = vendorNotes[v.type]?.trim() || `Assigned to ${v.name}`;
-        await fetch(`/api/v1/orders/${order.id}/vendor-tasks`, {
+        const res = await fetchClient(`/orders/${order.id}/vendor-tasks`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             vendorType: v.type,
             instructions: userNote,
             status: 'accepted'
           })
-        });
+        })  as any;
+        if (!res.success) throw new Error(res.error || `Failed to assign ${v.name}`);
       }
-    } catch(e) {}
-    
-    if (selectedVendors.length > 0) {
-      const notesSummary = selectedVendors.map(v => `${v.name}: "${vendorNotes[v.type] || 'Assigned'}"`).join(' | ');
-      onWhatsApp(`WhatsApp notification sent to Partner (${notesSummary})`);
+
+      // Update local state
+      const newTasks = [...(order.vendorTasks || [])];
+      selectedVendors.forEach(v => {
+        const userNote = vendorNotes[v.type]?.trim() || `Assigned to ${v.name} by Sales`;
+        const existingIndex = newTasks.findIndex(vt => vt.vendorType === v.type);
+        if (existingIndex >= 0) {
+          newTasks[existingIndex] = { ...newTasks[existingIndex], status: 'accepted', vendorName: v.name, instructions: userNote };
+        } else {
+          newTasks.push({ vendorType: v.type, status: 'accepted', vendorName: v.name, instructions: userNote, notes: [] });
+        }
+      });
+      await updateOrderFields(order.id, { vendorTasks: newTasks });
+
+      if (selectedVendors.length > 0) {
+        const notesSummary = selectedVendors.map(v => `${v.name}: "${vendorNotes[v.type] || 'Assigned'}"`).join(' | ');
+        onWhatsApp(`Partner assigned (${notesSummary})`);
+      }
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    onClose();
   };
 
   return (
@@ -1383,15 +1374,23 @@ function VendorAssignModal({ order, onClose, onWhatsApp }: { order: Order; onClo
           </div>
         )}
         
+        {error && (
+          <p className="w-full text-xs text-red-600 font-bold bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 mb-3 text-center">
+            ⚠️ {error}
+          </p>
+        )}
+
         <button 
           onClick={handleConfirmVendorAssignment} 
-          disabled={selectedVendors.length===0} 
+          disabled={selectedVendors.length === 0 || isLoading} 
           className="w-full py-3.5 bg-purple-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-purple-700 disabled:opacity-50 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 shrink-0"
         >
-          {selectedVendors.length > 0 ? (
-             <>Confirm & Send Notes ({selectedVendors.length})</>
+          {isLoading ? (
+            <><span className="animate-spin inline-block">⏳</span> Sending...</>
+          ) : selectedVendors.length > 0 ? (
+            <>Confirm & Send Notes ({selectedVendors.length})</>
           ) : (
-             <>Select a Partner</>
+            <>Select a Partner</>
           )}
         </button>
       </div>
