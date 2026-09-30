@@ -42,6 +42,13 @@ export default function DriverDashboard() {
   const [activeTab, setActiveTab] = React.useState<'AVAILABLE' | 'PENDING' | 'COMPLETED'>('PENDING')
   const [toastMessage, setToastMessage] = React.useState<string | null>(null)
   
+  const getLocalDateString = (d: Date) => {
+    const offset = d.getTimezoneOffset();
+    const date = new Date(d.getTime() - (offset*60*1000));
+    return date.toISOString().split('T')[0];
+  }
+  const [selectedDate, setSelectedDate] = React.useState<string>(getLocalDateString(new Date()))
+  
   // Modal state
   const [activeTask, setActiveTask] = React.useState<DriverOrderDTO | null>(null)
   const [modalType, setModalType] = React.useState<'DELIVERED' | 'FAILED_DELIVERY' | null>(null)
@@ -64,8 +71,8 @@ export default function DriverDashboard() {
 
   // Fetch initial data
   const { data, isLoading } = useQuery({
-    queryKey: ['driver-tasks', activeDriver?.id],
-    queryFn: () => fetchClient<{ success: boolean, data: DriverOrderDTO[] }>(`/driver/deliveries?driverId=${activeDriver?.id}`),
+    queryKey: ['driver-tasks', activeDriver?.id, selectedDate],
+    queryFn: () => fetchClient<{ success: boolean, data: DriverOrderDTO[] }>(`/driver/deliveries?driverId=${activeDriver?.id}&date=${selectedDate}`),
     refetchInterval: isOnline ? 30000 : false,
     enabled: isOnline && !!activeDriver
   })
@@ -305,9 +312,37 @@ export default function DriverDashboard() {
         </div>
       </header>
 
-      {/* Summary Pills — TODAY'S TASK OVERVIEW */}
-      <div className="px-6 pt-6 pb-2">
-        <h2 className="text-xs font-bold text-foreground/50 uppercase tracking-widest mb-3">Today's Tasks</h2>
+      {/* Date Filter */}
+      <div className="px-6 pt-4 pb-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <button 
+            onClick={() => setSelectedDate(getLocalDateString(new Date()))}
+            className={`px-4 py-2 rounded-full font-bold text-xs whitespace-nowrap transition-all ${selectedDate === getLocalDateString(new Date()) ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+          >
+            Today
+          </button>
+          <button 
+            onClick={() => {
+              const d = new Date()
+              d.setDate(d.getDate() + 1)
+              setSelectedDate(getLocalDateString(d))
+            }}
+            className={`px-4 py-2 rounded-full font-bold text-xs whitespace-nowrap transition-all ${selectedDate === getLocalDateString(new Date(new Date().setDate(new Date().getDate() + 1))) ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+          >
+            Tomorrow
+          </button>
+          <input 
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-4 py-1.5 rounded-full font-bold text-xs bg-muted text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+      </div>
+
+      {/* Summary Pills — TASK OVERVIEW */}
+      <div className="px-6 pt-2 pb-2">
+        <h2 className="text-xs font-bold text-foreground/50 uppercase tracking-widest mb-3">Tasks for {new Date(selectedDate).toLocaleDateString()}</h2>
         <div className="flex flex-wrap gap-2">
            <div className="flex items-center gap-2 bg-blue-600 border border-blue-700 px-3 py-1.5 rounded-lg text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
               <Shop className="w-3.5 h-3.5" /> Vendor Pickups ({vendorCount})

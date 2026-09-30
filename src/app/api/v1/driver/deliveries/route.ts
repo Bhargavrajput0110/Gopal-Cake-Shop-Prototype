@@ -20,8 +20,11 @@ export const GET = withApiHandler(async (ctx) => {
     return NextResponse.json({ error: 'driverId required' }, { status: 400 })
   }
 
-  const startOfDay = new Date()
-  startOfDay.setHours(0, 0, 0, 0)
+  const dateParam = ctx.req.nextUrl.searchParams.get('date') // e.g., "YYYY-MM-DD"
+  const targetDateStart = new Date(dateParam ? dateParam : new Date())
+  targetDateStart.setHours(0, 0, 0, 0)
+  const targetDateEnd = new Date(targetDateStart)
+  targetDateEnd.setHours(23, 59, 59, 999)
 
   let branchFilter: any = {};
   if (appRole === 'DELIVERY' || appRole === 'SALESPERSON') {
@@ -43,6 +46,7 @@ export const GET = withApiHandler(async (ctx) => {
     db.order.findMany({
       where: {
         deliveryType: 'DELIVERY',
+        targetDate: { gte: targetDateStart, lte: targetDateEnd },
         OR: [
           { status: { in: ['NEW', 'WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'READY_FOR_PICKUP', 'PENDING_ASSIGNMENT'] }, driverId: null, ...branchFilter },
           { driverId: driverId ? driverId : { not: null } },
@@ -65,7 +69,10 @@ export const GET = withApiHandler(async (ctx) => {
       orderBy: { targetDate: 'asc' }
     }),
     db.branchTransfer.findMany({
-      where: { status: { in: ['ACCEPTED', 'IN_TRANSIT'] } },
+      where: { 
+        status: { in: ['ACCEPTED', 'IN_TRANSIT'] },
+        order: { targetDate: { gte: targetDateStart, lte: targetDateEnd } }
+      },
       include: {
         order: {
           include: {
@@ -78,6 +85,7 @@ export const GET = withApiHandler(async (ctx) => {
     // Also fetch STORE PICKUP / any order that has vendor items ready (acrylic, floral, photo)
     db.order.findMany({
       where: {
+        targetDate: { gte: targetDateStart, lte: targetDateEnd },
         items: {
           some: {
             parentItemId: { not: null },
