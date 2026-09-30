@@ -77,20 +77,27 @@ function playOrderChime() {
 
 function triggerPhoneNotification(orderNumber: string, productName: string, instructions: string) {
   if (typeof window !== 'undefined' && 'Notification' in window) {
+    const title = `🔔 New Order Assignment! #${orderNumber}`;
+    const options = {
+      body: `${productName} — "${instructions || 'Custom task assigned'}"`,
+      icon: '/images/gopal-cakes-logo.png',
+      tag: orderNumber
+    };
+
+    const showNotif = () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(reg => reg.showNotification(title, options));
+      } else {
+        new Notification(title, options);
+      }
+    };
+
     if (Notification.permission === 'granted') {
-      new Notification(`🔔 New Order Assignment! #${orderNumber}`, {
-        body: `${productName} — "${instructions || 'Custom task assigned'}"`,
-        icon: '/images/gopal-cakes-logo.png',
-        tag: orderNumber
-      });
+      showNotif();
     } else if (Notification.permission !== 'denied') {
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
-          new Notification(`🔔 New Order Assignment! #${orderNumber}`, {
-            body: `${productName} — "${instructions || 'Custom task assigned'}"`,
-            icon: '/images/gopal-cakes-logo.png',
-            tag: orderNumber
-          });
+          showNotif();
         }
       });
     }

@@ -30,6 +30,7 @@ export const ADMIN_NAV_CONFIG: AppConfig = {
       items: [
         { name: "Dashboard",     href: "/admin",                icon: Category },
         { name: "Orders",        href: "/admin/orders",         icon: Bag },
+        { name: "Transfers",     href: "/admin/transfers",      icon: ArrowSwapHorizontal },
         { name: "Products",      href: "/admin/products",       icon: Box },
         { name: "Categories",    href: "/admin/categories",     icon: Tag },
         { name: "Design Library",href: "/admin/design-library", icon: Star1 },

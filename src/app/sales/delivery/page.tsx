@@ -48,7 +48,7 @@ export default function DeliveryCoordinationPage() {
   // Fetch pending delivery orders
   const pendingDeliveries = orders.filter(o => 
     o.orderType === "delivery" && 
-    (o.status === "PENDING_ASSIGNMENT" || o.status === "READY_FOR_PICKUP")
+    ["NEW", "WAITING_FOR_CHEF", "CHEF_ACCEPTED", "MAKING", "DECORATING", "READY_FOR_PICKUP", "PENDING_ASSIGNMENT"].includes(o.status)
   );
 
   // Fetch active and completed deliveries
@@ -119,7 +119,7 @@ export default function DeliveryCoordinationPage() {
                         <Danger className="w-3 h-3" /> External Branch Load
                       </span>
                     ) : (
-                      <span className="text-[10px] bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 rounded font-bold uppercase tracking-widest">Waiting Assignment</span>
+                      <span className="text-[10px] bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 rounded font-bold uppercase tracking-widest">{order.status.replace(/_/g, " ")}</span>
                     )}
                   </div>
                   <p className="font-medium text-foreground">
@@ -176,7 +176,10 @@ export default function DeliveryCoordinationPage() {
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <span className="font-black text-lg text-foreground">{order.orderNumber || order.id}</span>
-                    <span className="text-[10px] text-muted-foreground block font-semibold">From: {order.branch}</span>
+                    <span className="text-[10px] text-muted-foreground block font-semibold">
+                      <span className="font-bold">From:</span> {order.branch} <br/>
+                      <span className="font-bold">To:</span> {order.delivery?.address || "Customer Address"}
+                    </span>
                   </div>
                   <span className="text-[10px] bg-blue-500/10 text-blue-600 border border-blue-500/20 px-2 py-0.5 rounded font-bold uppercase tracking-widest flex items-center gap-1">
                     <Box className="w-3 h-3" /> {order.status.replace(/_/g, " ")}
@@ -202,7 +205,8 @@ export default function DeliveryCoordinationPage() {
                 <div key={order.id} className="border border-emerald-500/20 rounded-xl p-3 bg-emerald-500/5 opacity-75 flex justify-between items-center">
                   <div>
                     <span className="font-bold text-sm text-foreground">{order.orderNumber || order.id}</span>
-                    <p className="text-xs text-muted-foreground">Rider: {order.assignedDriverName}</p>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1">To: {order.delivery?.address}</p>
+                    <p className="text-[10px] text-muted-foreground">Rider: {order.assignedDriverName || "Unknown"}</p>
                   </div>
                   <span className="text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded font-bold uppercase tracking-widest flex items-center gap-1">
                     <TickCircle className="w-3 h-3" /> Delivered

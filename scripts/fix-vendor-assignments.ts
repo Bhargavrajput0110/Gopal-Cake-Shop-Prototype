@@ -1,30 +1,16 @@
-/**
- * One-time cleanup script:
- * Fixes corrupted assignedVendorId on OrderItem child rows caused by the 
- * old `updateMany({ where: { orderId } })` bug that assigned ALL items to 
- * every vendor, including wrong types.
- * 
- * Run: node -e "require('./scripts/fix-vendor-assignments.mjs')"
- * OR: npx tsx scripts/fix-vendor-assignments.ts
- */
-
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma as db } from '../src/lib/prisma';
 
 async function main() {
   console.log('🔧 Fixing corrupted vendor assignments...\n')
 
-  // Find vendors by role
-  const florist = await prisma.user.findFirst({ where: { role: 'VENDOR_FLORIST', status: { not: 'SUSPENDED' } } })
-  const acrylic = await prisma.user.findFirst({ where: { role: 'VENDOR_ACRYLIC', status: { not: 'SUSPENDED' } } })
-  const photo   = await prisma.user.findFirst({ where: { role: 'VENDOR_PHOTO',   status: { not: 'SUSPENDED' } } })
+  const results: Record<string, number> = {}
 
-  console.log(`Found vendors: FLORIST=${florist?.name}, ACRYLIC=${acrylic?.name}, PHOTO=${photo?.name}`)
+  const florist = await db.user.findFirst({ where: { role: 'VENDOR_FLORIST', status: { not: 'SUSPENDED' } } })
+  const acrylic = await db.user.findFirst({ where: { role: 'VENDOR_ACRYLIC', status: { not: 'SUSPENDED' } } })
+  const photo   = await db.user.findFirst({ where: { role: 'VENDOR_PHOTO',   status: { not: 'SUSPENDED' } } })
 
-  // Rule: FLORIST Component items should ONLY have florist's ID
   if (florist) {
-    const r1 = await prisma.orderItem.updateMany({
+    const r = await db.orderItem.updateMany({
       where: {
         productName: 'FLORIST Component',
         parentItemId: { not: null },
@@ -32,12 +18,11 @@ async function main() {
       },
       data: { assignedVendorId: florist.id }
     })
-    console.log(`✅ Fixed ${r1.count} FLORIST Component rows → assigned to ${florist.name}`)
+    console.log(`✅ Fixed ${r.count} FLORIST Component rows → assigned to ${florist.name}`)
   }
 
-  // Rule: ACRYLIC Component items should ONLY have acrylic vendor's ID
   if (acrylic) {
-    const r2 = await prisma.orderItem.updateMany({
+    const r = await db.orderItem.updateMany({
       where: {
         productName: 'ACRYLIC Component',
         parentItemId: { not: null },
@@ -45,12 +30,11 @@ async function main() {
       },
       data: { assignedVendorId: acrylic.id }
     })
-    console.log(`✅ Fixed ${r2.count} ACRYLIC Component rows → assigned to ${acrylic.name}`)
+    console.log(`✅ Fixed ${r.count} ACRYLIC Component rows → assigned to ${acrylic.name}`)
   }
 
-  // Rule: PHOTO Component items should ONLY have photo vendor's ID
   if (photo) {
-    const r3 = await prisma.orderItem.updateMany({
+    const r = await db.orderItem.updateMany({
       where: {
         productName: 'PHOTO Component',
         parentItemId: { not: null },
@@ -58,22 +42,36 @@ async function main() {
       },
       data: { assignedVendorId: photo.id }
     })
-    console.log(`✅ Fixed ${r3.count} PHOTO Component rows → assigned to ${photo.name}`)
+    console.log(`✅ Fixed ${r.count} PHOTO Component rows → assigned to ${photo.name}`)
   }
 
-  // Also fix: main cake items (parentItemId IS null) should NOT have any assignedVendorId
-  const r4 = await prisma.orderItem.updateMany({
-    where: {
-      parentItemId: null,
-      assignedVendorId: { not: null }
-    },
+  // Clear vendor IDs from main cake items (they shouldn't have them)
+  const r4 = await db.orderItem.updateMany({
+    where: { parentItemId: null, assignedVendorId: { not: null } },
     data: { assignedVendorId: null }
   })
   console.log(`✅ Cleared ${r4.count} main cake items that had wrong assignedVendorId`)
+
+  // Remove duplicate VendorTask entries (keep only the most recent per orderId+vendorType)
+  const allTasks = await db.vendorTask.findMany({ orderBy: { createdAt: 'desc' } })
+  const seen = new Set<string>()
+  const toDelete: string[] = []
+  allTasks.forEach((t: any) => {
+    const key = `${t.orderId}__${t.vendorType}`
+    if (seen.has(key)) {
+      toDelete.push(t.id)
+    } else {
+      seen.add(key)
+    }
+  })
+  if (toDelete.length > 0) {
+    await db.vendorTask.deleteMany({ where: { id: { in: toDelete } } })
+    console.log(`✅ Deleted ${toDelete.length} duplicate VendorTasks`)
+  }
 
   console.log('\n✅ Done! Vendor assignments are now clean.')
 }
 
 main()
   .catch(console.error)
-  .finally(() => prisma.$disconnect())
+  .finally(() => db.$disconnect())

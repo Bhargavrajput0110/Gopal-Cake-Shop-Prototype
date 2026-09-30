@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma as db } from '@/lib/prisma'
 import { withApiHandler } from '@/lib/withApiHandler'
 import { TimelineService } from '@/services/TimelineService'
+import { NotificationDispatcher } from '@/services/notifications/NotificationDispatcher'
 
 export const POST = withApiHandler(async (ctx) => {
   const { appRole, user } = ctx
@@ -35,6 +36,23 @@ export const POST = withApiHandler(async (ctx) => {
 
     return updated
   })
+
+  // Dispatch push & in-app notification to the driver
+  try {
+    const assignerName = user.name || 'Sales Staff'
+    await NotificationDispatcher.dispatch({
+      eventId: `driver-assign-${orderId}-${Date.now()}`,
+      orderId: orderId,
+      channel: 'IN_APP',
+      recipientRole: 'DELIVERY',
+      recipientId: driverId,
+      templateName: 'New Delivery Task',
+      message: `${assignerName} has assigned you a delivery task for order ${order.orderNumber || order.id}.`,
+      branchId: order.branchId,
+    })
+  } catch (err) {
+    console.error("Failed to send driver notification:", err)
+  }
 
   return NextResponse.json({ success: true, order: updatedOrder })
 })

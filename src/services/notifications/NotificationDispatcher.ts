@@ -27,7 +27,7 @@ import { createWhatsAppProvider } from './providers/WhatsAppProvider';
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   try {
     webpush.setVapidDetails(
-      'mailto:admin@bakeryos.com',
+      process.env.NEXT_PUBLIC_VAPID_SUBJECT || 'mailto:admin@bakeryos.com',
       process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
       process.env.VAPID_PRIVATE_KEY
     );
@@ -364,6 +364,7 @@ export class NotificationDispatcher {
                 { headers: { Urgency: 'high' } }
               );
             } catch (pushErr: any) {
+              LoggerService.error(`[NotificationDispatcher] Push error for user ${uid}:`, pushErr);
               if (pushErr.statusCode === 404 || pushErr.statusCode === 410) {
                 await prisma.pushSubscription.delete({ where: { id: sub.id } });
               }

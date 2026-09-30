@@ -115,9 +115,13 @@ export default function DriverDashboard() {
         if (hasNewTask) {
           playNewTaskChime();
           if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('New Task Available!', {
-              body: 'A new delivery, pickup, or transfer task has been added to your queue.',
-            });
+            const title = 'New Task Available!';
+            const options = { body: 'A new delivery, pickup, or transfer task has been added to your queue.' };
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.ready.then(reg => reg.showNotification(title, options));
+            } else {
+              new Notification(title, options);
+            }
           }
         }
       }

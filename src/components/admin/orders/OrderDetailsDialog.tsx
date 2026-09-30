@@ -36,7 +36,7 @@ export function OrderDetailsDialog({ orderId, isOpen, onClose }: OrderDetailsDia
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
           <DialogHeader className="p-6 pb-4 shrink-0 border-b flex flex-row items-center justify-between">
             <div>
-              <DialogTitle className="text-xl font-serif font-black text-[#3E2723]">Order Details: {orderId}</DialogTitle>
+              <DialogTitle className="text-xl font-serif font-black text-[#3E2723]">Order Details: {order?.orderNumber || orderId}</DialogTitle>
               <DialogDescription>
                 View full details, payments, timeline, and quality checklist.
               </DialogDescription>

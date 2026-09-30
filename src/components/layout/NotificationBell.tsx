@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Notification, TickCircle, CloseCircle, InfoCircle, Warning2 } from 'iconsax-react'
@@ -28,6 +29,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
+  const router = useRouter()
 
   const { data } = useQuery({
     queryKey: ['notifications-inbox'],
@@ -160,7 +162,13 @@ export function NotificationBell() {
                   .map((n) => (
                     <div
                       key={n.id}
-                      className={`flex gap-3 px-4 py-3 hover:bg-secondary/20 transition-colors ${!n.isRead ? 'bg-primary/5' : ''}`}
+                      onClick={(e) => {
+                        if (n.linkUrl) {
+                          router.push(n.linkUrl);
+                          setOpen(false);
+                        }
+                      }}
+                      className={`flex gap-3 px-4 py-3 hover:bg-secondary/20 transition-colors cursor-pointer ${!n.isRead ? 'bg-primary/5' : ''}`}
                     >
                       {priorityIcon(n.priority)}
                       <div className="flex-1 min-w-0">
@@ -175,7 +183,7 @@ export function NotificationBell() {
                       <div className="flex flex-col gap-1 shrink-0">
                         {!n.isRead && (
                           <button
-                            onClick={() => markRead(n.id)}
+                            onClick={(e) => { e.stopPropagation(); markRead(n.id); }}
                             className="p-1 text-primary hover:bg-primary/10 rounded transition-colors"
                             title="Mark as read"
                           >
@@ -183,7 +191,7 @@ export function NotificationBell() {
                           </button>
                         )}
                         <button
-                          onClick={() => dismiss(n.id)}
+                          onClick={(e) => { e.stopPropagation(); dismiss(n.id); }}
                           className="p-1 text-muted-foreground hover:bg-secondary rounded transition-colors"
                           title="Dismiss"
                         >

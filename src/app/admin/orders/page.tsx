@@ -74,7 +74,7 @@ const columns: ColumnDef<Order>[] = [
     header: "Order ID",
     cell: ({ row }) => (
       <div>
-        <div className="font-bold text-foreground text-xs">{row.original.id}</div>
+        <div className="font-bold text-foreground text-xs">{row.original.orderNumber || row.original.id}</div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
           <Clock className="w-3 h-3" />
           {formatTimeAgo(row.original.createdAt)}
@@ -289,7 +289,7 @@ export default function LiveOrdersPage() {
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <span className="font-bold text-foreground text-xs">{order.id}</span>
+                            <span className="font-bold text-foreground text-xs">{order.orderNumber || order.id}</span>
                             {order.isSurprise && (
                               <Badge variant="secondary" className="ml-1.5 text-[9px]">Surprise</Badge>
                             )}
@@ -344,7 +344,7 @@ export default function LiveOrdersPage() {
               {archivedOrders.slice(0, 10).map((order) => (
                 <div key={order.id} className="bg-card border border-border/40 p-3 rounded-xl opacity-70 text-xs">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold">{order.id}</span>
+                    <span className="font-bold">{order.orderNumber || order.id}</span>
                     <Badge variant={STATUS_CONFIG[order.status]?.variant ?? "secondary"}>
                       {STATUS_CONFIG[order.status]?.label}
                     </Badge>
@@ -476,7 +476,7 @@ export default function LiveOrdersPage() {
             <div className="p-4 space-y-3">
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="font-bold text-sm">{order.id}</span>
+                  <span className="font-bold text-sm">{order.orderNumber || order.id}</span>
                   <div className="text-xs text-muted-foreground">{formatTimeAgo(order.createdAt)}</div>
                 </div>
                 <Badge variant={STATUS_CONFIG[order.status]?.variant ?? "secondary"}>

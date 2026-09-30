@@ -115,6 +115,7 @@ export class OrderService {
           vendorTasks: { include: { vendor: true } },
           ingredientRequests: { include: { requestedBy: true } },
           transfers: { orderBy: { createdAt: 'asc' } },
+          driver: true,
         }
       }),
       db.order.count({ where: whereClause }),
@@ -146,6 +147,8 @@ export class OrderService {
           branch: o.branchId, // Use branchId directly or map to name
           status: o.status,
           orderType: o.deliveryType?.toLowerCase() || 'pickup',
+          assignedDriverName: (o as any).driver?.name || undefined,
+          assignedDriverId: (o as any).driver?.id || undefined,
           grandTotal: finSummary.totalAmount,
           timeTarget: o.targetDate,
           createdAt: o.createdAt,
