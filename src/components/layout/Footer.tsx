@@ -22,10 +22,10 @@ const YoutubeIcon = () => (
 );
 
 const BRANCHES = [
-  { name: "Uma Char Rasta (Main)", address: "B-9, Sunil Society, Behind Zavernagar Bus Stand, Uma Char Rasta, Vadodara - 390019", phone: "+91 99090 11111" },
-  { name: "Khanderao Market", address: "76W2+WQ9, Palace Rd, Khanderao Market Char Rasta, Mandvi, Vadodara - 390001", phone: "+91 99090 22222" },
-  { name: "Factory Warashiya", address: "Opp T-8, Behind Hari Seva School, Warashia Colony, Vadodara - 390006", phone: "+91 99090 33333" },
-  { name: "Ellora Park", address: "Shop No.1, Ellora Park Rd, Nr. Jalaram Lassi, Odhavpura, Vadodara - 390023", phone: "+91 99090 44444" },
+  { name: "Uma Char Rasta (Main)", address: "B-9, Sunil Society, Behind Zavernagar Bus Stand Ward, Uma Char Rasta, Waghodia, Vadodara, Gujarat 390019", phone: "+91 97126 32132" },
+  { name: "Khanderao Market", address: "76W2+WQ9, Rajmahal Rd, Khanderao Market Char Rasta, Prabhat Nagar, Mandvi, Vadodara, Gujarat 390001", phone: "+91 92659 76305" },
+  { name: "Factory Warashiya", address: "Opp T-8, Behind Hari Seva School, Warasiya Colony, Vadodara, Gujarat 390006", phone: "+91 96622 19666" },
+  { name: "Ellora Park", address: "Shop No.1, Ellora Park Rd, Nr. Neo Mobile and Jalaram Lassi, Opp. Shakti Farsan, Odhavpura, Ellora Park, Hari Nagar, Vadodara, Gujarat 390023", phone: "+91 94091 57804" },
 ];
 
 const NAV_GROUPS = [

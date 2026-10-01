@@ -49,10 +49,10 @@ const VADODARA_DICTIONARY = [
   { name: 'Vadodara Railway Station', area: 'Sayajigunj, Vadodara', lat: 22.3100, lon: 73.1810, keywords: ['railway station', 'station', 'vadodara station', 'st depot'] },
 
   // Gopal Cake Shop Branches
-  { name: 'Uma Char Rasta Branch (Main Outlet)', area: 'B-9, Sunil Society, Behind Zavernagar Bus Stand, Uma Char Rasta, Vadodara 390019', lat: 22.3025, lon: 73.2185, keywords: ['uma', 'uma char rasta', 'sunil society', 'zavernagar', 'waghodia road branch'] },
-  { name: 'Khanderao Market Branch', area: 'Palace Rd, Khanderao Market Char Rasta, Mandvi, Vadodara 390001', lat: 22.29745, lon: 73.20194, keywords: ['khanderao', 'khanderao market', 'palace road', 'mandvi'] },
-  { name: 'Ellora Park Branch', area: 'Shop No.1, Ellora Park Rd, Nr. Jalaram Lassi, Odhavpura, Vadodara 390023', lat: 22.3182, lon: 73.1610, keywords: ['ellora', 'ellora park', 'ellorapark', 'shakti farsan'] },
-  { name: 'Factory Warashiya Branch', area: 'Opp T-8, Behind Hari Seva School, Warashia Colony, Vadodara 390006', lat: 22.3245, lon: 73.2115, keywords: ['warashiya', 'varasiya', 'factory warashiya', 'hari seva school', 'warashia colony'] },
+  { name: 'Uma Char Rasta Branch (Main Outlet)', area: 'B-9, Sunil Society, Behind Zavernagar Bus Stand Ward, Uma Char Rasta, Waghodia, Vadodara, Gujarat 390019', lat: 22.3025, lon: 73.2185, keywords: ['uma', 'uma char rasta', 'sunil society', 'zavernagar', 'waghodia road branch'] },
+  { name: 'Khanderao Market Branch', area: '76W2+WQ9, Rajmahal Rd, Khanderao Market Char Rasta, Prabhat Nagar, Mandvi, Vadodara, Gujarat 390001', lat: 22.29745, lon: 73.20194, keywords: ['khanderao', 'khanderao market', 'palace road', 'mandvi', 'rajmahal rd'] },
+  { name: 'Ellora Park Branch', area: 'Shop No.1, Ellora Park Rd, Nr. Neo Mobile and Jalaram Lassi, Opp. Shakti Farsan, Odhavpura, Ellora Park, Hari Nagar, Vadodara, Gujarat 390023', lat: 22.3182, lon: 73.1610, keywords: ['ellora', 'ellora park', 'ellorapark', 'shakti farsan'] },
+  { name: 'Factory Warashiya Branch', area: 'Opp T-8, Behind Hari Seva School, Warasiya Colony, Vadodara, Gujarat 390006', lat: 22.3245, lon: 73.2115, keywords: ['warashiya', 'varasiya', 'factory warashiya', 'hari seva school', 'warashia colony'] },
 
   // Residential Societies & Key Localities
   { name: 'Shivam Society / Park', area: 'Manjalpur, Vadodara', lat: 22.2750, lon: 73.1850, keywords: ['shivam', 'shivam soc', 'shivam society', 'shivam park', 'shivam tenaments', 'shivam socur'] },
