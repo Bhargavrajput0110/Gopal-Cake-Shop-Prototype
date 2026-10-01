@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma as db } from '@/lib/prisma'
 import { withApiHandler } from '@/lib/withApiHandler'
 import { FinancialService } from '@/services/FinancialService'
-import { toBranchShortName } from '@/lib/branches'
+import { toBranchShortName, toBranchId, BRANCHES } from '@/lib/branches'
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -155,6 +155,11 @@ export const GET = withApiHandler(async (ctx) => {
       ? `INTER-BRANCH TRANSFER (STORE PICKUP): Deliver to ${toBranchName} by ${formattedDeadline} (1.5 hrs before customer pickup time).`
       : `INTER-BRANCH TRANSFER (HOME DELIVERY): Move order to ${toBranchName} for final delivery by ${formattedDeadline}.`;
 
+    const fromBranchIdCanonical = toBranchId(transfer.fromBranchId);
+    const toBranchIdCanonical = toBranchId(transfer.toBranchId);
+    const fromBranchFullAddress = BRANCHES.find(b => b.id === fromBranchIdCanonical)?.address || fromBranchName;
+    const toBranchFullAddress = BRANCHES.find(b => b.id === toBranchIdCanonical)?.address || toBranchName;
+
     payload.push({
       id: `transfer-${transfer.id}`,
       taskType: 'BRANCH_TRANSFER',
@@ -170,9 +175,9 @@ export const GET = withApiHandler(async (ctx) => {
       totalAmount: 0,
       paidAmount: 0,
       extraFeeToCustomer: 0,
-      formattedAddress: `${toBranchName} Branch`,
-      pickupLocation: `${fromBranchName}`,
-      dropoffLocation: `${toBranchName}`,
+      formattedAddress: toBranchFullAddress,
+      pickupLocation: fromBranchFullAddress,
+      dropoffLocation: toBranchFullAddress,
       customerName: `${toBranchName} Counter`,
       customerPhone: order.customer?.phone || "",
       items: order.items.map((item: any) => ({
