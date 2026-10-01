@@ -15,7 +15,24 @@ if (typeof window !== "undefined") {
   });
 }
 
+const shopIcon = typeof window !== "undefined" ? new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+}) : null;
+
 import { useEffect } from "react";
+import { Popup } from "react-leaflet";
+
+const branchLocations = [
+  { name: "Uma Branch (Main)", coords: [22.3025, 73.2185] },
+  { name: "Khanderao Branch", coords: [22.29745, 73.20194] },
+  { name: "Warashiya Factory", coords: [22.3245, 73.2115] },
+  { name: "Ellora Park Branch", coords: [22.3182, 73.1610] }
+];
 
 function LocationMarker({ position, setPosition }: { position: L.LatLng | null, setPosition: (p: L.LatLng) => void }) {
   const map = useMapEvents({
@@ -63,6 +80,17 @@ export default function LeafletMapInner({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <MapController position={leafletPos} />
+      
+      {/* Render the shop branches on the map using the gold icon */}
+      {shopIcon && branchLocations.map((branch, idx) => (
+        <Marker key={idx} position={[branch.coords[0], branch.coords[1]]} icon={shopIcon}>
+          <Popup>
+            <div className="font-bold text-[var(--brand-deep-rose)] text-sm">{branch.name}</div>
+            <div className="text-xs">Gopal Cake Shop</div>
+          </Popup>
+        </Marker>
+      ))}
+
       <LocationMarker 
         position={leafletPos} 
         setPosition={(p) => setPosition({ lat: p.lat, lng: p.lng })} 
