@@ -26,6 +26,8 @@ export default function POSPage() {
   
   const defaultBranch = (session?.user?.branchId as BranchId) || "uma"
   const [activeBranch, setActiveBranch] = React.useState<BranchId>(defaultBranch)
+  // Normalize to canonical branch ID so all comparisons work even if session gives a CUID
+  const canonicalBranch = toBranchId(activeBranch) as BranchId
 
   React.useEffect(() => {
     if (session?.user?.branchId) {
@@ -145,7 +147,7 @@ export default function POSPage() {
                 <div className="flex items-center gap-1.5 sm:gap-2 bg-muted/50 border border-border rounded-xl px-2 py-1 sm:px-3 sm:py-1">
                   <Shop className="w-4 h-4 text-primary shrink-0" />
                   <span className="font-black text-xs uppercase tracking-wider text-foreground">
-                    {BRANCHES.find(b => b.id === activeBranch)?.displayName || 'BRANCH'}
+                    {BRANCHES.find(b => b.id === canonicalBranch)?.displayName || 'BRANCH'}
                   </span>
                 </div>
               </div>
@@ -159,7 +161,7 @@ export default function POSPage() {
 
         <div className="flex items-center gap-4 relative z-50">
           {/* WARASIYA OUTLET EXCLUSIVE BULK ORDERS BUTTON */}
-          {activeBranch === 'varasiya' && (
+          {canonicalBranch === 'varasiya' && (
             <motion.button
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
