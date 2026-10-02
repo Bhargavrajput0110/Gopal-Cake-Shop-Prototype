@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useCart } from "@/context/CartContext"
-import { Box, CloseCircle, DiscountShape, Shop, Profile2User, Add, Minus, Trash, TickCircle } from "iconsax-react"
+import { Box, CloseCircle, DiscountShape, Shop, Add, Minus, Trash, TickCircle, ArrowLeft, ArrowRight } from "iconsax-react"
 
 interface Retailer {
   id: string
@@ -44,382 +44,373 @@ interface RetailerBulkOrderModalProps {
   onClose: () => void
 }
 
+const TIER_COLORS: Record<string, string> = {
+  Platinum: "bg-purple-100 text-purple-700 border-purple-200",
+  Gold: "bg-amber-100 text-amber-700 border-amber-200",
+  Standard: "bg-blue-100 text-blue-700 border-blue-200",
+  Custom: "bg-gray-100 text-gray-700 border-gray-200",
+}
+
 export function RetailerBulkOrderModal({ onClose }: RetailerBulkOrderModalProps) {
   const { addItem } = useCart()
-  const [selectedRetailer, setSelectedRetailer] = React.useState<Retailer>(DEFAULT_RETAILERS[0])
+
+  // Step: 1 = select retailer, 2 = pick quantities, 3 = confirm/done
+  const [step, setStep] = React.useState<1 | 2>(1)
+
+  const [selectedRetailer, setSelectedRetailer] = React.useState<Retailer | null>(null)
   const [isAddingCustom, setIsAddingCustom] = React.useState(false)
   const [customName, setCustomName] = React.useState("")
   const [customDiscount, setCustomDiscount] = React.useState(20)
-  
-  // Quantities for products
-  const [quantities, setQuantities] = React.useState<Record<string, number>>({
-    "blk-01": 10,
-    "blk-03": 5,
-  })
-  
+
+  const [quantities, setQuantities] = React.useState<Record<string, number>>({})
   const [dispatchDate, setDispatchDate] = React.useState("Tomorrow Morning (6:00 AM Factory Dispatch)")
   const [dispatchNotes, setDispatchNotes] = React.useState("Pack in reusable yellow crates for transport.")
-  const [showSuccessToast, setShowSuccessToast] = React.useState(false)
+  const [showSuccess, setShowSuccess] = React.useState(false)
 
-  const activeDiscount = isAddingCustom ? Number(customDiscount) : selectedRetailer.adminDiscountPercent
+  const activeRetailerName = isAddingCustom ? (customName.trim() || "Custom Retailer") : (selectedRetailer?.name || "")
+  const activeDiscount = isAddingCustom ? customDiscount : (selectedRetailer?.adminDiscountPercent || 0)
 
-  // Calculate totals
   let grossTotal = 0
   let totalUnits = 0
-  
   Object.entries(quantities).forEach(([prodId, qty]) => {
     if (qty <= 0) return
     const prod = BULK_CATALOG.find(p => p.id === prodId)
-    if (prod) {
-      grossTotal += prod.baseRetailPrice * qty
-      totalUnits += qty
-    }
+    if (prod) { grossTotal += prod.baseRetailPrice * qty; totalUnits += qty }
   })
-  
   const discountAmount = Math.round((grossTotal * activeDiscount) / 100)
-  const netWholesalePayable = grossTotal - discountAmount
+  const netPayable = grossTotal - discountAmount
 
-  const handleQtyChange = (id: string, newQty: number) => {
-    setQuantities(prev => ({
-      ...prev,
-      [id]: Math.max(0, newQty)
-    }))
+  const handleQtyChange = (id: string, val: number) => {
+    setQuantities(prev => ({ ...prev, [id]: Math.max(0, val) }))
   }
 
   const handleTransferToCart = () => {
-    const partnerName = isAddingCustom ? (customName.trim() || "Custom Retailer") : selectedRetailer.name
-    
     let addedCount = 0
     Object.entries(quantities).forEach(([prodId, qty]) => {
       if (qty <= 0) return
       const prod = BULK_CATALOG.find(p => p.id === prodId)
       if (prod) {
         const discountedUnitPrice = Math.round(prod.baseRetailPrice * (1 - activeDiscount / 100))
-        
         addItem({
           productId: `b2b-${prod.id}-${Date.now()}`,
-          name: `📦 [B2B Wholesale] ${prod.name} (${partnerName} - ${activeDiscount}% Admin Rate)`,
+          name: `📦 [B2B] ${prod.name} (${activeRetailerName} - ${activeDiscount}% Rate)`,
           price: discountedUnitPrice,
           quantity: qty,
-          weight: 1, // Default placeholder weight for bulk box/crate unit
-          flavor: `B2B Unit: ${prod.unit} | Dispatch: ${dispatchDate}`,
-          notes: `Wholesale Partner: ${partnerName} | Discount: ${activeDiscount}% | Notes: ${dispatchNotes}`,
+          weight: 1,
+          flavor: `B2B: ${prod.unit} | Dispatch: ${dispatchDate}`,
+          notes: `Wholesale: ${activeRetailerName} | ${activeDiscount}% OFF | ${dispatchNotes}`,
         })
         addedCount++
       }
     })
-
     if (addedCount > 0) {
-      setShowSuccessToast(true)
-      setTimeout(() => {
-        onClose()
-      }, 1500)
+      setShowSuccess(true)
+      setTimeout(() => onClose(), 1600)
     } else {
-      alert("Please specify quantity for at least one bulk item before adding to order.")
+      alert("Please add quantity for at least one item.")
     }
   }
 
+  const canProceedStep1 = isAddingCustom ? customName.trim().length > 0 : selectedRetailer !== null
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-[1100px] h-[92vh] max-h-[850px] shadow-2xl border border-border flex flex-col overflow-hidden relative text-foreground">
-        
-        {/* Modal Header */}
-        <div className="px-8 py-5 border-b border-border bg-gradient-to-r from-[var(--brand-deep-rose)]/10 via-amber-500/10 to-[var(--brand-champagne)]/10 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--brand-deep-rose)] text-white flex items-center justify-center shadow-lg shadow-[var(--brand-deep-rose)]/20">
-              <Box className="w-7 h-7" variant="Bold" />
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white w-full sm:max-w-lg sm:rounded-[2rem] rounded-t-[2rem] max-h-[95vh] flex flex-col shadow-2xl border border-border overflow-hidden">
+
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-border bg-gradient-to-r from-[var(--brand-deep-rose)]/10 via-amber-500/10 to-amber-50 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--brand-deep-rose)] text-white flex items-center justify-center shadow-md">
+              <Box className="w-5 h-5" variant="Bold" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black uppercase tracking-[0.15em] bg-amber-500/20 text-amber-900 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
-                  ⚡ Warashiya Outlet Exclusive
-                </span>
-                <span className="text-[11px] font-black uppercase tracking-[0.15em] bg-emerald-500/15 text-emerald-800 px-2.5 py-0.5 rounded-full">
-                  🏷️ Admin-Decided Pricing
-                </span>
-              </div>
-              <h2 className="text-2xl font-black font-display text-foreground mt-1">
-                B2B Retailer & Wholesale Bulk Order Portal
-              </h2>
+              <p className="text-[10px] font-black uppercase tracking-widest text-amber-800">Warashiya B2B Portal</p>
+              <h2 className="text-base font-black font-display text-foreground leading-tight">Retailer Bulk Order</h2>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="w-11 h-11 rounded-full bg-white hover:bg-muted border border-border flex items-center justify-center text-foreground transition-all shadow-sm hover:rotate-90"
-          >
-            <CloseCircle className="w-7 h-7 text-muted-foreground" />
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:bg-muted transition-all shadow-sm">
+            <CloseCircle className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Modal Content - 2 Column Split */}
-        <div className="flex-1 flex overflow-hidden">
-          
-          {/* Left Panel: Retailer Partner Selection & Discount */}
-          <div className="w-[380px] shrink-0 border-r border-border bg-muted/20 p-6 flex flex-col gap-6 overflow-y-auto">
-            <div>
-              <h3 className="text-sm font-black uppercase tracking-wider text-foreground mb-1 flex items-center gap-2">
-                <Shop className="w-4 h-4 text-primary" /> 1. Select B2B Retailer
-              </h3>
-              <p className="text-xs text-muted-foreground mb-4">
-                Wholesale discounts are decided by management per retailer.
-              </p>
+        {/* Step Indicator */}
+        <div className="flex border-b border-border shrink-0">
+          {[{ n: 1, label: "Select Retailer" }, { n: 2, label: "Add Items" }].map(({ n, label }) => (
+            <div
+              key={n}
+              className={`flex-1 py-2.5 text-center text-[11px] font-black uppercase tracking-wider transition-colors ${
+                step === n
+                  ? "text-[var(--brand-deep-rose)] border-b-2 border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/5"
+                  : step > n
+                  ? "text-emerald-600 bg-emerald-50/50"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {step > n ? "✓ " : `${n}. `}{label}
+            </div>
+          ))}
+        </div>
 
-              {/* Retailer Selector Option Tabs */}
-              <div className="space-y-2.5">
-                {DEFAULT_RETAILERS.map(ret => {
-                  const isSelected = !isAddingCustom && selectedRetailer.id === ret.id
-                  return (
-                    <div 
-                      key={ret.id}
-                      onClick={() => { setSelectedRetailer(ret); setIsAddingCustom(false); }}
-                      className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
-                        isSelected 
-                          ? "border-[var(--brand-deep-rose)] bg-white shadow-md ring-2 ring-[var(--brand-deep-rose)]/10" 
-                          : "border-border bg-white/70 hover:bg-white hover:border-primary/30"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-foreground">{ret.name}</span>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                          ret.tier === "Platinum" ? "bg-purple-100 text-purple-700 border border-purple-200" : "bg-amber-100 text-amber-700 border border-amber-200"
-                        }`}>
-                          {ret.tier}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/60 text-xs">
-                        <span className="text-muted-foreground font-semibold">Admin Rate:</span>
-                        <span className="font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
-                          ⭐ {ret.adminDiscountPercent}% Wholesale OFF
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
+        {/* Step 1: Select Retailer */}
+        {step === 1 && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <p className="text-xs text-muted-foreground font-semibold">
+              Tap a retailer to select them, then tap <strong>Continue →</strong>
+            </p>
 
-                {/* Custom Retailer Button */}
-                <div 
-                  onClick={() => setIsAddingCustom(true)}
-                  className={`p-3.5 rounded-2xl border-2 border-dashed cursor-pointer transition-all text-center ${
-                    isAddingCustom 
-                      ? "border-[var(--brand-deep-rose)] bg-white shadow-md font-extrabold" 
-                      : "border-border hover:border-primary/50 bg-white/40 text-muted-foreground"
+            {/* Existing Retailers */}
+            {DEFAULT_RETAILERS.map(ret => {
+              const isSelected = !isAddingCustom && selectedRetailer?.id === ret.id
+              return (
+                <div
+                  key={ret.id}
+                  onClick={() => { setSelectedRetailer(ret); setIsAddingCustom(false) }}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all active:scale-[0.98] ${
+                    isSelected
+                      ? "border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/5 shadow-md ring-2 ring-[var(--brand-deep-rose)]/10"
+                      : "border-border bg-white hover:border-primary/30 hover:bg-muted/20"
                   }`}
                 >
-                  ➕ Add Custom / New Retailer Partner
-                </div>
-              </div>
-
-              {/* Custom Retailer Form Fields */}
-              {isAddingCustom && (
-                <div className="mt-3 p-4 rounded-2xl bg-white border border-[var(--brand-deep-rose)]/30 space-y-3 shadow-sm animate-in fade-in">
-                  <div>
-                    <label className="text-xs font-bold block mb-1">Retailer / Catering Name *</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Mahavir Sweets & Bakers"
-                      value={customName}
-                      onChange={e => setCustomName(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-xl border border-input bg-background text-xs font-bold"
-                    />
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-black text-sm text-foreground">{ret.name}</span>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${TIER_COLORS[ret.tier]}`}>
+                      {ret.tier}
+                    </span>
                   </div>
-                  <div>
-                    <label className="text-xs font-bold block mb-1 flex items-center justify-between">
-                      <span>Authorized Admin Discount (%) *</span>
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-black">Manager Approved</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="number" 
-                        value={customDiscount}
-                        onChange={e => setCustomDiscount(Math.min(90, Math.max(0, parseInt(e.target.value) || 0)))}
-                        className="w-24 px-3 py-1.5 rounded-xl border border-input bg-background text-sm font-black text-center text-emerald-600"
-                      />
-                      <span className="text-xs font-semibold text-muted-foreground">% OFF Retail Base Price</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground font-semibold">Admin Rate:</span>
+                    <span className="font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl text-xs">
+                      ⭐ {ret.adminDiscountPercent}% Wholesale OFF
+                    </span>
+                  </div>
+                  {isSelected && (
+                    <div className="mt-2 pt-2 border-t border-[var(--brand-deep-rose)]/20 text-[11px] font-black text-[var(--brand-deep-rose)] flex items-center gap-1">
+                      <TickCircle className="w-4 h-4" variant="Bold" /> Selected — tap Continue below
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
+              )
+            })}
+
+            {/* Add Custom Retailer */}
+            <div
+              onClick={() => { setIsAddingCustom(true); setSelectedRetailer(null) }}
+              className={`p-4 rounded-2xl border-2 border-dashed cursor-pointer transition-all text-center active:scale-[0.98] ${
+                isAddingCustom
+                  ? "border-[var(--brand-deep-rose)] bg-[var(--brand-deep-rose)]/5"
+                  : "border-border hover:border-primary/50 bg-white/40 text-muted-foreground hover:bg-muted/20"
+              }`}
+            >
+              <span className={`font-black text-sm ${isAddingCustom ? "text-[var(--brand-deep-rose)]" : ""}`}>
+                ➕ Add New / Custom Retailer
+              </span>
             </div>
 
-            {/* Dispatch & Packaging Notes */}
-            <div className="mt-auto space-y-3 pt-4 border-t border-border">
-              <div>
-                <label className="text-xs font-black uppercase tracking-wider text-foreground block mb-1">
-                  🚚 Factory Dispatch Schedule
-                </label>
-                <input 
-                  type="text" 
-                  value={dispatchDate}
-                  onChange={e => setDispatchDate(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-input bg-white shadow-2xs"
-                />
+            {/* Custom Retailer Form */}
+            {isAddingCustom && (
+              <div className="p-4 rounded-2xl bg-white border-2 border-[var(--brand-deep-rose)]/30 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+                <div>
+                  <label className="text-xs font-black text-foreground block mb-1.5">Retailer / Catering Name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Mahavir Sweets & Bakers"
+                    value={customName}
+                    onChange={e => setCustomName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-border focus:border-[var(--brand-deep-rose)] bg-background text-sm font-bold outline-none transition-colors"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-black text-foreground block mb-1.5 flex items-center justify-between">
+                    <span>Admin Approved Discount (%)</span>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-black">Manager Rate</span>
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      value={customDiscount}
+                      onChange={e => setCustomDiscount(Math.min(90, Math.max(0, parseInt(e.target.value) || 0)))}
+                      className="w-24 px-3 py-2 rounded-xl border-2 border-emerald-300 bg-white text-xl font-black text-center text-emerald-600 outline-none"
+                    />
+                    <span className="text-sm font-semibold text-muted-foreground">% OFF Retail Price</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="text-xs font-black uppercase tracking-wider text-foreground block mb-1">
-                  📦 Packaging & Logistics Note
-                </label>
-                <textarea 
-                  rows={2} 
-                  value={dispatchNotes}
-                  onChange={e => setDispatchNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-input bg-white shadow-2xs resize-none"
-                />
-              </div>
+            )}
+
+            {/* Continue Button */}
+            <div className="pt-2">
+              <button
+                onClick={() => setStep(2)}
+                disabled={!canProceedStep1}
+                className="w-full py-4 rounded-2xl bg-[var(--brand-deep-rose)] text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-[var(--brand-deep-rose)]/25 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+              >
+                Continue — Select Items
+                <ArrowRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
+        )}
 
-          {/* Right Panel: Bulk Catalog Table & Live Calculation */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-white">
-            
-            {/* Catalog List Header */}
-            <div className="p-5 border-b border-border bg-muted/10 flex items-center justify-between shrink-0">
+        {/* Step 2: Pick Quantities */}
+        {step === 2 && (
+          <>
+            {/* Selected Retailer Banner */}
+            <div className="px-4 py-3 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between shrink-0">
               <div>
-                <h3 className="text-base font-black text-foreground">
-                  2. Select Bulk Catalog Items & Quantities
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Enter quantity in wholesale boxes or crates. Wholesale price reflects {isAddingCustom ? customName || "Custom Partner" : selectedRetailer.name}'s <strong className="text-emerald-600">{activeDiscount}% discount</strong>.
-                </p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Ordering for</p>
+                <p className="font-black text-sm text-foreground">{activeRetailerName}</p>
               </div>
-              <div className="bg-primary/10 text-primary px-3 py-1 rounded-xl text-xs font-black">
-                {BULK_CATALOG.length} Wholesale SKUs
+              <div className="text-right">
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Wholesale Rate</p>
+                <p className="font-black text-lg text-emerald-600">{activeDiscount}% OFF</p>
               </div>
             </div>
 
-            {/* Table Header */}
-            <div className="grid grid-cols-12 gap-2 px-6 py-2.5 bg-muted/40 border-b border-border text-[11px] font-black uppercase tracking-wider text-muted-foreground shrink-0">
-              <div className="col-span-6">Wholesale SKU / Description</div>
-              <div className="col-span-2 text-right">Retail Rate</div>
-              <div className="col-span-2 text-right">Admin B2B Rate</div>
-              <div className="col-span-2 text-center">Bulk Qty</div>
-            </div>
-
-            {/* Catalog Items Scroll Area */}
-            <div className="flex-1 overflow-y-auto divide-y divide-border/40">
+            {/* Catalog */}
+            <div className="flex-1 overflow-y-auto divide-y divide-border/30">
               {BULK_CATALOG.map(prod => {
                 const qty = quantities[prod.id] || 0
                 const b2bRate = Math.round(prod.baseRetailPrice * (1 - activeDiscount / 100))
-                
+                const step = prod.unit === "Crates" || prod.unit === "Boxes" ? 1 : 5
+
                 return (
-                  <div key={prod.id} className="grid grid-cols-12 gap-2 px-6 py-4 items-center hover:bg-muted/30 transition-colors">
-                    <div className="col-span-6 pr-4">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted px-2 py-0.5 rounded mr-2">
-                        {prod.category}
-                      </span>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
-                        Min: {prod.minBulkOrder} {prod.unit}
-                      </span>
-                      <p className="text-sm font-black text-foreground mt-1.5 leading-tight">{prod.name}</p>
-                    </div>
+                  <div key={prod.id} className="px-4 py-3.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest bg-muted px-1.5 py-0.5 rounded">
+                            {prod.category}
+                          </span>
+                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                            Min {prod.minBulkOrder} {prod.unit}
+                          </span>
+                        </div>
+                        <p className="text-sm font-black text-foreground leading-snug">{prod.name}</p>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className="text-xs text-muted-foreground line-through">₹{prod.baseRetailPrice}</span>
+                          <span className="text-sm font-black text-emerald-600">₹{b2bRate}</span>
+                          <span className="text-[10px] text-emerald-700 font-bold">per {prod.unit}</span>
+                        </div>
+                      </div>
 
-                    <div className="col-span-2 text-right">
-                      <span className="text-xs font-bold text-muted-foreground line-through">₹{prod.baseRetailPrice}</span>
-                      <p className="text-[10px] text-muted-foreground">per {prod.unit}</p>
-                    </div>
-
-                    <div className="col-span-2 text-right">
-                      <span className="text-sm font-black text-emerald-600">₹{b2bRate}</span>
-                      <p className="text-[10px] font-extrabold text-emerald-700">Save ₹{prod.baseRetailPrice - b2bRate}</p>
-                    </div>
-
-                    <div className="col-span-2 flex items-center justify-end gap-1.5">
-                      <div className="flex items-center border border-border rounded-xl bg-background shadow-xs overflow-hidden">
-                        <button 
+                      {/* Qty Control */}
+                      <div className="flex items-center border-2 border-border rounded-xl overflow-hidden bg-white shadow-sm shrink-0">
+                        <button
                           type="button"
-                          onClick={() => handleQtyChange(prod.id, (quantities[prod.id] || 0) - (prod.unit === "Crates" || prod.unit === "Boxes" ? 1 : 5))}
-                          className="w-8 h-9 flex items-center justify-center hover:bg-muted text-foreground transition-colors"
+                          onClick={() => handleQtyChange(prod.id, qty - step)}
+                          className="w-10 h-10 flex items-center justify-center hover:bg-muted active:bg-muted/80 transition-colors"
                         >
-                          {qty <= 0 ? <Trash className="w-4 h-4 text-muted-foreground opacity-30" /> : <Minus className="w-4 h-4 text-foreground" />}
+                          {qty <= 0 ? <Trash className="w-4 h-4 text-muted-foreground opacity-40" /> : <Minus className="w-4 h-4 text-foreground" />}
                         </button>
-                        <input 
+                        <input
                           type="number"
                           value={qty || ""}
                           placeholder="0"
-                          onChange={(e) => handleQtyChange(prod.id, parseInt(e.target.value) || 0)}
+                          onChange={e => handleQtyChange(prod.id, parseInt(e.target.value) || 0)}
                           className="w-12 text-center text-sm font-black bg-transparent border-none focus:outline-none"
                         />
-                        <button 
+                        <button
                           type="button"
-                          onClick={() => handleQtyChange(prod.id, (quantities[prod.id] || 0) + (prod.unit === "Crates" || prod.unit === "Boxes" ? 1 : 5))}
-                          className="w-8 h-9 flex items-center justify-center hover:bg-muted text-foreground font-bold transition-colors"
+                          onClick={() => handleQtyChange(prod.id, qty + step)}
+                          className="w-10 h-10 flex items-center justify-center hover:bg-muted active:bg-muted/80 transition-colors"
                         >
                           <Add className="w-4 h-4 text-[var(--brand-deep-rose)]" />
                         </button>
                       </div>
                     </div>
+
+                    {qty > 0 && (
+                      <div className="mt-2 text-right text-xs font-black text-emerald-600">
+                        Line Total: ₹{(b2bRate * qty).toLocaleString('en-IN')} ({qty} {prod.unit})
+                      </div>
+                    )}
                   </div>
                 )
               })}
-            </div>
 
-            {/* Sticky B2B Financial Footer Bar */}
-            <div className="p-6 border-t border-border bg-muted/20 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-6">
-                  <div>
-                    <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider block">Total Bulk Units</span>
-                    <span className="text-2xl font-black text-foreground">{totalUnits} Units</span>
-                  </div>
-                  <div className="h-10 w-px bg-border"></div>
-                  <div>
-                    <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider block">Standard Retail Gross</span>
-                    <span className="text-xl font-bold text-muted-foreground line-through">₹{grossTotal.toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="h-10 w-px bg-border"></div>
-                  <div>
-                    <span className="text-xs text-emerald-600 font-bold uppercase tracking-wider block flex items-center gap-1">
-                      <DiscountShape className="w-4 h-4" /> Admin Wholesale Discount ({activeDiscount}%)
-                    </span>
-                    <span className="text-xl font-black text-emerald-600">-₹{discountAmount.toLocaleString('en-IN')}</span>
-                  </div>
+              {/* Dispatch Notes */}
+              <div className="px-4 py-4 space-y-3">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-foreground block mb-1.5">🚚 Dispatch Schedule</label>
+                  <input
+                    type="text"
+                    value={dispatchDate}
+                    onChange={e => setDispatchDate(e.target.value)}
+                    className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-white"
+                  />
                 </div>
-
-                <div className="text-right">
-                  <span className="text-xs text-[var(--brand-deep-rose)] font-extrabold uppercase tracking-widest block">Net B2B Payable Amount</span>
-                  <span className="text-4xl font-black font-display text-[var(--brand-deep-rose)]">₹{netWholesalePayable.toLocaleString('en-IN')}</span>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-foreground block mb-1.5">📦 Packing Notes</label>
+                  <textarea
+                    rows={2}
+                    value={dispatchNotes}
+                    onChange={e => setDispatchNotes(e.target.value)}
+                    className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-border bg-white resize-none"
+                  />
                 </div>
               </div>
+            </div>
 
-              <div className="flex items-center justify-end gap-4">
-                <button 
+            {/* Footer Summary + Action */}
+            <div className="p-4 border-t border-border bg-white shrink-0 shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+              {totalUnits > 0 && (
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{totalUnits} Units</p>
+                    <p className="text-xs text-muted-foreground font-semibold line-through">₹{grossTotal.toLocaleString('en-IN')}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Savings</p>
+                    <p className="text-base font-black text-emerald-600">-₹{discountAmount.toLocaleString('en-IN')}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[var(--brand-deep-rose)]">Net Payable</p>
+                    <p className="text-2xl font-black text-[var(--brand-deep-rose)]">₹{netPayable.toLocaleString('en-IN')}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
                   type="button"
-                  onClick={onClose}
-                  className="px-6 py-4 rounded-2xl border border-border hover:bg-muted bg-white font-bold text-xs uppercase tracking-wider text-foreground transition-all"
+                  onClick={() => setStep(1)}
+                  className="px-4 py-3.5 rounded-xl border-2 border-border bg-white font-bold text-xs uppercase tracking-wider text-foreground flex items-center gap-1.5 hover:bg-muted transition-all active:scale-[0.97]"
                 >
-                  Cancel
+                  <ArrowLeft className="w-4 h-4" /> Back
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={handleTransferToCart}
                   disabled={totalUnits === 0}
-                  className="px-8 py-4 rounded-2xl bg-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/90 text-white font-black text-xs uppercase tracking-[0.15em] shadow-xl shadow-[var(--brand-deep-rose)]/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:-translate-y-0.5 flex items-center gap-3"
+                  className="flex-1 py-3.5 rounded-xl bg-[var(--brand-deep-rose)] text-white font-black text-sm uppercase tracking-wider shadow-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
                 >
-                  <span>🛒 Transfer Wholesale Items to POS Cart</span>
-                  <span className="w-6 h-6 rounded-full bg-white text-[var(--brand-deep-rose)] flex items-center justify-center font-black text-sm">→</span>
+                  🛒 Add to Cart ({totalUnits} units)
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
 
-        {/* Success Toast / Modal Overlay */}
-        {showSuccessToast && (
-          <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl p-8 text-center max-w-md shadow-2xl border border-border animate-in zoom-in-95 duration-200">
+        {/* Success Overlay */}
+        {showSuccess && (
+          <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl p-8 text-center max-w-sm w-full shadow-2xl border border-border animate-in zoom-in-95 duration-200">
               <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-5 border border-emerald-200">
                 <TickCircle className="w-12 h-12" variant="Bold" />
               </div>
               <h3 className="text-2xl font-black text-foreground mb-2">Bulk Order Loaded!</h3>
-              <p className="text-sm text-muted-foreground font-medium mb-6">
-                Successfully transferred <strong className="text-foreground">{totalUnits} wholesale items</strong> to your POS checkout cart with <strong className="text-emerald-600">{activeDiscount}% admin discount</strong> applied for <strong className="text-foreground">{isAddingCustom ? customName : selectedRetailer.name}</strong>!
+              <p className="text-sm text-muted-foreground font-medium mb-4">
+                <strong>{totalUnits} wholesale items</strong> added to cart with{" "}
+                <strong className="text-emerald-600">{activeDiscount}% discount</strong> for{" "}
+                <strong>{activeRetailerName}</strong>
               </p>
               <div className="p-3 rounded-xl bg-muted/50 text-xs font-extrabold text-[var(--brand-deep-rose)]">
-                Redirecting to POS Terminal Cart...
+                Taking you back to POS Terminal...
               </div>
             </div>
           </div>
         )}
-
       </div>
     </div>
   )
