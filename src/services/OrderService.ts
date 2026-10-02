@@ -174,6 +174,7 @@ export class OrderService {
               assignedVendorId: i.assignedVendorId || undefined,
               parentItemId: i.parentItemId || undefined,
               status: i.status || undefined,
+              updatedAt: i.updatedAt || undefined,
             }
           }),
           priorityLevel: (o as any).priorityLevel || "normal",

@@ -229,8 +229,22 @@ export default function DeliveryCoordinationPage() {
                         <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 font-bold">
                           Target: {new Date(order.timeTarget).toLocaleDateString()} {new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
-                        <p className="text-xs text-amber-700 mt-1 font-bold">🏪 Collecting from vendor → bringing to branch</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Rider: <span className="font-bold text-foreground">{order.assignedDriverName || "Unknown"}</span></p>
+                        <p className="text-xs text-amber-700 mt-1 font-bold flex items-center gap-1">
+                          🏪 Collecting from vendor → bringing to branch 
+                          {item.updatedAt && (
+                            <span className="text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded ml-2">
+                              Updated: {new Date(item.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs mt-1.5">
+                          Rider:{' '}
+                          {order.assignedDriverName ? (
+                            <span className="font-bold text-foreground">{order.assignedDriverName}</span>
+                          ) : (
+                            <span className="font-bold text-amber-600 animate-pulse">Waiting for Rider...</span>
+                          )}
+                        </p>
                       </div>
                     </div>
                   </div>
