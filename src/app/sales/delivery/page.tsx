@@ -51,10 +51,19 @@ export default function DeliveryCoordinationPage() {
     ["NEW", "WAITING_FOR_CHEF", "CHEF_ACCEPTED", "MAKING", "DECORATING", "READY_FOR_PICKUP", "PENDING_ASSIGNMENT"].includes(o.status)
   );
 
-  // Fetch active and completed deliveries
-  const activeDeliveries = orders.filter(o => 
-    o.orderType === "delivery" && 
-    ["ASSIGNED_TO_DRIVER", "PICKED_UP", "ON_THE_WAY"].includes(o.status)
+  // Active customer delivery trips
+  const activeDeliveries = orders.filter(o =>
+    o.orderType === "delivery" &&
+    ["ASSIGNED_TO_DRIVER", "PICKED_UP", "ON_THE_WAY", "OUT_FOR_DELIVERY"].includes(o.status)
+  );
+
+  // Vendor pickup trips in progress: order is READY_FOR_PICKUP but driver is already on the road
+  // picking up an acrylic/photo/florist item. The order status doesn't change — only the item
+  // status changes — so we detect this by checking assignedDriverId is set.
+  const vendorPickupTrips = orders.filter(o =>
+    o.orderType === "delivery" &&
+    o.status === "READY_FOR_PICKUP" &&
+    !!o.assignedDriverId
   );
 
   const completedDeliveries = orders.filter(o => 
@@ -168,34 +177,64 @@ export default function DeliveryCoordinationPage() {
         <div className="bg-card border border-border rounded-xl shadow-sm p-5 space-y-4">
           <h3 className="font-bold border-b border-border pb-2 text-foreground">Rider Status & Active Trips</h3>
           
-          {activeDeliveries.length === 0 ? (
+          {activeDeliveries.length === 0 && vendorPickupTrips.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center font-bold">No active delivery trips.</p>
           ) : (
-            activeDeliveries.map((order) => (
-              <div key={order.id} className="border border-blue-500/20 rounded-xl p-4 bg-blue-500/5">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <span className="font-black text-lg text-foreground">{order.orderNumber || order.id}</span>
-                    <span className="text-[10px] text-muted-foreground block font-semibold">
-                      <span className="font-bold">From:</span> {order.branch} <br/>
-                      <span className="font-bold">To:</span> {order.delivery?.address || "Customer Address"}
+            <>
+              {/* Vendor Pickup In-Progress */}
+              {vendorPickupTrips.map((order) => (
+                <div key={`vp-${order.id}`} className="border border-amber-500/30 rounded-xl p-4 bg-amber-50/30">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <span className="font-black text-lg text-foreground">{order.orderNumber || order.id}</span>
+                      <span className="text-[10px] text-muted-foreground block font-semibold">
+                        <span className="font-bold">Branch:</span> {order.branch}
+                      </span>
+                    </div>
+                    <span className="text-[10px] bg-amber-500/10 text-amber-700 border border-amber-500/30 px-2 py-0.5 rounded font-bold uppercase tracking-widest flex items-center gap-1">
+                      🛵 Vendor Pickup
                     </span>
                   </div>
-                  <span className="text-[10px] bg-blue-500/10 text-blue-600 border border-blue-500/20 px-2 py-0.5 rounded font-bold uppercase tracking-widest flex items-center gap-1">
-                    <Box className="w-3 h-3" /> {order.status.replace(/_/g, " ")}
-                  </span>
-                </div>
-                <div className="flex justify-between items-end">
-                  <div>
-                    <p className="font-medium text-foreground">{order.items.map(i => i.name).join(", ")}</p>
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 font-bold">
-                      Target: {new Date(order.timeTarget).toLocaleDateString()} {new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Assigned to: <span className="font-bold text-foreground">{order.assignedDriverName || "Unknown"}</span></p>
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="font-medium text-foreground">{order.items.map(i => i.name).join(", ")}</p>
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 font-bold">
+                        Target: {new Date(order.timeTarget).toLocaleDateString()} {new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      <p className="text-xs text-amber-700 mt-1 font-bold">🏪 Collecting from vendor → bringing to branch</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Rider: <span className="font-bold text-foreground">{order.assignedDriverName || "Unknown"}</span></p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+
+              {/* Customer Delivery Trips */}
+              {activeDeliveries.map((order) => (
+                <div key={order.id} className="border border-blue-500/20 rounded-xl p-4 bg-blue-500/5">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <span className="font-black text-lg text-foreground">{order.orderNumber || order.id}</span>
+                      <span className="text-[10px] text-muted-foreground block font-semibold">
+                        <span className="font-bold">From:</span> {order.branch} <br/>
+                        <span className="font-bold">To:</span> {order.delivery?.address || "Customer Address"}
+                      </span>
+                    </div>
+                    <span className="text-[10px] bg-blue-500/10 text-blue-600 border border-blue-500/20 px-2 py-0.5 rounded font-bold uppercase tracking-widest flex items-center gap-1">
+                      <Box className="w-3 h-3" /> {order.status.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="font-medium text-foreground">{order.items.map(i => i.name).join(", ")}</p>
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 font-bold">
+                        Target: {new Date(order.timeTarget).toLocaleDateString()} {new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Assigned to: <span className="font-bold text-foreground">{order.assignedDriverName || "Unknown"}</span></p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
           )}
 
           {completedDeliveries.length > 0 && (
