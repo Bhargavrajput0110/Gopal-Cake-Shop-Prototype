@@ -114,6 +114,7 @@ export default function VendorTasks() {
   const [activeVendor, setActiveVendor] = useState<{id: string, name: string, type: string} | null>(null);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'ACTIVE' | 'COMPLETED'>('ACTIVE');
+  const [dateFilter, setDateFilter] = useState<'TODAY' | 'TOMORROW' | 'ALL'>('TODAY');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const prevTaskIdsRef = useState<string[]>([]);
 
@@ -249,13 +250,31 @@ export default function VendorTasks() {
     );
   }
 
+  // ── Date filter helpers ──────────────────────────────────────────────────────
+  const getLocalDateStr = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+  const todayStr    = getLocalDateStr(new Date());
+  const tomorrowStr = getLocalDateStr(new Date(Date.now() + 86400000));
+
   const myTasks = tasks;
   const COMPLETED_STATUSES = ['COMPLETED', 'DELIVERED', 'ready', 'ready_for_pickup', 'READY_FOR_PICKUP'];
-  const displayedTasks = myTasks.filter(t => 
-    activeTab === 'ACTIVE' 
+  const tabFiltered = myTasks.filter(t =>
+    activeTab === 'ACTIVE'
       ? !COMPLETED_STATUSES.includes((t.status || '').toLowerCase()) && t.status !== 'READY_FOR_PICKUP' && t.status !== 'DELIVERED'
       : COMPLETED_STATUSES.includes((t.status || '').toLowerCase()) || t.status === 'DELIVERED' || t.status === 'READY_FOR_PICKUP'
   );
+
+  const displayedTasks = tabFiltered.filter(t => {
+    if (dateFilter === 'ALL') return true;
+    const targetDate = t.order?.targetDate;
+    if (!targetDate) return dateFilter === 'TODAY'; // no date → show only on TODAY
+    const taskDateStr = getLocalDateStr(new Date(targetDate));
+    return dateFilter === 'TODAY' ? taskDateStr === todayStr : taskDateStr === tomorrowStr;
+  });
 
   // STUDIO DASHBOARD
   return (
@@ -309,6 +328,32 @@ export default function VendorTasks() {
           >
             Completed History
           </button>
+        </div>
+
+        {/* Date Filter Pills */}
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-2 border-t border-gray-100 bg-gray-50">
+          <span className="font-ui text-[9px] uppercase tracking-widest font-bold text-gray-400 mr-1">Show:</span>
+          {(['TODAY', 'TOMORROW', 'ALL'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setDateFilter(f)}
+              className={`px-4 py-1.5 rounded-full font-ui text-[9px] uppercase tracking-widest font-black transition-all ${
+                dateFilter === f
+                  ? f === 'TODAY'
+                    ? 'bg-amber-500 text-white shadow-md'
+                    : f === 'TOMORROW'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-900 text-white shadow-md'
+                  : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-400'
+              }`}
+            >
+              {f === 'TODAY' ? "📅 Today" : f === 'TOMORROW' ? "⏭️ Tomorrow" : "📋 All Orders"}
+            </button>
+          ))}
+          {/* Order count badge */}
+          <span className="ml-auto font-ui text-[9px] uppercase tracking-widest font-bold text-gray-400">
+            {displayedTasks.length} order{displayedTasks.length !== 1 ? 's' : ''}
+          </span>
         </div>
       </header>
 
