@@ -201,10 +201,10 @@ export default function DeliveryCoordinationPage() {
           ) : (
             <>
               {/* Vendor Pickup In-Progress */}
-              {vendorPickupTrips.map((order) => {
+              {vendorPickupTrips.flatMap((order) => {
                 const activeVendorItems = order.items.filter((i: any) => !!i.assignedVendorId && ['READY_FOR_PICKUP'].includes(i.status || ''));
-                return (
-                  <div key={`vp-${order.id}`} className="border border-amber-500/30 rounded-xl p-4 bg-amber-50/30 space-y-3">
+                return activeVendorItems.map((item: any) => (
+                  <div key={`vp-${item.id}`} className="border border-amber-500/30 rounded-xl p-4 bg-amber-50/30 space-y-3">
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <span className="font-black text-lg text-foreground">{order.orderNumber || order.id}</span>
@@ -217,17 +217,11 @@ export default function DeliveryCoordinationPage() {
                       </span>
                     </div>
                     
-                    <div className="space-y-2 border-t border-amber-500/20 pt-2 mt-2">
-                      {activeVendorItems.map((item: any) => (
-                        <div key={item.id} className="flex justify-between items-center bg-white/50 p-2 rounded-lg border border-amber-500/10">
-                          <div>
-                            <p className="font-bold text-sm text-foreground">{item.name}</p>
-                            <p className="text-[10px] text-amber-700 font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5">
-                              🏪 Vendor Component
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="bg-white/50 p-2 rounded-lg border border-amber-500/10">
+                      <p className="font-bold text-sm text-foreground">{item.name}</p>
+                      <p className="text-[10px] text-amber-700 font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5">
+                        🏪 Vendor Component
+                      </p>
                     </div>
 
                     <div className="flex justify-between items-end pt-2 border-t border-amber-500/20">
@@ -240,7 +234,7 @@ export default function DeliveryCoordinationPage() {
                       </div>
                     </div>
                   </div>
-                );
+                ));
               })}
 
               {/* Customer Delivery Trips */}
