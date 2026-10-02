@@ -538,7 +538,10 @@ export class StorefrontEngine {
       })
 
       // Publish TIMELINE_CREATED outbox event so NotificationService fires
-      if (!isQuote) {
+      // IMPORTANT: Skip for POS orders — the /api/v1/pos/checkout route fires
+      // NotificationService.handleTimelineEvent directly & synchronously.
+      // Creating the outbox here as well would cause a duplicate WhatsApp to the customer.
+      if (!isQuote && context.source !== OrderSource.POS) {
         await tx.outbox.create({
           data: {
             eventId: timelineEvent.id,
