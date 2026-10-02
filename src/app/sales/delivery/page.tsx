@@ -78,10 +78,11 @@ export default function DeliveryCoordinationPage() {
   // We detect these by finding delivery orders with items that have an assignedVendorId
   // and are not yet DELIVERED.
   const vendorPickupTrips = orders.filter(o =>
-    o.orderType === "delivery" &&
     isToday(o.timeTarget) &&
-    o.status === "READY_FOR_PICKUP" &&
-    o.items?.some((i: any) => !!i.assignedVendorId && (i.status || '') !== 'DELIVERED')
+    // A vendor item is being actively collected if it has a vendor ID and a driver has accepted/started tracking it.
+    // The driver sets the item status to READY_FOR_PICKUP when they start the vendor trip.
+    // We only show it if it hasn't reached the branch yet (DELIVERED).
+    o.items?.some((i: any) => !!i.assignedVendorId && ['READY_FOR_PICKUP'].includes(i.status || ''))
   );
 
   const completedDeliveries = orders.filter(o =>
@@ -206,7 +207,7 @@ export default function DeliveryCoordinationPage() {
                     <div>
                       <span className="font-black text-lg text-foreground">{order.orderNumber || order.id}</span>
                       <span className="text-[10px] text-muted-foreground block font-semibold">
-                        <span className="font-bold">Branch:</span> {order.branch}
+                        <span className="font-bold">Branch:</span> {order.branch} {order.orderType === 'pickup' && '(Store Pickup)'}
                       </span>
                     </div>
                     <span className="text-[10px] bg-amber-500/10 text-amber-700 border border-amber-500/30 px-2 py-0.5 rounded font-bold uppercase tracking-widest flex items-center gap-1">
