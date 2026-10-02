@@ -174,6 +174,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
       const finalTargetISO = finalTargetDate.toISOString()
 
       // 🛒 Extract B2B wholesale discounts that were baked into cart item prices
+      const hasB2bItems = cart.some(i => i.productId.startsWith('b2b-'));
       const builtInDiscount = cart.reduce((acc, item) => {
          if (item.basePrice && item.basePrice > item.price) {
             return acc + ((item.basePrice - item.price) * item.quantity)
@@ -219,7 +220,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
         ],
         paymentType,
         targetDate: finalTargetISO,
-        branchId: activeBranch,
+        branchId: hasB2bItems ? 'varasiya' : activeBranch,
         deliveryType: orderType,
         address: orderType === 'DELIVERY' ? address : undefined,
         deliveryDistanceKm: orderType === 'DELIVERY' ? deliveryDistanceKm : undefined,
