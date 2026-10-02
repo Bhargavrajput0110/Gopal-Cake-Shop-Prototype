@@ -193,7 +193,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
           overridePrice: item.price,
           frontendPrice: item.price,
           designId: item.designId || (item.productId.startsWith('custom-') ? item.productId : undefined),
-          designName: item.designName || (item.productId.startsWith('custom-') ? item.name : undefined),
+          designName: item.designName || ((item.productId.startsWith('custom-') || item.productId.startsWith('b2b-')) ? item.name : undefined),
           designCode: item.designCode,
           designImageUrl: item.designImageUrl,
           shape: item.shape,
