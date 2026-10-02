@@ -133,6 +133,7 @@ export class NotificationDataAggregator {
     }); // "27 Aug 2026"
 
     const items = order.items
+      .filter((item) => !item.parentItemId) // Exclude internal vendor child items (ACRYLIC, FLORIST, PHOTO)
       .map((item) => {
         const parts: string[] = [`${item.quantity}x ${item.productName}`];
         if (item.weight) parts.push(`${item.weight}kg`);
@@ -214,10 +215,11 @@ export class NotificationDataAggregator {
             pickupDateTime: targetDateFormatted,
           };
 
-    const allNotes = [
-      order.customerNotes,
-      ...order.items.map(i => i.notes)
-    ].filter(Boolean).join(' | ');
+    // Only use the customer's own notes for the customer-facing WhatsApp message.
+    // item.notes are internal vendor instructions (e.g. "make it a 50th anniversary"
+    // for acrylic vendor, "red roses and white" for florist) entered by the sales
+    // person — these must NEVER be shown to the customer.
+    const allNotes = order.customerNotes || '';
 
     return {
       customer,
