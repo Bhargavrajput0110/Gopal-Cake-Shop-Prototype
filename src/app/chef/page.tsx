@@ -219,7 +219,7 @@ export default function ChefDashboardPage() {
       newOrders.forEach(o => seenQueueIds.current.add(o.id));
       
       // Show popup
-      setNewOrderPopup({ count: newOrders.length, recentId: newOrders[0].id.split('-').pop() || "" });
+      setNewOrderPopup({ count: newOrders.length, recentId: newOrders[0].orderNumber || newOrders[0].id.slice(-6) });
 
       // Play chime
       if (!isMuted) {
@@ -260,12 +260,12 @@ export default function ChefDashboardPage() {
 
   const handleAcceptOrder = async (order: Order) => {
     await transitionOrderAction(order.id, "chef-accept");
-    showToast(`Ticket ${order.orderNumber ? order.orderNumber.split('-').pop() : order.id.slice(-6)} moved to My Tasks!`);
+    showToast(`Ticket ${order.orderNumber ? order.orderNumber : order.id.slice(-6)} moved to My Tasks!`);
   };
 
   const handleMarkReady = async (order: Order) => {
     await transitionOrderAction(order.id, "ready");
-    showToast(`Ticket ${order.orderNumber ? order.orderNumber.split('-').pop() : order.id.slice(-6)} complete!`);
+    showToast(`Ticket ${order.orderNumber ? order.orderNumber : order.id.slice(-6)} complete!`);
   };
 
   const handleSubmitMissingIngredients = () => {
@@ -306,7 +306,7 @@ export default function ChefDashboardPage() {
         {/* Ticket Header */}
         <div className={`p-4 flex justify-between items-center ${headerClass}`}>
           <div>
-            <h3 className="font-black text-2xl tracking-tighter">#{order.orderNumber ? order.orderNumber.split('-').pop() : order.id.slice(-6)}</h3>
+            <h3 className="font-black text-2xl tracking-tighter">#{order.orderNumber ? order.orderNumber : order.id.slice(-6)}</h3>
             <span className="font-bold text-xs uppercase tracking-widest opacity-80">{order.orderType}</span>
           </div>
           <div className="text-right">
@@ -660,7 +660,7 @@ export default function ChefDashboardPage() {
                     <Warning2 className="w-8 h-8" />
                     REPORT ISSUE
                   </h3>
-                  <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-2">Ticket #{showMissingModal.id.split('-').pop()}</p>
+                  <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mt-2">Ticket #{showMissingModal.orderNumber || showMissingModal.id.slice(-6)}</p>
                 </div>
                 <button onClick={() => setShowMissingModal(null)} className="p-3 bg-gray-100 rounded-full hover:bg-gray-200"><CloseSquare className="w-6 h-6"/></button>
               </div>
