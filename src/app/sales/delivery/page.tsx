@@ -201,31 +201,47 @@ export default function DeliveryCoordinationPage() {
           ) : (
             <>
               {/* Vendor Pickup In-Progress */}
-              {vendorPickupTrips.map((order) => (
-                <div key={`vp-${order.id}`} className="border border-amber-500/30 rounded-xl p-4 bg-amber-50/30">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <span className="font-black text-lg text-foreground">{order.orderNumber || order.id}</span>
-                      <span className="text-[10px] text-muted-foreground block font-semibold">
-                        <span className="font-bold">Branch:</span> {order.branch} {order.orderType === 'pickup' && '(Store Pickup)'}
+              {vendorPickupTrips.map((order) => {
+                const activeVendorItems = order.items.filter((i: any) => !!i.assignedVendorId && ['READY_FOR_PICKUP'].includes(i.status || ''));
+                return (
+                  <div key={`vp-${order.id}`} className="border border-amber-500/30 rounded-xl p-4 bg-amber-50/30 space-y-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <span className="font-black text-lg text-foreground">{order.orderNumber || order.id}</span>
+                        <span className="text-[10px] text-muted-foreground block font-semibold">
+                          <span className="font-bold">Branch:</span> {order.branch} {order.orderType === 'pickup' && '(Store Pickup)'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] bg-amber-500/10 text-amber-700 border border-amber-500/30 px-2 py-0.5 rounded font-bold uppercase tracking-widest flex items-center gap-1">
+                        🛵 Vendor Pickup
                       </span>
                     </div>
-                    <span className="text-[10px] bg-amber-500/10 text-amber-700 border border-amber-500/30 px-2 py-0.5 rounded font-bold uppercase tracking-widest flex items-center gap-1">
-                      🛵 Vendor Pickup
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="font-medium text-foreground">{order.items.map(i => i.name).join(", ")}</p>
-                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 font-bold">
-                        Target: {new Date(order.timeTarget).toLocaleDateString()} {new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      <p className="text-xs text-amber-700 mt-1 font-bold">🏪 Collecting from vendor → bringing to branch</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Rider: <span className="font-bold text-foreground">{order.assignedDriverName || "Unknown"}</span></p>
+                    
+                    <div className="space-y-2 border-t border-amber-500/20 pt-2 mt-2">
+                      {activeVendorItems.map((item: any) => (
+                        <div key={item.id} className="flex justify-between items-center bg-white/50 p-2 rounded-lg border border-amber-500/10">
+                          <div>
+                            <p className="font-bold text-sm text-foreground">{item.name}</p>
+                            <p className="text-[10px] text-amber-700 font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5">
+                              🏪 Vendor Component
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex justify-between items-end pt-2 border-t border-amber-500/20">
+                      <div>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 font-bold">
+                          Target: {new Date(order.timeTarget).toLocaleDateString()} {new Date(order.timeTarget).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1 font-bold">🏪 Collecting from vendor → bringing to branch</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Rider: <span className="font-bold text-foreground">{order.assignedDriverName || "Unknown"}</span></p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {/* Customer Delivery Trips */}
               {activeDeliveries.map((order) => (
