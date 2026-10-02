@@ -239,8 +239,8 @@ export default function DeliveryCoordinationPage() {
                         </p>
                         <p className="text-xs mt-1.5">
                           Rider:{' '}
-                          {order.assignedDriverName ? (
-                            <span className="font-bold text-foreground">{order.assignedDriverName}</span>
+                          {item.assignedDriverName || order.assignedDriverName ? (
+                            <span className="font-bold text-foreground">{item.assignedDriverName || order.assignedDriverName}</span>
                           ) : (
                             <span className="font-bold text-amber-600 animate-pulse">Waiting for Rider...</span>
                           )}

@@ -109,7 +109,7 @@ export class OrderService {
         orderBy,
         include: {
           customer: true,
-          items: { include: { media: true } },
+          items: { include: { media: true, timeline: { include: { actor: true } } } },
           ledgerEntries: true,
           payments: true,
           vendorTasks: { include: { vendor: true } },
@@ -175,6 +175,8 @@ export class OrderService {
               parentItemId: i.parentItemId || undefined,
               status: i.status || undefined,
               updatedAt: i.updatedAt || undefined,
+              assignedDriverName: i.timeline?.filter((t: any) => t.action.startsWith('DRIVER_'))
+                                    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.actor?.name || undefined,
             }
           }),
           priorityLevel: (o as any).priorityLevel || "normal",
