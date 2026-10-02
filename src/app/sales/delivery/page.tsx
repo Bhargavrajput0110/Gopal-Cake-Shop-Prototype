@@ -45,29 +45,47 @@ export default function DeliveryCoordinationPage() {
     fetchDrivers();
   }, []);
 
-  // Fetch pending delivery orders
-  const pendingDeliveries = orders.filter(o => 
-    o.orderType === "delivery" && 
-    ["NEW", "WAITING_FOR_CHEF", "CHEF_ACCEPTED", "MAKING", "DECORATING", "READY_FOR_PICKUP", "PENDING_ASSIGNMENT"].includes(o.status)
+  // Today's date boundaries (local IST)
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+  const isToday = (dateStr: string | undefined) => {
+    if (!dateStr) return false;
+    const t = new Date(dateStr).getTime();
+    return t >= todayStart.getTime() && t <= todayEnd.getTime();
+  };
+
+  // Fetch pending delivery orders (today only)
+  const pendingDeliveries = orders.filter(o =>
+    o.orderType === "delivery" &&
+    isToday(o.timeTarget) &&
+    ["NEW", "WAITING_FOR_CHEF", "CHEF_ACCEPTED", "MAKING", "DECORATING", "READY_FOR_PICKUP", "PENDING_ASSIGNMENT"].includes(o.status) &&
+    // Exclude READY_FOR_PICKUP orders where driver is already doing a vendor pickup
+    !(o.status === "READY_FOR_PICKUP" && o.items?.some((i: any) => i.assignedVendorId && !['DELIVERED'].includes(i.status || '')))
   );
 
-  // Active customer delivery trips
+  // Active customer delivery trips (today only)
   const activeDeliveries = orders.filter(o =>
     o.orderType === "delivery" &&
+    isToday(o.timeTarget) &&
     ["ASSIGNED_TO_DRIVER", "PICKED_UP", "ON_THE_WAY", "OUT_FOR_DELIVERY"].includes(o.status)
   );
 
-  // Vendor pickup trips in progress: order is READY_FOR_PICKUP but driver is already on the road
-  // picking up an acrylic/photo/florist item. The order status doesn't change — only the item
-  // status changes — so we detect this by checking assignedDriverId is set.
+  // Vendor pickup trips in progress (today only):
+  // An order has vendor components (acrylic/photo/florist) being collected by the driver.
+  // The order status stays READY_FOR_PICKUP at order-level; only the item-level status changes.
+  // We detect these by finding delivery orders with items that have an assignedVendorId
+  // and are not yet DELIVERED.
   const vendorPickupTrips = orders.filter(o =>
     o.orderType === "delivery" &&
+    isToday(o.timeTarget) &&
     o.status === "READY_FOR_PICKUP" &&
-    !!o.assignedDriverId
+    o.items?.some((i: any) => !!i.assignedVendorId && (i.status || '') !== 'DELIVERED')
   );
 
-  const completedDeliveries = orders.filter(o => 
-    o.orderType === "delivery" && o.status === "DELIVERED"
+  const completedDeliveries = orders.filter(o =>
+    o.orderType === "delivery" && isToday(o.timeTarget) && o.status === "DELIVERED"
   );
 
   const handleAssign = async (orderId: string) => {

@@ -170,6 +170,10 @@ export class OrderService {
               image: i.image || product?.thumbnail || undefined,
               referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
               printImages: printImages.length > 0 ? printImages : undefined,
+              // Vendor-related fields for delivery page vendor pickup detection
+              assignedVendorId: i.assignedVendorId || undefined,
+              parentItemId: i.parentItemId || undefined,
+              status: i.status || undefined,
             }
           }),
           priorityLevel: (o as any).priorityLevel || "normal",
