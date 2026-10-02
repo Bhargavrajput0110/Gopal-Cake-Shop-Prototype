@@ -122,7 +122,11 @@ export const POST = withApiHandler(async ({ req, params, appRole }) => {
       const eventId = `vendor-assigned-${task.id}-${vendorId}`;
       await prisma.inAppNotification.upsert({
         where: { eventId },
-        update: { message: `You have a new ${payload.data.vendorType} assignment. ${payload.data.instructions || 'Check your vendor dashboard.'}` },
+        update: { 
+          message: `You have a new ${payload.data.vendorType} assignment. ${payload.data.instructions || 'Check your vendor dashboard.'}`,
+          isDismissed: false,
+          isRead: false
+        },
         create: {
           eventId,
           userId: vendorId,

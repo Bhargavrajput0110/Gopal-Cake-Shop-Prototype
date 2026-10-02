@@ -41,7 +41,7 @@ export function useSSE({ onNotification, enabled = true }: UseSSEOptions = {}) {
       try {
         const { notifications } = JSON.parse(e.data)
         // Pre-seed the notification inbox cache
-        queryClient.setQueryData(['notifications-inbox'], notifications)
+        queryClient.setQueryData(['notifications-inbox'], { success: true, data: notifications })
       } catch {}
     })
 
