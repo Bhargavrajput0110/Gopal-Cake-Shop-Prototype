@@ -249,11 +249,13 @@ export default function DriverDashboard() {
   }
 
   // Derived state
-  const availableTasks = tasks.filter(t => !t.assignedDriverId && !['DELIVERED', 'FAILED_DELIVERY', 'COMPLETED'].includes(t.status))
+  const DONE_STATUSES = ['DELIVERED', 'FAILED_DELIVERY', 'COMPLETED']
+  const availableTasks = tasks.filter(t => !t.assignedDriverId && !DONE_STATUSES.includes(t.status))
   const myTasks = tasks.filter(t => activeDriver && t.assignedDriverId === activeDriver.id)
   
-  const pendingTasks = myTasks.filter(d => !['DELIVERED', 'FAILED_DELIVERY', 'COMPLETED'].includes(d.status))
-  const completedTasks = myTasks.filter(d => ['DELIVERED', 'FAILED_DELIVERY', 'COMPLETED'].includes(d.status))
+  const pendingTasks = myTasks.filter(d => !DONE_STATUSES.includes(d.status))
+  // Completed = ALL done tasks (including vendor pickups which have no assignedDriverId)
+  const completedTasks = tasks.filter(d => DONE_STATUSES.includes(d.status))
   
   // TODAY'S TASK COUNTS: from ALL tasks (not just mine) to show full day workload
   const allActiveTasks = tasks.filter(t => !['DELIVERED', 'FAILED_DELIVERY', 'COMPLETED'].includes(t.status))
