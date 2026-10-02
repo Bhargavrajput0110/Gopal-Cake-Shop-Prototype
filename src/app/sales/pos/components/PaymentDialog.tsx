@@ -173,6 +173,14 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
 
       const finalTargetISO = finalTargetDate.toISOString()
 
+      // 🛒 Extract B2B wholesale discounts that were baked into cart item prices
+      const builtInDiscount = cart.reduce((acc, item) => {
+         if (item.basePrice && item.basePrice > item.price) {
+            return acc + ((item.basePrice - item.price) * item.quantity)
+         }
+         return acc
+      }, 0)
+
       const payload = {
         customerId: 'walk-in',
         customerName: customer.name.trim(),
@@ -190,8 +198,8 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
           })(),
           flavor: item.flavor || undefined,
           messageOnCake: item.messageOnCake,
-          overridePrice: item.price,
-          frontendPrice: item.price,
+          overridePrice: item.basePrice || item.price,
+          frontendPrice: item.basePrice || item.price,
           designId: item.designId || (item.productId.startsWith('custom-') ? item.productId : undefined),
           designName: item.designName || ((item.productId.startsWith('custom-') || item.productId.startsWith('b2b-')) ? item.name : undefined),
           designCode: item.designCode,
@@ -217,7 +225,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
         deliveryDistanceKm: orderType === 'DELIVERY' ? deliveryDistanceKm : undefined,
         isFarDistance: orderType === 'DELIVERY' ? isFarDistance : undefined,
         isPriority: priority !== 'NORMAL',
-        overrideDiscount: discountAmt > 0 ? discountAmt : undefined,
+        overrideDiscount: (discountAmt + builtInDiscount) > 0 ? (discountAmt + builtInDiscount) : undefined,
         vendorAssignments: {
           photoVendorRequired: vendorSupplies.photo.selected ? (vendorSupplies.photo.note || 'Photo Print Required') : null,
           acrylicVendorRequired: vendorSupplies.acrylic.selected ? (vendorSupplies.acrylic.note || 'Acrylic Topper Required') : null,

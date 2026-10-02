@@ -74,10 +74,13 @@ const handler = async (ctx: HandlerContext) => {
   }
 
   if (appRole === 'SALESPERSON' && data.overrideDiscount && data.overrideDiscount > 0) {
+    const hasB2bItems = data.items.some(i => i.productId.startsWith('b2b-'));
     const subtotal = data.items.reduce((acc, item) => acc + ((item.overridePrice || 0) * item.quantity), 0)
-    const maxAllowed = subtotal > 0 ? subtotal * 0.25 : 0
+    // Salesperson gets 25% max for retail, but B2B portal allows up to 40% admin-approved rates
+    const maxPercent = hasB2bItems ? 0.40 : 0.25;
+    const maxAllowed = subtotal > 0 ? subtotal * maxPercent : 0
     if (subtotal > 0 && data.overrideDiscount > (maxAllowed + 0.05)) {
-      return errorResponse(`Salesperson discount is capped at 25% max (₹${maxAllowed.toFixed(2)}). For higher discounts, please contact Admin (Rishi Bhai).`, 'DISCOUNT_LIMIT_EXCEEDED', 400, [], requestId)
+      return errorResponse(`Salesperson discount is capped at ${maxPercent * 100}% max (₹${maxAllowed.toFixed(2)}). For higher discounts, please contact Admin (Rishi Bhai).`, 'DISCOUNT_LIMIT_EXCEEDED', 400, [], requestId)
     }
   }
 

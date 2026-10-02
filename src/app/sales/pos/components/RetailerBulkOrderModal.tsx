@@ -95,6 +95,7 @@ export function RetailerBulkOrderModal({ onClose }: RetailerBulkOrderModalProps)
           productId: `b2b-${prod.id}-${Date.now()}`,
           name: `📦 [B2B] ${prod.name} (${activeRetailerName} - ${activeDiscount}% Rate)`,
           price: discountedUnitPrice,
+          basePrice: prod.baseRetailPrice,
           quantity: qty,
           weight: 1,
           flavor: `B2B: ${prod.unit} | Dispatch: ${dispatchDate}`,
