@@ -167,8 +167,8 @@ export class StorefrontEngine {
       
       const isRealProduct = !!product;
 
-      // MOCK product for designs and custom cakes
-      if (!product && (design || item.designId || item.productId === 'custom-cake-studio' || item.productId.startsWith('custom-'))) {
+      // MOCK product for designs, custom cakes, and B2B wholesale items
+      if (!product && (design || item.designId || item.productId === 'custom-cake-studio' || item.productId.startsWith('custom-') || item.productId.startsWith('b2b-'))) {
          let autoRequiredVendors = (item as any).requiredVendors || []
          if (design?.isPhotoCake && !autoRequiredVendors.includes('VENDOR_PHOTO')) {
             autoRequiredVendors.push('VENDOR_PHOTO')
@@ -176,7 +176,7 @@ export class StorefrontEngine {
          
          product = {
             id: item.productId,
-            name: design?.name || item.designName || 'Custom Cake',
+            name: design?.name || item.designName || (item.productId.startsWith('b2b-') ? 'B2B Wholesale Item' : 'Custom Cake'),
             basePrice: item.overridePrice || design?.basePrice || 0,
             weightConfig: design?.weightConfig || null,
             availableForSale: true,
