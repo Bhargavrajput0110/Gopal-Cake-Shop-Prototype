@@ -13,7 +13,7 @@ import {
 } from '@prisma/client'
 import { OutboxService } from '@/lib/events/OutboxService'
 import { SettingsService } from '@/services/SettingsService'
-import { toBranchId, generateSequentialOrderNumber } from '@/lib/branches'
+import { toBranchId, generateSequentialOrderNumber, getBranchNumericCode } from '@/lib/branches'
 import { DistanceFactory } from '@/services/distance/DistanceFactory'
 
 export interface CheckoutContext {
@@ -118,10 +118,17 @@ export class StorefrontEngine {
       branch = await prisma.branch.findUnique({ where: { id: payload.branchId } })
       
       if (!branch) {
-        // Fallback: If it's an alias like "uma" or "khanderao", parse it and lookup by code
-        const parsedBranchCode = toBranchId(payload.branchId)
+        // Find by mapping the canonical ID back to the real DB ID or Code
+        const canonicalId = toBranchId(payload.branchId);
         branch = await prisma.branch.findFirst({
-          where: { code: { equals: parsedBranchCode, mode: 'insensitive' } }
+          where: { 
+            OR: [
+              { id: canonicalId },
+              { code: { equals: canonicalId, mode: 'insensitive' } },
+              { code: { equals: getBranchNumericCode(canonicalId), mode: 'insensitive' } },
+              { id: (canonicalId === 'varasiya' ? 'cmswuiiu000021su3kv1mr41f' : canonicalId === 'elora' ? 'cmswuiiun00031su3vfrn9eq5' : canonicalId === 'khanderao' ? 'cmswuiita00011su3977ajl1z' : 'uma') }
+            ] 
+          }
         })
       }
       

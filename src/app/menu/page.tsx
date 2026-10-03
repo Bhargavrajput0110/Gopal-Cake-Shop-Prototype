@@ -237,12 +237,44 @@ function MenuPageContent() {
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
   const [isInitialMount, setIsInitialMount] = useState(true);
 
-  // Sync state to URL
+  // Sync URL -> State (when clicking links with search params)
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (activeCategory !== 'All') params.set('category', activeCategory);
+    if (categories.length > 1) {
+      const cat = searchParams.get('category');
+      if (cat) {
+        // Try to find full category name (e.g. "bento" -> "Bento Cakes")
+        const lowerCat = cat.toLowerCase();
+        const matchedCat = categories.find(c => 
+          (c.name || "").toLowerCase() === lowerCat || 
+          (c.slug || "").toLowerCase() === lowerCat ||
+          (c.name || "").toLowerCase().includes(lowerCat)
+        );
+        if (matchedCat) {
+          setActiveCategory(matchedCat.name || matchedCat.slug);
+        } else {
+          setActiveCategory(cat);
+        }
+      }
+    }
+  }, [searchParams, categories]);
+
+  // Sync state -> URL
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    // When syncing activeCategory to URL, use a lowercased simpler version if possible
+    if (activeCategory !== 'All') {
+      const simple = activeCategory.toLowerCase().replace(' cakes', '');
+      params.set('category', simple);
+    } else {
+      params.delete('category');
+    }
+    
     if (debouncedSearch) params.set('search', debouncedSearch);
+    else params.delete('search');
+    
     if (sort !== 'newest') params.set('sort', sort);
+    else params.delete('sort');
     
     const currentQueryString = searchParams.toString();
     const newQueryString = params.toString();

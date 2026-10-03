@@ -17,7 +17,7 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 
 export default function AdminCreateOrderPage() {
-  const { clearCart } = useCart()
+  const { clearCart, items } = useCart()
   const [isPaymentOpen, setIsPaymentOpen] = React.useState(false)
   const [successOrder, setSuccessOrder] = React.useState<string | null>(null)
   const [isQuoteOrder, setIsQuoteOrder] = React.useState<boolean>(false)
@@ -261,6 +261,23 @@ export default function AdminCreateOrderPage() {
       {isBulkModalOpen && (
         <RetailerBulkOrderModal onClose={() => setIsBulkModalOpen(false)} />
       )}
+      {/* Mobile Floating Cart Button */}
+      <div className="xl:hidden fixed bottom-6 right-6 z-[100]">
+        <button 
+          onClick={() => {
+            const cartEl = document.getElementById('pos-cart-panel');
+            if (cartEl) cartEl.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="bg-[var(--brand-deep-rose)] text-white h-16 px-6 rounded-full shadow-[0_10px_40px_rgba(200,20,70,0.4)] flex items-center justify-center gap-3 border-2 border-white/20 active:scale-95 transition-transform"
+        >
+          <Shop className="w-6 h-6" variant="Bold" />
+          <div className="flex flex-col items-start text-left">
+            <span className="font-ui text-[10px] uppercase tracking-widest font-bold leading-none opacity-80">View Cart</span>
+            <span className="font-display font-black text-lg leading-none mt-1">{items.length} Items</span>
+          </div>
+        </button>
+      </div>
+
     </div>
   )
 }
