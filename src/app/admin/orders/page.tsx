@@ -260,9 +260,9 @@ export default function LiveOrdersPage() {
       {view === "board" && (
         <div className="flex gap-4 overflow-x-auto pb-4" style={{ maxHeight: "calc(100vh - 12rem)" }}>
           {BOARD_COLUMNS.map((col) => {
-            const colOrders = filteredOrders.filter((o) =>
-              col.statuses.includes(o.status)
-            )
+            const colOrders = filteredOrders
+              .filter((o) => col.statuses.includes(o.status))
+              .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime())
             return (
               <div
                 key={col.label}
