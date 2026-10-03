@@ -33,13 +33,16 @@ export class OrderService {
     const skip = (page - 1) * limit
     const whereClause: Prisma.OrderWhereInput = {}
 
-    if (role && role.toUpperCase() !== 'ADMIN') {
-      if (branchId) {
-        whereClause.branchId = { in: getBranchFilterValues(branchId) };
-      }
-    } else if (filters?.branch) {
+    // Branch isolation: always filter by branch unless user is a super-admin with no branch
+    if (filters?.branch) {
+      // Explicit branch filter from URL params (e.g. admin switching branches in UI)
       whereClause.branchId = { in: getBranchFilterValues(filters.branch) };
+    } else if (branchId) {
+      // Use the logged-in user's branchId — applies to ALL roles including ADMIN
+      // An Admin logged into Uma branch should only see Uma orders by default
+      whereClause.branchId = { in: getBranchFilterValues(branchId) };
     }
+    // If branchId is null AND no filter.branch → super-admin with no branch restriction (sees all)
 
     if (filters?.driverId) {
       whereClause.driverId = filters.driverId

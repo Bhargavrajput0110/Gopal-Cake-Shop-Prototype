@@ -21,9 +21,11 @@ const nextConfig: NextConfig = {
 
   transpilePackages: ['react-map-gl', 'mapbox-gl', '@mapbox/search-js-react'],
   images: {
-    // Optimization enabled — Cloudinary images are auto-resized & served as WebP
+    // Optimization enabled — Cloudinary images are auto-resized & served as WebP/AVIF
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 3600,
+    minimumCacheTTL: 86400, // 24 hours — cake design images rarely change
+    deviceSizes: [390, 640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
         protocol: "https",

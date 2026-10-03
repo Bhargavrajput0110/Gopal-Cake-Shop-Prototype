@@ -48,6 +48,7 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
             src={product.thumbnail || product.imageUrl}
             alt={product.name}
             fill
+            priority={idx < 4}
             className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
@@ -56,6 +57,7 @@ function ProductCard({ product, idx }: { product: any, idx: number }) {
             src="https://images.unsplash.com/photo-1601050690597-df0568a70950?w=600&auto=format&fit=crop&q=80"
             alt={product.name}
             fill
+            priority={idx < 4}
             className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />

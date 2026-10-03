@@ -268,10 +268,13 @@ export class StorefrontEngine {
       totalTax += lineTax
 
       // Generate Child Items for Vendors if product requires them
+      // IMPORTANT: Customer-side (WEBSITE) orders must NEVER auto-assign vendors.
+      // Vendor tasks are a back-office concern — only POS / admin staff trigger them explicitly.
       const parentItemId = crypto.randomUUID()
+      const isWebsiteOrder = context.source === OrderSource.WEBSITE
       
-      const dbRequiredVendors = (product as any)?.requiredVendors || []
-      const itemRequiredVendors = (item as any).requiredVendors || []
+      const dbRequiredVendors = isWebsiteOrder ? [] : ((product as any)?.requiredVendors || [])
+      const itemRequiredVendors = isWebsiteOrder ? [] : ((item as any).requiredVendors || [])
       const mergedRequiredVendors = Array.from(new Set([...dbRequiredVendors, ...itemRequiredVendors]))
 
       if (mergedRequiredVendors.length > 0) {
