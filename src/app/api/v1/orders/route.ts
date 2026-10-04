@@ -20,7 +20,7 @@ import { successResponse, createdResponse, paginatedResponse } from '@/lib/apiUt
  *         schema:
  *           type: integer
  */
-export const GET = withApiHandler(async ({ req, appRole, branchId, requestId }) => {
+export const GET = withApiHandler(async ({ req, user, appRole, branchId, requestId }) => {
   try {
     const searchParams = req.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1', 10)
@@ -36,7 +36,7 @@ export const GET = withApiHandler(async ({ req, appRole, branchId, requestId }) 
     const hasIssues = searchParams.get('hasIssues') === 'true'
     const driverId = searchParams.get('driverId') || undefined
 
-    const { data, total } = await OrderService.listOrders(branchId, appRole, page, limit, { status, branch, driverId, search, startDate, endDate, sortField, sortOrder, dueSoon, hasIssues })
+    const { data, total } = await OrderService.listOrders(branchId, appRole, page, limit, { status, branch, driverId, search, startDate, endDate, sortField, sortOrder, dueSoon, hasIssues, user })
     return paginatedResponse(data, page, limit, total, 'Orders fetched successfully', requestId)
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message || String(err), stack: err.stack }, { status: 500 })

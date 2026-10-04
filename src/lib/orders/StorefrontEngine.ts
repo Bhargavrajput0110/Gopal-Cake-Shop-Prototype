@@ -413,6 +413,13 @@ export class StorefrontEngine {
       }
     }
 
+    // Hot Bakes check for Driver Routing
+    const hasHotBakes = products.some(p => p.categoryId === 'cmuts899k0000ygu3pigymkyy');
+    let finalInternalNotes = payload.internalNotes || '';
+    if (hasHotBakes) {
+      finalInternalNotes = `[HOT BAKES] PICK UP FROM WARASIYA FACTORY. ${finalInternalNotes}`.trim();
+    }
+
     // 7. Transactional Order Creation
     const order = await prisma.$transaction(async (tx) => {
       const orderNum = await generateSequentialOrderNumber(tx, branch.id);
@@ -426,7 +433,7 @@ export class StorefrontEngine {
           source: context.source,
           createdById: context.createdById,
           isPriority: context.canAssignPriority ? payload.isPriority : false,
-          internalNotes: payload.internalNotes,
+          internalNotes: finalInternalNotes,
           type: payload.type || 'ORDER',
           status: payload.type === 'QUOTE' ? OrderStatus.QUOTE_DRAFT : (context.source === 'POS' ? OrderStatus.WAITING_FOR_CHEF : OrderStatus.NEW),
           deliveryType: payload.deliveryType,

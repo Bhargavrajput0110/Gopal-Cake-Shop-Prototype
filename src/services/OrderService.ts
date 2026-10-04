@@ -12,7 +12,7 @@ export class OrderService {
     role: string | null,
     page: number = 1,
     limit: number = 20,
-    filters?: { status?: string, branch?: string, driverId?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string, dueSoon?: boolean, hasIssues?: boolean }
+    filters?: { status?: string, branch?: string, driverId?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string, dueSoon?: boolean, hasIssues?: boolean, user?: any }
   ): Promise<{ data: OrderResponseDTO[], total: number }> {
     const BRANCH_CUID_MAP: Record<string, string> = {
       'elora': 'cmswuiiun00031su3vfrn9eq5',
@@ -43,6 +43,19 @@ export class OrderService {
       whereClause.branchId = { in: getBranchFilterValues(branchId) };
     }
     // If branchId is null AND no filter.branch → super-admin with no branch restriction (sees all)
+
+    // SPECIAL CASE: HOT BAKES CHEF (Santosh)
+    // He should see only Hot Bakes items, but from ALL branches.
+    if (role === 'CHEF' && filters?.user && (filters.user.phone === '9054090380' || filters.user.name?.toLowerCase().includes('santosh'))) {
+      delete whereClause.branchId; // See from all branches
+      whereClause.items = {
+        some: {
+          product: {
+            categoryId: 'cmuts899k0000ygu3pigymkyy' // Hot Bakes category ID
+          }
+        }
+      };
+    }
 
     if (filters?.driverId) {
       whereClause.driverId = filters.driverId
