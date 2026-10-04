@@ -79,7 +79,7 @@ function playPriorityBeep() {
 
 function SalesDashboardContent() {
   const { data: session } = useSession();
-  const { updateOrderStatus, updateOrderFields, socket } = useOrders();
+  const { orders: contextOrders, updateOrderStatus, updateOrderFields, socket } = useOrders();
   const [serverOrders, setServerOrders] = useState<Order[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -128,9 +128,9 @@ function SalesDashboardContent() {
     }
   }, [employeeId, session?.user]);
 
-  const fetchOrders = async (signal?: AbortSignal) => {
-    setLoading(true);
-    setError("");
+  const fetchOrders = async (signal?: AbortSignal, silent = false) => {
+    if (!silent) setLoading(true);
+    if (!silent) setError("");
     try {
       const params = new URLSearchParams();
       params.append("page", page.toString());
@@ -187,12 +187,12 @@ function SalesDashboardContent() {
     } catch (e: any) {
       if (e.name !== "AbortError") {
         console.error("[Sales Orders] API error:", e.message);
-        setError(e.message || "Failed to load orders. Please refresh.");
-        setServerOrders([]);
+        if (!silent) setError(e.message || "Failed to load orders. Please refresh.");
+        if (!silent) setServerOrders([]);
         setTotalPages(1);
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -227,7 +227,7 @@ function SalesDashboardContent() {
       };
       
       const handleOrderUpdate = () => {
-        fetchOrders();
+        fetchOrders(undefined, true);
       };
       
       socket.on('notification_sent', handleNotificationSent);
@@ -250,7 +250,7 @@ function SalesDashboardContent() {
     if (isSocketConnected) return; // Socket is live — no need to poll
 
     const interval = setInterval(() => {
-      fetchOrders();
+      fetchOrders(undefined, true);
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
@@ -282,16 +282,17 @@ function SalesDashboardContent() {
   const [timelineOrder, setTimelineOrder] = useState<Order | null>(null);
   const seenOrderIds = useRef<Set<string>>(new Set());
 
-  // Detect new orders and trigger notification popup + sound
+  // Detect new orders and trigger notification popup + sound using global contextOrders
+  // This ensures popup fires even if the current view is filtered (e.g. "In Kitchen")
   useEffect(() => {
-    const newOrders = serverOrders.filter(o => o.status === "NEW" && !seenOrderIds.current.has(o.id));
+    const newOrders = contextOrders.filter(o => o.status === "NEW" && !seenOrderIds.current.has(o.id));
     if (newOrders.length > 0) {
       const newest = newOrders[0]; // Show popup for most recent
       setNewOrderPopup(newest);
       // Mark all as seen
       newOrders.forEach(o => seenOrderIds.current.add(o.id));
     }
-  }, [serverOrders]);
+  }, [contextOrders]);
 
   useEffect(() => {
     if (unapprovedCount > 0 || priorityAlertCount > 0) {
