@@ -177,6 +177,9 @@ function SalesDashboardContent() {
         params.append("endDate", `${next15.getFullYear()}-${String(next15.getMonth() + 1).padStart(2, '0')}-${String(next15.getDate()).padStart(2, '0')}`);
       }
       
+      params.append("sortField", "targetDate");
+      params.append("sortOrder", "asc");
+      
       const res = await fetchClient<any>(`/orders?${params.toString()}`, { signal });
       if (res.success) {
         setServerOrders(res.data || []);
