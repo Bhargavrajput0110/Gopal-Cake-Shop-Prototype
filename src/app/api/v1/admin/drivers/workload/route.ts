@@ -12,8 +12,7 @@ export const GET = withApiHandler(async (ctx) => {
 
   const activeDrivers = await db.user.findMany({
     where: {
-      role: 'DELIVERY',
-      ...(branchId ? { branchId } : {})
+      role: 'DELIVERY'
     },
     select: {
       id: true,
