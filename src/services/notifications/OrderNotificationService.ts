@@ -99,12 +99,28 @@ export class OrderNotificationService {
       case 'mark-ready':
       case 'start-delivery': {
         // Cake ready → notify salesperson + manager + delivery
-        const [sales, managers, drivers] = await Promise.all([
-          getUsers('SALESPERSON', branchId),
-          getUsers('MANAGER', branchId),
-          getUsers('DELIVERY', branchId),
-        ])
-        const userIds = [...sales, ...managers, ...drivers].map((u) => u.id)
+        let targetBranches = [branchId];
+        
+        // If this order contains Hot Bakes, we must also notify Warasiya Sales & Managers
+        const orderInfo = await prisma.order.findUnique({ 
+          where: { id: orderId },
+          include: { items: { include: { product: true } } }
+        });
+        const hasHotBakes = orderInfo?.items.some(i => i.product?.categoryId === 'cmuts899k0000ygu3pigymkyy');
+        if (hasHotBakes) {
+          targetBranches.push('cmswuiiu000021su3kv1mr41f'); // Warasiya branch
+        }
+
+        const promises: Promise<any[]>[] = [];
+        for (const bId of targetBranches) {
+          promises.push(getUsers('SALESPERSON', bId));
+          promises.push(getUsers('MANAGER', bId));
+          promises.push(getUsers('DELIVERY', bId));
+        }
+
+        const results = await Promise.all(promises);
+        const userIds = Array.from(new Set(results.flat().map((u: any) => u.id)));
+        
         await notify(userIds, `Cake Ready — #${orderNumber}`, 'The order is ready for pickup or delivery.')
         break
       }
