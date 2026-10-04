@@ -14,6 +14,8 @@ import { GalleryAdd } from "iconsax-react";
 export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake = false, editingCartItem, isPOSMode = false }: { product: any, onClose?: () => void, isCustom?: boolean, isPhotoCake?: boolean, editingCartItem?: any, isPOSMode?: boolean }) {
   const { addItem, updateItemConfig, setIsCartOpen } = useCart();
   const flavours = getActiveFlavours();
+  
+  const isHotBake = product?.categoryId === 'cmuts899k0000ygu3pigymkyy' || product?.category?.name?.toLowerCase().includes('hot bakes');
 
   useEffect(() => {
     // Prevent touchpad scroll bleeding to the background webpage
@@ -166,7 +168,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   }
 
   const handleAddToCart = () => {
-    if (!selectedWeight) {
+    if (!isHotBake && !selectedWeight) {
       setToast({
         id: Date.now().toString(),
         title: 'Selection Required',
@@ -175,7 +177,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       });
       return;
     }
-    if (!selectedFlavour) {
+    if (!isHotBake && !selectedFlavour) {
       setToast({
         id: Date.now().toString(),
         title: 'Selection Required',
@@ -192,9 +194,9 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       basePrice: product.basePrice || 600,
       quantity: editingCartItem ? editingCartItem.quantity : 1,
       image: product.thumbnail || product.imageUrl || product.image,
-      variant: selectedWeight,
-      flavor: selectedFlavour,
-      messageOnCake: messageOnCake.trim() || undefined,
+      variant: isHotBake ? 'Piece' : selectedWeight,
+      flavor: isHotBake ? 'Regular' : selectedFlavour,
+      messageOnCake: isHotBake ? undefined : (messageOnCake.trim() || undefined),
       notes: notes.trim() || undefined,
       referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
       printImage: printImage || undefined,
@@ -251,92 +253,98 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
         data-lenis-prevent-wheel="true"
         data-lenis-prevent-touch="true"
       >
-        {/* Weight Selection */}
-        <div className="space-y-3">
-          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
-            Select Weight
-          </label>
-          <Select value={selectedWeight} onValueChange={setSelectedWeight}>
-            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary transition-all">
-              <SelectValue placeholder="Choose weight" />
-            </SelectTrigger>
-            <SelectContent side="bottom" position="popper" className="z-[200]">
-              <SelectGroup>
-                {availableWeights.map((w: any) => (
-                  <SelectItem key={w.value} value={w.value} className="text-base py-3 cursor-pointer">
-                    {w.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Dedicated Photo Cake Upload (Only when item is explicitly a Photo Cake) */}
-        {isPhotoCake && (
-          <div className="space-y-3">
-            <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-              <GalleryAdd className="w-4 h-4 text-primary" />
-              Photo for Edible Print
-              <span className="text-primary normal-case text-[10px]">Required (Max 10)</span>
-            </label>
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-              <CloudinaryUploader
-                maxFiles={10}
-                folder="edible_prints"
-                existingImages={printImage ? printImage.split(',') : []}
-                onUploadSuccess={(urls) => setPrintImage(urls.join(','))}
-              />
+        {!isHotBake && (
+          <>
+            {/* Weight Selection */}
+            <div className="space-y-3">
+              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
+                Select Weight
+              </label>
+              <Select value={selectedWeight} onValueChange={setSelectedWeight}>
+                <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary transition-all">
+                  <SelectValue placeholder="Choose weight" />
+                </SelectTrigger>
+                <SelectContent side="bottom" position="popper" className="z-[200]">
+                  <SelectGroup>
+                    {availableWeights.map((w: any) => (
+                      <SelectItem key={w.value} value={w.value} className="text-base py-3 cursor-pointer">
+                        {w.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-        )}
 
-        {/* Flavour Selection */}
-        <div className="space-y-3">
-          <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
-            Select Flavour
-          </label>
-          <Select value={selectedFlavour} onValueChange={handleFlavourChange}>
-            <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary transition-all">
-              <SelectValue placeholder="Select a Flavour" />
-            </SelectTrigger>
-            <SelectContent side="bottom" position="popper" className="z-[200]" avoidCollisions={false}>
-              <SelectGroup>
-                <SelectItem value="Classic" className="text-base py-3 font-semibold text-primary cursor-pointer">
-                  Classic
-                </SelectItem>
-                {flavours.map((f) => {
-                  const wVal = parseFloat(selectedWeight);
-                  const itemWeightKg = selectedWeight.toLowerCase().includes("kg") ? wVal : (selectedWeight.toLowerCase().includes("g") ? wVal / 1000 : wVal);
-                  const surcharge = getFlavourSurcharge(f.name, itemWeightKg);
-                  return (
-                    <SelectItem key={f.id} value={f.name} className="text-base py-3 cursor-pointer">
-                      {f.name} {surcharge > 0 ? `(+₹${surcharge})` : ''}
+            {/* Dedicated Photo Cake Upload (Only when item is explicitly a Photo Cake) */}
+            {isPhotoCake && (
+              <div className="space-y-3">
+                <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                  <GalleryAdd className="w-4 h-4 text-primary" />
+                  Photo for Edible Print
+                  <span className="text-primary normal-case text-[10px]">Required (Max 10)</span>
+                </label>
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                  <CloudinaryUploader
+                    maxFiles={10}
+                    folder="edible_prints"
+                    existingImages={printImage ? printImage.split(',') : []}
+                    onUploadSuccess={(urls) => setPrintImage(urls.join(','))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Flavour Selection */}
+            <div className="space-y-3">
+              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground">
+                Select Flavour
+              </label>
+              <Select value={selectedFlavour} onValueChange={handleFlavourChange}>
+                <SelectTrigger className="w-full h-14 text-lg bg-background border-2 border-primary/30 rounded-xl px-4 focus:border-primary transition-all">
+                  <SelectValue placeholder="Select a Flavour" />
+                </SelectTrigger>
+                <SelectContent side="bottom" position="popper" className="z-[200]" avoidCollisions={false}>
+                  <SelectGroup>
+                    <SelectItem value="Classic" className="text-base py-3 font-semibold text-primary cursor-pointer">
+                      Classic
                     </SelectItem>
-                  );
-                })}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
+                    {flavours.map((f) => {
+                      const wVal = parseFloat(selectedWeight || "0");
+                      const itemWeightKg = (selectedWeight || "").toLowerCase().includes("kg") ? wVal : ((selectedWeight || "").toLowerCase().includes("g") ? wVal / 1000 : wVal);
+                      const surcharge = getFlavourSurcharge(f.name, itemWeightKg);
+                      return (
+                        <SelectItem key={f.id} value={f.name} className="text-base py-3 cursor-pointer">
+                          {f.name} {surcharge > 0 ? `(+₹${surcharge})` : ''}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
 
         {/* Extra Fields (Always Visible) */}
         <div className="space-y-6 pt-2 pb-6">
           {/* Message on Cake */}
-          <div className="space-y-3">
-            <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-              🎂 Message on Cake
-            </label>
-            <input
-              type="text"
-              value={messageOnCake}
-              onChange={(e) => setMessageOnCake(e.target.value)}
-              placeholder='e.g. Happy Birthday Rahul 🎉'
-              maxLength={60}
-              className="w-full rounded-xl border-2 border-primary/20 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
-            />
-            <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
-          </div>
+          {!isHotBake && (
+            <div className="space-y-3">
+              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                🎂 Message on Cake
+              </label>
+              <input
+                type="text"
+                value={messageOnCake}
+                onChange={(e) => setMessageOnCake(e.target.value)}
+                placeholder='e.g. Happy Birthday Rahul 🎉'
+                maxLength={60}
+                className="w-full rounded-xl border-2 border-primary/20 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+              />
+              <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
+            </div>
+          )}
 
           {/* Special Instructions / Notes */}
           <div className="space-y-3">
