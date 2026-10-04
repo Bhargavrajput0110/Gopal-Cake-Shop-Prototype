@@ -69,6 +69,11 @@ export function ProductGrid({ products, categories = [], designs = [], isLoading
     })
   }, [designs, search, selectedCategory, categories])
 
+  // Extract Hot Bakes products for a dedicated section
+  const hotBakeProducts = React.useMemo(() => {
+    return products.filter(p => p.categoryId === 'cmuts899k0000ygu3pigymkyy' || (p.category?.name && p.category.name.toLowerCase().includes('hot bakes')));
+  }, [products]);
+
   if (selectedProduct) {
     return (
       <div className="flex flex-col h-full bg-white rounded-3xl overflow-hidden relative shadow-sm border border-border">
@@ -185,6 +190,50 @@ export function ProductGrid({ products, categories = [], designs = [], isLoading
                 </button>
               </div>
             </div>
+
+            {/* Hot Bakes Section */}
+            {hotBakeProducts.length > 0 && (!selectedCategory || selectedCategory === 'hot-bakes' || categories.find(c => c.categoryId === selectedCategory)?.name?.toLowerCase().includes('hot bakes')) && (
+              <div>
+                <h3 className="font-ui text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-4 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Hot Fresh Bakes 🔥
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {hotBakeProducts.map(product => (
+                    <button
+                      key={product.id}
+                      onClick={() => setSelectedProduct({
+                        id: product.id,
+                        name: product.name,
+                        basePrice: product.basePrice,
+                        thumbnail: product.thumbnail || product.imageUrl,
+                        isCustomizable: false,
+                        categoryId: product.categoryId,
+                        category: { name: 'Hot Bakes' }
+                      })}
+                      className="flex flex-col text-left bg-amber-50 border border-amber-100 hover:bg-amber-100 hover:border-amber-200 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group shadow-sm"
+                    >
+                      <div className="h-36 w-full bg-amber-900/10 flex items-center justify-center overflow-hidden relative">
+                        {product.thumbnail || product.imageUrl ? (
+                          <div className="absolute inset-0 bg-cover bg-center opacity-80 group-hover:scale-110 transition-transform duration-700" style={{ backgroundImage: `url(${product.thumbnail || product.imageUrl})` }} />
+                        ) : (
+                          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1621236378699-8597faf6a176?w=500&q=80')] bg-cover bg-center opacity-50 mix-blend-multiply group-hover:scale-110 transition-transform duration-700" />
+                        )}
+                        <span className="relative z-10 font-ui text-[11px] text-amber-900 bg-amber-200/90 px-3.5 py-1.5 rounded-full font-black tracking-widest uppercase shadow-md flex items-center gap-1 backdrop-blur-sm">
+                          🔥 Fresh
+                        </span>
+                      </div>
+                      <div className="p-4 w-full bg-white flex-1 flex flex-col justify-between">
+                        <div>
+                          <p className="font-display font-bold text-lg text-foreground line-clamp-2 transition-colors leading-tight">{product.name}</p>
+                          <p className="font-ui text-[10px] uppercase tracking-wider font-extrabold text-amber-600 mt-1">Warasiya Outlet</p>
+                        </div>
+                        <p className="font-ui font-black text-sm text-foreground mt-2">₹{product.basePrice}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Design Library Section — real Cloudinary images */}
             {filteredDesigns.length > 0 && (
