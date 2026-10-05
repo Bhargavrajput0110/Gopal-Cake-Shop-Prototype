@@ -89,7 +89,8 @@ export default function ChefDashboardPage() {
   }, [session]);
 
   // Filtering orders for the active branch
-  const branchOrders = orders.filter(o => toBranchId(o.branch) === activeBranch);
+  const isHotBakeChef = session?.user?.name?.toLowerCase().includes('santosh') || session?.user?.name?.toLowerCase().includes('hot bake');
+  const branchOrders = orders.filter(o => isHotBakeChef || toBranchId(o.branch) === activeBranch);
 
   // Queue
   const queueOrders = branchOrders
