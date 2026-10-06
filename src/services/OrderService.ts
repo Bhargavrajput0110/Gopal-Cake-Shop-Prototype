@@ -152,7 +152,7 @@ export class OrderService {
       console.error('[OrderService] Error fetching products from Supabase:', err)
     }
 
-    return {
+    const result = {
       data: await Promise.all(orders.map(async (o) => {
         const finSummary = await FinancialService.calculateFinancialSummary(o);
         return {
@@ -177,6 +177,7 @@ export class OrderService {
               id: i.id,
               name: i.productName || product?.name || 'Custom Item',
               productName: i.productName || product?.name || 'Custom Item',
+              categoryId: product?.categoryId || undefined,
               price: Number(i.price),
               qty: i.quantity,
               weight: i.weight ? `${i.weight}kg` : undefined,
@@ -259,7 +260,17 @@ export class OrderService {
         } as any;
       })),
       total,
+    };
+
+    // Special item-level filter for Hot Bakes Chef
+    if (role === 'CHEF' && filters?.user && (filters.user.phone === '9054090380' || filters.user.name?.toLowerCase().includes('santosh') || filters.user.name?.toLowerCase().includes('hot bake'))) {
+      result.data = result.data.map((o: any) => ({
+        ...o,
+        items: o.items.filter((i: any) => i.categoryId === 'cmuts899k0000ygu3pigymkyy' || i.name.toLowerCase().includes('puff') || i.name.toLowerCase().includes('bake'))
+      })).filter((o: any) => o.items.length > 0);
     }
+
+    return result;
   }
 
 

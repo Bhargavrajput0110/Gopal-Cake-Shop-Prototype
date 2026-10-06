@@ -118,10 +118,12 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
             if (prismaUser) {
               appRole = prismaUser.role as Role
               if (prismaUser.branchId) {
-                branchId = prismaUser.branchId
+                branchId = prismaUser.branchId;
               }
-              (user as any).deliveryScope = prismaUser.deliveryScope
-              user.id = prismaUser.id
+              (user as any).deliveryScope = prismaUser.deliveryScope;
+              (user as any).name = prismaUser.name;
+              (user as any).phone = prismaUser.phone;
+              user.id = prismaUser.id;
               
               if (prismaUser.status !== 'ACTIVE') {
                  LoggerService.warn(`Access Denied: Account Status ${prismaUser.status}`, { requestId, email: user.email })
