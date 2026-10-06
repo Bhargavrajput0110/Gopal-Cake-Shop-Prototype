@@ -111,11 +111,12 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
           })
           return errorResponse('Unauthorized', 'UNAUTHORIZED', 401, [], requestId)
         }
-        // Dev Sync: Fetch from Prisma if email or id matches
-        if (user.email || user.id) {
+        // Dev Sync: Fetch from Prisma if email, phone, or id matches
+        if (user.email || user.id || user.phone) {
           try {
+            const cleanPhone = user.phone ? user.phone.replace(/\D/g, '').slice(-10) : undefined;
             const prismaUser = await prisma.user.findFirst({ 
-              where: user.email ? { email: user.email } : { id: user.id } 
+              where: user.email ? { email: user.email } : (cleanPhone ? { phone: { contains: cleanPhone } } : { id: user.id })
             });
             if (prismaUser) {
               appRole = prismaUser.role as Role
