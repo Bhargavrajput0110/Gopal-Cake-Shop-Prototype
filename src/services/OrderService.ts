@@ -44,7 +44,6 @@ export class OrderService {
       
       // SPECIAL REQUIREMENT: Warasiya sales desk MUST also see orders from OTHER branches
       // IF the order contains Hot Bake items (categoryId 'cmuts899k0000ygu3pigymkyy' or puff/bake in name)
-      // AND is marked READY (so Warasiya dispatch can assign/dispatch it).
       if ((role === 'SALES' || role === 'MANAGER') && (branchValues.includes('varasiya') || branchValues.includes('warasiya') || branchValues.includes('cmswuiiu000021su3kv1mr41f'))) {
         if (!whereClause.AND) whereClause.AND = [];
         (whereClause.AND as any[]).push({
@@ -59,8 +58,7 @@ export class OrderService {
                      { productName: { contains: 'bake', mode: 'insensitive' } }
                    ]
                  }
-               },
-               status: { in: ['READY_FOR_PICKUP', 'PENDING_ASSIGNMENT', 'ASSIGNED_TO_DRIVER'] }
+               }
             }
           ]
         });
@@ -138,10 +136,12 @@ export class OrderService {
     const orderBy: Prisma.OrderOrderByWithRelationInput[] = [];
     if (filters?.sortField) {
       orderBy.push({ [filters.sortField]: filters.sortOrder === 'asc' ? 'asc' : 'desc' });
+      // If we are sorting by targetDate ascending, use id ascending as tie-breaker (first-come first-serve)
+      orderBy.push({ id: filters.sortOrder === 'asc' ? 'asc' : 'desc' });
     } else {
       orderBy.push({ createdAt: 'desc' });
+      orderBy.push({ id: 'desc' });
     }
-    orderBy.push({ id: 'desc' });
 
     const [orders, total] = await Promise.all([
       db.order.findMany({

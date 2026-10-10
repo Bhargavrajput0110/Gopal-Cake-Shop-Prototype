@@ -395,7 +395,6 @@ function SalesDashboardContent() {
                 onClose={() => setAssignDriverOrder(null)}
                 onSuccess={() => {
                   fetchOrders();
-                  setToastData({ show: true, msg: "Driver successfully assigned!", rec: "" });
                 }}
               />
             )}
