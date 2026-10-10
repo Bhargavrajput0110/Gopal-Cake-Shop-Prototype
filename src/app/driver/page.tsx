@@ -209,8 +209,13 @@ export default function DriverDashboard() {
               method: 'PATCH',
               body: JSON.stringify({ action, timestamp, driverId: activeDriver?.id })
             })
+          } else if (action === 'ACCEPTED') {
+            // Driver accepted the transfer task — assign driver in DB
+            await fetchClient(`/driver/deliveries/${realId}/branch-accept`, {
+              method: 'PATCH',
+              body: JSON.stringify({ action, timestamp, driverId: activeDriver?.id })
+            })
           }
-          // For other actions (ACCEPTED, etc.) no backend call needed — handled by optimistic update
         } else if (isVendorTask) {
           await fetchClient(`/driver/deliveries/${realId}/vendor-status`, {
             method: 'PATCH',

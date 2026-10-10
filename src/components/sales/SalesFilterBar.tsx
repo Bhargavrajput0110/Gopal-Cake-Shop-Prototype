@@ -6,9 +6,9 @@ import { SearchNormal1, CloseSquare } from "iconsax-react";
 
 export const SALES_FILTERS = ["All", "Pending Verification", "Due Soon", "Issues", "Waiting for Chef", "In Kitchen", "Ready", "Delivery"];
 export const DATE_FILTERS = [
-  { id: "all", label: "All Dates" },
   { id: "today", label: "Today" },
   { id: "tomorrow", label: "Tomorrow" },
+  { id: "all", label: "All Dates" },
   { id: "next3days", label: "Next 3 Days" },
   { id: "next15days", label: "Next 15 Days" },
 ];
@@ -18,10 +18,10 @@ export function SalesFilterBar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Read current state from URL
+  // Read current state from URL — default to today
   const currentStatus = searchParams.get("status") || "All";
   const currentSearch = searchParams.get("search") || "";
-  const currentDate = searchParams.get("date") || "all";
+  const currentDate = searchParams.get("date") || "today";
   const currentCustomDate = searchParams.get("customDate") || "";
 
   // Local optimistic state for instant UI responsiveness on touch devices
@@ -33,7 +33,7 @@ export function SalesFilterBar() {
   // Sync state when URL searchParams change
   useEffect(() => {
     setStatus(searchParams.get("status") || "All");
-    setDate(searchParams.get("date") || "all");
+    setDate(searchParams.get("date") || "today");
     setCustomDate(searchParams.get("customDate") || "");
   }, [searchParams]);
 
@@ -75,14 +75,14 @@ export function SalesFilterBar() {
   const handleDateChange = (newDate: string) => {
     setDate(newDate);
     setCustomDate("");
-    updateUrlParams({ date: newDate === "all" ? null : newDate, customDate: null, page: "1" });
+    updateUrlParams({ date: newDate, customDate: null, page: "1" });
   };
 
   const handleCustomDateChange = (val: string) => {
     setCustomDate(val);
     if (!val) {
-      setDate("all");
-      updateUrlParams({ date: "all", customDate: null, page: "1" });
+      setDate("today");
+      updateUrlParams({ date: "today", customDate: null, page: "1" });
       return;
     }
     const todayStr = new Date().toISOString().split("T")[0];
@@ -145,21 +145,9 @@ export function SalesFilterBar() {
       <div className="flex items-center gap-2 overflow-x-auto pb-1 shrink-0 hide-scrollbar snap-x snap-mandatory px-0.5">
         <button 
           type="button"
-          onClick={() => handleDateChange("all")}
-          className={`snap-start px-4 py-2.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-95 touch-manipulation ${
-            (date === "all" || !date) && !customDate
-              ? "bg-[#C5A059] text-[#3E2723] shadow-md shadow-[#C5A059]/30 scale-100 ring-1 ring-[#C5A059]" 
-              : "bg-black/[0.05] text-muted-foreground hover:bg-black/[0.08] hover:text-foreground"
-          }`}
-        >
-          All Dates
-        </button>
-
-        <button 
-          type="button"
           onClick={() => handleDateChange("today")}
           className={`snap-start px-4 py-2.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-95 touch-manipulation ${
-            date === "today" && !customDate
+            (date === "today" || !date) && !customDate
               ? "bg-[#C5A059] text-[#3E2723] shadow-md shadow-[#C5A059]/30 scale-100 ring-1 ring-[#C5A059]" 
               : "bg-black/[0.05] text-muted-foreground hover:bg-black/[0.08] hover:text-foreground"
           }`}
@@ -195,6 +183,18 @@ export function SalesFilterBar() {
             className="bg-transparent text-[13px] font-bold text-foreground focus:outline-none cursor-pointer"
           />
         </label>
+
+        <button 
+          type="button"
+          onClick={() => handleDateChange("all")}
+          className={`snap-start px-4 py-2.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-all duration-200 active:scale-95 touch-manipulation ${
+            date === "all" && !customDate
+              ? "bg-[#C5A059] text-[#3E2723] shadow-md shadow-[#C5A059]/30 scale-100 ring-1 ring-[#C5A059]" 
+              : "bg-black/[0.05] text-muted-foreground hover:bg-black/[0.08] hover:text-foreground"
+          }`}
+        >
+          All Dates
+        </button>
 
         <button 
           type="button"

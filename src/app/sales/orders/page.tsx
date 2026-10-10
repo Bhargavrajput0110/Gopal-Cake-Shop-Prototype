@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Call, TickCircle, Warning2, Gift, Reserve, Notification, Clock, Lock1, Edit2, CloseSquare, Receipt21 } from "iconsax-react";
+import { Call, TickCircle, Warning2, Gift, Reserve, Notification, Clock, Lock1, Edit2, CloseSquare, Receipt21, Profile2User } from "iconsax-react";
 import { useOrders, Order, TimelineEvent } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { SearchNormal1 } from "iconsax-react";
@@ -17,6 +17,7 @@ import { useSession } from "next-auth/react";
 import { fetchClient } from "@/lib/api/client";
 import { OrderEditModal } from "@/components/sales/OrderEditModal";
 import { OrderTimelineModal } from "@/components/sales/OrderTimelineModal";
+import { ReassignDriverDialog } from "@/components/admin/orders/ReassignDriverDialog";
 import { SalesFilterBar } from "@/components/sales/SalesFilterBar";
 import { WhatsAppToast } from "@/components/ui/WhatsAppToast";
 import { BackButton } from "@/components/ui/BackButton";
@@ -90,12 +91,13 @@ function SalesDashboardContent() {
   const pathname = usePathname();
   const filter = searchParams.get("status") || "All";
   const search = searchParams.get("search") || "";
-  const dateFilter = searchParams.get("date") || "all";
+  const dateFilter = searchParams.get("date") || "today";
   const customDate = searchParams.get("customDate") || "";
   
   // Edit & Toast State
   const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [vendorAssignOrder, setVendorAssignOrder] = useState<Order | null>(null);
+  const [assignDriverOrder, setAssignDriverOrder] = useState<Order | null>(null);
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
   const [toastData, setToastData] = useState({ show: false, msg: "", rec: "" });
 
@@ -132,53 +134,65 @@ function SalesDashboardContent() {
     if (!silent) setLoading(true);
     if (!silent) setError("");
     try {
+      // Read directly from window.location.search when available to ensure immediate synchronization
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : searchParams;
+      const effectiveFilter = urlParams.get("status") || "All";
+      const effectiveSearch = urlParams.get("search") || "";
+      const effectiveDateFilter = urlParams.get("date") || "today";
+      const effectiveCustomDate = urlParams.get("customDate") || "";
+      const effectiveDriverId = urlParams.get("driverId");
+
       const params = new URLSearchParams();
       params.append("page", page.toString());
       params.append("limit", "50");
       params.append("branch", activeBranch);
       
       let statusParams = "";
-      if (filter === "Pending Verification") statusParams = "NEW,QUOTE_DRAFT,QUOTE_SENT";
-      else if (filter === "Waiting for Chef") statusParams = "WAITING_FOR_CHEF";
-      else if (filter === "In Kitchen") statusParams = "CHEF_ACCEPTED,MAKING,DECORATING";
-      else if (filter === "Ready") statusParams = "READY_FOR_PICKUP";
-      else if (filter === "Delivery") statusParams = "PENDING_ASSIGNMENT,ASSIGNED_TO_DRIVER,PICKED_UP,ON_THE_WAY,DELIVERED";
-      else if (filter === "Due Soon") params.append("dueSoon", "true");
-      else if (filter === "Issues") params.append("hasIssues", "true");
+      if (effectiveFilter === "Pending Verification") statusParams = "NEW,QUOTE_DRAFT,QUOTE_SENT";
+      else if (effectiveFilter === "Waiting for Chef") statusParams = "WAITING_FOR_CHEF";
+      else if (effectiveFilter === "In Kitchen") statusParams = "CHEF_ACCEPTED,MAKING,DECORATING";
+      else if (effectiveFilter === "Ready") statusParams = "READY_FOR_PICKUP";
+      else if (effectiveFilter === "Delivery") statusParams = "PENDING_ASSIGNMENT,ASSIGNED_TO_DRIVER,PICKED_UP,ON_THE_WAY,DELIVERED";
+      else if (effectiveFilter === "Due Soon") params.append("dueSoon", "true");
+      else if (effectiveFilter === "Issues") params.append("hasIssues", "true");
       
       if (statusParams) params.append("status", statusParams);
-      if (search.trim()) params.append("search", search.trim());
+      if (effectiveSearch.trim()) params.append("search", effectiveSearch.trim());
+      if (effectiveDriverId) params.append("driverId", effectiveDriverId);
       
-      const driverId = searchParams.get("driverId");
-      if (driverId) params.append("driverId", driverId);
-      
-      // Date logic
+      // Date logic - accurately computed in local timezone
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       const tomorrow = new Date(Date.now() + 86400000);
       const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
       
-      if (dateFilter === "today") {
+      if (effectiveDateFilter === "today") {
         params.append("startDate", todayStr);
         params.append("endDate", todayStr);
-      } else if (dateFilter === "tomorrow") {
+      } else if (effectiveDateFilter === "tomorrow") {
         params.append("startDate", tomorrowStr);
         params.append("endDate", tomorrowStr);
-      } else if (dateFilter === "custom" && customDate) {
-        params.append("startDate", customDate);
-        params.append("endDate", customDate);
-      } else if (dateFilter === "next3days") {
+      } else if (effectiveDateFilter === "custom" && effectiveCustomDate) {
+        params.append("startDate", effectiveCustomDate);
+        params.append("endDate", effectiveCustomDate);
+      } else if (effectiveDateFilter === "next3days") {
         params.append("startDate", todayStr);
         const next3 = new Date(Date.now() + 3 * 86400000);
         params.append("endDate", `${next3.getFullYear()}-${String(next3.getMonth() + 1).padStart(2, '0')}-${String(next3.getDate()).padStart(2, '0')}`);
-      } else if (dateFilter === "next15days") {
+      } else if (effectiveDateFilter === "next15days") {
         params.append("startDate", todayStr);
         const next15 = new Date(Date.now() + 15 * 86400000);
         params.append("endDate", `${next15.getFullYear()}-${String(next15.getMonth() + 1).padStart(2, '0')}-${String(next15.getDate()).padStart(2, '0')}`);
       }
       
-      params.append("sortField", "targetDate");
-      params.append("sortOrder", "asc");
+      // Chronological time sort: for specific dates, earliest due orders first; for All Dates, newest orders first
+      if (effectiveDateFilter === "all") {
+        params.append("sortField", "createdAt");
+        params.append("sortOrder", "desc");
+      } else {
+        params.append("sortField", "targetDate");
+        params.append("sortOrder", "asc");
+      }
       
       const res = await fetchClient<any>(`/orders?${params.toString()}`, { signal });
       if (res.success) {
@@ -361,6 +375,7 @@ function SalesDashboardContent() {
                   onReceipt={()=>setReceiptOrder(order)}
                   onEdit={()=>setEditOrder(order)}
                   onAssignVendor={()=>setVendorAssignOrder(order)}
+                  onAssignDriver={()=>setAssignDriverOrder(order)}
                   onWhatsApp={(msg)=>setToastData({show:true, msg, rec: order.customerPhone})}
                   onMutated={() => fetchOrders()}
                 />
@@ -371,6 +386,18 @@ function SalesDashboardContent() {
                 <TickCircle className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
                 <p className="font-bold">No orders found.</p>
               </div>
+            )}
+
+            {assignDriverOrder && (
+              <ReassignDriverDialog 
+                orderId={assignDriverOrder.id}
+                isOpen={!!assignDriverOrder}
+                onClose={() => setAssignDriverOrder(null)}
+                onSuccess={() => {
+                  fetchOrders();
+                  setToastData({ show: true, msg: "Driver successfully assigned!", rec: "" });
+                }}
+              />
             )}
             
             {/* Pagination Controls */}
@@ -558,7 +585,7 @@ export default function OrderManagementPage() {
   );
 }
 
-function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVendor, onWhatsApp, onMutated }: { order: Order; onViewTimeline: () => void; onReceipt: () => void; onEdit: () => void; onAssignVendor: () => void; onWhatsApp: (msg: string) => void; onMutated: () => void }) {
+function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVendor, onAssignDriver, onWhatsApp, onMutated }: { order: Order; onViewTimeline: () => void; onReceipt: () => void; onEdit: () => void; onAssignVendor: () => void; onAssignDriver: () => void; onWhatsApp: (msg: string) => void; onMutated: () => void }) {
   const { updateOrderStatus, updateOrderFields, updateVendorTaskStatus } = useOrders();
   const [quotePrice, setQuotePrice] = useState<number>(order.grandTotal || 0);
   const [selectedDiscount, setSelectedDiscount] = useState<number>(0);
@@ -768,6 +795,94 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
             </div>
 
             
+            {/* Inter-Branch Transfer Status Banner */}
+            {(() => {
+              const transfers = (order as any).transfers || [];
+              const activeTransfer = transfers.find((t: any) => 
+                ['PENDING', 'ACCEPTED', 'IN_TRANSIT'].includes(t.status)
+              ) || transfers[0];
+
+              const isHotBake = order.items?.some((i: any) => 
+                i.categoryId === 'cmuts899k0000ygu3pigymkyy' ||
+                i.productName?.toLowerCase().includes('puff') ||
+                i.name?.toLowerCase().includes('puff') ||
+                i.productName?.toLowerCase().includes('bake') ||
+                i.name?.toLowerCase().includes('bake')
+              );
+
+              if (activeTransfer) {
+                const fromName = toBranchShortName(activeTransfer.fromBranchId);
+                const toName = toBranchShortName(activeTransfer.toBranchId);
+                const isReceived = activeTransfer.status === 'RECEIVED';
+                const isInTransit = activeTransfer.status === 'IN_TRANSIT';
+                const driverName = (order as any).driver?.name || 'Driver';
+
+                return (
+                  <div className={`mt-2 mb-3 p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs ${
+                    isReceived 
+                      ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950'
+                      : isInTransit
+                      ? 'bg-amber-50/80 border-amber-300 text-amber-950'
+                      : 'bg-blue-50/80 border-blue-300 text-blue-950'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🚚</span>
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/90 border shadow-2xs">
+                            {isReceived ? '✅ Arrived at Branch' : isInTransit ? '🛵 In Transit' : '🏭 Ready at Factory'}
+                          </span>
+                          <span className="text-xs font-black">
+                            {fromName} Factory ➔ {toName} Branch
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-medium opacity-85 mt-0.5">
+                          {isReceived 
+                            ? `Received at ${toName} branch. Ready for counter handover to customer.`
+                            : isInTransit
+                            ? `Picked up by ${driverName}. On the way to ${toName} branch.`
+                            : `Baked at ${fromName} Factory. Awaiting driver pickup to transfer to ${toName} branch.`}
+                        </p>
+                      </div>
+                    </div>
+
+                    {!isReceived && (
+                      <button
+                        onClick={onAssignDriver}
+                        className="self-start sm:self-center shrink-0 px-3 py-1.5 bg-[#3E2723] text-white rounded-lg text-xs font-bold hover:bg-[#2c1c19] active:scale-95 transition-all shadow-sm flex items-center gap-1.5"
+                      >
+                        <Profile2User className="w-3.5 h-3.5 text-[#C5A059]" />
+                        {(order as any).driver ? `Change Driver (${driverName})` : 'Assign Driver'}
+                      </button>
+                    )}
+                  </div>
+                );
+              }
+
+              const orderBranchCode = (order as any).branchId || order.branch;
+              if (isHotBake && toBranchId(orderBranchCode) !== 'varasiya') {
+                return (
+                  <div className="mt-2 mb-3 p-2.5 rounded-xl border bg-amber-50/80 border-amber-300 text-amber-950 flex items-center justify-between gap-2 shadow-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🔥</span>
+                      <span className="text-xs font-bold">
+                        Hot Bakes: Baked at Warasiya Factory ➔ Transfer to {toBranchShortName(orderBranchCode)} Branch required
+                      </span>
+                    </div>
+                    <button
+                      onClick={onAssignDriver}
+                      className="shrink-0 px-3 py-1 bg-[#3E2723] text-white rounded-lg text-xs font-bold hover:bg-[#2c1c19] active:scale-95 transition-all shadow-sm flex items-center gap-1"
+                    >
+                      <Profile2User className="w-3.5 h-3.5 text-[#C5A059]" />
+                      Assign Driver
+                    </button>
+                  </div>
+                );
+              }
+
+              return null;
+            })()}
+
             {/* Transfer History View */}
             {(order as any).transferHistory && (order as any).transferHistory.length > 0 && (
               <div className="mb-3 p-2 bg-emerald-50/50 border border-emerald-200 rounded-lg flex items-center gap-2 overflow-x-auto hide-scrollbar">
@@ -1017,24 +1132,50 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                 );
               })()}
 
-              {order.pendingBalance === 0 && order.status === "READY_FOR_PICKUP" && (order.orderType === "pickup" || (order as any).deliveryType === "PICKUP") && (
-                <button 
-                  disabled={isHandingOver}
-                  onClick={handleHandover} 
-                  className="flex-1 min-w-[130px] bg-[#3E2723] text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-[#2c1c19] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform disabled:opacity-50"
-                >
-                  {isHandingOver ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Handing over...</span>
-                    </>
-                  ) : (
-                    <>
-                      <TickCircle className="w-5 h-5 text-[#C5A059]" /> Handover Cake
-                    </>
-                  )}
-                </button>
-              )}
+              {order.pendingBalance === 0 && order.status === "READY_FOR_PICKUP" && (order.orderType === "pickup" || (order as any).deliveryType === "PICKUP") && (() => {
+                const transfers = (order as any).transfers || [];
+                const activeTransfer = transfers.find((t: any) => ['PENDING', 'ACCEPTED', 'IN_TRANSIT'].includes(t.status));
+                const isHotBake = order.items?.some((i: any) => 
+                  i.categoryId === 'cmuts899k0000ygu3pigymkyy' ||
+                  i.productName?.toLowerCase().includes('puff') ||
+                  i.name?.toLowerCase().includes('puff') ||
+                  i.productName?.toLowerCase().includes('bake') ||
+                  i.name?.toLowerCase().includes('bake')
+                );
+                const orderBranchCode = (order as any).branchId || order.branch;
+                const isAwaitingTransfer = isHotBake && toBranchId(orderBranchCode) !== 'varasiya' && activeTransfer && activeTransfer.status !== 'RECEIVED';
+
+                if (isAwaitingTransfer) {
+                  return (
+                    <button 
+                      disabled
+                      className="flex-1 min-w-[130px] bg-amber-100 text-amber-800 border border-amber-300 px-3 py-3 rounded-xl text-xs font-black cursor-not-allowed flex items-center justify-center gap-1.5 shadow-sm opacity-90"
+                      title="Item is at Warasiya Factory / In transit. Awaiting driver arrival at Uma."
+                    >
+                      <Lock1 className="w-4 h-4 text-amber-700" /> Awaiting Arrival from Factory
+                    </button>
+                  );
+                }
+
+                return (
+                  <button 
+                    disabled={isHandingOver}
+                    onClick={handleHandover} 
+                    className="flex-1 min-w-[130px] bg-[#3E2723] text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-[#2c1c19] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform disabled:opacity-50"
+                  >
+                    {isHandingOver ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Handing over...</span>
+                      </>
+                    ) : (
+                      <>
+                        <TickCircle className="w-5 h-5 text-[#C5A059]" /> Handover Cake
+                      </>
+                    )}
+                  </button>
+                );
+              })()}
 
               {/* Quick Call & WhatsApp Buttons on Mobile Phone */}
               <a 

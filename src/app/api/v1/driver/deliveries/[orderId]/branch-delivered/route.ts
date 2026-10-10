@@ -75,7 +75,7 @@ export const PATCH = withApiHandler(async (ctx) => {
   }
 
   const orderId = transfer.order.id
-  const originalPickupBranchId = transfer.fromBranchId // e.g. Varasiya — where customer will pick up
+  const destinationBranchId = transfer.toBranchId // Destination branch (e.g. Uma) where customer picks up
 
   // Execute atomically
   const timelineEntry = await prisma.$transaction(async (tx) => {
@@ -85,20 +85,20 @@ export const PATCH = withApiHandler(async (ctx) => {
       data: { status: 'RECEIVED', receivedAt: new Date() }
     })
 
-    // 2. Move order back to the original pickup branch (Varasiya)
-    //    Order stays in READY_FOR_PICKUP status — Varasiya salesperson will see it
+    // 2. Move order to destination branch (Uma)
+    //    Order stays in READY_FOR_PICKUP status — Uma salesperson will see it
     //    and use "Handover Cake" button when customer physically arrives.
     await tx.order.update({
       where: { id: orderId },
       data: {
-        branchId: originalPickupBranchId,
+        branchId: destinationBranchId,
         driverId: null, // Release driver assignment — delivery is done
       }
     })
 
     // 3. Create a timeline entry with action = 'branch-delivered'.
     //    We do NOT emit action = 'ready' here — so customer is NOT notified yet.
-    //    The salesperson at originalPickupBranchId will see the order in their Sales Dashboard
+    //    The salesperson at destinationBranchId will see the order in their Sales Dashboard
     //    and click "Ready For Pickup" to confirm receipt and trigger the WhatsApp to the customer.
     const timeline = await tx.timeline.create({
       data: {
@@ -106,7 +106,7 @@ export const PATCH = withApiHandler(async (ctx) => {
         action: 'branch-delivered',
         status: 'READY_FOR_PICKUP',
         nextState: 'READY_FOR_PICKUP',
-        note: `Cake delivered to ${originalPickupBranchId.toUpperCase()} branch by delivery driver. Awaiting salesperson to notify customer for pickup.`,
+        note: `Order delivered to ${destinationBranchId.toUpperCase()} branch by delivery driver. Awaiting salesperson to notify customer for pickup.`,
         actorId: user.id,
         role: appRole,
       }
@@ -117,7 +117,7 @@ export const PATCH = withApiHandler(async (ctx) => {
       orderId,
       action: 'branch-delivered',
       nextState: 'READY_FOR_PICKUP',
-      branchId: originalPickupBranchId,
+      branchId: destinationBranchId,
       actorId: user.id,
     }, tx)
 
@@ -136,16 +136,16 @@ export const PATCH = withApiHandler(async (ctx) => {
 
   console.log(
     `[branch-delivered] Transfer ${transferId} completed. ` +
-    `Order ${orderId} branchId updated to ${originalPickupBranchId}. ` +
+    `Order ${orderId} branchId updated to ${destinationBranchId}. ` +
     `Ready for salesperson to notify customer.`
   )
 
   return NextResponse.json({
     success: true,
-    message: `Cake delivered to ${originalPickupBranchId.toUpperCase()} branch. Salesperson can now mark Ready for Pickup.`,
+    message: `Order delivered to ${destinationBranchId.toUpperCase()} branch. Salesperson can now mark Ready for Pickup.`,
     transferId,
     orderId,
-    newBranchId: originalPickupBranchId,
+    newBranchId: destinationBranchId,
     timelineId: timelineEntry.id,
   })
 })

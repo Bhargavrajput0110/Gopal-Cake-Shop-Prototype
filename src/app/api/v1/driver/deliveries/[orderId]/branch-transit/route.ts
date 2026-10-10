@@ -74,6 +74,12 @@ export const PATCH = withApiHandler(async (ctx) => {
       }
     })
 
+    // Assign driver to order if not already set
+    await tx.order.update({
+      where: { id: orderId },
+      data: { driverId: user.id }
+    })
+
     // Publish outbox event for real-time staff dashboards
     const timeline = await tx.timeline.create({
       data: {
@@ -81,9 +87,10 @@ export const PATCH = withApiHandler(async (ctx) => {
         action: 'branch-in-transit',
         status: transfer.order!.status,
         nextState: transfer.order!.status,
-        note: `Delivery driver picked up cake from ${transfer.toBranchId.toUpperCase()} — now in transit to ${transfer.fromBranchId.toUpperCase()} branch.`,
+        note: `Delivery driver picked up order from ${transfer.fromBranchId.toUpperCase()} — now in transit to ${transfer.toBranchId.toUpperCase()} branch.`,
         actorId: user.id,
         role: appRole,
+        branchId: transfer.toBranchId,
       }
     })
 

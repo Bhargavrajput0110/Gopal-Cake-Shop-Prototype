@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { toBranchId } from '@/lib/branches'
+import { toBranchId, toBranchShortName } from '@/lib/branches'
 import { OrderStateMachine, TransitionAction, AppRole, OrderStatus, STATE_MACHINE } from '@/lib/OrderStateMachine'
 import { TimelineService } from '@/services/TimelineService'
 import { OrderNotificationService } from '@/services/notifications/OrderNotificationService'
@@ -208,6 +208,65 @@ export class OrderTransitionService {
             console.log(`[Idempotent/Concurrency] Order ${orderId} is already at status ${nextState}. Proceeding gracefully.`)
           } else {
             throw new Error('CONCURRENCY_ERROR: Order status was updated by another team member.')
+          }
+        }
+
+        // HOT BAKES AUTOMATIC INTER-BRANCH TRANSFER
+        // If order contains Hot Bakes items and destination branch is NOT Warasiya,
+        // it was baked at Warasiya Factory and must be transferred to the ordering branch (e.g. Uma).
+        if ((nextState === 'READY_FOR_PICKUP' || action === 'ready') && normOrderBranch !== 'varasiya') {
+          const isHotBakeOrder = order.items?.some((i: any) => 
+            i.product?.categoryId === 'cmuts899k0000ygu3pigymkyy' ||
+            i.productName?.toLowerCase().includes('puff') ||
+            i.productName?.toLowerCase().includes('bake')
+          );
+
+          if (isHotBakeOrder) {
+            const warasiyaDbBranch = await tx.branch.findFirst({
+              where: {
+                OR: [
+                  { id: 'cmswuiiu000021su3kv1mr41f' },
+                  { name: { contains: 'warasiya', mode: 'insensitive' } },
+                  { name: { contains: 'varasiya', mode: 'insensitive' } }
+                ]
+              }
+            });
+            const warasiyaDbBranchId = warasiyaDbBranch ? warasiyaDbBranch.id : 'cmswuiiu000021su3kv1mr41f';
+
+            const existingTransfer = await tx.branchTransfer.findFirst({
+              where: {
+                orderId,
+                status: { in: ['PENDING', 'ACCEPTED', 'IN_TRANSIT'] }
+              }
+            });
+
+            if (!existingTransfer) {
+              await tx.branchTransfer.create({
+                data: {
+                  orderId,
+                  fromBranchId: warasiyaDbBranchId,
+                  toBranchId: order.branchId,
+                  status: 'ACCEPTED', // Pre-accepted so driver immediately sees it in available queue
+                  requestedBy: actorId || 'system-user',
+                  transferReason: 'HOT_BAKES_INTER_BRANCH',
+                  notes: `Hot Bakes order #${order.orderNumber} baked at Warasiya Factory. Ready for driver transfer to ${toBranchShortName(order.branchId)} Branch.`
+                }
+              });
+
+              extraTimelineEvents.push({
+                id: `evt_${Date.now()}_transfer_auto`,
+                actorId: actorId || null,
+                role: 'SYSTEM',
+                previousState: currentState,
+                nextState: 'READY_FOR_PICKUP',
+                status: 'READY_FOR_PICKUP',
+                action: 'transfer-requested',
+                eventType: 'STATE_TRANSITION',
+                systemGenerated: true,
+                note: `Hot Bakes transfer dispatched to driver pool: Warasiya Factory ➔ ${toBranchShortName(order.branchId)} Branch`,
+                branchId: warasiyaDbBranchId
+              });
+            }
           }
         }
       }

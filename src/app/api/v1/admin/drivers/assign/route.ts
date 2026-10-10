@@ -19,9 +19,26 @@ export const POST = withApiHandler(async (ctx) => {
   if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
 
   const updatedOrder = await db.$transaction(async (tx) => {
+    const isPickup = order.deliveryType === 'PICKUP';
+    const nextStatus = isPickup ? order.status : 'ASSIGNED_TO_DRIVER';
+
     const updated = await tx.order.update({
       where: { id: orderId },
-      data: { driverId, status: 'ASSIGNED_TO_DRIVER' }
+      data: { 
+        driverId, 
+        ...(isPickup ? {} : { status: nextStatus })
+      }
+    })
+
+    // Update active branch transfers for this order
+    await tx.branchTransfer.updateMany({
+      where: {
+        orderId,
+        status: { in: ['PENDING', 'ACCEPTED', 'IN_TRANSIT'] }
+      },
+      data: {
+        transportedBy: driverId
+      }
     })
 
     await TimelineService.create({
@@ -30,7 +47,7 @@ export const POST = withApiHandler(async (ctx) => {
       action: 'ADMIN_OVERRIDE',
       eventType: 'STATE_TRANSITION',
       status: order.status,
-      nextState: 'ASSIGNED_TO_DRIVER',
+      nextState: nextStatus,
       note: `Assigned Driver: ${driverId}`
     }, tx as any)
 
