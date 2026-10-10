@@ -128,7 +128,12 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
               (user as any).phone = prismaUser.phone;
               user.id = prismaUser.id;
               
-              if (prismaUser.status !== 'ACTIVE') {
+              if (prismaUser.status === 'INVITED') {
+                prisma.user.update({
+                  where: { id: prismaUser.id },
+                  data: { status: 'ACTIVE', activatedAt: new Date() }
+                }).catch(() => {});
+              } else if (prismaUser.status !== 'ACTIVE') {
                  LoggerService.warn(`Access Denied: Account Status ${prismaUser.status}`, { requestId, email: user.email })
                  LoggerService.security('ACCOUNT_SUSPENDED', {
                    requestId,

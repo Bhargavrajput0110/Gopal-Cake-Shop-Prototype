@@ -207,8 +207,16 @@ export class StorefrontEngine {
       // Base pricing logic
       let unitPrice = 0;
       let usedWeightConfig = false;
-      
-      if ((product as any).weightConfig) {
+
+      const isPieceItem = item.weight === 0 || 
+        product?.name?.toLowerCase().includes('puff') || 
+        product?.name?.toLowerCase().includes('bake') || 
+        (product as any)?.categoryId === 'cmuts899k0000ygu3pigymkyy';
+
+      if (isPieceItem) {
+        unitPrice = Number(product.basePrice || 0);
+        usedWeightConfig = true;
+      } else if ((product as any).weightConfig) {
         try {
           const wc: any = typeof (product as any).weightConfig === 'string' ? JSON.parse((product as any).weightConfig) : (product as any).weightConfig;
           if (wc && typeof wc === 'object' && Object.keys(wc).length > 0) {
@@ -243,8 +251,8 @@ export class StorefrontEngine {
         unitPrice = Number(product.basePrice) * scale;
       }
 
-      // Add flavour surcharge
-      if (item.flavor) {
+      // Add flavour surcharge (only for cakes with weight)
+      if (item.flavor && !isPieceItem && item.weight > 0) {
         const surcharge = getFlavourSurcharge(item.flavor, item.weight)
         unitPrice += surcharge
       }
@@ -302,8 +310,8 @@ export class StorefrontEngine {
         price: unitPrice,
         tax: lineTax,
         quantity: item.quantity,
-        weight: item.weight,
-        flavor: item.flavor,
+        weight: isPieceItem ? 0 : item.weight,
+        flavor: (isPieceItem && (item.flavor === 'Regular' || !item.flavor)) ? null : (item.flavor || null),
         messageOnCake: item.messageOnCake,
         image: product.thumbnail,
         designId: design ? design.id : item.designId,

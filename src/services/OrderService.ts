@@ -40,7 +40,33 @@ export class OrderService {
     } else if (branchId) {
       // Use the logged-in user's branchId — applies to ALL roles including ADMIN
       // An Admin logged into Uma branch should only see Uma orders by default
-      whereClause.branchId = { in: getBranchFilterValues(branchId) };
+      const branchValues = getBranchFilterValues(branchId);
+      
+      // SPECIAL REQUIREMENT: Warasiya sales desk MUST also see orders from OTHER branches
+      // IF the order contains Hot Bake items (categoryId 'cmuts899k0000ygu3pigymkyy' or puff/bake in name)
+      // AND is marked READY (so Warasiya dispatch can assign/dispatch it).
+      if ((role === 'SALES' || role === 'MANAGER') && (branchValues.includes('varasiya') || branchValues.includes('warasiya') || branchValues.includes('cmswuiiu000021su3kv1mr41f'))) {
+        if (!whereClause.AND) whereClause.AND = [];
+        (whereClause.AND as any[]).push({
+          OR: [
+            { branchId: { in: branchValues } },
+            {
+               items: {
+                 some: {
+                   OR: [
+                     { product: { categoryId: 'cmuts899k0000ygu3pigymkyy' } },
+                     { productName: { contains: 'puff', mode: 'insensitive' } },
+                     { productName: { contains: 'bake', mode: 'insensitive' } }
+                   ]
+                 }
+               },
+               status: { in: ['READY_FOR_PICKUP', 'PENDING_ASSIGNMENT', 'ASSIGNED_TO_DRIVER'] }
+            }
+          ]
+        });
+      } else {
+        whereClause.branchId = { in: branchValues };
+      }
     }
     // If branchId is null AND no filter.branch → super-admin with no branch restriction (sees all)
 
@@ -173,6 +199,11 @@ export class OrderService {
             const product = i.productId ? productMap.get(i.productId) : null;
             const referenceImages = i.media ? i.media.filter((m: any) => m.type === 'REFERENCE').map((m: any) => m.url) : [];
             const printImages = i.media ? i.media.filter((m: any) => m.type === 'PRODUCTION').map((m: any) => m.url) : [];
+            const isPieceItem = i.variant === 'Piece' || 
+              i.productName?.toLowerCase().includes('puff') || 
+              i.productName?.toLowerCase().includes('bake') || 
+              product?.categoryId === 'cmuts899k0000ygu3pigymkyy' ||
+              i.weight === 0;
             return {
               id: i.id,
               name: i.productName || product?.name || 'Custom Item',
@@ -180,8 +211,8 @@ export class OrderService {
               categoryId: product?.categoryId || undefined,
               price: Number(i.price),
               qty: i.quantity,
-              weight: i.weight ? `${i.weight}kg` : undefined,
-              flavor: i.flavor || undefined,
+              weight: (!isPieceItem && i.weight && i.weight > 0) ? (i.weight < 1 ? `${i.weight * 1000}g` : `${i.weight}kg`) : undefined,
+              flavor: (isPieceItem && (i.flavor === 'Regular' || !i.flavor)) ? undefined : (i.flavor || undefined),
               notes: i.notes || undefined,
               messageOnCake: i.messageOnCake || undefined,
               image: i.image || product?.thumbnail || undefined,

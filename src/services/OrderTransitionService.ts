@@ -25,14 +25,15 @@ export class OrderTransitionService {
     // but we will still conditionally update inside the transaction to prevent races.
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { branch: true }
+      include: { branch: true, items: { include: { product: true } } }
     })
 
     if (!order) {
       throw new Error('ORDER_NOT_FOUND')
     }
 
-    // Allow cross-branch overrides for drivers if assigned, OR staff at destination/source branch of an inter-branch transfer
+    // Allow cross-branch overrides for drivers if assigned, OR staff at destination/source branch of an inter-branch transfer,
+    // OR Hot Bakes Chef (Santosh) who handles hot bakes from ALL branches.
     const normOrderBranch = toBranchId(order.branchId)
     const normUserBranch = branchId ? toBranchId(branchId) : null
 
@@ -40,6 +41,27 @@ export class OrderTransitionService {
       let isAllowed = false
       if (role === 'DELIVERY' && order.driverId === actorId) {
         isAllowed = true
+      } else if (role === 'CHEF') {
+        const isHotBakeOrder = order.items?.some((i: any) => 
+          i.product?.categoryId === 'cmuts899k0000ygu3pigymkyy' ||
+          i.productName?.toLowerCase().includes('puff') ||
+          i.productName?.toLowerCase().includes('bake')
+        );
+        if (isHotBakeOrder) {
+          isAllowed = true;
+        } else {
+          const actor = await prisma.user.findUnique({
+            where: { id: actorId },
+            select: { phone: true, name: true }
+          });
+          if (
+            actor?.phone === '9054090380' || 
+            actor?.name?.toLowerCase().includes('santosh') || 
+            actor?.name?.toLowerCase().includes('hot bake')
+          ) {
+            isAllowed = true;
+          }
+        }
       } else {
         const transfer = await prisma.branchTransfer.findFirst({
           where: {
@@ -147,6 +169,10 @@ export class OrderTransitionService {
           status: nextState
         }
 
+        if (action === 'chef-accept' && role === 'CHEF') {
+          updateData.chefId = actorId
+        }
+
         // If this action carries pricing details (like send-quote), update the amounts
         if (basePrice !== undefined) {
           updateData.baseAmount = basePrice
@@ -161,6 +187,16 @@ export class OrderTransitionService {
           },
           data: updateData
         })
+
+        if (['CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'READY_FOR_PICKUP'].includes(nextState)) {
+          await tx.orderItem.updateMany({
+            where: { orderId },
+            data: {
+              status: nextState as any,
+              ...(action === 'chef-accept' && role === 'CHEF' ? { assignedChefId: actorId } : {})
+            }
+          })
+        }
 
         if (updatedOrder.count === 0) {
           // Check if DB is already at target nextState concurrently (e.g. driver double-click or rapid state sync)

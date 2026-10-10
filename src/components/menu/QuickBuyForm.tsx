@@ -195,7 +195,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       quantity: editingCartItem ? editingCartItem.quantity : 1,
       image: product.thumbnail || product.imageUrl || product.image,
       variant: isHotBake ? 'Piece' : selectedWeight,
-      flavor: isHotBake ? 'Regular' : selectedFlavour,
+      flavor: isHotBake ? undefined : selectedFlavour,
       messageOnCake: isHotBake ? undefined : (messageOnCake.trim() || undefined),
       notes: notes.trim() || undefined,
       referenceImages: referenceImages.length > 0 ? referenceImages : undefined,

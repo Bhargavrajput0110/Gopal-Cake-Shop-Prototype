@@ -112,7 +112,9 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
                 <div className="flex-1 min-w-0">
                   <p className="font-display font-bold text-base md:text-lg text-foreground truncate">{item.name}</p>
                   <p className="text-muted-foreground font-ui text-[9px] uppercase tracking-widest font-black truncate">
-                    {item.weight}kg {item.flavor ? `• ${item.flavor}` : ''} {item.shape ? `• ${item.shape}` : ''}
+                    {item.weight && item.weight > 0 && !item.name?.toLowerCase().includes('puff') && !item.name?.toLowerCase().includes('bake') ? `${item.weight}kg ` : ''}
+                    {item.flavor && item.flavor !== 'Regular' ? `• ${item.flavor} ` : ''}
+                    {item.shape ? `• ${item.shape}` : ''}
                   </p>
                   {item.designName && (
                     <p className="text-[var(--brand-deep-rose)] font-ui text-[9px] uppercase tracking-widest font-black mt-0.5 truncate">

@@ -147,7 +147,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const socket: Socket | null = null;
 
   const refetchOrders = () => {
-    fetch("/api/v1/orders?limit=100").then(res => {
+    fetch(`/api/v1/orders?limit=100&_t=${Date.now()}`).then(res => {
       if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
         return null;
       }

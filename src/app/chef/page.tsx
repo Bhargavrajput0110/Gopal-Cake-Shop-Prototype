@@ -404,8 +404,12 @@ export default function ChefDashboardPage() {
                   <div className="flex-1 min-w-0">
                     <p className={`font-black text-gray-900 text-lg leading-tight ${isChecked ? 'line-through' : ''}`}>{item.name}</p>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {item.weight && <p className="font-bold text-gray-500 text-xs uppercase bg-gray-100 px-2 py-0.5 rounded">{item.weight}</p>}
-                      {item.flavor && <p className="font-bold text-[var(--brand-champagne-dark,#8B3A52)] text-xs uppercase bg-[var(--brand-champagne,#F6E9D8)] px-2 py-0.5 rounded">{item.flavor}</p>}
+                      {item.weight && !item.name?.toLowerCase().includes('puff') && !item.name?.toLowerCase().includes('bake') && (
+                        <p className="font-bold text-gray-500 text-xs uppercase bg-gray-100 px-2 py-0.5 rounded">{item.weight}</p>
+                      )}
+                      {item.flavor && item.flavor !== 'Regular' && (
+                        <p className="font-bold text-[var(--brand-champagne-dark,#8B3A52)] text-xs uppercase bg-[var(--brand-champagne,#F6E9D8)] px-2 py-0.5 rounded">{item.flavor}</p>
+                      )}
                     </div>
                     {/* 🎂 MESSAGE ON CAKE — huge unmissable banner */}
                     {item.messageOnCake && (

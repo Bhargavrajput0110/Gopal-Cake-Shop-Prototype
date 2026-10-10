@@ -47,7 +47,8 @@ export const {
               where: { id: user.id },
               data: {
                 lastLoginAt: new Date(),
-                lastActivityAt: new Date()
+                lastActivityAt: new Date(),
+                ...(user.status === 'INVITED' ? { status: 'ACTIVE', activatedAt: new Date() } : {})
               }
             });
           } catch (err) {
