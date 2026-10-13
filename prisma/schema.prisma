@@ -140,6 +140,7 @@ model Order {
   @@index([branchId, status])
   @@index([branchId, createdAt])
   @@index([branchId, status, targetDate])
+  @@index([branchId, targetDate])
 }
 
 model OrderItem {

@@ -144,7 +144,7 @@ function SalesDashboardContent() {
 
       const params = new URLSearchParams();
       params.append("page", page.toString());
-      params.append("limit", "50");
+      params.append("limit", "20");
       params.append("branch", activeBranch);
       
       let statusParams = "";
@@ -192,7 +192,7 @@ function SalesDashboardContent() {
       const res = await fetchClient<any>(`/orders?${params.toString()}`, { signal });
       if (res.success) {
         setServerOrders(res.data || []);
-        setTotalPages(res.meta?.totalPages || 1);
+        setTotalPages(res.pagination?.totalPages || res.meta?.totalPages || 1);
       } else {
         throw new Error(res.error?.message || "Failed to fetch orders");
       }
@@ -204,7 +204,7 @@ function SalesDashboardContent() {
         setTotalPages(1);
       }
     } finally {
-      if (!silent) setLoading(false);
+      if (!silent && !signal?.aborted) setLoading(false);
     }
   };
 
@@ -212,13 +212,8 @@ function SalesDashboardContent() {
     const controller = new AbortController();
     fetchOrders(controller.signal);
 
-    const handlePopState = () => {
-      fetchOrders();
-    };
-    window.addEventListener("popstate", handlePopState);
     return () => {
       controller.abort();
-      window.removeEventListener("popstate", handlePopState);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, filter, search, dateFilter, customDate, activeBranch]);
@@ -377,9 +372,31 @@ function SalesDashboardContent() {
               ))}
             </AnimatePresence>
             {serverOrders.length===0 && (
-              <div className="text-center py-20 opacity-50">
-                <TickCircle className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
-                <p className="font-bold">No orders found.</p>
+              <div className="text-center py-16 px-4 space-y-3">
+                <TickCircle className="w-12 h-12 mx-auto text-muted-foreground opacity-60" />
+                <p className="font-bold text-[#3E2723] text-base">
+                  {dateFilter === "today" ? "No orders due today." : "No orders found."}
+                </p>
+                <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                  {dateFilter === "today"
+                    ? "There are no orders scheduled for today at this branch. Switch to All Dates to view all orders."
+                    : "No orders match the selected filters. Try switching dates or clearing filters."}
+                </p>
+                {dateFilter === "today" && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-[#C5A059] text-[#3E2723] hover:bg-[#C5A059]/10 font-bold mt-2 shadow-xs"
+                    onClick={() => {
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.set("date", "all");
+                      params.set("page", "1");
+                      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+                    }}
+                  >
+                    📅 View All Dates
+                  </Button>
+                )}
               </div>
             )}
 

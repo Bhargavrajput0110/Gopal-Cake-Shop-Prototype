@@ -155,7 +155,7 @@ export class OrderService {
         orderBy,
         include: {
           customer: true,
-          items: { include: { media: true, timeline: { include: { actor: true } } } },
+          items: { include: { media: true, product: true } },
           ledgerEntries: true,
           payments: true,
           vendorTasks: { include: { vendor: true } },
@@ -166,21 +166,6 @@ export class OrderService {
       }),
       db.order.count({ where: whereClause }),
     ])
-
-    // Fetch product details from Supabase to merge with items
-    const productIds = Array.from(new Set(orders.flatMap(o => o.items.map(i => (i as any).productId)).filter(Boolean)))
-    
-    let productMap = new Map<string, any>()
-    try {
-      if (productIds.length > 0) {
-        const { data: products } = await supabaseAdmin.from('products').select('*').in('id', productIds)
-        if (products) {
-          productMap = new Map(products.map((p: any) => [p.id, p]))
-        }
-      }
-    } catch (err) {
-      console.error('[OrderService] Error fetching products from Supabase:', err)
-    }
 
     const result = {
       data: await Promise.all(orders.map(async (o) => {
@@ -200,7 +185,7 @@ export class OrderService {
           createdAt: o.createdAt,
           cakeImage: o.items[0]?.media?.find((m: any) => m.type === 'REFERENCE')?.url || o.items[0]?.image || undefined,
           items: o.items.map((i: any) => {
-            const product = i.productId ? productMap.get(i.productId) : null;
+            const product = i.product;
             const referenceImages = i.media ? i.media.filter((m: any) => m.type === 'REFERENCE').map((m: any) => m.url) : [];
             const printImages = i.media ? i.media.filter((m: any) => m.type === 'PRODUCTION').map((m: any) => m.url) : [];
             const isPieceItem = i.variant === 'Piece' || 
@@ -227,8 +212,7 @@ export class OrderService {
               parentItemId: i.parentItemId || undefined,
               status: i.status || undefined,
               updatedAt: i.updatedAt || undefined,
-              assignedDriverName: i.timeline?.filter((t: any) => t.action.startsWith('DRIVER_'))
-                                    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.actor?.name || undefined,
+              assignedDriverName: (o as any).driver?.name || undefined,
             }
           }),
           priorityLevel: (o as any).priorityLevel || "normal",

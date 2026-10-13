@@ -4,6 +4,9 @@ import { OrderService } from '@/services/OrderService'
 import { CreateDraftOrderSchema } from '@/dtos/OrderSchemas'
 import { successResponse, createdResponse, paginatedResponse } from '@/lib/apiUtils'
 
+export const dynamic = 'force-dynamic'
+export const maxDuration = 30
+
 /**
  * @swagger
  * /api/v1/orders:

@@ -58,11 +58,6 @@ export function SalesFilterBar() {
     });
 
     const newUrl = `${pathname}?${params.toString()}`;
-    // Push state to browser history for immediate response on mobile
-    window.history.pushState({}, "", newUrl);
-    // Dispatch popstate so listener components reload
-    window.dispatchEvent(new Event("popstate"));
-    // Trigger Next.js router navigation
     router.push(newUrl, { scroll: false });
   };
 
