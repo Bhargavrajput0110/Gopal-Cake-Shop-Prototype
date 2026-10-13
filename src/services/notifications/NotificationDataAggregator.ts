@@ -136,7 +136,13 @@ export class NotificationDataAggregator {
       .filter((item) => !item.parentItemId) // Exclude internal vendor child items (ACRYLIC, FLORIST, PHOTO)
       .map((item) => {
         const parts: string[] = [`${item.quantity}x ${item.productName}`];
-        if (item.weight) parts.push(`${item.weight}kg`);
+        if (item.weight) {
+          const w = Number(item.weight);
+          parts.push(w < 1 ? `${w * 1000}g` : `${w}kg`);
+        }
+        if (item.flavor && item.flavor !== 'Regular') {
+          parts.push(`(${item.flavor})`);
+        }
         if (item.variant) parts.push(item.variant);
         return parts.join(' - ');
       })

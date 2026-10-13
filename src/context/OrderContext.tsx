@@ -147,7 +147,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const socket: Socket | null = null;
 
   const refetchOrders = () => {
-    fetch(`/api/v1/orders?limit=100&_t=${Date.now()}`).then(res => {
+    fetch(`/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100&_t=${Date.now()}`).then(res => {
       if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
         return null;
       }
@@ -226,13 +226,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       }
       
       // Always refetch to sync state
-      const refresh = await fetch("/api/v1/orders?limit=100");
+      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     } catch (e) {
       console.error(e);
       alert("Error transitioning order.");
-      const refresh = await fetch("/api/v1/orders?limit=100");
+      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     }
@@ -281,13 +281,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         }
       }
       // Always refetch to sync authoritative state
-      const refresh = await fetch('/api/v1/orders?limit=100');
+      const refresh = await fetch('/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100');
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     } catch (e) {
       console.error('[OrderContext] updateOrderStatus error:', e);
       alert('Network error updating order status. Please refresh.');
-      const refresh = await fetch('/api/v1/orders?limit=100');
+      const refresh = await fetch('/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100');
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     }

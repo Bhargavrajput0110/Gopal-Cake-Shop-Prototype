@@ -33,22 +33,22 @@ export class OrderService {
     const skip = (page - 1) * limit
     const whereClause: Prisma.OrderWhereInput = {}
 
-    // Branch isolation: always filter by branch unless user is a super-admin with no branch
+    // Branch isolation logic
+    let targetBranchValues: string[] = [];
     if (filters?.branch) {
-      // Explicit branch filter from URL params (e.g. admin switching branches in UI)
-      whereClause.branchId = { in: getBranchFilterValues(filters.branch) };
+      targetBranchValues = getBranchFilterValues(filters.branch);
     } else if (branchId) {
-      // Use the logged-in user's branchId — applies to ALL roles including ADMIN
-      // An Admin logged into Uma branch should only see Uma orders by default
-      const branchValues = getBranchFilterValues(branchId);
-      
+      targetBranchValues = getBranchFilterValues(branchId);
+    }
+
+    if (targetBranchValues.length > 0) {
       // SPECIAL REQUIREMENT: Warasiya sales desk MUST also see orders from OTHER branches
       // IF the order contains Hot Bake items (categoryId 'cmuts899k0000ygu3pigymkyy' or puff/bake in name)
-      if ((role === 'SALES' || role === 'MANAGER') && (branchValues.includes('varasiya') || branchValues.includes('warasiya') || branchValues.includes('cmswuiiu000021su3kv1mr41f'))) {
+      if ((role === 'SALES' || role === 'MANAGER') && (targetBranchValues.includes('varasiya') || targetBranchValues.includes('warasiya') || targetBranchValues.includes('cmswuiiu000021su3kv1mr41f'))) {
         if (!whereClause.AND) whereClause.AND = [];
         (whereClause.AND as any[]).push({
           OR: [
-            { branchId: { in: branchValues } },
+            { branchId: { in: targetBranchValues } },
             {
                items: {
                  some: {
@@ -63,7 +63,7 @@ export class OrderService {
           ]
         });
       } else {
-        whereClause.branchId = { in: branchValues };
+        whereClause.branchId = { in: targetBranchValues };
       }
     }
     // If branchId is null AND no filter.branch → super-admin with no branch restriction (sees all)
@@ -136,11 +136,15 @@ export class OrderService {
     const orderBy: Prisma.OrderOrderByWithRelationInput[] = [];
     if (filters?.sortField) {
       orderBy.push({ [filters.sortField]: filters.sortOrder === 'asc' ? 'asc' : 'desc' });
-      // If we are sorting by targetDate ascending, use id ascending as tie-breaker (first-come first-serve)
+      // If we are sorting by targetDate, use createdAt asc then id asc as tie-breakers (earliest placed first)
+      if (filters.sortField === 'targetDate') {
+        orderBy.push({ createdAt: 'asc' });
+      }
       orderBy.push({ id: filters.sortOrder === 'asc' ? 'asc' : 'desc' });
     } else {
-      orderBy.push({ createdAt: 'desc' });
-      orderBy.push({ id: 'desc' });
+      orderBy.push({ targetDate: 'asc' });
+      orderBy.push({ createdAt: 'asc' });
+      orderBy.push({ id: 'asc' });
     }
 
     const [orders, total] = await Promise.all([

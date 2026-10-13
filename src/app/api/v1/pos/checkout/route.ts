@@ -21,6 +21,14 @@ const handler = async (ctx: HandlerContext) => {
   if (customerName.length < 2) customerName = 'Walk-in Customer'
 
   let cleanPhone = (data.customerPhone || '').replace(/\D/g, '')
+  // If the user pastes with 91 or +91 country code, strip it so it's 10 digits
+  if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) {
+    cleanPhone = cleanPhone.substring(2);
+  } else if (cleanPhone.length === 13 && cleanPhone.startsWith('091')) {
+    cleanPhone = cleanPhone.substring(3);
+  } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
+    cleanPhone = cleanPhone.substring(1);
+  }
   if (cleanPhone.length !== 10) cleanPhone = '9999999999'
 
   if (data.deliveryType === 'DELIVERY') {
