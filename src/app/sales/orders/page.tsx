@@ -89,10 +89,10 @@ function SalesDashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const filter = searchParams.get("status") || "All";
-  const search = searchParams.get("search") || "";
-  const dateFilter = searchParams.get("date") || "today";
-  const customDate = searchParams.get("customDate") || "";
+  const [filter, setFilter] = useState(() => searchParams.get("status") || "All");
+  const [search, setSearch] = useState(() => searchParams.get("search") || "");
+  const [dateFilter, setDateFilter] = useState(() => searchParams.get("date") || "today");
+  const [customDate, setCustomDate] = useState(() => searchParams.get("customDate") || "");
   
   // Edit & Toast State
   const [editOrder, setEditOrder] = useState<Order | null>(null);
@@ -134,10 +134,10 @@ function SalesDashboardContent() {
     if (!silent) setLoading(true);
     if (!silent) setError("");
     try {
-      const effectiveFilter = searchParams.get("status") || "All";
-      const effectiveSearch = searchParams.get("search") || "";
-      const effectiveDateFilter = searchParams.get("date") || "today";
-      const effectiveCustomDate = searchParams.get("customDate") || "";
+      const effectiveFilter = filter;
+      const effectiveSearch = search;
+      const effectiveDateFilter = dateFilter;
+      const effectiveCustomDate = customDate;
       const effectiveDriverId = searchParams.get("driverId");
 
       const params = new URLSearchParams();
@@ -339,7 +339,16 @@ function SalesDashboardContent() {
         </div>
       </div>
 
-      <SalesFilterBar />
+      <SalesFilterBar 
+        status={filter}
+        onStatusChange={(s) => { setFilter(s); setPage(1); }}
+        date={dateFilter}
+        onDateChange={(d) => { setDateFilter(d); setPage(1); }}
+        customDate={customDate}
+        onCustomDateChange={(cd) => { setCustomDate(cd); setPage(1); }}
+        search={search}
+        onSearchChange={(s) => { setSearch(s); setPage(1); }}
+      />
 
       <div className="flex-1 overflow-y-auto space-y-4 pr-2" data-lenis-prevent>
         {loading ? (
@@ -386,10 +395,13 @@ function SalesDashboardContent() {
                     size="sm"
                     className="border-[#C5A059] text-[#3E2723] hover:bg-[#C5A059]/10 font-bold mt-2 shadow-xs"
                     onClick={() => {
+                      setDateFilter("all");
+                      setCustomDate("");
+                      setPage(1);
                       const params = new URLSearchParams(searchParams.toString());
                       params.set("date", "all");
                       params.set("page", "1");
-                      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+                      window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
                     }}
                   >
                     📅 View All Dates

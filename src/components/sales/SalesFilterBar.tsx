@@ -13,16 +13,27 @@ export const DATE_FILTERS = [
   { id: "next15days", label: "Next 15 Days" },
 ];
 
-export function SalesFilterBar() {
+export interface SalesFilterBarProps {
+  status?: string;
+  onStatusChange?: (status: string) => void;
+  date?: string;
+  onDateChange?: (date: string) => void;
+  customDate?: string;
+  onCustomDateChange?: (customDate: string) => void;
+  search?: string;
+  onSearchChange?: (search: string) => void;
+}
+
+export function SalesFilterBar(props: SalesFilterBarProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Read current state from URL — default to today
-  const currentStatus = searchParams.get("status") || "All";
-  const currentSearch = searchParams.get("search") || "";
-  const currentDate = searchParams.get("date") || "today";
-  const currentCustomDate = searchParams.get("customDate") || "";
+  // Read current state from props or fallback to URL
+  const currentStatus = props.status !== undefined ? props.status : (searchParams.get("status") || "All");
+  const currentSearch = props.search !== undefined ? props.search : (searchParams.get("search") || "");
+  const currentDate = props.date !== undefined ? props.date : (searchParams.get("date") || "today");
+  const currentCustomDate = props.customDate !== undefined ? props.customDate : (searchParams.get("customDate") || "");
 
   // Local optimistic state for instant UI responsiveness on touch devices
   const [status, setStatus] = useState(currentStatus);
@@ -30,22 +41,31 @@ export function SalesFilterBar() {
   const [customDate, setCustomDate] = useState(currentCustomDate);
   const [localSearch, setLocalSearch] = useState(currentSearch);
 
-  // Sync state when URL searchParams change
+  // Sync state when props or URL searchParams change
   useEffect(() => {
-    setStatus(searchParams.get("status") || "All");
-    setDate(searchParams.get("date") || "today");
-    setCustomDate(searchParams.get("customDate") || "");
-  }, [searchParams]);
+    if (props.status !== undefined) setStatus(props.status);
+    else setStatus(searchParams.get("status") || "All");
 
-  // Debounce sync of search input to URL
+    if (props.date !== undefined) setDate(props.date);
+    else setDate(searchParams.get("date") || "today");
+
+    if (props.customDate !== undefined) setCustomDate(props.customDate);
+    else setCustomDate(searchParams.get("customDate") || "");
+
+    if (props.search !== undefined) setLocalSearch(props.search);
+    else setLocalSearch(searchParams.get("search") || "");
+  }, [props.status, props.date, props.customDate, props.search, searchParams]);
+
+  // Debounce sync of search input to URL & parent
   useEffect(() => {
     const handler = setTimeout(() => {
       if (localSearch !== currentSearch) {
+        if (props.onSearchChange) props.onSearchChange(localSearch);
         updateUrlParams({ search: localSearch, page: "1" });
       }
     }, 300);
     return () => clearTimeout(handler);
-  }, [localSearch, currentSearch]);
+  }, [localSearch, currentSearch, props.onSearchChange]);
 
   const updateUrlParams = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -58,18 +78,22 @@ export function SalesFilterBar() {
     });
 
     const newUrl = `${pathname}?${params.toString()}`;
-    router.push(newUrl, { scroll: false });
+    // Replace URL cleanly without reloading
+    window.history.replaceState(null, "", newUrl);
   };
 
   const handleStatusChange = (newStatus: string) => {
     const s = newStatus === "All" ? "All" : newStatus;
     setStatus(s);
+    if (props.onStatusChange) props.onStatusChange(s);
     updateUrlParams({ status: s === "All" ? null : s, page: "1" });
   };
 
   const handleDateChange = (newDate: string) => {
     setDate(newDate);
     setCustomDate("");
+    if (props.onDateChange) props.onDateChange(newDate);
+    if (props.onCustomDateChange) props.onCustomDateChange("");
     updateUrlParams({ date: newDate, customDate: null, page: "1" });
   };
 
@@ -77,6 +101,8 @@ export function SalesFilterBar() {
     setCustomDate(val);
     if (!val) {
       setDate("today");
+      if (props.onDateChange) props.onDateChange("today");
+      if (props.onCustomDateChange) props.onCustomDateChange("");
       updateUrlParams({ date: "today", customDate: null, page: "1" });
       return;
     }
@@ -86,12 +112,18 @@ export function SalesFilterBar() {
 
     if (val === todayStr) {
       setDate("today");
+      if (props.onDateChange) props.onDateChange("today");
+      if (props.onCustomDateChange) props.onCustomDateChange("");
       updateUrlParams({ date: "today", customDate: null, page: "1" });
     } else if (val === tomorrowStr) {
       setDate("tomorrow");
+      if (props.onDateChange) props.onDateChange("tomorrow");
+      if (props.onCustomDateChange) props.onCustomDateChange("");
       updateUrlParams({ date: "tomorrow", customDate: null, page: "1" });
     } else {
       setDate("custom");
+      if (props.onDateChange) props.onDateChange("custom");
+      if (props.onCustomDateChange) props.onCustomDateChange(val);
       updateUrlParams({ date: "custom", customDate: val, page: "1" });
     }
   };
