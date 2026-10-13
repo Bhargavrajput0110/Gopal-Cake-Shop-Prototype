@@ -91,7 +91,7 @@ function SalesDashboardContent() {
   const pathname = usePathname();
   const filter = searchParams.get("status") || "All";
   const search = searchParams.get("search") || "";
-  const dateFilter = searchParams.get("date") || "all";
+  const dateFilter = searchParams.get("date") || "today";
   const customDate = searchParams.get("customDate") || "";
   
   // Edit & Toast State
@@ -136,7 +136,7 @@ function SalesDashboardContent() {
     try {
       const effectiveFilter = searchParams.get("status") || "All";
       const effectiveSearch = searchParams.get("search") || "";
-      const effectiveDateFilter = searchParams.get("date") || "all";
+      const effectiveDateFilter = searchParams.get("date") || "today";
       const effectiveCustomDate = searchParams.get("customDate") || "";
       const effectiveDriverId = searchParams.get("driverId");
 
