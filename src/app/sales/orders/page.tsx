@@ -183,15 +183,9 @@ function SalesDashboardContent() {
         params.append("endDate", `${next15.getFullYear()}-${String(next15.getMonth() + 1).padStart(2, '0')}-${String(next15.getDate()).padStart(2, '0')}`);
       }
       
-      // Sorting: For "all" (All Dates), newest orders first so recent active orders appear right away.
-      // For specific dates, sort by due time (targetDate: asc) so earliest due orders appear first.
-      if (effectiveDateFilter === "all") {
-        params.append("sortField", "createdAt");
-        params.append("sortOrder", "desc");
-      } else {
-        params.append("sortField", "targetDate");
-        params.append("sortOrder", "asc");
-      }
+      // Enforce due date and time ascending sort (earliest due orders first) across all views
+      params.append("sortField", "targetDate");
+      params.append("sortOrder", "asc");
       
       const res = await fetchClient<any>(`/orders?${params.toString()}`, { signal });
       if (res.success) {
