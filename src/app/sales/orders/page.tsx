@@ -91,7 +91,7 @@ function SalesDashboardContent() {
   const pathname = usePathname();
   const filter = searchParams.get("status") || "All";
   const search = searchParams.get("search") || "";
-  const dateFilter = searchParams.get("date") || "today";
+  const dateFilter = searchParams.get("date") || "all";
   const customDate = searchParams.get("customDate") || "";
   
   // Edit & Toast State
@@ -134,13 +134,11 @@ function SalesDashboardContent() {
     if (!silent) setLoading(true);
     if (!silent) setError("");
     try {
-      // Read directly from window.location.search when available to ensure immediate synchronization
-      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : searchParams;
-      const effectiveFilter = urlParams.get("status") || "All";
-      const effectiveSearch = urlParams.get("search") || "";
-      const effectiveDateFilter = urlParams.get("date") || "today";
-      const effectiveCustomDate = urlParams.get("customDate") || "";
-      const effectiveDriverId = urlParams.get("driverId");
+      const effectiveFilter = searchParams.get("status") || "All";
+      const effectiveSearch = searchParams.get("search") || "";
+      const effectiveDateFilter = searchParams.get("date") || "all";
+      const effectiveCustomDate = searchParams.get("customDate") || "";
+      const effectiveDriverId = searchParams.get("driverId");
 
       const params = new URLSearchParams();
       params.append("page", page.toString());
@@ -185,9 +183,15 @@ function SalesDashboardContent() {
         params.append("endDate", `${next15.getFullYear()}-${String(next15.getMonth() + 1).padStart(2, '0')}-${String(next15.getDate()).padStart(2, '0')}`);
       }
       
-      // Chronological time sort: sort by due date and time (earliest due orders first) across all views including All Dates
-      params.append("sortField", "targetDate");
-      params.append("sortOrder", "asc");
+      // Sorting: For "all" (All Dates), newest orders first so recent active orders appear right away.
+      // For specific dates, sort by due time (targetDate: asc) so earliest due orders appear first.
+      if (effectiveDateFilter === "all") {
+        params.append("sortField", "createdAt");
+        params.append("sortOrder", "desc");
+      } else {
+        params.append("sortField", "targetDate");
+        params.append("sortOrder", "asc");
+      }
       
       const res = await fetchClient<any>(`/orders?${params.toString()}`, { signal });
       if (res.success) {
