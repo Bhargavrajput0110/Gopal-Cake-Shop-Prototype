@@ -274,6 +274,10 @@ export default function VendorTasks() {
     if (!targetDate) return dateFilter === 'TODAY'; // no date → show only on TODAY
     const taskDateStr = getLocalDateStr(new Date(targetDate));
     return dateFilter === 'TODAY' ? taskDateStr === todayStr : taskDateStr === tomorrowStr;
+  }).sort((a, b) => {
+    const timeA = a.order?.targetDate ? new Date(a.order.targetDate).getTime() : 0;
+    const timeB = b.order?.targetDate ? new Date(b.order.targetDate).getTime() : 0;
+    return timeA - timeB;
   });
 
   // STUDIO DASHBOARD

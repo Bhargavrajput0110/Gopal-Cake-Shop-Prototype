@@ -99,7 +99,7 @@ export default function AdminBranchTransferPage() {
 
   // Fetch orders directly via SWR so newly created orders always appear
   const { data: ordersData, mutate: mutateOrders, isLoading: ordersLoading } = useSWR(
-    `/api/v1/orders?limit=1000`,
+    `/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=1000`,
     fetcher,
     { refreshInterval: 30000 }
   );

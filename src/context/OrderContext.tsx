@@ -311,7 +311,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
           alert("Assignment failed.");
         }
         // Refetch to sync state
-        const refresh = await fetch("/api/v1/orders?limit=100");
+        const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
         const refreshData = await refresh.json();
         if (refreshData.success && refreshData.data) setOrders(refreshData.data);
       } else {
@@ -347,7 +347,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       // If we don't have a taskId, we might be creating it, but UI uses VendorAssignModal for creation
     } catch (e) {
       console.error(e);
-      const refresh = await fetch("/api/v1/orders?limit=100");
+      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     }
@@ -374,7 +374,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (!data.success) throw new Error(data.error);
     } catch (e) {
       console.error(e);
-      const refresh = await fetch("/api/v1/orders?limit=100");
+      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     }
@@ -410,13 +410,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (!data.success) throw new Error(data.error);
 
       // Re-fetch to get the true database ID
-      const refresh = await fetch("/api/v1/orders?limit=100");
+      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     } catch (e) {
       console.error(e);
       alert("Failed to submit ingredient request.");
-      const refresh = await fetch("/api/v1/orders?limit=100");
+      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     }
@@ -441,7 +441,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (!data.success) throw new Error(data.error);
     } catch (e) {
       console.error(e);
-      const refresh = await fetch("/api/v1/orders?limit=100");
+      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     }
@@ -462,7 +462,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (!data.success) {
         alert(data.error || data.message || "Failed to update order fields");
         // Revert on failure by refetching
-        const refresh = await fetch("/api/v1/orders?limit=100");
+        const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
         const refreshData = await refresh.json();
         if (refreshData.success && refreshData.data) setOrders(refreshData.data);
       }
@@ -470,7 +470,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       console.error(e);
       alert("Failed to update order fields");
       // Revert on failure by refetching
-      const refresh = await fetch("/api/v1/orders?limit=100");
+      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
       const refreshData = await refresh.json();
       if (refreshData.success && refreshData.data) setOrders(refreshData.data);
     }

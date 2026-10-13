@@ -56,6 +56,9 @@ export default function DeliveryCoordinationPage() {
     return t >= todayStart.getTime() && t <= todayEnd.getTime();
   };
 
+  // Sort helper
+  const sortByTimeTarget = (a: any, b: any) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime();
+
   // Fetch pending delivery orders (today only)
   const pendingDeliveries = orders.filter(o =>
     o.orderType === "delivery" &&
@@ -63,31 +66,24 @@ export default function DeliveryCoordinationPage() {
     ["NEW", "WAITING_FOR_CHEF", "CHEF_ACCEPTED", "MAKING", "DECORATING", "READY_FOR_PICKUP", "PENDING_ASSIGNMENT"].includes(o.status) &&
     // Exclude READY_FOR_PICKUP orders where driver is already doing a vendor pickup
     !(o.status === "READY_FOR_PICKUP" && o.items?.some((i: any) => i.assignedVendorId && !['DELIVERED'].includes(i.status || '')))
-  );
+  ).sort(sortByTimeTarget);
 
   // Active customer delivery trips (today only)
   const activeDeliveries = orders.filter(o =>
     o.orderType === "delivery" &&
     isToday(o.timeTarget) &&
     ["ASSIGNED_TO_DRIVER", "PICKED_UP", "ON_THE_WAY", "OUT_FOR_DELIVERY"].includes(o.status)
-  );
+  ).sort(sortByTimeTarget);
 
-  // Vendor pickup trips in progress (today only):
-  // An order has vendor components (acrylic/photo/florist) being collected by the driver.
-  // The order status stays READY_FOR_PICKUP at order-level; only the item-level status changes.
-  // We detect these by finding delivery orders with items that have an assignedVendorId
-  // and are not yet DELIVERED.
+  // Vendor pickup trips in progress (today only)
   const vendorPickupTrips = orders.filter(o =>
     isToday(o.timeTarget) &&
-    // A vendor item is being actively collected if it has a vendor ID and a driver has accepted/started tracking it.
-    // The driver sets the item status to READY_FOR_PICKUP when they start the vendor trip.
-    // We only show it if it hasn't reached the branch yet (DELIVERED).
     o.items?.some((i: any) => !!i.assignedVendorId && ['READY_FOR_PICKUP'].includes(i.status || ''))
-  );
+  ).sort(sortByTimeTarget);
 
   const completedDeliveries = orders.filter(o =>
     o.orderType === "delivery" && isToday(o.timeTarget) && o.status === "DELIVERED"
-  );
+  ).sort(sortByTimeTarget);
 
   const handleAssign = async (orderId: string) => {
     const driverId = selectedRider[orderId];

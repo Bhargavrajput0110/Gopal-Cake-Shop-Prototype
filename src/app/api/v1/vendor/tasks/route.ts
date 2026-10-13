@@ -225,5 +225,12 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     });
   }
 
+  // Chronological sort: earliest due tasks first
+  allTasks.sort((a, b) => {
+    const timeA = a.order?.targetDate ? new Date(a.order.targetDate).getTime() : 0;
+    const timeB = b.order?.targetDate ? new Date(b.order.targetDate).getTime() : 0;
+    return timeA - timeB;
+  });
+
   return NextResponse.json({ success: true, data: allTasks, vendors: allVendors });
 });

@@ -105,7 +105,7 @@ export default function ChefDashboardPage() {
   // Ready
   const readyOrders = branchOrders
     .filter(o => ["READY_FOR_PICKUP", "PENDING_ASSIGNMENT", "ASSIGNED_TO_DRIVER"].includes(o.status) && matchesDayFilter(o.timeTarget, dayFilter))
-    .sort((a, b) => new Date(b.timeline?.[b.timeline.length - 1]?.timestamp || b.createdAt).getTime() - new Date(a.timeline?.[a.timeline.length - 1]?.timestamp || a.createdAt).getTime());
+    .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
 
   // Header Stats
   const todayStart = new Date();

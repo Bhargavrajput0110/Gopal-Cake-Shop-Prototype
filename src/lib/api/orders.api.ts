@@ -11,7 +11,7 @@ export const OrdersApiClient = {
 
   // Driver pool: hits /api/v1/orders (driver filters applied server-side)
   getDriverOrders: async () => {
-    const res = await fetchClient<{ success: boolean, data: import('@/dtos/OrderSchemas').DriverOrderDTO[] }>('/orders?role=driver')
+    const res = await fetchClient<{ success: boolean, data: import('@/dtos/OrderSchemas').DriverOrderDTO[] }>('/orders?role=driver&sortField=targetDate&sortOrder=asc')
     return res.data || []
   },
 
@@ -28,7 +28,7 @@ export const OrdersApiClient = {
 
   // Admin Dashboard: hits /api/v1/orders
   getAdminOrders: () =>
-    fetchClient<{ success: boolean, data: any[], pagination: any }>('/orders?limit=100'),
+    fetchClient<{ success: boolean, data: any[], pagination: any }>('/orders?sortField=targetDate&sortOrder=asc&limit=100'),
 
   // Timeline: hits /api/v1/orders/[id]/timeline
   getOrderTimeline: (id: string) => 

@@ -217,7 +217,7 @@ export default function LiveOrdersPage() {
     },
   ]
 
-  const filteredOrders = orders
+  const filteredOrders = [...orders].sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime())
   const activeOrders = filteredOrders.filter(
     (o) => !["DELIVERED", "FAILED_DELIVERY", "CANCELLED", "COMPLETED"].includes(o.status)
   )
