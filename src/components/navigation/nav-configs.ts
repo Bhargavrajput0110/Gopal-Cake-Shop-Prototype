@@ -3,7 +3,7 @@
  * Each config drives AppSidebar, MobileNav, and AppTopbar — no duplication.
  */
 
-import { Category, Bag, Profile2User, Shop, Setting2, Box, Tag, People, TruckFast, Notification, Chart, Clock, Star1, ClipboardText, Car, Card, AddCircle, Activity, Reserve, BoxTick, ArrowSwapHorizontal, Gallery } from "iconsax-react"
+import { Category, Bag, Profile2User, Shop, Setting2, Box, Tag, People, TruckFast, Notification, Chart, Clock, Star1, ClipboardText, Car, Card, AddCircle, Activity, Reserve, BoxTick, ArrowSwapHorizontal, Gallery, Coffee } from "iconsax-react"
 import type { AppConfig } from "./navigation.types"
 
 import { signOut } from "next-auth/react"
@@ -34,6 +34,7 @@ export const ADMIN_NAV_CONFIG: AppConfig = {
         { name: "Products",      href: "/admin/products",       icon: Box },
         { name: "Categories",    href: "/admin/categories",     icon: Tag },
         { name: "Design Library",href: "/admin/design-library", icon: Star1 },
+        { name: "Hot Bakes",     href: "/admin/hot-bakes",      icon: Coffee },
         { name: "Users",         href: "/admin/users",          icon: Profile2User },
         { name: "Customers",     href: "/admin/customers",      icon: People },
         { name: "Drivers",       href: "/admin/drivers",        icon: TruckFast },
