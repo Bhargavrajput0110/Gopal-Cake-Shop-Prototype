@@ -136,6 +136,7 @@ type OrderContextType = {
   updateIngredientRequestStatus: (orderId: string, requestId: string, status: "pending" | "fulfilled" | "cancelled" | "resolved", supplierName?: string) => Promise<void>;
   updateOrderFields: (orderId: string, fields: Partial<Order>) => Promise<void>;
   transitionOrderAction: (id: string, action: string, note?: string) => Promise<void>;
+  refetchOrders: () => Promise<void>;
   socket: Socket | null;
 };
 
@@ -464,6 +465,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       updateIngredientRequestStatus,
       updateOrderFields,
       transitionOrderAction,
+      refetchOrders,
       socket
     }}>
       {children}

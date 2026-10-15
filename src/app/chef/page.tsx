@@ -72,12 +72,28 @@ const useSLA = (timeTarget: string | undefined, createdAt: string) => {
 
 export default function ChefDashboardPage() {
   const { data: session } = useSession();
-  const { orders, updateOrderFields, transitionOrderAction, addIngredientRequest } = useOrders();
+  const { orders, updateOrderFields, transitionOrderAction, addIngredientRequest, refetchOrders } = useOrders();
   
   const [activeBranch, setActiveBranch] = useState<BranchId>("khanderao");
   const [activeTab, setActiveTab] = useState<"queue" | "myTasks" | "ready">("queue");
   const [dayFilter, setDayFilter] = useState<'YESTERDAY' | 'TODAY' | 'TOMORROW' | 'ALL'>('TODAY');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Always refresh orders on mount so the chef gets the latest orders immediately
+  useEffect(() => {
+    refetchOrders();
+  }, []);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetchOrders();
+      showToast("Tickets refreshed!");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (session?.user) {
@@ -92,14 +108,31 @@ export default function ChefDashboardPage() {
   const isHotBakeChef = session?.user?.name?.toLowerCase().includes('santosh') || session?.user?.name?.toLowerCase().includes('hot bake');
   const branchOrders = orders.filter(o => isHotBakeChef || toBranchId(o.branch) === activeBranch);
 
-  // Queue
+  // Queue: orders waiting for chef. If dayFilter is TODAY, also include overdue orders so unmade cakes are never hidden
   const queueOrders = branchOrders
-    .filter(o => o.status === "WAITING_FOR_CHEF" && matchesDayFilter(o.timeTarget, dayFilter))
+    .filter(o => {
+      if (o.status !== "WAITING_FOR_CHEF") return false;
+      if (dayFilter === 'ALL') return true;
+      if (matchesDayFilter(o.timeTarget, dayFilter)) return true;
+      // If filtering for TODAY, include overdue orders whose deadline has passed
+      if (dayFilter === 'TODAY' && o.timeTarget && new Date(o.timeTarget).getTime() <= Date.now()) {
+        return true;
+      }
+      return false;
+    })
     .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
   
-  // My Tasks
+  // My Tasks: active in-progress tasks
   const myTasksOrders = branchOrders
-    .filter(o => ["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(o.status) && matchesDayFilter(o.timeTarget, dayFilter))
+    .filter(o => {
+      if (!["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(o.status)) return false;
+      if (dayFilter === 'ALL') return true;
+      if (matchesDayFilter(o.timeTarget, dayFilter)) return true;
+      if (dayFilter === 'TODAY' && o.timeTarget && new Date(o.timeTarget).getTime() <= Date.now()) {
+        return true;
+      }
+      return false;
+    })
     .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
     
   // Ready
@@ -550,7 +583,15 @@ export default function ChefDashboardPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className={`p-2 rounded-lg border bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors ${isRefreshing ? 'animate-spin text-amber-400' : ''}`}
+              title="Refresh Tickets"
+            >
+              <Refresh2 className="w-5 h-5" />
+            </button>
             <button 
               onClick={toggleMute} 
               className={`p-2 rounded-lg border ${isMuted ? 'bg-rose-500/10 border-rose-500 text-rose-500' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'} transition-colors`}
