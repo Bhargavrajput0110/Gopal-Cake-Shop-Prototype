@@ -5,10 +5,10 @@ import { z } from 'zod'
 
 const ProductSchema = z.object({
   name: z.string().min(1),
-  sku: z.string().optional().nullable(),
-  description: z.string().optional(),
+  sku: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
   basePrice: z.number().min(0),
-  categoryId: z.string().optional(),
+  categoryId: z.string().nullable().optional(),
   availableForSale: z.boolean().default(true),
   isCustomizable: z.boolean().optional(),
   requiredVendors: z.array(z.string()).optional(),
@@ -45,7 +45,10 @@ export const POST = withApiHandler(async (ctx: HandlerContext) => {
 
   try {
     const createPayload: any = {
-      ...data
+      ...data,
+      description: data.description || null,
+      thumbnail: data.thumbnail || null,
+      sku: data.sku || null
     };
     if (data.isCustomizable !== undefined) {
       createPayload.isCustomizable = data.isCustomizable;
@@ -53,8 +56,11 @@ export const POST = withApiHandler(async (ctx: HandlerContext) => {
     const product = await CatalogService.createProduct(createPayload)
     return NextResponse.json({ success: true, data: product })
   } catch (error: any) {
-    if (error.code === 'DUPLICATE_SKU') {
-      return NextResponse.json({ error: error.message, code: 'DUPLICATE_SKU' }, { status: 409 })
+    if (error.code === 'DUPLICATE_SKU' || error.code === 'P2002' || error.message?.includes('Unique constraint')) {
+      const msg = error.message?.includes('already exists')
+        ? error.message
+        : `A product with SKU "${data.sku}" already exists. Please choose a different SKU.`;
+      return NextResponse.json({ error: msg, message: msg, code: 'DUPLICATE_SKU' }, { status: 409 })
     }
     throw error;
   }

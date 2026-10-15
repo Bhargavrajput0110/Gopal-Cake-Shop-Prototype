@@ -171,14 +171,25 @@ export default function HotBakesAdminPage() {
     setEditingProduct(null);
     setFormName("");
     setFormPrice("");
-    // Auto-generate next SKU recommendation
-    const nextNum = products.length + 1;
+    
+    // Find highest existing HOT-PUFF-XX number across products to guarantee a unique SKU
+    let maxPuffNum = 1; // Since HOT-PUFF-01 is already registered in DB
+    products.forEach((p) => {
+      if (p.sku) {
+        const match = p.sku.match(/HOT-PUFF-(\d+)/i);
+        if (match) {
+          const n = parseInt(match[1], 10);
+          if (n >= maxPuffNum) maxPuffNum = n;
+        }
+      }
+    });
+    const nextNum = maxPuffNum + 1;
     setFormSku(`HOT-PUFF-${String(nextNum).padStart(2, "0")}`);
     setFormDescription("");
     setFormThumbnail("");
     setFormAvailable(true);
     setFormError("");
-    setIsGalleryOpen(false);
+    setImageSource("upload");
     setIsModalOpen(true);
   };
 
@@ -191,7 +202,7 @@ export default function HotBakesAdminPage() {
     setFormThumbnail(product.thumbnail || "");
     setFormAvailable(product.availableForSale);
     setFormError("");
-    setIsGalleryOpen(false);
+    setImageSource("upload");
     setIsModalOpen(true);
   };
 
@@ -245,8 +256,8 @@ export default function HotBakesAdminPage() {
         name: formName.trim(),
         basePrice: numPrice,
         sku: formSku.trim() || undefined,
-        description: formDescription.trim() || null,
-        thumbnail: formThumbnail.trim() || null,
+        description: formDescription.trim() || undefined,
+        thumbnail: formThumbnail.trim() || undefined,
         availableForSale: formAvailable,
         categoryId: resolvedCategoryId,
         isCustomizable: false,
@@ -259,9 +270,14 @@ export default function HotBakesAdminPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        const resData = await res.json();
+        const resData = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(resData.error || "Failed to update Hot Bake product");
+          const msg = 
+            resData.message || 
+            resData.error || 
+            (resData.details && resData.details[0]?.message) || 
+            "Failed to update Hot Bake product";
+          throw new Error(msg);
         }
         showToast(`Updated "${formName}" successfully!`);
       } else {
@@ -271,9 +287,14 @@ export default function HotBakesAdminPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        const resData = await res.json();
+        const resData = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(resData.error || "Failed to create Hot Bake product");
+          const msg = 
+            resData.message || 
+            resData.error || 
+            (resData.details && resData.details[0]?.message) || 
+            "Failed to create Hot Bake product";
+          throw new Error(msg);
         }
         showToast(`Added "${formName}" to Hot Bakes queue!`);
       }
