@@ -18,12 +18,14 @@ import {
   Eye,
   EyeSlash,
   Grid3,
-  RowVertical
+  RowVertical,
+  CloudPlus
 } from "iconsax-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { MediaGallery } from "@/components/admin/media/MediaGallery";
+import { CloudinaryUploader } from "@/components/admin/media/CloudinaryUploader";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Known canonical category ID for Hot Bakes
@@ -71,6 +73,7 @@ export default function HotBakesAdminPage() {
   const [formDescription, setFormDescription] = useState("");
   const [formThumbnail, setFormThumbnail] = useState("");
   const [formAvailable, setFormAvailable] = useState(true);
+  const [imageSource, setImageSource] = useState<"upload" | "gallery" | "url">("upload");
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
   // Delete State
@@ -839,58 +842,129 @@ export default function HotBakesAdminPage() {
                   />
                 </div>
 
-                {/* Thumbnail Image */}
-                <div className="space-y-1.5">
+                {/* Thumbnail Image Section */}
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-[#3E2723] uppercase tracking-wider">
-                      Product Image (URL or Gallery)
+                      Product Image (Cloudinary CDN)
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setIsGalleryOpen(!isGalleryOpen)}
-                      className="text-xs font-bold text-[#C5A059] hover:underline flex items-center gap-1"
-                    >
-                      <Gallery className="w-3.5 h-3.5" />
-                      {isGalleryOpen ? "Hide Gallery" : "Browse Media Gallery"}
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={formThumbnail}
-                      onChange={(e) => setFormThumbnail(e.target.value)}
-                      placeholder="Paste image URL (https://...)"
-                      className="w-full px-3.5 py-2 bg-black/[0.02] border border-black/10 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#C5A059]/50 focus:bg-white"
-                    />
-                    {formThumbnail && (
-                      <button
-                        type="button"
-                        onClick={() => setFormThumbnail("")}
-                        className="p-2 text-muted-foreground hover:text-foreground"
-                      >
-                        <CloseSquare className="w-4 h-4" />
-                      </button>
+                    {formThumbnail && formThumbnail.includes("cloudinary.com") && (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                        ☁️ Cloudinary Verified
+                      </span>
                     )}
                   </div>
 
-                  {/* Image Preview */}
-                  {formThumbnail && (
-                    <div className="mt-2 relative w-20 h-20 rounded-xl overflow-hidden border border-black/10">
-                      <img src={formThumbnail} alt="Preview" className="w-full h-full object-cover" />
+                  {/* Image Source Tabs */}
+                  <div className="flex items-center gap-1 bg-black/[0.04] p-1 rounded-xl text-xs font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setImageSource("upload")}
+                      className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
+                        imageSource === "upload"
+                          ? "bg-white text-[#3E2723] shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <CloudPlus className="w-3.5 h-3.5 text-[#C5A059]" />
+                      <span>Upload Device</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageSource("gallery")}
+                      className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
+                        imageSource === "gallery"
+                          ? "bg-white text-[#3E2723] shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Gallery className="w-3.5 h-3.5 text-[#C5A059]" />
+                      <span>Media Library</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageSource("url")}
+                      className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
+                        imageSource === "url"
+                          ? "bg-white text-[#3E2723] shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <span>Web URL</span>
+                    </button>
+                  </div>
+
+                  {/* Tab 1: Direct Cloudinary Uploader */}
+                  {imageSource === "upload" && (
+                    <div className="p-3 border border-black/10 rounded-2xl bg-black/[0.01]">
+                      <CloudinaryUploader 
+                        folder="gopal-cakes/hot-bakes" 
+                        onUploadSuccess={(asset) => {
+                          const url = asset.url || asset.secure_url;
+                          setFormThumbnail(url);
+                          showToast("Image uploaded to Cloudinary successfully! ☁️");
+                        }} 
+                      />
                     </div>
                   )}
 
-                  {/* Embedded Gallery Picker */}
-                  {isGalleryOpen && (
-                    <div className="mt-3 p-3 border border-black/10 rounded-2xl bg-black/[0.02] max-h-60 overflow-y-auto">
+                  {/* Tab 2: Embedded Gallery Picker */}
+                  {imageSource === "gallery" && (
+                    <div className="p-3 border border-black/10 rounded-2xl bg-black/[0.02] max-h-60 overflow-y-auto">
                       <MediaGallery 
                         selectable 
+                        folder="gopal-cakes/hot-bakes"
                         onSelect={(url) => {
                           setFormThumbnail(url);
-                          setIsGalleryOpen(false);
+                          showToast("Selected from Media Library!");
                         }} 
                       />
+                    </div>
+                  )}
+
+                  {/* Tab 3: Direct URL Input */}
+                  {imageSource === "url" && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={formThumbnail}
+                        onChange={(e) => setFormThumbnail(e.target.value)}
+                        placeholder="https://res.cloudinary.com/... or image link"
+                        className="w-full px-3.5 py-2 bg-black/[0.02] border border-black/10 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#C5A059]/50 focus:bg-white"
+                      />
+                      {formThumbnail && (
+                        <button
+                          type="button"
+                          onClick={() => setFormThumbnail("")}
+                          className="p-2 text-muted-foreground hover:text-foreground"
+                        >
+                          <CloseSquare className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Active Selected Image Preview */}
+                  {formThumbnail && (
+                    <div className="mt-2 p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-black/10 shrink-0">
+                          <img src={formThumbnail} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="text-xs">
+                          <span className="font-bold text-[#3E2723] block">Active Product Thumbnail</span>
+                          <span className="text-[10px] text-muted-foreground line-clamp-1 max-w-[200px] sm:max-w-xs font-mono">
+                            {formThumbnail}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormThumbnail("")}
+                        className="text-xs text-rose-600 hover:underline font-bold px-2 py-1"
+                      >
+                        Remove
+                      </button>
                     </div>
                   )}
                 </div>
