@@ -81,14 +81,47 @@ export function CakeBuilder({ initialData, onChange, allowMediaUpload = true }: 
         </div>
 
         <div className="space-y-2">
-          <Label>Weight (KG)</Label>
+          <div className="flex justify-between items-center">
+            <Label>Weight (KG)</Label>
+            <span className="text-xs font-bold text-muted-foreground font-mono">
+              {data.weight < 1 ? `${Math.round(data.weight * 1000)}g` : `${data.weight}kg`}
+            </span>
+          </div>
           <Input 
             type="number" 
-            min="0.5" 
-            step="0.5" 
+            min="0.25" 
+            max="10"
+            step="0.25" 
             value={data.weight} 
-            onChange={(e) => handleChange('weight', parseFloat(e.target.value))} 
+            onChange={(e) => handleChange('weight', parseFloat(e.target.value) || 0.25)} 
           />
+          <div className="flex flex-wrap gap-1 pt-1">
+            {[
+              { label: "250g", val: 0.25 },
+              { label: "500g", val: 0.5 },
+              { label: "750g", val: 0.75 },
+              { label: "1kg", val: 1 },
+              { label: "1.5kg", val: 1.5 },
+              { label: "2kg", val: 2 },
+              { label: "2.5kg", val: 2.5 },
+              { label: "3kg", val: 3 },
+              { label: "5kg", val: 5 },
+              { label: "10kg", val: 10 },
+            ].map(preset => (
+              <button
+                key={preset.val}
+                type="button"
+                onClick={() => handleChange('weight', preset.val)}
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded border transition-colors ${
+                  data.weight === preset.val
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-muted/50 hover:bg-muted text-muted-foreground border-border'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-2">

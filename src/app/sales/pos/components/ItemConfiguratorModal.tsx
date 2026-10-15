@@ -152,17 +152,51 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
 
                 {/* Weight */}
                 <div className="flex-1 space-y-1.5 bg-background border border-input p-3 rounded-xl">
-                  <label className="text-xs font-bold block">Weight (kg)</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold block">Weight (kg)</label>
+                    <span className="text-[11px] font-bold text-primary font-mono">
+                      {parseFloat(weight) < 1 ? `${Math.round(parseFloat(weight) * 1000)}g` : `${weight}kg`}
+                    </span>
+                  </div>
                   <input
                     type="number"
-                    step="0.5"
-                    min="0.5"
+                    step="0.25"
+                    min="0.25"
+                    max="10"
                     value={weight}
                     onFocus={e => { if (e.target.value === '1') setWeight('') }}
                     onBlur={e => { if (!e.target.value || parseFloat(e.target.value) <= 0) { setWeight('1'); handleWeightChange('1') } }}
                     onChange={e => handleWeightChange(e.target.value)}
                     className="w-full p-2 bg-background border border-input rounded-lg text-lg font-black focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
+                  {/* Preset Pills: 250g, 500g, 750g, 1kg, 1.5kg, 2kg, 2.5kg, 3kg, 5kg, 10kg */}
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {[
+                      { label: "250g", val: "0.25" },
+                      { label: "500g", val: "0.5" },
+                      { label: "750g", val: "0.75" },
+                      { label: "1kg", val: "1" },
+                      { label: "1.5kg", val: "1.5" },
+                      { label: "2kg", val: "2" },
+                      { label: "2.5kg", val: "2.5" },
+                      { label: "3kg", val: "3" },
+                      { label: "5kg", val: "5" },
+                      { label: "10kg", val: "10" },
+                    ].map(preset => (
+                      <button
+                        key={preset.val}
+                        type="button"
+                        onClick={() => handleWeightChange(preset.val)}
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded border transition-colors ${
+                          parseFloat(weight) === parseFloat(preset.val)
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-muted/50 hover:bg-muted text-muted-foreground border-border'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
                   <p className="text-[10px] text-muted-foreground">Changes price automatically</p>
                 </div>
               </div>
