@@ -27,6 +27,10 @@ export default function CloudinaryUploader({
   const [loadingText, setLoadingText] = useState("Preparing image...");
 
   useEffect(() => {
+    setPreviewUrls(existingImages);
+  }, [JSON.stringify(existingImages)]);
+
+  useEffect(() => {
     if (!isUploading) return;
     const messages = [
       "Sprinkling some sugar...",
