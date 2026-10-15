@@ -25,7 +25,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { MediaGallery } from "@/components/admin/media/MediaGallery";
-import { CloudinaryUploader } from "@/components/admin/media/CloudinaryUploader";
+import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Known canonical category ID for Hot Bakes
@@ -919,11 +919,17 @@ export default function HotBakesAdminPage() {
                   {imageSource === "upload" && (
                     <div className="p-3 border border-black/10 rounded-2xl bg-black/[0.01]">
                       <CloudinaryUploader 
-                        folder="gopal-cakes/hot-bakes" 
-                        onUploadSuccess={(asset) => {
-                          const url = asset.url || asset.secure_url;
-                          setFormThumbnail(url);
-                          showToast("Image uploaded to Cloudinary successfully! ☁️");
+                        folder="gopal-cakes/hot-bakes"
+                        maxFiles={1}
+                        label="Upload Puff Photo"
+                        existingImages={formThumbnail ? [formThumbnail] : []}
+                        onUploadSuccess={(urls) => {
+                          if (urls && urls.length > 0) {
+                            setFormThumbnail(urls[0]);
+                            showToast("Image uploaded to Cloudinary successfully! ☁️");
+                          } else {
+                            setFormThumbnail("");
+                          }
                         }} 
                       />
                     </div>
