@@ -105,7 +105,7 @@ export default function HotBakesAdminPage() {
             c.name?.toLowerCase().includes("hot bake")
           );
           if (hbCat) {
-            catId = hbCat.categoryId || hbCat.id;
+            catId = hbCat.id || HOT_BAKES_CATEGORY_ID;
             setResolvedCategoryId(catId);
           }
         }

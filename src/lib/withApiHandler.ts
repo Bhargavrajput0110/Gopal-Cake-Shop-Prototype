@@ -245,7 +245,8 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
         if (error.code === 'P2025') {
           return errorResponse('Resource not found', 'NOT_FOUND', 404, [], requestId)
         }
-        return errorResponse('Database Error', 'DATABASE_ERROR', 500, [], requestId)
+        const detail = error.message ? `: ${error.message}` : '';
+        return errorResponse(`Database Error${detail}`, 'DATABASE_ERROR', 500, [], requestId)
       }
 
       if (error.message.includes('CONCURRENCY_ERROR') || error.message.includes('Invalid state transition') || error.message === 'REASON_REQUIRED') {

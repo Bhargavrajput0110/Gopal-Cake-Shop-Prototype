@@ -77,7 +77,13 @@ export class CatalogService {
     }
 
     if (categoryId && categoryId !== 'all') {
-      where.categoryId = categoryId
+      const cat = await prisma.category.findFirst({
+        where: {
+          OR: [{ id: categoryId }, { slug: categoryId }]
+        },
+        select: { id: true }
+      });
+      where.categoryId = cat ? cat.id : categoryId;
     }
 
     if (search) {
@@ -109,7 +115,20 @@ export class CatalogService {
 
   static async createProduct(data: Prisma.ProductUncheckedCreateInput, adminId?: string) {
     try {
-      const product = await prisma.product.create({ data, include: { category: true } })
+      let resolvedData = { ...data };
+      if (resolvedData.categoryId) {
+        const cat = await prisma.category.findFirst({
+          where: {
+            OR: [{ id: resolvedData.categoryId }, { slug: resolvedData.categoryId }]
+          },
+          select: { id: true }
+        });
+        if (cat) {
+          resolvedData.categoryId = cat.id;
+        }
+      }
+
+      const product = await prisma.product.create({ data: resolvedData, include: { category: true } })
       
       await prisma.productHistory.create({
         data: {
@@ -123,8 +142,8 @@ export class CatalogService {
 
       return product
     } catch (e: any) {
-      if (e.code === 'P2002' && e.meta?.target?.includes('sku')) {
-        const error = new Error("A product with this SKU already exists.");
+      if (e.code === 'P2002' && (e.meta?.target?.includes('sku') || JSON.stringify(e.meta?.target || '').includes('sku'))) {
+        const error = new Error(`A product with SKU "${data.sku}" already exists.`);
         (error as any).code = 'DUPLICATE_SKU';
         throw error;
       }
@@ -149,7 +168,20 @@ export class CatalogService {
     }
 
     try {
-      const updatedProduct = await prisma.product.update({ where: { id }, data: updateData, include: { category: true } })
+      let resolvedUpdate = { ...updateData };
+      if (resolvedUpdate.categoryId) {
+        const cat = await prisma.category.findFirst({
+          where: {
+            OR: [{ id: resolvedUpdate.categoryId as string }, { slug: resolvedUpdate.categoryId as string }]
+          },
+          select: { id: true }
+        });
+        if (cat) {
+          resolvedUpdate.categoryId = cat.id;
+        }
+      }
+
+      const updatedProduct = await prisma.product.update({ where: { id }, data: resolvedUpdate, include: { category: true } })
 
       if (oldProduct) {
         await prisma.productHistory.create({
