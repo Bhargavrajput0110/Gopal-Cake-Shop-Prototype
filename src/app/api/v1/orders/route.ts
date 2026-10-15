@@ -38,8 +38,9 @@ export const GET = withApiHandler(async ({ req, user, appRole, branchId, request
     const dueSoon = searchParams.get('dueSoon') === 'true'
     const hasIssues = searchParams.get('hasIssues') === 'true'
     const driverId = searchParams.get('driverId') || undefined
+    const liveOnly = searchParams.get('liveOnly') === 'true'
 
-    const { data, total } = await OrderService.listOrders(branchId, appRole, page, limit, { status, branch, driverId, search, startDate, endDate, sortField, sortOrder, dueSoon, hasIssues, user })
+    const { data, total } = await OrderService.listOrders(branchId, appRole, page, limit, { status, branch, driverId, search, startDate, endDate, sortField, sortOrder, dueSoon, hasIssues, user, liveOnly })
     return paginatedResponse(data, page, limit, total, 'Orders fetched successfully', requestId)
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message || String(err), stack: err.stack }, { status: 500 })

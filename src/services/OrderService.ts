@@ -12,7 +12,7 @@ export class OrderService {
     role: string | null,
     page: number = 1,
     limit: number = 20,
-    filters?: { status?: string, branch?: string, driverId?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string, dueSoon?: boolean, hasIssues?: boolean, user?: any }
+    filters?: { status?: string, branch?: string, driverId?: string, search?: string, startDate?: string, endDate?: string, sortField?: string, sortOrder?: string, dueSoon?: boolean, hasIssues?: boolean, user?: any, liveOnly?: boolean }
   ): Promise<{ data: OrderResponseDTO[], total: number }> {
     const BRANCH_CUID_MAP: Record<string, string> = {
       'elora': 'cmswuiiun00031su3vfrn9eq5',
@@ -131,6 +131,21 @@ export class OrderService {
       // This is a naive approximation since Prisma doesn't easily let us filter by JSON properties inside a related model array in one query.
       // So we will just filter by customerNotes initially, and then maybe frontend can further filter.
       whereClause.customerNotes = { not: null };
+    }
+
+    if (filters?.liveOnly) {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const liveCondition: Prisma.OrderWhereInput = {
+        OR: [
+          { status: { notIn: ['COMPLETED', 'DELIVERED', 'CANCELLED'] } },
+          { targetDate: { gte: todayStart } }
+        ]
+      };
+
+      if (!whereClause.AND) whereClause.AND = [];
+      (whereClause.AND as any[]).push(liveCondition);
     }
     
     const orderBy: Prisma.OrderOrderByWithRelationInput[] = [];

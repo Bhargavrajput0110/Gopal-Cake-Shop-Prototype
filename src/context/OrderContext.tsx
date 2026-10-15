@@ -146,19 +146,19 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   // socket kept as null — Supabase Realtime is used instead of Socket.io
   const socket: Socket | null = null;
 
-  const refetchOrders = () => {
-    fetch(`/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100&_t=${Date.now()}`).then(res => {
+  const refetchOrders = async () => {
+    try {
+      const res = await fetch(`/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=1000&liveOnly=true&_t=${Date.now()}`);
       if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
-        return null;
+        return;
       }
-      return res.json();
-    }).then(data => {
+      const data = await res.json();
       if (data && data.success && data.data) {
         setOrders(data.data);
       }
-    }).catch((err) => {
+    } catch (err) {
       console.warn("Could not fetch orders:", err);
-    });
+    }
   };
 
   // Initialize Supabase Realtime + fetch initial orders + setup fallback polling
@@ -226,15 +226,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       }
       
       // Always refetch to sync state
-      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
-      const refreshData = await refresh.json();
-      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      await refetchOrders();
     } catch (e) {
       console.error(e);
       alert("Error transitioning order.");
-      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
-      const refreshData = await refresh.json();
-      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      await refetchOrders();
     }
   };
 
@@ -281,15 +277,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         }
       }
       // Always refetch to sync authoritative state
-      const refresh = await fetch('/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100');
-      const refreshData = await refresh.json();
-      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      await refetchOrders();
     } catch (e) {
       console.error('[OrderContext] updateOrderStatus error:', e);
       alert('Network error updating order status. Please refresh.');
-      const refresh = await fetch('/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100');
-      const refreshData = await refresh.json();
-      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      await refetchOrders();
     }
   };
 
@@ -311,9 +303,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
           alert("Assignment failed.");
         }
         // Refetch to sync state
-        const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
-        const refreshData = await refresh.json();
-        if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+        await refetchOrders();
       } else {
         setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
       }
@@ -347,9 +337,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       // If we don't have a taskId, we might be creating it, but UI uses VendorAssignModal for creation
     } catch (e) {
       console.error(e);
-      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
-      const refreshData = await refresh.json();
-      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      await refetchOrders();
     }
   };
 
@@ -374,9 +362,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (!data.success) throw new Error(data.error);
     } catch (e) {
       console.error(e);
-      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
-      const refreshData = await refresh.json();
-      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      await refetchOrders();
     }
   };
   
@@ -410,15 +396,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (!data.success) throw new Error(data.error);
 
       // Re-fetch to get the true database ID
-      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
-      const refreshData = await refresh.json();
-      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      await refetchOrders();
     } catch (e) {
       console.error(e);
       alert("Failed to submit ingredient request.");
-      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
-      const refreshData = await refresh.json();
-      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      await refetchOrders();
     }
   };
 
@@ -441,9 +423,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (!data.success) throw new Error(data.error);
     } catch (e) {
       console.error(e);
-      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
-      const refreshData = await refresh.json();
-      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      await refetchOrders();
     }
   };
 
@@ -462,17 +442,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (!data.success) {
         alert(data.error || data.message || "Failed to update order fields");
         // Revert on failure by refetching
-        const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
-        const refreshData = await refresh.json();
-        if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+        await refetchOrders();
       }
     } catch (e) {
       console.error(e);
       alert("Failed to update order fields");
       // Revert on failure by refetching
-      const refresh = await fetch("/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=100");
-      const refreshData = await refresh.json();
-      if (refreshData.success && refreshData.data) setOrders(refreshData.data);
+      await refetchOrders();
     }
   };
 
