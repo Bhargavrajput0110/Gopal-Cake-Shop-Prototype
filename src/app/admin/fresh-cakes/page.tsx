@@ -30,6 +30,27 @@ import { motion, AnimatePresence } from "framer-motion";
 // Known canonical category ID for Fresh Cakes
 const FRESH_CAKES_CATEGORY_ID = "cmv94ork70000lou35ftrwfno";
 
+// Standard weight sizes supported for counter and fresh cakes (from 250g up to 10kg)
+export const ALL_WEIGHT_SIZES = [
+  "250g",
+  "500g",
+  "750g",
+  "1 Kg",
+  "1.5 Kg",
+  "2 Kg",
+  "2.5 Kg",
+  "3 Kg",
+  "3.5 Kg",
+  "4 Kg",
+  "4.5 Kg",
+  "5 Kg",
+  "6 Kg",
+  "7 Kg",
+  "8 Kg",
+  "9 Kg",
+  "10 Kg"
+];
+
 interface Product {
   id: string;
   name: string;
@@ -163,9 +184,13 @@ export default function FreshCakesAdminPage() {
     return { total, active, inactive, avgPrice };
   }, [products]);
 
-  // Generate Recommended SKU
+  // Generate Recommended SKU based on selected weight
   const generateRecommendedSku = (weight: string) => {
-    const prefix = weight.includes("1") ? "FC-1KG-" : "FC-500-";
+    let clean = weight.replace(/\s+/g, "").toUpperCase();
+    if (clean.endsWith("G") && !clean.endsWith("KG")) {
+      clean = clean.replace("G", "");
+    }
+    const prefix = `FC-${clean}-`;
     let highestNum = 0;
     products.forEach((p) => {
       if (p.sku && p.sku.toUpperCase().startsWith(prefix)) {
@@ -202,12 +227,18 @@ export default function FreshCakesAdminPage() {
     setFormPrice(String(product.basePrice || ""));
     setFormSku(product.sku || "");
     
-    // Detect weight from name or sku
-    let weight = "500g";
-    if (product.name.toLowerCase().includes("1kg") || product.name.toLowerCase().includes("1 kg")) weight = "1 Kg";
-    else if (product.name.toLowerCase().includes("250g") || product.name.toLowerCase().includes("bento")) weight = "250g (Bento)";
-    else if (product.name.toLowerCase().includes("1.5kg")) weight = "1.5 Kg";
-    setFormWeight(weight);
+    // Detect weight from name, description, or SKU
+    let matchedWeight = "500g";
+    const nameLower = product.name.toLowerCase();
+    const skuLower = (product.sku || "").toLowerCase();
+    for (const w of ALL_WEIGHT_SIZES) {
+      const cleanW = w.toLowerCase().replace(/\s+/g, "");
+      if (nameLower.includes(cleanW) || nameLower.includes(w.toLowerCase()) || skuLower.includes(cleanW)) {
+        matchedWeight = w;
+        break;
+      }
+    }
+    setFormWeight(matchedWeight);
 
     setFormDescription(product.description || "");
     setFormThumbnail(product.thumbnail || "");
@@ -421,11 +452,13 @@ export default function FreshCakesAdminPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 bg-white/70 backdrop-blur-sm p-2 rounded-2xl border border-[#C5A059]/20 text-xs">
-            <span className="font-bold text-[#3E2723]">Standard Sizes:</span>
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0 bg-white/70 backdrop-blur-sm p-2 rounded-2xl border border-[#C5A059]/20 text-xs">
+            <span className="font-bold text-[#3E2723]">Sizes:</span>
+            <span className="bg-amber-100 text-amber-900 font-mono font-bold px-2 py-0.5 rounded-md text-[11px]">250g</span>
             <span className="bg-amber-100 text-amber-900 font-mono font-bold px-2 py-0.5 rounded-md text-[11px]">500g</span>
+            <span className="bg-amber-100 text-amber-900 font-mono font-bold px-2 py-0.5 rounded-md text-[11px]">750g</span>
             <span className="bg-amber-100 text-amber-900 font-mono font-bold px-2 py-0.5 rounded-md text-[11px]">1 Kg</span>
-            <span className="bg-amber-100 text-amber-900 font-mono font-bold px-2 py-0.5 rounded-md text-[11px]">250g Bento</span>
+            <span className="bg-amber-100 text-amber-900 font-mono font-bold px-2 py-0.5 rounded-md text-[11px]">... up to 10 Kg</span>
           </div>
         </div>
       </div>
@@ -533,24 +566,31 @@ export default function FreshCakesAdminPage() {
                 weightFilter === "all" ? "bg-white text-[#3E2723] shadow-xs" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              All Sizes
+              All
             </button>
-            <button
-              onClick={() => setWeightFilter("500g")}
-              className={`px-2.5 py-1.5 rounded-lg transition-all ${
-                weightFilter === "500g" ? "bg-white text-[#3E2723] shadow-xs" : "text-muted-foreground hover:text-foreground"
-              }`}
+            {["250g", "500g", "750g", "1kg", "1.5kg", "2kg"].map((w) => (
+              <button
+                key={w}
+                onClick={() => setWeightFilter(w)}
+                className={`px-2 py-1.5 rounded-lg transition-all ${
+                  weightFilter === w ? "bg-white text-[#3E2723] shadow-xs" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {w}
+              </button>
+            ))}
+            <select
+              value={weightFilter}
+              onChange={(e) => setWeightFilter(e.target.value)}
+              className="px-2 py-1 bg-transparent text-xs font-bold text-[#3E2723] focus:outline-none cursor-pointer"
             >
-              500g
-            </button>
-            <button
-              onClick={() => setWeightFilter("1kg")}
-              className={`px-2.5 py-1.5 rounded-lg transition-all ${
-                weightFilter === "1kg" ? "bg-white text-[#3E2723] shadow-xs" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              1 Kg
-            </button>
+              <option value="all">More Sizes...</option>
+              {ALL_WEIGHT_SIZES.map((w) => (
+                <option key={w} value={w.toLowerCase().replace(/\s+/g, "")}>
+                  {w}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Grid / Table Toggle */}
@@ -889,13 +929,20 @@ export default function FreshCakesAdminPage() {
                   />
                 </div>
 
-                {/* Weight Variant Presets */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#3E2723] uppercase tracking-wider">
-                    Standard Size / Weight
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {["500g", "1 Kg", "250g (Bento)", "1.5 Kg"].map((w) => (
+                {/* Weight Variant Presets (250g up to 10kg) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[#3E2723] uppercase tracking-wider">
+                      Standard Size / Weight (250g to 10 Kg) *
+                    </label>
+                    <span className="text-xs font-bold text-[#C5A059] bg-[#C5A059]/10 px-2.5 py-0.5 rounded-full border border-[#C5A059]/20 font-mono">
+                      Selected: {formWeight}
+                    </span>
+                  </div>
+
+                  {/* Popular Quick Pills */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {["250g", "500g", "750g", "1 Kg", "1.5 Kg", "2 Kg", "2.5 Kg"].map((w) => (
                       <button
                         key={w}
                         type="button"
@@ -907,13 +954,37 @@ export default function FreshCakesAdminPage() {
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                           formWeight === w
-                            ? "bg-[#3E2723] text-white border-[#3E2723]"
-                            : "bg-black/[0.02] border-black/10 text-muted-foreground hover:bg-black/5"
+                            ? "bg-[#3E2723] text-white border-[#3E2723] shadow-xs scale-105"
+                            : "bg-black/[0.02] border-black/10 text-muted-foreground hover:bg-black/5 hover:text-foreground"
                         }`}
                       >
                         {w}
                       </button>
                     ))}
+                  </div>
+
+                  {/* All Sizes Dropdown (from 250g up to 10kg) */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider shrink-0">
+                      All Weights (Up to 10 Kg):
+                    </span>
+                    <select
+                      value={formWeight}
+                      onChange={(e) => {
+                        const w = e.target.value;
+                        setFormWeight(w);
+                        if (!editingProduct) {
+                          setFormSku(generateRecommendedSku(w));
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 bg-black/[0.02] border border-black/10 rounded-xl text-xs font-bold text-[#3E2723] focus:outline-none focus:ring-2 focus:ring-[#C5A059]/50 focus:bg-white cursor-pointer"
+                    >
+                      {ALL_WEIGHT_SIZES.map((w) => (
+                        <option key={w} value={w}>
+                          {w} {w === "250g" ? "· Bento / Mini" : w === "500g" ? "· Standard Half Kg" : w === "750g" ? "· 3/4 Kg" : w === "1 Kg" ? "· Standard 1 Kg" : w === "10 Kg" ? "· Mega Party Cake" : ""}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
