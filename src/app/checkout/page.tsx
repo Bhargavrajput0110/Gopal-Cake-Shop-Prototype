@@ -131,7 +131,40 @@ export default function CheckoutPage() {
     "9.5kg": 8750, "10kg": 9200,
   };
 
+  const isNonCakeItem = (item: any) => {
+    const n = (item.name || "").toLowerCase();
+    const v = (item.variant || "").toLowerCase();
+    return (
+      n.includes("bouquet") ||
+      n.includes("rose") ||
+      n.includes("flower") ||
+      n.includes("puff") ||
+      n.includes("bake") ||
+      n.includes("candle") ||
+      n.includes("topper") ||
+      v === "piece" ||
+      v.includes("bouquet") ||
+      (Array.isArray(item.requiredVendors) && item.requiredVendors.includes("VENDOR_FLORIST"))
+    );
+  };
+
+  const isFlowerItem = (item: any) => {
+    const n = (item.name || "").toLowerCase();
+    const v = (item.variant || "").toLowerCase();
+    return (
+      n.includes("bouquet") ||
+      n.includes("rose") ||
+      n.includes("flower") ||
+      v.includes("bouquet") ||
+      (Array.isArray(item.requiredVendors) && item.requiredVendors.includes("VENDOR_FLORIST"))
+    );
+  };
+
   const handleUpdateItem = (item: any, field: string, value: string) => {
+    if (isNonCakeItem(item)) {
+      updateItemConfig(item.cartItemId, { [field]: value });
+      return;
+    }
     const newVariant = field === "variant" ? value : item.variant || "500g";
     const newFlavor = field === "flavor" ? value : item.flavor || "Classic";
     let itemBasePrice = item.basePrice || 600;
@@ -708,7 +741,7 @@ export default function CheckoutPage() {
                         <div className="flex-1">
                           <h4 className="font-serif font-bold text-sm line-clamp-1 pr-4 mb-2">{item.name}</h4>
                           <div className="flex flex-wrap items-center gap-2">
-                            {item.availableWeights && item.availableWeights.length > 0 ? (
+                            {item.availableWeights && item.availableWeights.length > 0 && !isNonCakeItem(item) ? (
                               <select
                                 value={item.variant || "500g"}
                                 onChange={(e) => handleUpdateItem(item, "variant", e.target.value)}
@@ -720,19 +753,21 @@ export default function CheckoutPage() {
                               </select>
                             ) : (
                               <div className="text-[10px] font-sans font-bold bg-muted/50 border border-primary/10 rounded px-2 py-1 text-muted-foreground uppercase tracking-wider">
-                                {item.variant || "500g"}
+                                {item.variant || (isNonCakeItem(item) ? "Standard" : "500g")}
                               </div>
                             )}
-                            <select
-                              value={item.flavor || "Classic"}
-                              onChange={(e) => handleUpdateItem(item, "flavor", e.target.value)}
-                              className="text-[10px] font-sans font-bold bg-background border border-primary/20 rounded px-2 py-1 focus:outline-none focus:border-primary text-muted-foreground uppercase tracking-wider cursor-pointer"
-                            >
-                              <option value="Classic">Classic Flavour</option>
-                              {flavours.map((f) => (
-                                <option key={f.id} value={f.name}>{f.name} {f.surchargePerHalfKg ? `(+₹${f.surchargePerHalfKg}/500g)` : ""}</option>
-                              ))}
-                            </select>
+                            {!isNonCakeItem(item) && (
+                              <select
+                                value={item.flavor || "Classic"}
+                                onChange={(e) => handleUpdateItem(item, "flavor", e.target.value)}
+                                className="text-[10px] font-sans font-bold bg-background border border-primary/20 rounded px-2 py-1 focus:outline-none focus:border-primary text-muted-foreground uppercase tracking-wider cursor-pointer"
+                              >
+                                <option value="Classic">Classic Flavour</option>
+                                {flavours.map((f) => (
+                                  <option key={f.id} value={f.name}>{f.name} {f.surchargePerHalfKg ? `(+₹${f.surchargePerHalfKg}/500g)` : ""}</option>
+                                ))}
+                              </select>
+                            )}
                             <button
                               type="button"
                               onClick={() => removeItem(item.cartItemId)}
@@ -744,16 +779,32 @@ export default function CheckoutPage() {
                         </div>
                       </div>
                       <div className="space-y-3 pt-2 border-t border-border/50">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Message on Cake (Optional)</label>
-                          <input
-                            type="text"
-                            value={item.messageOnCake || ""}
-                            onChange={(e) => updateItemConfig(item.cartItemId, { messageOnCake: e.target.value })}
-                            placeholder="e.g. Happy Birthday Raj! (Keep under 30 letters)"
-                            className="w-full bg-transparent border-0 border-b-2 border-primary/20 focus:border-[var(--brand-deep-rose)] focus:ring-0 px-0 py-2 text-sm font-serif text-foreground transition-colors placeholder:text-foreground/30 focus:outline-none"
-                          />
-                        </div>
+                        {!isNonCakeItem(item) && (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Message on Cake (Optional)</label>
+                            <input
+                              type="text"
+                              value={item.messageOnCake || ""}
+                              onChange={(e) => updateItemConfig(item.cartItemId, { messageOnCake: e.target.value })}
+                              placeholder="e.g. Happy Birthday Raj! (Keep under 30 letters)"
+                              className="w-full bg-transparent border-0 border-b-2 border-primary/20 focus:border-[var(--brand-deep-rose)] focus:ring-0 px-0 py-2 text-sm font-serif text-foreground transition-colors placeholder:text-foreground/30 focus:outline-none"
+                            />
+                          </div>
+                        )}
+                        {isFlowerItem(item) && (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50 flex items-center gap-1">
+                              🌸 Greeting Card / Ribbon Note (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={item.messageOnCake || ""}
+                              onChange={(e) => updateItemConfig(item.cartItemId, { messageOnCake: e.target.value })}
+                              placeholder="e.g. Happy Anniversary Mom & Dad 💕"
+                              className="w-full bg-transparent border-0 border-b-2 border-primary/20 focus:border-[var(--brand-deep-rose)] focus:ring-0 px-0 py-2 text-sm font-serif text-foreground transition-colors placeholder:text-foreground/30 focus:outline-none"
+                            />
+                          </div>
+                        )}
                         <div className="space-y-1.5">
                           <label className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50">Special Instructions (Optional)</label>
                           <input

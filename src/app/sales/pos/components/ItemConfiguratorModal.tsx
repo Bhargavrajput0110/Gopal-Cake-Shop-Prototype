@@ -18,13 +18,29 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
   const { items: cart, updateItemConfig } = useCart()
   const item = cart.find(i => i.cartItemId === cartItemId)
 
+  const isFlowerOrBouquet = Boolean(
+    item?.name?.toLowerCase().includes("bouquet") ||
+    item?.name?.toLowerCase().includes("rose") ||
+    item?.name?.toLowerCase().includes("flower") ||
+    item?.variant?.toLowerCase().includes("bouquet") ||
+    (Array.isArray(item?.requiredVendors) && item.requiredVendors.includes("VENDOR_FLORIST"))
+  );
+
+  const isHotBake = Boolean(
+    item?.name?.toLowerCase().includes("puff") ||
+    item?.name?.toLowerCase().includes("bake") ||
+    item?.variant === "Piece"
+  );
+
+  const isCake = !isFlowerOrBouquet && !isHotBake;
+
   // Base price per kg — used to auto-recalculate when weight changes
   const basePricePerKg = React.useRef<number>(
     (item?.price || 0) / (parseFloat(String(item?.weight || 1)) || 1)
   )
 
   const [price, setPrice] = React.useState<number>(item?.price || 0)
-  const [weight, setWeight] = React.useState<string>(String(item?.weight || 1))
+  const [weight, setWeight] = React.useState<string>(String(item?.weight || (isCake ? 1 : 1)))
   const [flavor, setFlavor] = React.useState(item?.flavor || "")
   const [messageOnCake, setMessageOnCake] = React.useState(item?.messageOnCake || "")
   const [requiredVendors, setRequiredVendors] = React.useState<string[]>(item?.requiredVendors || [])
@@ -71,16 +87,16 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
   const [flavorError, setFlavorError] = React.useState(false)
 
   const handleSave = () => {
-    if (!flavor) {
+    if (isCake && !flavor) {
       setFlavorError(true)
       setActiveTab("config")
       return
     }
     updateItemConfig(cartItemId, {
       price,
-      weight: parseFloat(weight) || 1,
-      flavor,
-      messageOnCake,
+      weight: isCake ? (parseFloat(weight) || 1) : 1,
+      flavor: isCake ? flavor : undefined,
+      messageOnCake: isHotBake ? undefined : messageOnCake,
       shape: "",
       boxCount: 1,
       designId: selectedDesign?.id,
@@ -134,10 +150,10 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
           {activeTab === 'config' && (
             <div className="space-y-4">
 
-              {/* Price + Weight side by side */}
+              {/* Price + Weight */}
               <div className="flex gap-3">
                 {/* Custom Price */}
-                <div className="flex-1 space-y-1.5 bg-amber-50 border border-amber-200 p-3 rounded-xl">
+                <div className={`${isCake ? 'flex-1' : 'w-full'} space-y-1.5 bg-amber-50 border border-amber-200 p-3 rounded-xl`}>
                   <label className="text-xs font-bold text-amber-900 block">Custom Price (₹)</label>
                   <input
                     type="number"
@@ -147,89 +163,110 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
                     placeholder="Agreed price..."
                     className="w-full p-2 bg-white border border-amber-300 rounded-lg text-lg font-black text-amber-950 focus:outline-none focus:ring-2 focus:ring-amber-400"
                   />
-                  <p className="text-[10px] text-amber-700">₹{basePricePerKg.current.toFixed(0)}/kg</p>
+                  {isCake && <p className="text-[10px] text-amber-700">₹{basePricePerKg.current.toFixed(0)}/kg</p>}
                 </div>
 
-                {/* Weight */}
-                <div className="flex-1 space-y-1.5 bg-background border border-input p-3 rounded-xl">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold block">Weight (kg)</label>
-                    <span className="text-[11px] font-bold text-primary font-mono">
-                      {parseFloat(weight) < 1 ? `${Math.round(parseFloat(weight) * 1000)}g` : `${weight}kg`}
-                    </span>
+                {/* Weight (Only for Cakes) */}
+                {isCake && (
+                  <div className="flex-1 space-y-1.5 bg-background border border-input p-3 rounded-xl">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold block">Weight (kg)</label>
+                      <span className="text-[11px] font-bold text-primary font-mono">
+                        {parseFloat(weight) < 1 ? `${Math.round(parseFloat(weight) * 1000)}g` : `${weight}kg`}
+                      </span>
+                    </div>
+                    <input
+                      type="number"
+                      step="0.25"
+                      min="0.25"
+                      max="10"
+                      value={weight}
+                      onFocus={e => { if (e.target.value === '1') setWeight('') }}
+                      onBlur={e => { if (!e.target.value || parseFloat(e.target.value) <= 0) { setWeight('1'); handleWeightChange('1') } }}
+                      onChange={e => handleWeightChange(e.target.value)}
+                      className="w-full p-2 bg-background border border-input rounded-lg text-lg font-black focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                    {/* Preset Pills: 250g, 500g, 750g, 1kg, 1.5kg, 2kg, 2.5kg, 3kg, 5kg, 10kg */}
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {[
+                        { label: "250g", val: "0.25" },
+                        { label: "500g", val: "0.5" },
+                        { label: "750g", val: "0.75" },
+                        { label: "1kg", val: "1" },
+                        { label: "1.5kg", val: "1.5" },
+                        { label: "2kg", val: "2" },
+                        { label: "2.5kg", val: "2.5" },
+                        { label: "3kg", val: "3" },
+                        { label: "5kg", val: "5" },
+                        { label: "10kg", val: "10" },
+                      ].map(preset => (
+                        <button
+                          key={preset.val}
+                          type="button"
+                          onClick={() => handleWeightChange(preset.val)}
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded border transition-colors ${
+                            parseFloat(weight) === parseFloat(preset.val)
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted/50 hover:bg-muted text-muted-foreground border-border'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">Changes price automatically</p>
                   </div>
-                  <input
-                    type="number"
-                    step="0.25"
-                    min="0.25"
-                    max="10"
-                    value={weight}
-                    onFocus={e => { if (e.target.value === '1') setWeight('') }}
-                    onBlur={e => { if (!e.target.value || parseFloat(e.target.value) <= 0) { setWeight('1'); handleWeightChange('1') } }}
-                    onChange={e => handleWeightChange(e.target.value)}
-                    className="w-full p-2 bg-background border border-input rounded-lg text-lg font-black focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  />
-                  {/* Preset Pills: 250g, 500g, 750g, 1kg, 1.5kg, 2kg, 2.5kg, 3kg, 5kg, 10kg */}
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {[
-                      { label: "250g", val: "0.25" },
-                      { label: "500g", val: "0.5" },
-                      { label: "750g", val: "0.75" },
-                      { label: "1kg", val: "1" },
-                      { label: "1.5kg", val: "1.5" },
-                      { label: "2kg", val: "2" },
-                      { label: "2.5kg", val: "2.5" },
-                      { label: "3kg", val: "3" },
-                      { label: "5kg", val: "5" },
-                      { label: "10kg", val: "10" },
-                    ].map(preset => (
-                      <button
-                        key={preset.val}
-                        type="button"
-                        onClick={() => handleWeightChange(preset.val)}
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded border transition-colors ${
-                          parseFloat(weight) === parseFloat(preset.val)
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-muted/50 hover:bg-muted text-muted-foreground border-border'
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
+                )}
+              </div>
+
+              {/* Flavor (Only for Cakes) */}
+              {isCake && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-rose-600">Flavor *</label>
+                  <select
+                    value={flavor}
+                    onChange={e => { setFlavor(e.target.value); setFlavorError(false); }}
+                    className={`w-full p-2.5 bg-background border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${flavorError ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-input'}`}
+                  >
+                    <option value="" disabled>Select a Flavor (Required)</option>
+                    {ALL_FLAVOURS.map((f, i) => (
+                      <option key={`${f.id}-${i}`} value={f.name}>
+                        {f.name} {f.surchargePerHalfKg ? `(+₹${f.surchargePerHalfKg}/500g)` : ""}
+                      </option>
                     ))}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">Changes price automatically</p>
+                  </select>
+                  {flavorError && <p className="text-[10px] text-rose-600 font-bold">Please select a flavor before adding to cart.</p>}
                 </div>
-              </div>
+              )}
 
-              {/* Flavor only */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-bold text-rose-600">Flavor *</label>
-                <select
-                  value={flavor}
-                  onChange={e => { setFlavor(e.target.value); setFlavorError(false); }}
-                  className={`w-full p-2.5 bg-background border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${flavorError ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-input'}`}
-                >
-                  <option value="" disabled>Select a Flavor (Required)</option>
-                  {ALL_FLAVOURS.map((f, i) => (
-                    <option key={`${f.id}-${i}`} value={f.name}>
-                      {f.name} {f.surchargePerHalfKg ? `(+₹${f.surchargePerHalfKg}/500g)` : ""}
-                    </option>
-                  ))}
-                </select>
-                {flavorError && <p className="text-[10px] text-rose-600 font-bold">Please select a flavor before adding to cart.</p>}
-              </div>
+              {/* Message on Cake / Ribbon Note */}
+              {isCake && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold">Message on Cake</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Happy Birthday Aarav"
+                    value={messageOnCake}
+                    onChange={e => setMessageOnCake(e.target.value)}
+                    className="w-full p-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
+              )}
 
-              {/* Message on Cake */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-bold">Message on Cake</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Happy Birthday Aarav"
-                  value={messageOnCake}
-                  onChange={e => setMessageOnCake(e.target.value)}
-                  className="w-full p-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                />
-              </div>
+              {isFlowerOrBouquet && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold flex items-center gap-1.5">
+                    🌸 Ribbon / Greeting Card Note (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Happy Anniversary Mom & Dad 💕"
+                    value={messageOnCake}
+                    onChange={e => setMessageOnCake(e.target.value)}
+                    className="w-full p-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                </div>
+              )}
 
               {/* Required Vendors (custom items only) */}
               {item.isCustomizable && (

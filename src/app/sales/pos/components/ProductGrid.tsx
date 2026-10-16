@@ -288,12 +288,17 @@ export function ProductGrid({ products, categories = [], designs = [], isLoading
                       key={product.id}
                       data-testid="standard-product-card"
                       onClick={() => setSelectedProduct({
+                        ...product,
                         id: product.id,
                         name: product.name,
                         basePrice: Number(product.basePrice || product.price || 0),
                         thumbnail: product.thumbnail || product.mediumImage || product.largeImage || product.imageUrl || product.images?.[0],
                         isCustomizable: product.isCustomizable,
-                        category: { name: categories.find(c => c.categoryId === product.categoryId)?.name || 'Cake' }
+                        categoryId: product.categoryId,
+                        requiredVendors: (product as any).requiredVendors,
+                        category: product.category || { 
+                          name: categories.find(c => (c as any).id === product.categoryId || c.categoryId === product.categoryId || c.slug === product.categoryId)?.name || 'Standard' 
+                        }
                       })}
                       className="flex flex-col text-left bg-white border border-border hover:border-[var(--brand-deep-rose)]/30 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] group shadow-sm"
                     >

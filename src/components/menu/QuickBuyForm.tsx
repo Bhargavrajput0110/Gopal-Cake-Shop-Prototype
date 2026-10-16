@@ -15,7 +15,39 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   const { addItem, updateItemConfig, setIsCartOpen } = useCart();
   const flavours = getActiveFlavours();
   
-  const isHotBake = product?.categoryId === 'cmuts899k0000ygu3pigymkyy' || product?.category?.name?.toLowerCase().includes('hot bakes');
+  const catName = (product?.category?.name || "").toLowerCase();
+  const catSlug = (product?.category?.slug || "").toLowerCase();
+  const prodName = (product?.name || "").toLowerCase();
+  const reqVendors: string[] = Array.isArray(product?.requiredVendors) ? product.requiredVendors : [];
+
+  const isFlowerOrBouquet = Boolean(
+    product?.categoryId === 'cmv9h4efd0000a0u3u8yom3qt' ||
+    catSlug === 'bouquets' ||
+    catName.includes('bouquet') ||
+    catName.includes('flower') ||
+    prodName.includes('bouquet') ||
+    prodName.includes('rose') ||
+    reqVendors.includes('VENDOR_FLORIST')
+  );
+
+  const isHotBake = Boolean(
+    product?.categoryId === 'cmuts899k0000ygu3pigymkyy' || 
+    catName.includes('hot bakes') ||
+    catName.includes('savouries') ||
+    catName.includes('puff') ||
+    prodName.includes('puff')
+  );
+
+  const isMerchandiseOrAccessory = Boolean(
+    catName.includes('accessory') ||
+    catName.includes('accessories') ||
+    catName.includes('merchandise') ||
+    catName.includes('candle') ||
+    catName.includes('topper') ||
+    catName.includes('bread')
+  );
+
+  const isCake = !isFlowerOrBouquet && !isHotBake && !isMerchandiseOrAccessory;
 
   useEffect(() => {
     // Prevent touchpad scroll bleeding to the background webpage
@@ -26,8 +58,10 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
     };
   }, []);
   
-  let initialAvailableWeights = [...WEIGHT_OPTIONS];
-  let initialDefaultWeight = "500g";
+  let initialAvailableWeights = isCake 
+    ? [...WEIGHT_OPTIONS] 
+    : [{ value: isFlowerOrBouquet ? '1 Bouquet' : isHotBake ? 'Piece' : 'Unit', label: isFlowerOrBouquet ? 'Fresh Arrangement' : isHotBake ? '1 Piece' : '1 Unit' }];
+  let initialDefaultWeight = isCake ? "500g" : (isFlowerOrBouquet ? "1 Bouquet" : isHotBake ? "Piece" : "Unit");
   let wc: any = null;
   
   // Parse weight utility
@@ -136,31 +170,33 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   };
 
   // Calculate dynamic price based on weight
-  let currentPrice = product?.basePrice || 600;
+  let currentPrice = Number(product?.basePrice || product?.price || 600);
   
-  if (wc && typeof wc === 'object' && Object.keys(wc).length > 0) {
-      const selectedOption = availableWeights.find((w: any) => w.value === selectedWeight);
-      if (selectedOption && selectedOption.price) {
-          currentPrice = selectedOption.price;
-      }
-  } else {
-      const basePrices: Record<string, number> = {
-        "250g": 350, "500g": 600, "750g": 850, "1kg": 1100,
-        "1.5kg": 1600, "2kg": 2100, "2.5kg": 2600, "3kg": 3100,
-        "3.5kg": 3500, "4kg": 4000, "4.5kg": 4400, "5kg": 4900,
-        "5.5kg": 5300, "6kg": 5800, "6.5kg": 6300, "7kg": 6800,
-        "7.5kg": 7300, "8kg": 7800, "8.5kg": 8300, "9kg": 8300, "9.5kg": 8750, "10kg": 9200,
-      };
-      if (selectedWeight && basePrices[selectedWeight]) {
-          const scale = basePrices[selectedWeight] / basePrices["500g"];
-          currentPrice = Math.round(currentPrice * scale);
-      }
+  if (isCake) {
+    if (wc && typeof wc === 'object' && Object.keys(wc).length > 0) {
+        const selectedOption = availableWeights.find((w: any) => w.value === selectedWeight);
+        if (selectedOption && selectedOption.price) {
+            currentPrice = selectedOption.price;
+        }
+    } else {
+        const basePrices: Record<string, number> = {
+          "250g": 350, "500g": 600, "750g": 850, "1kg": 1100,
+          "1.5kg": 1600, "2kg": 2100, "2.5kg": 2600, "3kg": 3100,
+          "3.5kg": 3500, "4kg": 4000, "4.5kg": 4400, "5kg": 4900,
+          "5.5kg": 5300, "6kg": 5800, "6.5kg": 6300, "7kg": 6800,
+          "7.5kg": 7300, "8kg": 7800, "8.5kg": 8300, "9kg": 8300, "9.5kg": 8750, "10kg": 9200,
+        };
+        if (selectedWeight && basePrices[selectedWeight]) {
+            const scale = basePrices[selectedWeight] / basePrices["500g"];
+            currentPrice = Math.round(currentPrice * scale);
+        }
+    }
   }
 
-  // Add flavour surcharge
+  // Add flavour surcharge (ONLY for cakes)
   const weightVal = parseFloat(selectedWeight || "0");
   const weightKg = (selectedWeight || "").toLowerCase().includes("kg") ? weightVal : ((selectedWeight || "").toLowerCase().includes("g") ? weightVal / 1000 : weightVal);
-  const surcharge = selectedFlavour ? getFlavourSurcharge(selectedFlavour, weightKg) : 0;
+  const surcharge = (isCake && selectedFlavour) ? getFlavourSurcharge(selectedFlavour, weightKg) : 0;
   
   let finalPrice = currentPrice + surcharge;
   if (isCustom && overridePrice && !isNaN(Number(overridePrice))) {
@@ -168,7 +204,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   }
 
   const handleAddToCart = () => {
-    if (!isHotBake && !selectedWeight) {
+    if (isCake && !selectedWeight) {
       setToast({
         id: Date.now().toString(),
         title: 'Selection Required',
@@ -177,7 +213,7 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       });
       return;
     }
-    if (!isHotBake && !selectedFlavour) {
+    if (isCake && !selectedFlavour) {
       setToast({
         id: Date.now().toString(),
         title: 'Selection Required',
@@ -191,18 +227,19 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
       productId: product.id,
       name: product.name,
       price: (isCustom && product.id === 'custom-cake-studio' && !overridePrice) ? 0 : finalPrice,
-      basePrice: product.basePrice || 600,
+      basePrice: Number(product.basePrice || product.price || finalPrice),
       quantity: editingCartItem ? editingCartItem.quantity : 1,
       image: product.thumbnail || product.imageUrl || product.image,
-      variant: isHotBake ? 'Piece' : selectedWeight,
-      flavor: isHotBake ? undefined : selectedFlavour,
-      messageOnCake: isHotBake ? undefined : (messageOnCake.trim() || undefined),
+      variant: isFlowerOrBouquet ? '1 Bouquet' : isHotBake ? 'Piece' : isCake ? selectedWeight : 'Unit',
+      flavor: isCake ? selectedFlavour : undefined,
+      messageOnCake: messageOnCake.trim() || undefined,
       notes: notes.trim() || undefined,
       referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
       printImage: printImage || undefined,
       designId: product.designId,
       isCustom: isCustom, // Flag to indicate this requires a quote
-      availableWeights: availableWeights.map((w: any) => ({ value: w.value, label: w.label, price: w.price })),
+      requiredVendors: product.requiredVendors,
+      availableWeights: isCake ? availableWeights.map((w: any) => ({ value: w.value, label: w.label, price: w.price })) : undefined,
     };
 
     if (editingCartItem) {
@@ -240,9 +277,9 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10 pointer-events-none" />
         <div className="absolute bottom-3 left-4 right-4 z-20">
           <h2 className="text-xl font-display font-bold text-white leading-tight drop-shadow-md">{product.name}</h2>
-          {product.category?.name && (
-            <p className="text-[var(--brand-champagne)] font-editorial italic text-xs drop-shadow-md">{product.category.name}</p>
-          )}
+          <p className="text-[var(--brand-champagne)] font-editorial italic text-xs drop-shadow-md">
+            {isFlowerOrBouquet ? 'Bouquets' : isHotBake ? 'Hot Bakes' : (product.category?.name || 'Cake')}
+          </p>
         </div>
       </div>
 
@@ -253,7 +290,8 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
         data-lenis-prevent-wheel="true"
         data-lenis-prevent-touch="true"
       >
-        {!isHotBake && (
+        {/* If it's a Cake: Show Weight & Flavour Selection */}
+        {isCake && (
           <>
             {/* Weight Selection */}
             <div className="space-y-3">
@@ -326,10 +364,36 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
           </>
         )}
 
+        {/* If it's a Flower Bouquet: Show Informational Florist Badge */}
+        {isFlowerOrBouquet && (
+          <div className="p-4 bg-rose-50/70 border border-rose-200/80 rounded-2xl flex items-center gap-3 shadow-sm">
+            <span className="text-3xl">💐</span>
+            <div>
+              <p className="text-xs font-black text-rose-950 font-ui uppercase tracking-wider">Fresh Florist Bouquet</p>
+              <p className="text-[11px] text-rose-800 font-ui font-medium mt-0.5">
+                Handcrafted freshly by partner florist Vikas Bhai. Ready for celebration delivery or store pickup.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* If it's a Hot Bake: Show Fresh Bake Badge */}
+        {isHotBake && (
+          <div className="p-4 bg-amber-50/70 border border-amber-200/80 rounded-2xl flex items-center gap-3 shadow-sm">
+            <span className="text-3xl">🔥</span>
+            <div>
+              <p className="text-xs font-black text-amber-950 font-ui uppercase tracking-wider">Hot Fresh Bake</p>
+              <p className="text-[11px] text-amber-800 font-ui font-medium mt-0.5">
+                Baked daily at Central Kitchen. Sold per piece.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Extra Fields (Always Visible) */}
         <div className="space-y-6 pt-2 pb-6">
-          {/* Message on Cake */}
-          {!isHotBake && (
+          {/* Message on Cake (Only for Cakes) */}
+          {isCake && (
             <div className="space-y-3">
               <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
                 🎂 Message on Cake
@@ -343,6 +407,24 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
                 className="w-full rounded-xl border-2 border-primary/20 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
               />
               <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/60</p>
+            </div>
+          )}
+
+          {/* Greeting Card / Ribbon Message (For Flowers/Bouquets) */}
+          {isFlowerOrBouquet && (
+            <div className="space-y-3">
+              <label className="font-ui text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                🌸 Greeting Card / Ribbon Note (Optional)
+              </label>
+              <input
+                type="text"
+                value={messageOnCake}
+                onChange={(e) => setMessageOnCake(e.target.value)}
+                placeholder='e.g. Happy Anniversary Mom & Dad, with love 💕'
+                maxLength={80}
+                className="w-full rounded-xl border-2 border-primary/20 bg-background px-4 py-3 h-14 text-sm font-ui text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+              />
+              <p className="text-right text-[11px] text-muted-foreground">{messageOnCake.length}/80</p>
             </div>
           )}
 
