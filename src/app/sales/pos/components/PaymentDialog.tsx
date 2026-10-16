@@ -90,16 +90,47 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [checkoutError, setCheckoutError] = React.useState<string | null>(null)
 
+  const hasBouquetInCart = React.useMemo(() => {
+    return cart.some(item => 
+      item.requiredVendors?.includes('VENDOR_FLORIST') ||
+      item.name?.toLowerCase().includes('bouquet') ||
+      item.name?.toLowerCase().includes('rose')
+    );
+  }, [cart]);
+
+  const hasPhotoInCart = React.useMemo(() => {
+    return cart.some(item => 
+      item.isPhotoCake ||
+      item.requiredVendors?.includes('VENDOR_PHOTO') ||
+      Boolean(item.printImage)
+    );
+  }, [cart]);
+
+  const hasAcrylicInCart = React.useMemo(() => {
+    return cart.some(item => 
+      item.requiredVendors?.includes('VENDOR_ACRYLIC')
+    );
+  }, [cart]);
+
   // Vendor Supply Assignments for Custom Designs (Photograph, Acrylic Topper, Florist)
   const [vendorSupplies, setVendorSupplies] = React.useState<{
     photo: { selected: boolean; note: string };
     acrylic: { selected: boolean; note: string };
     floral: { selected: boolean; note: string };
   }>({
-    photo: { selected: false, note: '' },
-    acrylic: { selected: false, note: '' },
-    floral: { selected: false, note: '' },
+    photo: { selected: hasPhotoInCart, note: hasPhotoInCart ? 'Edible Photo Print' : '' },
+    acrylic: { selected: hasAcrylicInCart, note: hasAcrylicInCart ? 'Acrylic Topper' : '' },
+    floral: { selected: hasBouquetInCart, note: hasBouquetInCart ? 'Bouquet order auto-assigned to Vikas Bhai' : '' },
   })
+
+  // Synchronize when cart changes
+  React.useEffect(() => {
+    setVendorSupplies(prev => ({
+      photo: { selected: prev.photo.selected || hasPhotoInCart, note: prev.photo.note || (hasPhotoInCart ? 'Edible Photo Print' : '') },
+      acrylic: { selected: prev.acrylic.selected || hasAcrylicInCart, note: prev.acrylic.note || (hasAcrylicInCart ? 'Acrylic Topper' : '') },
+      floral: { selected: prev.floral.selected || hasBouquetInCart, note: prev.floral.note || (hasBouquetInCart ? 'Bouquet order auto-assigned to Vikas Bhai' : '') },
+    }));
+  }, [hasBouquetInCart, hasPhotoInCart, hasAcrylicInCart]);
 
   // Math
   const discountAmt = discountType === 'PERCENT' 
@@ -513,11 +544,22 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                   >
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <span className="text-xl">🌸</span>
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-colors ${vendorSupplies.floral.selected ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300 bg-gray-50 text-transparent'}`}>✓</span>
+                      <div className="flex items-center gap-1.5">
+                        {hasBouquetInCart && (
+                          <span className="text-[8px] font-black uppercase tracking-widest bg-emerald-700 text-white px-2 py-0.5 rounded-full">
+                            Auto-Assigned
+                          </span>
+                        )}
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-colors ${vendorSupplies.floral.selected ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300 bg-gray-50 text-transparent'}`}>✓</span>
+                      </div>
                     </div>
                     <div>
-                      <span className="font-serif font-bold text-xs block leading-tight">Fresh Floral Arrangement</span>
-                      <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-emerald-600 block mt-1">Florist Partner</span>
+                      <span className="font-serif font-bold text-xs block leading-tight">
+                        {hasBouquetInCart ? 'Fresh Florist Bouquet' : 'Fresh Floral Arrangement'}
+                      </span>
+                      <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-emerald-600 block mt-1">
+                        {hasBouquetInCart ? 'Florist Vikas Bhai (Auto-Dispatched)' : 'Florist Partner'}
+                      </span>
                     </div>
                     {vendorSupplies.floral.selected && (
                       <textarea
@@ -525,7 +567,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
                         onClick={e => e.stopPropagation()}
                         value={vendorSupplies.floral.note}
                         onChange={e => setVendorSupplies(prev => ({ ...prev, floral: { ...prev.floral, note: e.target.value } }))}
-                        placeholder="e.g. Red roses & baby breath — press Enter for new line"
+                        placeholder={hasBouquetInCart ? "Optional note for Florist Vikas Bhai..." : "e.g. Red roses & baby breath — press Enter for new line"}
                         className="mt-3 text-[11px] font-sans bg-white border border-emerald-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-emerald-600 w-full shadow-inner placeholder:text-muted-foreground/60 resize-none"
                       />
                     )}
