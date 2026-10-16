@@ -71,6 +71,7 @@ const handler = async (ctx: HandlerContext) => {
     customerId,
     branchId: data.branchId || 'default-branch',
     items: data.items,
+    customerNotes: data.notes || data.items?.find((i: any) => i.notes)?.notes,
     deliveryType: data.deliveryType as DeliveryType,
     deliveryAddress: data.deliveryType === 'DELIVERY' && data.address
       ? [data.address.house, data.address.street, data.address.area, data.address.city, data.address.pin, data.address.landmark].filter(Boolean).join(', ')

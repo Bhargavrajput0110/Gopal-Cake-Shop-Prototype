@@ -57,6 +57,7 @@ export interface CheckoutPayload {
   overrideDeliveryCharge?: number // Only valid if context.canOverrideDelivery
   overrideDiscount?: number // Only valid if context.canOverrideDiscount
   isPriority?: boolean
+  customerNotes?: string
   internalNotes?: string
   paymentMethod: PaymentMethod
   paymentType: PaymentType
@@ -441,6 +442,7 @@ export class StorefrontEngine {
           source: context.source,
           createdById: context.createdById,
           isPriority: context.canAssignPriority ? payload.isPriority : false,
+          customerNotes: payload.customerNotes || (payload.items?.find(i => i.notes)?.notes) || null,
           internalNotes: finalInternalNotes,
           type: payload.type || 'ORDER',
           status: payload.type === 'QUOTE' ? OrderStatus.QUOTE_DRAFT : (context.source === 'POS' ? OrderStatus.WAITING_FOR_CHEF : OrderStatus.NEW),

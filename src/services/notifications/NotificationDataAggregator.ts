@@ -221,11 +221,23 @@ export class NotificationDataAggregator {
             pickupDateTime: targetDateFormatted,
           };
 
-    // Only use the customer's own notes for the customer-facing WhatsApp message.
-    // item.notes are internal vendor instructions (e.g. "make it a 50th anniversary"
-    // for acrylic vendor, "red roses and white" for florist) entered by the sales
-    // person — these must NEVER be shown to the customer.
-    const allNotes = order.customerNotes || '';
+    // Collect customer special instructions from order.customerNotes and parent item notes (e.g. "Make it dark blue").
+    // Child items (parentItemId !== null) are internal vendor components and are excluded.
+    const parentItemNotes = order.items
+      .filter((i) => !i.parentItemId && i.notes && i.notes.trim())
+      .map((i) => i.notes!.trim());
+
+    const combinedNotes: string[] = [];
+    if (order.customerNotes && order.customerNotes.trim()) {
+      combinedNotes.push(order.customerNotes.trim());
+    }
+    for (const note of parentItemNotes) {
+      if (!combinedNotes.includes(note)) {
+        combinedNotes.push(note);
+      }
+    }
+
+    const allNotes = combinedNotes.join(', ');
 
     return {
       customer,
