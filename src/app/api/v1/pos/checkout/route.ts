@@ -43,19 +43,26 @@ const handler = async (ctx: HandlerContext) => {
   // Convert global POS vendor assignments into item-level required vendors for StorefrontEngine
   if (data.vendorAssignments && data.items.length > 0) {
     const v = data.vendorAssignments;
-    const globalVendors: string[] = [];
-    if (v.photoVendorRequired) globalVendors.push('VENDOR_PHOTO');
-    if (v.acrylicVendorRequired) globalVendors.push('VENDOR_ACRYLIC');
-    if (v.floralVendorRequired) globalVendors.push('VENDOR_FLORIST');
+    const cakeVendors: string[] = [];
+    if (v.photoVendorRequired) cakeVendors.push('VENDOR_PHOTO');
+    if (v.acrylicVendorRequired) cakeVendors.push('VENDOR_ACRYLIC');
+    if (v.floralVendorRequired) cakeVendors.push('VENDOR_FLORIST');
     
-    if (globalVendors.length > 0) {
-      if (!data.items[0].requiredVendors) data.items[0].requiredVendors = [];
-      data.items[0].requiredVendors = Array.from(new Set([...data.items[0].requiredVendors, ...globalVendors]));
+    if (cakeVendors.length > 0) {
+      // Find the specific cake item to attach cake supplies to (avoid attaching cake supplies to a bouquet item)
+      const targetCakeItem = data.items.find((item: any) => {
+        const isBqt = item.requiredVendors?.includes('VENDOR_FLORIST') && !item.designId && (!item.weight || item.weight === 0);
+        return !isBqt;
+      }) || data.items[0];
+
+      if (!targetCakeItem.requiredVendors) targetCakeItem.requiredVendors = [];
+      targetCakeItem.requiredVendors = Array.from(new Set([...targetCakeItem.requiredVendors, ...cakeVendors]));
       // Also attach the per-vendor notes so they flow through to child items
-      (data.items[0] as any).vendorNotes = {
-        VENDOR_PHOTO: v.photoVendorRequired || '',
-        VENDOR_ACRYLIC: v.acrylicVendorRequired || '',
-        VENDOR_FLORIST: v.floralVendorRequired || '',
+      (targetCakeItem as any).vendorNotes = {
+        ...((targetCakeItem as any).vendorNotes || {}),
+        ...(v.photoVendorRequired ? { VENDOR_PHOTO: v.photoVendorRequired } : {}),
+        ...(v.acrylicVendorRequired ? { VENDOR_ACRYLIC: v.acrylicVendorRequired } : {}),
+        ...(v.floralVendorRequired ? { VENDOR_FLORIST: v.floralVendorRequired } : {}),
       };
     }
   }

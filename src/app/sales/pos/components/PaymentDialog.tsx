@@ -90,29 +90,48 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [checkoutError, setCheckoutError] = React.useState<string | null>(null)
 
-  const hasBouquetInCart = React.useMemo(() => {
-    return cart.some(item => 
+  const bouquetItem = React.useMemo(() => {
+    return cart.find(item => 
       item.requiredVendors?.includes('VENDOR_FLORIST') ||
       item.name?.toLowerCase().includes('bouquet') ||
       item.name?.toLowerCase().includes('rose')
     );
   }, [cart]);
 
+  const hasBouquetInCart = Boolean(bouquetItem);
+
+  const cakeItems = React.useMemo(() => {
+    return cart.filter(item => 
+      !item.requiredVendors?.includes('VENDOR_FLORIST') &&
+      !item.name?.toLowerCase().includes('bouquet') &&
+      !item.name?.toLowerCase().includes('rose') &&
+      !item.name?.toLowerCase().includes('puff') &&
+      !item.name?.toLowerCase().includes('bake')
+    );
+  }, [cart]);
+
+  const hasCakeInCart = cakeItems.length > 0;
+  const primaryCake = cakeItems[0] || null;
+
   const hasPhotoInCart = React.useMemo(() => {
     return cart.some(item => 
       item.isPhotoCake ||
-      item.requiredVendors?.includes('VENDOR_PHOTO') ||
+      (item.requiredVendors?.includes('VENDOR_PHOTO') && !item.name?.toLowerCase().includes('bouquet')) ||
       Boolean(item.printImage)
     );
   }, [cart]);
 
   const hasAcrylicInCart = React.useMemo(() => {
     return cart.some(item => 
-      item.requiredVendors?.includes('VENDOR_ACRYLIC')
+      item.requiredVendors?.includes('VENDOR_ACRYLIC') && !item.name?.toLowerCase().includes('bouquet')
     );
   }, [cart]);
 
-  // Vendor Supply Assignments for Custom Designs (Photograph, Acrylic Topper, Florist)
+  const hasFloralOnCakeInCart = React.useMemo(() => {
+    return cakeItems.some(item => item.requiredVendors?.includes('VENDOR_FLORIST'));
+  }, [cakeItems]);
+
+  // Vendor Supply Assignments for Custom Designs (Photograph, Acrylic Topper, Florist on Cake)
   const [vendorSupplies, setVendorSupplies] = React.useState<{
     photo: { selected: boolean; note: string };
     acrylic: { selected: boolean; note: string };
@@ -120,7 +139,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
   }>({
     photo: { selected: hasPhotoInCart, note: hasPhotoInCart ? 'Edible Photo Print' : '' },
     acrylic: { selected: hasAcrylicInCart, note: hasAcrylicInCart ? 'Acrylic Topper' : '' },
-    floral: { selected: hasBouquetInCart, note: hasBouquetInCart ? 'Bouquet order auto-assigned to Vikas Bhai' : '' },
+    floral: { selected: hasFloralOnCakeInCart, note: '' },
   })
 
   // Synchronize when cart changes
@@ -128,9 +147,9 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
     setVendorSupplies(prev => ({
       photo: { selected: prev.photo.selected || hasPhotoInCart, note: prev.photo.note || (hasPhotoInCart ? 'Edible Photo Print' : '') },
       acrylic: { selected: prev.acrylic.selected || hasAcrylicInCart, note: prev.acrylic.note || (hasAcrylicInCart ? 'Acrylic Topper' : '') },
-      floral: { selected: prev.floral.selected || hasBouquetInCart, note: prev.floral.note || (hasBouquetInCart ? 'Bouquet order auto-assigned to Vikas Bhai' : '') },
+      floral: { selected: prev.floral.selected || hasFloralOnCakeInCart, note: prev.floral.note },
     }));
-  }, [hasBouquetInCart, hasPhotoInCart, hasAcrylicInCart]);
+  }, [hasPhotoInCart, hasAcrylicInCart, hasFloralOnCakeInCart]);
 
   // Math
   const discountAmt = discountType === 'PERCENT' 
@@ -463,116 +482,145 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
 
               {/* Custom Design Vendor Supplies & Dispatch */}
               <div className="space-y-4 pt-2 border-t border-border/20">
-                <h3 className="font-serif text-xl font-bold pb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[var(--brand-deep-rose)]"></span>
-                    Design Supplies & Vendor Dispatch
-                  </span>
-                  <span className="text-[10px] font-sans font-semibold uppercase tracking-widest text-[var(--brand-deep-rose)] bg-rose-50 px-2.5 py-1 rounded-full">1-Tap Assign</span>
-                </h3>
-                <p className="text-xs font-serif italic text-muted-foreground leading-relaxed">
-                  Tap to assign required custom components. Automatically flags order for Vendor Dispatch.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                  {/* Edible Print Partner */}
-                  <div 
-                    onClick={() => setVendorSupplies(prev => ({ ...prev, photo: { ...prev.photo, selected: !prev.photo.selected } }))}
-                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer select-none flex flex-col justify-between shadow-xs hover:shadow-md ${
-                      vendorSupplies.photo.selected 
-                        ? 'bg-rose-50/80 border-[var(--brand-deep-rose)] text-[var(--brand-deep-rose)]' 
-                        : 'bg-white border-border/50 text-foreground/80 hover:border-[var(--brand-deep-rose)]/50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-xl">🖼️</span>
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-colors ${vendorSupplies.photo.selected ? 'bg-[var(--brand-deep-rose)] border-[var(--brand-deep-rose)] text-white' : 'border-gray-300 bg-gray-50 text-transparent'}`}>✓</span>
-                    </div>
-                    <div>
-                      <span className="font-serif font-bold text-xs block leading-tight">Photograph / Edible Print</span>
-                      <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-[var(--brand-deep-rose)]/80 block mt-1">Edible Print Partner</span>
-                    </div>
-                    {vendorSupplies.photo.selected && (
-                      <input 
-                        type="text"
-                        onClick={e => e.stopPropagation()}
-                        value={vendorSupplies.photo.note}
-                        onChange={e => setVendorSupplies(prev => ({ ...prev, photo: { ...prev.photo, note: e.target.value } }))}
-                        placeholder="e.g. Photo on WhatsApp"
-                        className="mt-3 text-[11px] font-sans bg-white border border-rose-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-[var(--brand-deep-rose)] w-full shadow-inner placeholder:text-muted-foreground/60"
-                      />
-                    )}
-                  </div>
-
-                  {/* Acrylic Topper Vendor */}
-                  <div 
-                    onClick={() => setVendorSupplies(prev => ({ ...prev, acrylic: { ...prev.acrylic, selected: !prev.acrylic.selected } }))}
-                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer select-none flex flex-col justify-between shadow-xs hover:shadow-md ${
-                      vendorSupplies.acrylic.selected 
-                        ? 'bg-amber-50/80 border-amber-500 text-amber-950' 
-                        : 'bg-white border-border/50 text-foreground/80 hover:border-amber-400'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-xl">✨</span>
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-colors ${vendorSupplies.acrylic.selected ? 'bg-amber-500 border-amber-500 text-white' : 'border-gray-300 bg-gray-50 text-transparent'}`}>✓</span>
-                    </div>
-                    <div>
-                      <span className="font-serif font-bold text-xs block leading-tight">Acrylic Topper / Name Tag</span>
-                      <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-amber-600 block mt-1">Laser Cut Vendor</span>
-                    </div>
-                    {vendorSupplies.acrylic.selected && (
-                      <textarea
-                        rows={2}
-                        onClick={e => e.stopPropagation()}
-                        value={vendorSupplies.acrylic.note}
-                        onChange={e => setVendorSupplies(prev => ({ ...prev, acrylic: { ...prev.acrylic, note: e.target.value } }))}
-                        placeholder="e.g. 'Happy 25th Anniversary' — press Enter for new line"
-                        className="mt-3 text-[11px] font-sans bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-amber-600 w-full shadow-inner placeholder:text-muted-foreground/60 resize-none"
-                      />
-                    )}
-                  </div>
-
-                  {/* Floral Vendor */}
-                  <div 
-                    onClick={() => setVendorSupplies(prev => ({ ...prev, floral: { ...prev.floral, selected: !prev.floral.selected } }))}
-                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer select-none flex flex-col justify-between shadow-xs hover:shadow-md ${
-                      vendorSupplies.floral.selected 
-                        ? 'bg-emerald-50/80 border-emerald-600 text-emerald-950' 
-                        : 'bg-white border-border/50 text-foreground/80 hover:border-emerald-500'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-xl">🌸</span>
-                      <div className="flex items-center gap-1.5">
-                        {hasBouquetInCart && (
-                          <span className="text-[8px] font-black uppercase tracking-widest bg-emerald-700 text-white px-2 py-0.5 rounded-full">
+                {/* 1. If a Bouquet is in the Cart, show explicit Auto-Dispatched Banner */}
+                {hasBouquetInCart && (
+                  <div className="p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50/80 shadow-xs flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">💐</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-serif font-bold text-sm text-emerald-950">
+                            {bouquetItem?.name || "Fresh Floral Bouquet"}
+                          </span>
+                          <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-700 text-white px-2 py-0.5 rounded-full">
                             Auto-Assigned
                           </span>
-                        )}
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-colors ${vendorSupplies.floral.selected ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300 bg-gray-50 text-transparent'}`}>✓</span>
+                        </div>
+                        <p className="text-xs text-emerald-800 mt-0.5">
+                          Dispatched directly to partner florist <strong>Vikas Bhai (9558951977)</strong> upon checkout.
+                        </p>
                       </div>
                     </div>
-                    <div>
-                      <span className="font-serif font-bold text-xs block leading-tight">
-                        {hasBouquetInCart ? 'Fresh Florist Bouquet' : 'Fresh Floral Arrangement'}
-                      </span>
-                      <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-emerald-600 block mt-1">
-                        {hasBouquetInCart ? 'Florist Vikas Bhai (Auto-Dispatched)' : 'Florist Partner'}
-                      </span>
+                    <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                      ✓
                     </div>
-                    {vendorSupplies.floral.selected && (
-                      <textarea
-                        rows={2}
-                        onClick={e => e.stopPropagation()}
-                        value={vendorSupplies.floral.note}
-                        onChange={e => setVendorSupplies(prev => ({ ...prev, floral: { ...prev.floral, note: e.target.value } }))}
-                        placeholder={hasBouquetInCart ? "Optional note for Florist Vikas Bhai..." : "e.g. Red roses & baby breath — press Enter for new line"}
-                        className="mt-3 text-[11px] font-sans bg-white border border-emerald-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-emerald-600 w-full shadow-inner placeholder:text-muted-foreground/60 resize-none"
-                      />
-                    )}
                   </div>
-                </div>
+                )}
+
+                {/* 2. Cake Design Supplies (Photo, Acrylic, Fresh Flowers ON Cake) */}
+                {hasCakeInCart && (
+                  <>
+                    <h3 className="font-serif text-xl font-bold pb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[var(--brand-deep-rose)]"></span>
+                        {hasBouquetInCart 
+                          ? `Supplies for Cake: ${primaryCake?.name || 'Design Cake'}` 
+                          : "Design Supplies & Vendor Dispatch"}
+                      </span>
+                      <span className="text-[10px] font-sans font-semibold uppercase tracking-widest text-[var(--brand-deep-rose)] bg-rose-50 px-2.5 py-1 rounded-full">
+                        {hasBouquetInCart ? "Cake Supplies" : "1-Tap Assign"}
+                      </span>
+                    </h3>
+                    <p className="text-xs font-serif italic text-muted-foreground leading-relaxed">
+                      {hasBouquetInCart 
+                        ? "Select any additional supplies needed specifically for the cake (the bouquet is already auto-assigned to Vikas Bhai above)."
+                        : "Tap to assign required custom components. Automatically flags order for Vendor Dispatch."}
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      {/* Edible Print Partner */}
+                      <div 
+                        onClick={() => setVendorSupplies(prev => ({ ...prev, photo: { ...prev.photo, selected: !prev.photo.selected } }))}
+                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer select-none flex flex-col justify-between shadow-xs hover:shadow-md ${
+                          vendorSupplies.photo.selected 
+                            ? 'bg-rose-50/80 border-[var(--brand-deep-rose)] text-[var(--brand-deep-rose)]' 
+                            : 'bg-white border-border/50 text-foreground/80 hover:border-[var(--brand-deep-rose)]/50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="text-xl">🖼️</span>
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-colors ${vendorSupplies.photo.selected ? 'bg-[var(--brand-deep-rose)] border-[var(--brand-deep-rose)] text-white' : 'border-gray-300 bg-gray-50 text-transparent'}`}>✓</span>
+                        </div>
+                        <div>
+                          <span className="font-serif font-bold text-xs block leading-tight">Photograph / Edible Print</span>
+                          <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-[var(--brand-deep-rose)]/80 block mt-1">Edible Print Partner</span>
+                        </div>
+                        {vendorSupplies.photo.selected && (
+                          <input 
+                            type="text"
+                            onClick={e => e.stopPropagation()}
+                            value={vendorSupplies.photo.note}
+                            onChange={e => setVendorSupplies(prev => ({ ...prev, photo: { ...prev.photo, note: e.target.value } }))}
+                            placeholder="e.g. Photo on WhatsApp"
+                            className="mt-3 text-[11px] font-sans bg-white border border-rose-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-[var(--brand-deep-rose)] w-full shadow-inner placeholder:text-muted-foreground/60"
+                          />
+                        )}
+                      </div>
+
+                      {/* Acrylic Topper Vendor */}
+                      <div 
+                        onClick={() => setVendorSupplies(prev => ({ ...prev, acrylic: { ...prev.acrylic, selected: !prev.acrylic.selected } }))}
+                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer select-none flex flex-col justify-between shadow-xs hover:shadow-md ${
+                          vendorSupplies.acrylic.selected 
+                            ? 'bg-amber-50/80 border-amber-500 text-amber-950' 
+                            : 'bg-white border-border/50 text-foreground/80 hover:border-amber-400'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="text-xl">✨</span>
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-colors ${vendorSupplies.acrylic.selected ? 'bg-amber-500 border-amber-500 text-white' : 'border-gray-300 bg-gray-50 text-transparent'}`}>✓</span>
+                        </div>
+                        <div>
+                          <span className="font-serif font-bold text-xs block leading-tight">Acrylic Topper / Name Tag</span>
+                          <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-amber-600 block mt-1">Laser Cut Vendor</span>
+                        </div>
+                        {vendorSupplies.acrylic.selected && (
+                          <textarea
+                            rows={2}
+                            onClick={e => e.stopPropagation()}
+                            value={vendorSupplies.acrylic.note}
+                            onChange={e => setVendorSupplies(prev => ({ ...prev, acrylic: { ...prev.acrylic, note: e.target.value } }))}
+                            placeholder="e.g. 'Happy 25th Anniversary' — press Enter for new line"
+                            className="mt-3 text-[11px] font-sans bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-amber-600 w-full shadow-inner placeholder:text-muted-foreground/60 resize-none"
+                          />
+                        )}
+                      </div>
+
+                      {/* Floral Vendor for Cake Decor */}
+                      <div 
+                        onClick={() => setVendorSupplies(prev => ({ ...prev, floral: { ...prev.floral, selected: !prev.floral.selected } }))}
+                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer select-none flex flex-col justify-between shadow-xs hover:shadow-md ${
+                          vendorSupplies.floral.selected 
+                            ? 'bg-emerald-50/80 border-emerald-600 text-emerald-950' 
+                            : 'bg-white border-border/50 text-foreground/80 hover:border-emerald-500'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="text-xl">🌸</span>
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border transition-colors ${vendorSupplies.floral.selected ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300 bg-gray-50 text-transparent'}`}>✓</span>
+                        </div>
+                        <div>
+                          <span className="font-serif font-bold text-xs block leading-tight">
+                            {hasBouquetInCart ? 'Fresh Flowers on Cake' : 'Fresh Floral Arrangement'}
+                          </span>
+                          <span className="font-ui text-[9px] font-extrabold uppercase tracking-wider text-emerald-600 block mt-1">
+                            {hasBouquetInCart ? 'Florist (For Cake Decor)' : 'Florist Partner'}
+                          </span>
+                        </div>
+                        {vendorSupplies.floral.selected && (
+                          <textarea
+                            rows={2}
+                            onClick={e => e.stopPropagation()}
+                            value={vendorSupplies.floral.note}
+                            onChange={e => setVendorSupplies(prev => ({ ...prev, floral: { ...prev.floral, note: e.target.value } }))}
+                            placeholder="e.g. Red roses & baby breath on cake tiers — press Enter for new line"
+                            className="mt-3 text-[11px] font-sans bg-white border border-emerald-300 rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-emerald-600 w-full shadow-inner placeholder:text-muted-foreground/60 resize-none"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
