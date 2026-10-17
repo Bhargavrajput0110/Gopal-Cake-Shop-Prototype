@@ -41,7 +41,7 @@ export const GET = withApiHandler(async ({ req, appRole, branchId }) => {
     where: whereClause,
     include: {
       order: {
-        select: { id: true, orderNumber: true, status: true, customerId: true, branchId: true }
+        select: { id: true, orderNumber: true, status: true, customerId: true, branchId: true, targetDate: true, customer: { select: { name: true, phone: true } } }
       }
     },
     orderBy: { createdAt: 'desc' }

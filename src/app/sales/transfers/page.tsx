@@ -519,7 +519,11 @@ function TransferCard({ transfer, type, mutate }: any) {
         <div className="flex flex-col gap-1 mt-2">
           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
             <span className="text-amber-600">🎯 DUE:</span> 
-            <span className="text-gray-900">{transfer.order?.timeTarget ? new Date(transfer.order.timeTarget).toLocaleString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : "N/A"}</span>
+            <span className="text-gray-900">
+              {(transfer.order?.targetDate || transfer.order?.timeTarget) 
+                ? new Date(transfer.order.targetDate || transfer.order.timeTarget).toLocaleString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) 
+                : "N/A"}
+            </span>
           </p>
           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
             <span className="text-blue-600">📥 REC'D:</span>
