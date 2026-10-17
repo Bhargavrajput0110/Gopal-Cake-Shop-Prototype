@@ -120,26 +120,34 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     const customerPhoto = productionMedia?.url || item.image || item.designImageUrl || "";
     const gallery = Array.from(new Set([cakeImg, customerPhoto, ...itemMedia.map((m: any) => m.url), ...parentMedia.map((m: any) => m.url)].filter(Boolean)));
 
-    return {
-      id: item.id,
-      sourceType: 'ORDER_ITEM',
-      orderItemId: item.id,
-      vendorId: item.assignedVendor?.id || user.id,
-      assignedVendor: item.assignedVendor,
-      instructions: item.notes || "",
-      designImageUrl: cakeImg,
-      customerPhotoUrl: customerPhoto,
-      order: {
-        id: item.order?.id,
-        orderNumber: item.order?.orderNumber || "Task",
-        status: item.order?.status,
-        branchId: item.order?.branchId,
-        branch: { name: item.order?.branch?.name || "Kitchen" },
-        targetDate: item.order?.targetDate
-      },
-      productName: item.productName,
-      quantity: item.quantity,
-      status: item.status || 'CHEF_ACCEPTED',
+      // Normalize OrderItem status to vendor task lifecycle
+      let vendorStatus = 'pending';
+      if (item.status === 'CHEF_ACCEPTED') vendorStatus = 'accepted';
+      else if (item.status === 'MAKING' || item.status === 'DECORATING') vendorStatus = 'in_production';
+      else if (['READY_FOR_PICKUP', 'PACKED'].includes(item.status)) vendorStatus = 'ready';
+      else if (['DELIVERED', 'COMPLETED'].includes(item.status)) vendorStatus = 'delivered';
+      else vendorStatus = 'pending';
+
+      return {
+        id: item.id,
+        sourceType: 'ORDER_ITEM',
+        orderItemId: item.id,
+        vendorId: item.assignedVendor?.id || user.id,
+        assignedVendor: item.assignedVendor,
+        instructions: item.notes || "",
+        designImageUrl: cakeImg,
+        customerPhotoUrl: customerPhoto,
+        order: {
+          id: item.order?.id,
+          orderNumber: item.order?.orderNumber || "Task",
+          status: item.order?.status,
+          branchId: item.order?.branchId,
+          branch: { name: item.order?.branch?.name || "Kitchen" },
+          targetDate: item.order?.targetDate
+        },
+        productName: item.productName,
+        quantity: item.quantity,
+        status: vendorStatus,
       parentItem: {
         productName: item.parentItem?.productName || item.productName || "Custom Assignment",
         notes: item.notes || item.parentItem?.notes || "",

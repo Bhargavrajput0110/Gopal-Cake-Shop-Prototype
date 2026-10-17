@@ -75,16 +75,28 @@ export default function VendorManagementPage() {
   const acrylicVendors = useMemo(() => vendors.filter(v => v.role === "VENDOR_ACRYLIC"), [vendors]);
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded">Pending Auth</span>;
-      case "PACKED":
-      case "READY_FOR_PICKUP":
-        return <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">Dispatched</span>;
-      case "DELIVERED":
-        return <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded">Completed</span>;
+    const s = (status || "").toLowerCase();
+    switch (s) {
+      case "pending":
+      case "waiting_for_chef":
+      case "assigned":
+        return <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded">Pending Vendor Acceptance</span>;
+      case "accepted":
+      case "chef_accepted":
+        return <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-100 border border-blue-300 px-2 py-0.5 rounded">Vendor Accepted</span>;
+      case "making":
+      case "in_production":
+      case "decorating":
+        return <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-100 border border-purple-300 px-2 py-0.5 rounded">In Production</span>;
+      case "packed":
+      case "ready":
+      case "ready_for_pickup":
+        return <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">Ready / Dispatched</span>;
+      case "delivered":
+      case "completed":
+        return <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 bg-teal-100 border border-teal-300 px-2 py-0.5 rounded">Completed</span>;
       default:
-        return <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-500/10 px-2 py-0.5 rounded">{status.replace(/_/g, ' ')}</span>;
+        return <span className="text-[10px] font-bold uppercase tracking-wider text-gray-700 bg-gray-100 border border-gray-300 px-2 py-0.5 rounded">{status.replace(/_/g, ' ')}</span>;
     }
   };
 
