@@ -22,8 +22,8 @@ export function OrderTimelineModal({ orderId, onClose }: OrderTimelineModalProps
       setLoading(true);
       setError("");
       try {
-        const res = await fetchClient<any>(`/v1/orders/${orderId}/timeline`);
-        if (!res.success) throw new Error(res.error?.message || "Failed to load timeline");
+        const res = await fetchClient<any>(`/orders/${orderId}/timeline`);
+        if (!res || !res.success) throw new Error(res?.error?.message || "Failed to load timeline");
         
         // Map backend Timeline model to UI TimelineEvent model
         const mappedEvents: TimelineEvent[] = (res.data || []).map((ev: any) => {

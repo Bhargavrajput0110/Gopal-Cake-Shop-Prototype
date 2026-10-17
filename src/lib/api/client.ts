@@ -25,19 +25,30 @@ export async function fetchClient<T>(endpoint: string, options: RequestInit = {}
     },
   };
 
+  // Normalize endpoint: strip leading /api/v1 or /v1 if already present
+  const cleanEndpoint = endpoint.startsWith('/api/v1')
+    ? endpoint.replace(/^\/api\/v1/, '')
+    : endpoint.startsWith('/v1')
+      ? endpoint.replace(/^\/v1/, '')
+      : endpoint;
+
   // All staff-facing APIs are versioned under /api/v1
-  const response = await fetch(`/api/v1${endpoint}`, config);
+  const response = await fetch(`/api/v1${cleanEndpoint.startsWith('/') ? cleanEndpoint : `/${cleanEndpoint}`}`, config);
 
   let data;
   try {
     data = await response.json();
   } catch (e) {
-    // some endpoints might return 204 No Content
+    // some endpoints might return 204 No Content or HTML
     data = null;
   }
 
   if (!response.ok) {
-
+    throw new ApiClientError(
+      data?.error?.message || data?.error || response.statusText || 'Request failed',
+      response.status,
+      data
+    );
   }
 
   return data as T;

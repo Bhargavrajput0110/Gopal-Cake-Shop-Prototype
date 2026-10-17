@@ -35,8 +35,11 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
   // === 1. OrderItems assigned to this vendor ===
   let orderItemWhere: any = {
     parentItemId: { not: null },  // ONLY child items — never show main cake
-    // Show all statuses — vendor sees active + completed in history tab
-    status: { notIn: ['CANCELLED'] }
+    // Show all active statuses — exclude cancelled items and cancelled orders
+    status: { notIn: ['CANCELLED'] },
+    order: {
+      status: { not: 'CANCELLED' }
+    }
   };
   if (isVendor) {
     orderItemWhere.assignedVendorId = { in: vendorUserIds };
@@ -54,7 +57,10 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
       media: true,
       order: {
         select: {
+          id: true,
           orderNumber: true,
+          status: true,
+          branchId: true,
           targetDate: true,
           branch: { select: { name: true } }
         }
@@ -75,7 +81,12 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
   });
 
   // === 2. VendorTask table entries ===
-  let vendorTaskWhere: any = { status: { notIn: ['cancelled', 'CANCELLED'] } };
+  let vendorTaskWhere: any = { 
+    status: { notIn: ['cancelled', 'CANCELLED'] },
+    order: {
+      status: { not: 'CANCELLED' }
+    }
+  };
   if (isVendor) {
     const conditions: any[] = [];
     if (vendorUserIds.length > 0) conditions.push({ vendorId: { in: vendorUserIds } });
@@ -119,7 +130,10 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
       designImageUrl: cakeImg,
       customerPhotoUrl: customerPhoto,
       order: {
+        id: item.order?.id,
         orderNumber: item.order?.orderNumber || "Task",
+        status: item.order?.status,
+        branchId: item.order?.branchId,
         branch: { name: item.order?.branch?.name || "Kitchen" },
         targetDate: item.order?.targetDate
       },
@@ -172,7 +186,10 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
       assignedVendor: vt.vendor,
       instructions: vt.instructions || "",
       order: {
+        id: vt.order?.id,
         orderNumber: vt.order?.orderNumber || "Task",
+        status: vt.order?.status,
+        branchId: vt.order?.branchId,
         branch: { name: vt.order?.branch?.name || "Kitchen" },
         targetDate: vt.order?.targetDate
       },

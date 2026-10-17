@@ -1,15 +1,22 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Shop, Camera, Reserve, MagicStar, Add, Clock, Refresh2 } from "iconsax-react";
+import { useSession } from "next-auth/react";
+import { Shop, Camera, Reserve, MagicStar, Add, Clock, Refresh2, Calendar } from "iconsax-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { format } from "date-fns";
+import { matchesDayFilter } from "@/lib/formatTime";
+import { toBranchId } from "@/lib/branches";
 
 export default function VendorManagementPage() {
+  const { data: session } = useSession();
+  const activeBranch = (session?.user as any)?.branchId || "";
+
   const [tasks, setTasks] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dayFilter, setDayFilter] = useState<'TODAY' | 'TOMORROW' | 'ALL'>('TODAY');
 
   const fetchTasks = async () => {
     setIsLoading(true);
@@ -31,9 +38,37 @@ export default function VendorManagementPage() {
     fetchTasks();
   }, []);
 
-  const photographers = useMemo(() => tasks.filter(t => t.assignedVendor?.role === "VENDOR_PHOTO"), [tasks]);
-  const florists = useMemo(() => tasks.filter(t => t.assignedVendor?.role === "VENDOR_FLORIST"), [tasks]);
-  const acrylics = useMemo(() => tasks.filter(t => t.assignedVendor?.role === "VENDOR_ACRYLIC"), [tasks]);
+  // Filter tasks that are non-cancelled and scoped to active branch if salesperson
+  const scopedTasks = useMemo(() => {
+    return tasks.filter(t => {
+      if (t.order?.status === 'CANCELLED') return false;
+      if (activeBranch && t.order?.branchId) {
+        if (toBranchId(t.order.branchId) !== toBranchId(activeBranch)) return false;
+      }
+      return true;
+    });
+  }, [tasks, activeBranch]);
+
+  // Counts for the day filters
+  const todayCount = useMemo(() => {
+    return scopedTasks.filter(t => matchesDayFilter(t.order?.targetDate, 'TODAY')).length;
+  }, [scopedTasks]);
+
+  const tomorrowCount = useMemo(() => {
+    return scopedTasks.filter(t => matchesDayFilter(t.order?.targetDate, 'TOMORROW')).length;
+  }, [scopedTasks]);
+
+  const allCount = scopedTasks.length;
+
+  // Filtered tasks based on active day filter
+  const visibleTasks = useMemo(() => {
+    if (dayFilter === 'ALL') return scopedTasks;
+    return scopedTasks.filter(t => matchesDayFilter(t.order?.targetDate, dayFilter));
+  }, [scopedTasks, dayFilter]);
+
+  const photographers = useMemo(() => visibleTasks.filter(t => t.assignedVendor?.role === "VENDOR_PHOTO"), [visibleTasks]);
+  const florists = useMemo(() => visibleTasks.filter(t => t.assignedVendor?.role === "VENDOR_FLORIST"), [visibleTasks]);
+  const acrylics = useMemo(() => visibleTasks.filter(t => t.assignedVendor?.role === "VENDOR_ACRYLIC"), [visibleTasks]);
 
   const photoVendors = useMemo(() => vendors.filter(v => v.role === "VENDOR_PHOTO"), [vendors]);
   const floristVendors = useMemo(() => vendors.filter(v => v.role === "VENDOR_FLORIST"), [vendors]);
@@ -115,6 +150,58 @@ export default function VendorManagementPage() {
             <Add className="w-4 h-4" /> Register New Vendor
           </button>
         </div>
+      </div>
+
+      {/* Date Filter Bar */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2 bg-[#FFF8F0] p-1.5 rounded-2xl border border-[#C5A059]/20 shadow-sm">
+          <button
+            onClick={() => setDayFilter('TODAY')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              dayFilter === 'TODAY'
+                ? 'bg-[#3E2723] text-white shadow-sm'
+                : 'text-[#3E2723]/70 hover:text-[#3E2723] hover:bg-black/5'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Today</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+              dayFilter === 'TODAY' ? 'bg-amber-400 text-[#3E2723]' : 'bg-black/10 text-gray-700'
+            }`}>{todayCount}</span>
+          </button>
+
+          <button
+            onClick={() => setDayFilter('TOMORROW')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              dayFilter === 'TOMORROW'
+                ? 'bg-[#3E2723] text-white shadow-sm'
+                : 'text-[#3E2723]/70 hover:text-[#3E2723] hover:bg-black/5'
+            }`}
+          >
+            <span>Tomorrow</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+              dayFilter === 'TOMORROW' ? 'bg-amber-400 text-[#3E2723]' : 'bg-black/10 text-gray-700'
+            }`}>{tomorrowCount}</span>
+          </button>
+
+          <button
+            onClick={() => setDayFilter('ALL')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              dayFilter === 'ALL'
+                ? 'bg-[#3E2723] text-white shadow-sm'
+                : 'text-[#3E2723]/70 hover:text-[#3E2723] hover:bg-black/5'
+            }`}
+          >
+            <span>All Tasks</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+              dayFilter === 'ALL' ? 'bg-amber-400 text-[#3E2723]' : 'bg-black/10 text-gray-700'
+            }`}>{allCount}</span>
+          </button>
+        </div>
+
+        <p className="text-xs text-muted-foreground font-medium">
+          Showing <span className="font-bold text-foreground">{visibleTasks.length}</span> {dayFilter === 'TODAY' ? "today's" : dayFilter === 'TOMORROW' ? "tomorrow's" : "active"} vendor tasks
+        </p>
       </div>
 
       {error && (

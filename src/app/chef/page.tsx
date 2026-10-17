@@ -108,30 +108,21 @@ export default function ChefDashboardPage() {
   const isHotBakeChef = session?.user?.name?.toLowerCase().includes('santosh') || session?.user?.name?.toLowerCase().includes('hot bake');
   const branchOrders = orders.filter(o => isHotBakeChef || toBranchId(o.branch) === activeBranch);
 
-  // Queue: orders waiting for chef. If dayFilter is TODAY, also include overdue orders so unmade cakes are never hidden
+  // Queue: orders waiting for chef strictly respecting day filter
   const queueOrders = branchOrders
     .filter(o => {
       if (o.status !== "WAITING_FOR_CHEF") return false;
       if (dayFilter === 'ALL') return true;
-      if (matchesDayFilter(o.timeTarget, dayFilter)) return true;
-      // If filtering for TODAY, include overdue orders whose deadline has passed
-      if (dayFilter === 'TODAY' && o.timeTarget && new Date(o.timeTarget).getTime() <= Date.now()) {
-        return true;
-      }
-      return false;
+      return matchesDayFilter(o.timeTarget, dayFilter);
     })
     .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
   
-  // My Tasks: active in-progress tasks
+  // My Tasks: active in-progress tasks strictly respecting day filter
   const myTasksOrders = branchOrders
     .filter(o => {
       if (!["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(o.status)) return false;
       if (dayFilter === 'ALL') return true;
-      if (matchesDayFilter(o.timeTarget, dayFilter)) return true;
-      if (dayFilter === 'TODAY' && o.timeTarget && new Date(o.timeTarget).getTime() <= Date.now()) {
-        return true;
-      }
-      return false;
+      return matchesDayFilter(o.timeTarget, dayFilter);
     })
     .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
     

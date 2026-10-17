@@ -99,9 +99,9 @@ export default function BranchTransferPage() {
   const { data: session } = useSession();
   const activeBranch = (session?.user as any)?.branchId || "";
 
-  // Fetch orders directly via SWR so newly created orders always appear
+  // Fetch active transferable orders directly via SWR so newly created orders always appear
   const { data: ordersData, mutate: mutateOrders, isLoading: ordersLoading } = useSWR(
-    `/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=200`,
+    `/api/v1/orders?status=${TRANSFERABLE_STATUSES.join(',')}${activeBranch ? `&branch=${encodeURIComponent(activeBranch)}` : ''}&sortField=targetDate&sortOrder=asc&limit=200`,
     fetcher,
     { refreshInterval: 30000 }
   );
