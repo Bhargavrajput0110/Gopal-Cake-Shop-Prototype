@@ -4,22 +4,28 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Preloader() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const ua = window.navigator.userAgent;
-      const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      const isTouch = window.matchMedia('(pointer: coarse)').matches;
+    if (typeof window === "undefined") return;
 
-      // Bypassed on mobile & iOS to prevent body overflow lock and instant page presentation
-      if (isIOS || isTouch) {
-        setIsLoading(false);
-        return;
-      }
+    const ua = window.navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isTouch = window.matchMedia('(pointer: coarse)').matches;
+
+    // Completely bypass on mobile & iOS to prevent WebKit layer freeze & instant page presentation
+    if (isIOS || isTouch) {
+      return;
     }
 
+    // Only show once per session on desktop
+    if (sessionStorage.getItem('hasSeenPreloader')) {
+      return;
+    }
+
+    setIsLoading(true);
+    sessionStorage.setItem('hasSeenPreloader', 'true');
     document.body.style.overflow = "hidden";
 
     // Animate progress counter — faster and smoother
@@ -29,9 +35,9 @@ export function Preloader() {
           clearInterval(progressInterval);
           return 100;
         }
-        return prev + Math.random() * 28; // faster progress
+        return prev + Math.random() * 28;
       });
-    }, 80); // faster tick
+    }, 80);
 
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -45,6 +51,8 @@ export function Preloader() {
       document.body.style.overflow = "";
     };
   }, []);
+
+  if (!isLoading) return null;
 
   return (
     <AnimatePresence>

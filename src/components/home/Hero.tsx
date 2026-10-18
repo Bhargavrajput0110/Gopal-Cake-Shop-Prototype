@@ -29,10 +29,12 @@ export function Hero() {
           <video
             key="hero-video-1"
             src="https://res.cloudinary.com/dlxiy6aiq/video/upload/v1788199517/AQM9Inm1bmMqgSvwXR7hyWhekGAxwHeGAdfcJl2VK11H-REpvhuerjjmqXEewNu8bNeTQT6UfVFi5ydfrNne_p5H2k2M9tym2VKIGdQ_qtxv59.mp4"
+            poster="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1200&q=80"
             autoPlay
             loop
             muted
             playsInline
+            preload="auto"
             className="absolute inset-0 w-full h-full object-cover scale-105"
             style={{ willChange: "transform" }}
           />
@@ -43,10 +45,12 @@ export function Hero() {
           <video
             key="hero-video-2"
             src="https://res.cloudinary.com/dlxiy6aiq/video/upload/v1788199841/AQOHIt8uZ1_bH9jYzCiwBjGg4ptZXXI6m4kTonsE2CxvPYMCqNMj4YoMzDkEd2gffHdQZj8yPTR1ViT30oNyTIh3Zw2xK9SUtDFZqJo_xu8ojk.mp4"
+            poster="https://images.unsplash.com/photo-1535141192574-5d4897c12636?w=1200&q=80"
             autoPlay
             loop
             muted
             playsInline
+            preload="auto"
             className="absolute inset-0 w-full h-full object-cover scale-105"
             style={{ 
               willChange: "transform",
@@ -61,10 +65,12 @@ export function Hero() {
           <video
             key="hero-video-3"
             src="https://res.cloudinary.com/dlxiy6aiq/video/upload/v1788200368/AQMloeSiiyrth-BpVCvrNtbiPKKhPh1_2q7v4eUzmZ7IUMs782jtizsW0WHITJap8etK4uYEIdLdr016Onbm1KsGEEOBragRV6LLFhA_1_dzohnj.mp4"
+            poster="https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?w=1200&q=80"
             autoPlay
             loop
             muted
             playsInline
+            preload="auto"
             className="absolute inset-0 w-full h-full object-cover scale-105"
             style={{ 
               willChange: "transform",
