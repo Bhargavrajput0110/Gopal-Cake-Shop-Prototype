@@ -164,6 +164,21 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   // Initialize Supabase Realtime + fetch initial orders + setup fallback polling
   useEffect(() => {
+    // Completely bypass on customer storefront — OrderContext is strictly for staff KDS/POS
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname;
+      const isStaffRoute = p.startsWith('/admin') ||
+                           p.startsWith('/chef') ||
+                           p.startsWith('/sales') ||
+                           p.startsWith('/driver') ||
+                           p.startsWith('/delivery') ||
+                           p.startsWith('/supplier') ||
+                           p.startsWith('/manager');
+      if (!isStaffRoute) {
+        return;
+      }
+    }
+
     // Fetch orders immediately on component mount
     refetchOrders();
 

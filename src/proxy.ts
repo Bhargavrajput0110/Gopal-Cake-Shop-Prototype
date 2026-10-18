@@ -190,6 +190,9 @@ export default auth(function proxy(req: NextRequest) {
     // Public path — fall through to security headers & rate limiting
   } else if (isProtectedPath(pathname)) {
     if (!session?.user) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
       const loginUrl = new URL('/login', baseOrigin);
       loginUrl.searchParams.set('callbackUrl', `${baseOrigin}${pathname}`);
       return NextResponse.redirect(loginUrl);
