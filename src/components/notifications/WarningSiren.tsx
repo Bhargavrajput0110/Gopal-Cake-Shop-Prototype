@@ -148,17 +148,17 @@ export function WarningSiren() {
   if (!sirenActive) return null;
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[99999] bg-rose-600 text-white px-5 py-2 md:px-8 md:py-3 rounded-full shadow-[0_0_30px_rgba(225,29,72,0.8)] animate-pulse flex items-center gap-4 border-4 border-rose-400">
-      <span className="font-black tracking-widest text-xs md:text-sm uppercase flex items-center gap-2">
-        <span className="text-xl md:text-2xl">🚨</span> 
+    <div className="fixed top-2 right-3 z-[99999] bg-rose-600 text-white px-3.5 py-1.5 md:px-5 md:py-2 rounded-full shadow-[0_0_20px_rgba(225,29,72,0.6)] animate-pulse flex items-center gap-2 border-2 border-rose-400">
+      <span className="font-black tracking-wider text-[11px] md:text-xs uppercase flex items-center gap-1.5">
+        <span className="text-base">🚨</span> 
         1-Hour SLA Warning!
       </span>
       <button 
         onClick={() => setIsMuted(!isMuted)} 
-        className="p-2 md:p-3 bg-black/30 rounded-full hover:bg-black/50 transition-colors"
+        className="p-1 bg-black/30 rounded-full hover:bg-black/50 transition-colors"
         title={isMuted ? "Unmute Siren" : "Mute Siren"}
       >
-        {isMuted ? <VolumeSlash size={24} variant="Bold" /> : <VolumeHigh size={24} variant="Bold" />}
+        {isMuted ? <VolumeSlash size={16} variant="Bold" /> : <VolumeHigh size={16} variant="Bold" />}
       </button>
     </div>
   );

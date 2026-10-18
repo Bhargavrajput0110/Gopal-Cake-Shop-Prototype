@@ -792,7 +792,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
   return (
     <>
       <motion.div layout initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.95}}
-        className={`bg-white rounded-3xl shadow-sm overflow-hidden flex flex-col group transition-all duration-300 relative border p-4 sm:p-5 space-y-3.5 ${
+        className={`bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col group transition-all duration-300 relative border p-3 sm:p-4 space-y-2 ${
           order.status === 'COMPLETED' ? 'border-emerald-200 bg-emerald-50/20 opacity-85' :
           order.status === 'CANCELLED' ? 'border-rose-200 bg-rose-50/20 opacity-75' :
           animationClass ? `border-[#C5A059]/40 ${animationClass}` :
@@ -800,17 +800,17 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
         }`}>
 
         {/* 1. Header: Order Number + Badges (Matching AI Mockup) */}
-        <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-1.5 border-b border-slate-100">
           <div>
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Order</span>
-            <h3 className="text-2xl sm:text-3xl font-serif font-black text-slate-900 tracking-tight leading-none mt-0.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Order</span>
+            <h3 className="text-xl sm:text-2xl font-serif font-black text-slate-900 tracking-tight leading-none mt-0.5">
               {order.orderNumber || order.id}
             </h3>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {/* Status Badge */}
-            <span className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-2xs border ${
+            <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs border ${
               order.status === 'WAITING_FOR_CHEF' 
                 ? 'bg-[#FFF4E5] text-[#B45309] border-[#FCD34D]/80' 
                 : order.status === 'MAKING' || order.status === 'DECORATING' || order.status === 'CHEF_ACCEPTED'
@@ -824,46 +824,46 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                 : 'bg-[#C5A059]/10 text-[#3E2723] border-[#C5A059]/30'
             }`}>
               {['WAITING_FOR_CHEF', 'MAKING', 'DECORATING', 'CHEF_ACCEPTED'].includes(order.status as string) && (
-                <ChefHat className="w-4 h-4 text-[#B45309]" />
+                <ChefHat className="w-3.5 h-3.5 text-[#B45309]" />
               )}
               {['READY_FOR_PICKUP', 'COMPLETED', 'DELIVERED'].includes(order.status as string) && (
-                <TickCircle className="w-4 h-4 text-emerald-600" />
+                <TickCircle size={14} color="#059669" variant="Bold" />
               )}
               {statusLabel(order.status)}
             </span>
 
             {/* Fulfillment type badge */}
-            <span className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-2xs border ${
+            <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs border ${
               order.orderType === 'delivery'
                 ? 'bg-[#EEF2FF] text-[#4338CA] border-[#C7D2FE]'
                 : 'bg-[#EBF5FF] text-[#1D4ED8] border-[#BFDBFE]'
             }`}>
               {order.orderType === 'delivery' ? (
-                <TruckFast className="w-4 h-4 text-[#4338CA]" variant="Bold" />
+                <TruckFast size={14} color="#4338CA" variant="Bold" />
               ) : (
-                <Shop className="w-4 h-4 text-[#1D4ED8]" variant="Bold" />
+                <Shop size={14} color="#1D4ED8" variant="Bold" />
               )}
               {order.orderType === 'delivery' ? 'Delivery' : 'Pickup'}
             </span>
 
             {order.delayLevel === "delayed" && (
-              <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse">
-                <Warning2 className="w-3.5 h-3.5" /> Delayed
+              <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                <Warning2 size={12} color="#E11D48" variant="Bold" /> Delayed
               </span>
             )}
             {order.delayLevel === "warning" && (
-              <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                <Warning2 className="w-3.5 h-3.5" /> Issue
+              <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                <Warning2 size={12} color="#D97706" variant="Bold" /> Issue
               </span>
             )}
             {order.isSurprise && (
-              <span className="bg-purple-100 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                <Gift className="w-3.5 h-3.5" /> Surprise
+              <span className="bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                <Gift size={12} color="#7C3AED" variant="Bold" /> Surprise
               </span>
             )}
             {isLocked && !(["COMPLETED","CANCELLED"] as string[]).includes(order.status as string) && (
-              <span className="bg-slate-100 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                <Lock1 className="w-3.5 h-3.5" /> Locked
+              <span className="bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                <Lock1 size={12} color="#64748B" variant="Bold" /> Locked
               </span>
             )}
           </div>
@@ -892,7 +892,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
             const driverName = (order as any).driver?.name || 'Driver';
 
             return (
-              <div className={`p-3 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs ${
+              <div className={`p-2.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-2xs ${
                 isReceived 
                   ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950'
                   : isInTransit
@@ -903,7 +903,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                   <span className="text-base">🚚</span>
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/90 border shadow-2xs">
+                      <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/90 border shadow-2xs">
                         {isReceived ? '✅ Arrived at Branch' : isInTransit ? '🛵 In Transit' : '🏭 Ready at Factory'}
                       </span>
                       <span className="text-xs font-black">
@@ -923,9 +923,9 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                 {!isReceived && (
                   <button
                     onClick={onAssignDriver}
-                    className="self-start sm:self-center shrink-0 px-3 py-1.5 bg-[#3E2723] text-white rounded-lg text-xs font-bold hover:bg-[#2c1c19] active:scale-95 transition-all shadow-sm flex items-center gap-1.5"
+                    className="self-start sm:self-center shrink-0 px-2.5 py-1 bg-[#3E2723] text-white rounded-lg text-[11px] font-bold hover:bg-[#2c1c19] active:scale-95 transition-all shadow-sm flex items-center gap-1"
                   >
-                    <Profile2User className="w-3.5 h-3.5 text-[#C5A059]" />
+                    <Profile2User size={13} color="#C5A059" variant="Bold" />
                     {(order as any).driver ? `Change Driver (${driverName})` : 'Assign Driver'}
                   </button>
                 )}
@@ -936,8 +936,8 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
           const orderBranchCode = (order as any).branchId || order.branch;
           if (isHotBake && toBranchId(orderBranchCode) !== 'varasiya') {
             return (
-              <div className="p-3 rounded-2xl border bg-amber-50/80 border-amber-300 text-amber-950 flex items-center justify-between gap-2 shadow-2xs">
-                <div className="flex items-center gap-2">
+              <div className="p-2.5 rounded-xl border bg-amber-50/80 border-amber-300 text-amber-950 flex items-center justify-between gap-2 shadow-2xs">
+                <div className="flex items-center gap-1.5">
                   <span className="text-base">🔥</span>
                   <span className="text-xs font-bold">
                     Hot Bakes: Baked at Warasiya Factory ➔ Transfer to {toBranchShortName(orderBranchCode)} Branch required
@@ -945,9 +945,9 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                 </div>
                 <button
                   onClick={onAssignDriver}
-                  className="shrink-0 px-3 py-1 bg-[#3E2723] text-white rounded-lg text-xs font-bold hover:bg-[#2c1c19] active:scale-95 transition-all shadow-sm flex items-center gap-1"
+                  className="shrink-0 px-2.5 py-1 bg-[#3E2723] text-white rounded-lg text-[11px] font-bold hover:bg-[#2c1c19] active:scale-95 transition-all shadow-sm flex items-center gap-1"
                 >
-                  <Profile2User className="w-3.5 h-3.5 text-[#C5A059]" />
+                  <Profile2User size={13} color="#C5A059" variant="Bold" />
                   Assign Driver
                 </button>
               </div>
@@ -959,7 +959,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
         {/* Transfer History View */}
         {(order as any).transferHistory && (order as any).transferHistory.length > 0 && (
-          <div className="p-2 bg-emerald-50/50 border border-emerald-200 rounded-xl flex items-center gap-2 overflow-x-auto hide-scrollbar">
+          <div className="p-1.5 bg-emerald-50/50 border border-emerald-200 rounded-lg flex items-center gap-2 overflow-x-auto hide-scrollbar">
             <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest shrink-0">Branch Ops:</span>
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-bold text-emerald-900 shrink-0">{toBranchShortName((order as any).transferHistory[0].from)}</span>
@@ -974,16 +974,16 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
         )}
 
         {/* 2. Product Item Box: Thumbnail + Title + Weight + Flavour Pill (Matching AI Mockup) */}
-        <div className="space-y-2.5">
+        <div className="space-y-1.5">
           {order.items.map((item, idx) => {
             const itemRef = item.referenceImages?.[0] || allRefImages[0];
             const itemThumb = itemRef || cakeImageUrl;
             return (
-              <div key={idx} className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-3.5 flex items-center gap-3.5 sm:gap-4 shadow-2xs hover:border-slate-300 transition-all">
+              <div key={idx} className="bg-white rounded-xl border border-slate-200/90 p-2.5 sm:p-3 flex items-center gap-3 shadow-2xs hover:border-slate-300 transition-all">
                 {/* Square Cake Photo Thumbnail with Zoom & Weight badge */}
                 <div 
                   onClick={() => setIsImageZoomed(true)}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden relative shrink-0 border border-slate-200 cursor-pointer group/thumb bg-slate-900 shadow-2xs"
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden relative shrink-0 border border-slate-200 cursor-pointer group/thumb bg-slate-900 shadow-2xs"
                   title="Tap to zoom cake image"
                 >
                   <img 
@@ -995,7 +995,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                   
                   {/* Weight badge overlaid at bottom right corner */}
                   {item.weight && (
-                    <span className="absolute bottom-1.5 right-1.5 bg-black/75 backdrop-blur-xs text-white text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
+                    <span className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-xs text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs">
                       {item.weight}
                     </span>
                   )}
@@ -1003,17 +1003,17 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
                 {/* Item info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-tight truncate leading-snug">
+                  <h4 className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-tight truncate leading-tight">
                     {item.qty > 1 ? `${item.qty}x ` : ""}{item.name || (item as any).productName || "Custom Cake"}
                   </h4>
                   {item.weight && (
-                    <p className="text-sm font-semibold text-slate-500 mt-0.5">
+                    <p className="text-xs font-semibold text-slate-500 mt-0.5">
                       {item.weight}
                     </p>
                   )}
                   {(item as any).flavor && (
-                    <div className="mt-1.5">
-                      <span className="inline-flex items-center px-3 py-1 rounded-lg bg-[#FAF0E6] text-[#78350F] text-xs font-bold border border-[#F3E5D8]">
+                    <div className="mt-1">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#FAF0E6] text-[#78350F] text-[11px] font-bold border border-[#F3E5D8]">
                         {(item as any).flavor}
                       </span>
                     </div>
@@ -1021,20 +1021,20 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
                   {/* Design Ref photos button if customer submitted photos */}
                   {(item as any).referenceImages && (item as any).referenceImages.length > 0 && (
-                    <div className="flex gap-1.5 mt-2 flex-wrap items-center">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Ref:</span>
+                    <div className="flex gap-1 mt-1.5 flex-wrap items-center">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Ref:</span>
                       {(item as any).referenceImages.slice(0, 3).map((img: string, rIdx: number) => (
                         <button
                           key={`ref-${rIdx}`}
                           onClick={(e) => { e.stopPropagation(); setRefImageModal({ images: (item as any).referenceImages, idx: rIdx }); }}
-                          className="w-7 h-7 rounded-lg overflow-hidden border border-blue-300 hover:border-blue-500 transition-all shadow-2xs shrink-0"
+                          className="w-6 h-6 rounded-md overflow-hidden border border-blue-300 hover:border-blue-500 transition-all shadow-2xs shrink-0"
                         >
                           <img src={img} alt={`Ref ${rIdx + 1}`} className="w-full h-full object-cover" />
                         </button>
                       ))}
                       <button
                         onClick={(e) => { e.stopPropagation(); setRefImageModal({ images: (item as any).referenceImages, idx: 0 }); }}
-                        className="text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md hover:bg-blue-100"
+                        className="text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded hover:bg-blue-100"
                       >
                         {(item as any).referenceImages.length} Photo{(item as any).referenceImages.length > 1 ? 's' : ''}
                       </button>
@@ -1048,15 +1048,13 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
         {/* 3. Card 1: MESSAGE ON CAKE (Matching AI Mockup Rose/Pink Box) */}
         {primaryMessageOnCake && (
-          <div className="bg-[#FFF5F6] border border-[#FED4DA] rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 sm:gap-4 shadow-2xs">
-            <div className="w-11 h-11 rounded-xl bg-white border border-rose-200 flex items-center justify-center shrink-0 shadow-2xs">
-              <Cake className="w-6 h-6 text-rose-500" variant="Bold" />
-            </div>
+          <div className="bg-[#FFF5F6] border border-[#FED4DA] rounded-xl px-3 py-2 sm:px-3.5 sm:py-2.5 flex items-center gap-3 shadow-2xs">
+            <Cake size={22} color="#E11D48" variant="Bold" className="shrink-0" />
             <div className="min-w-0 flex-1">
-              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-rose-500 block leading-tight">
+              <span className="text-[9px] font-black uppercase tracking-wider text-rose-500 block leading-tight">
                 MESSAGE ON CAKE
               </span>
-              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5 break-words">
+              <p className="text-base sm:text-lg font-black text-slate-900 tracking-tight mt-0.5 break-words leading-snug">
                 &ldquo;{primaryMessageOnCake}&rdquo;
               </p>
             </div>
@@ -1065,31 +1063,29 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
         {/* 4. Card 2: PHOTO PRINT (Matching AI Mockup Purple/Lavender Box) */}
         {hasPhotoPrint && (
-          <div className="bg-[#FAF5FF] border border-[#E9D5FF] rounded-2xl p-3.5 sm:p-4 flex items-start gap-3.5 sm:gap-4 shadow-2xs">
-            <div className="w-11 h-11 rounded-xl bg-white border border-purple-200 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
-              <Gallery className="w-6 h-6 text-purple-600" variant="Bold" />
-            </div>
+          <div className="bg-[#FAF5FF] border border-[#E9D5FF] rounded-xl px-3 py-2 sm:px-3.5 sm:py-2.5 flex items-center gap-3 shadow-2xs">
+            <Gallery size={22} color="#7C3AED" variant="Bold" className="shrink-0" />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-purple-700">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[9px] font-black uppercase tracking-wider text-purple-700">
                   PHOTO PRINT
                 </span>
-                <span className="bg-[#7C3AED] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-2xs">
+                <span className="bg-[#7C3AED] text-white text-[9px] font-bold px-2 py-0.2 rounded-full shadow-2xs">
                   {totalPrints} Print{totalPrints > 1 ? 's' : ''}
                 </span>
               </div>
-              <p className="text-sm sm:text-base font-black text-slate-900 mt-1">
+              <p className="text-xs sm:text-sm font-black text-slate-900 mt-0.5 leading-snug">
                 {totalPrints}x {photoComponentLabel}
               </p>
               
               {/* Clickable Print Image Thumbnails */}
               {allPrintImages.length > 0 && (
-                <div className="flex gap-2 mt-2 flex-wrap items-center">
+                <div className="flex gap-1.5 mt-1.5 flex-wrap items-center">
                   {allPrintImages.slice(0, 4).map((img: string, pIdx: number) => (
                     <button
                       key={`print-${pIdx}`}
                       onClick={() => setRefImageModal({ images: allPrintImages, idx: pIdx })}
-                      className="w-9 h-9 rounded-lg overflow-hidden border-2 border-purple-300 hover:border-purple-600 transition-all shadow-xs shrink-0"
+                      className="w-7 h-7 rounded-md overflow-hidden border border-purple-300 hover:border-purple-600 transition-all shadow-xs shrink-0"
                       title="Preview photo for print"
                     >
                       <img src={img} alt={`Print ${pIdx + 1}`} className="w-full h-full object-cover" />
@@ -1097,7 +1093,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                   ))}
                   <button
                     onClick={() => setRefImageModal({ images: allPrintImages, idx: 0 })}
-                    className="text-[10px] font-black bg-purple-600 text-white px-2.5 py-1 rounded-lg hover:bg-purple-700 shadow-2xs"
+                    className="text-[9px] font-black bg-purple-600 text-white px-2 py-0.5 rounded hover:bg-purple-700 shadow-2xs"
                   >
                     View / Download
                   </button>
@@ -1109,15 +1105,13 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
         {/* 5. Card 3: CAKE CUSTOMIZATION NOTE (Matching AI Mockup Amber Box + BOLD RED Text) */}
         {customizationNote && (
-          <div className="bg-[#FEFCE8] border border-[#FEF08A] rounded-2xl p-3.5 sm:p-4 flex items-start gap-3.5 sm:gap-4 shadow-2xs">
-            <div className="w-11 h-11 rounded-xl bg-white border border-amber-200 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
-              <ClipboardText className="w-6 h-6 text-amber-600" variant="Bold" />
-            </div>
+          <div className="bg-[#FEFCE8] border border-[#FEF08A] rounded-xl px-3 py-2 sm:px-3.5 sm:py-2.5 flex items-center gap-3 shadow-2xs">
+            <ClipboardText size={22} color="#D97706" variant="Bold" className="shrink-0" />
             <div className="min-w-0 flex-1">
-              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-700 block leading-tight">
+              <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 block leading-tight">
                 CAKE CUSTOMIZATION NOTE
               </span>
-              <p className="text-base sm:text-lg font-black text-[#DC2626] tracking-tight mt-0.5 leading-snug break-words">
+              <p className="text-sm sm:text-base font-black text-[#DC2626] tracking-tight mt-0.5 leading-snug break-words">
                 &ldquo;{customizationNote}&rdquo;
               </p>
             </div>
@@ -1126,15 +1120,13 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
         {/* 6. Card 4: DELIVERY INSTRUCTIONS (Matching AI Mockup Ice Blue Box) */}
         {deliveryInstructions && (
-          <div className="bg-[#F0F9FF] border border-[#BAE6FD] rounded-2xl p-3.5 sm:p-4 flex items-start gap-3.5 sm:gap-4 shadow-2xs">
-            <div className="w-11 h-11 rounded-xl bg-white border border-blue-200 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
-              <DocumentText className="w-6 h-6 text-blue-600" variant="Bold" />
-            </div>
+          <div className="bg-[#F0F9FF] border border-[#BAE6FD] rounded-xl px-3 py-2 sm:px-3.5 sm:py-2.5 flex items-center gap-3 shadow-2xs">
+            <DocumentText size={22} color="#0284C7" variant="Bold" className="shrink-0" />
             <div className="min-w-0 flex-1">
-              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-blue-600 block leading-tight">
+              <span className="text-[9px] font-black uppercase tracking-wider text-blue-600 block leading-tight">
                 DELIVERY INSTRUCTIONS
               </span>
-              <p className="text-sm sm:text-base font-black text-slate-900 tracking-tight mt-0.5 leading-snug break-words">
+              <p className="text-xs sm:text-sm font-black text-slate-900 tracking-tight mt-0.5 leading-snug break-words">
                 &ldquo;{deliveryInstructions}&rdquo;
               </p>
             </div>
@@ -1143,41 +1135,41 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
         {/* Assigned Partners / Vendor Tasks */}
         {order.vendorTasks && order.vendorTasks.length > 0 && (
-          <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-2xl text-purple-950 text-xs font-bold space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-purple-700 block">
+          <div className="p-2.5 bg-purple-50/70 border border-purple-200 rounded-xl text-purple-950 text-xs font-bold space-y-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-purple-700 block">
               Assigned Partners ({order.vendorTasks.length})
             </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {order.vendorTasks.map((vt, idx) => (
-                <div key={idx} className="flex flex-col text-[11px] text-purple-900 bg-white p-2.5 rounded-xl border border-purple-100 shadow-2xs">
+                <div key={idx} className="flex flex-col text-[11px] text-purple-900 bg-white p-2 rounded-lg border border-purple-100 shadow-2xs">
                   <div className="flex items-center justify-between font-extrabold">
                     <span>{vt.vendorName || vt.vendorType}</span>
-                    <span className="text-[9px] uppercase px-2 py-0.5 bg-purple-100 text-purple-800 rounded font-black">{vt.status}</span>
+                    <span className="text-[8px] uppercase px-1.5 py-0.2 bg-purple-100 text-purple-800 rounded font-black">{vt.status}</span>
                   </div>
-                  {vt.instructions && <p className="text-[11px] font-medium text-purple-800 mt-1 italic">&ldquo;{vt.instructions}&rdquo;</p>}
+                  {vt.instructions && <p className="text-[10px] font-medium text-purple-800 mt-0.5 italic">&ldquo;{vt.instructions}&rdquo;</p>}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* 7. Customer & Payment (2-Column Grid Matching AI Mockup) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+        {/* 7. Customer & Payment (SIDE-BY-SIDE 2-Column Grid Matching AI Mockup) */}
+        <div className="grid grid-cols-2 gap-2">
           {/* Customer Box */}
-          <div className="bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-2xs">
-            <div className="w-11 h-11 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-600 shrink-0">
-              <User className="w-5 h-5 text-slate-700" variant="Bold" />
+          <div className="bg-slate-50/90 border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2.5 shadow-2xs min-w-0">
+            <div className="w-8 h-8 rounded-full bg-slate-200/80 flex items-center justify-center shrink-0">
+              <User size={16} color="#475569" variant="Bold" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block leading-tight">
+              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block leading-tight">
                 CUSTOMER
               </span>
-              <p className="text-base font-black text-slate-900 truncate leading-tight mt-0.5">
+              <p className="text-xs sm:text-sm font-black text-slate-900 truncate leading-tight mt-0.5">
                 {order.customerName}
               </p>
               <a 
                 href={`tel:${order.customerPhone}`} 
-                className="text-xs font-black text-blue-600 hover:underline flex items-center gap-1 mt-0.5 tracking-wide"
+                className="text-[11px] font-black text-blue-600 hover:underline flex items-center gap-0.5 mt-0.5 tracking-wide truncate"
               >
                 {order.customerPhone}
               </a>
@@ -1185,37 +1177,37 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
           </div>
 
           {/* Payment Box */}
-          <div className="bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-2xs">
-            <div className="w-11 h-11 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-600 shrink-0">
-              <Card className="w-5 h-5 text-slate-700" variant="Bold" />
+          <div className="bg-slate-50/90 border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2.5 shadow-2xs min-w-0">
+            <div className="w-8 h-8 rounded-full bg-slate-200/80 flex items-center justify-center shrink-0">
+              <Card size={16} color="#475569" variant="Bold" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block leading-tight">
+              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block leading-tight">
                 PAYMENT
               </span>
-              <p className="text-base font-black text-slate-900 leading-tight mt-0.5">
+              <p className="text-xs sm:text-sm font-black text-slate-900 leading-tight mt-0.5 truncate">
                 Total: ₹{(order.grandTotal || 0).toLocaleString("en-IN")}
               </p>
-              <div className="mt-1">
+              <div className="mt-0.5">
                 {order.status === "QUOTE_DRAFT" ? (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-black bg-amber-100 text-amber-800">
-                    Quote Requested
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-800">
+                    Quote Req.
                   </span>
                 ) : order.status === "QUOTE_SENT" ? (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-black bg-purple-100 text-purple-800">
-                    Quote Sent (Due: ₹{(order.pendingBalance || order.grandTotal).toLocaleString("en-IN")})
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-purple-100 text-purple-800 truncate max-w-full">
+                    Due: ₹{(order.pendingBalance || order.grandTotal).toLocaleString("en-IN")}
                   </span>
                 ) : order.status === "CANCELLED" ? (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-black bg-slate-100 text-slate-600">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-slate-100 text-slate-600">
                     Cancelled
                   </span>
                 ) : order.pendingBalance > 0 ? (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-black bg-rose-100 text-rose-700">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-700">
                     Due: ₹{order.pendingBalance.toLocaleString("en-IN")}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black bg-emerald-100 text-emerald-800">
-                    <TickCircle className="w-3.5 h-3.5 text-emerald-700" variant="Bold" /> Paid Full
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800">
+                    <TickCircle size={11} color="#047857" variant="Bold" /> Paid Full
                   </span>
                 )}
               </div>
@@ -1224,16 +1216,16 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
         </div>
 
         {/* 8. Card 6: DUE TIME (Matching AI Mockup Mint Green Box + Clock Icon + Timestamp) */}
-        <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3.5 sm:gap-4 shadow-2xs">
-          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-            <div className="w-12 h-12 rounded-full bg-emerald-100/90 text-emerald-800 flex items-center justify-center shrink-0">
-              <Clock className="w-6 h-6 text-emerald-700" variant="Bold" />
+        <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl px-3 py-2 sm:px-3.5 sm:py-2.5 flex items-center justify-between gap-2 shadow-2xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-emerald-100/90 text-emerald-800 flex items-center justify-center shrink-0">
+              <Clock size={18} color="#047857" variant="Bold" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-800 block leading-tight">
+              <span className="text-[9px] font-black uppercase tracking-wider text-emerald-800 block leading-tight">
                 DUE TIME
               </span>
-              <p className="text-xl sm:text-2xl font-black text-emerald-950 tracking-tight mt-0.5" suppressHydrationWarning>
+              <p className="text-base sm:text-lg font-black text-emerald-950 tracking-tight mt-0.5 whitespace-nowrap" suppressHydrationWarning>
                 {formattedDueTime}
               </p>
             </div>
@@ -1241,7 +1233,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
           {/* 1-Hour SLA Warning pill if urgent */}
           {isUrgentSla && (
-            <span className="bg-rose-500 text-white text-[10px] sm:text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-xl shadow-xs animate-pulse shrink-0">
+            <span className="bg-rose-500 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-xs animate-pulse shrink-0">
               1-Hour SLA Warning!
             </span>
           )}
