@@ -87,7 +87,7 @@ export default function QuoteCheckoutClient({ quote }: { quote: any }) {
                 </div>
                 
                 <div className="text-sm text-gray-500 mt-1 font-medium">
-                  {item.quantity} × {item.weight}kg {item.flavor ? `• ${item.flavor}` : ''}
+                  {item.quantity} × {item.weight && Number(item.weight) > 0 && !item.name?.toLowerCase().includes('bouquet') && !item.name?.toLowerCase().includes('puff') ? `${item.weight}kg ` : ''}{item.flavor && item.flavor !== 'Classic' ? `• ${item.flavor}` : ''}
                 </div>
                 
                 {item.messageOnCake && (

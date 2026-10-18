@@ -4,6 +4,7 @@ import { withApiHandler, HandlerContext } from '@/lib/withApiHandler'
 import { CustomerService } from '@/services/CustomerService'
 import { FinancialService } from '@/services/FinancialService'
 import { errorResponse } from '@/lib/apiUtils'
+import { isPieceOrNonWeightItem, formatItemWeight } from '@/lib/itemUtils'
 
 const handler = async (ctx: HandlerContext) => {
   const { req, user, requestId } = ctx
@@ -69,9 +70,9 @@ const handler = async (ctx: HandlerContext) => {
       items: order.items.map(item => ({
         name: item.productName,
         qty: item.quantity,
-        weight: item.weight ? `${item.weight}kg` : undefined,
+        weight: formatItemWeight(item),
         notes: item.notes || item.messageOnCake || undefined,
-        flavor: item.flavor || undefined,
+        flavor: isPieceOrNonWeightItem(item) ? undefined : (item.flavor || undefined),
         price: Number(item.price)
       }))
     };

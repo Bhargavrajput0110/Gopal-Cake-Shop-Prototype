@@ -4,6 +4,7 @@ import { CreateDraftOrderDTO, UpdateDraftOrderDTO, OrderResponseDTO, DriverOrder
 import { Prisma } from '@prisma/client'
 import { toBranchId, BRANCHES } from '@/lib/branches'
 import { FinancialService } from '@/services/FinancialService'
+import { isPieceOrNonWeightItem } from '@/lib/itemUtils'
 
 
 export class OrderService {
@@ -170,7 +171,7 @@ export class OrderService {
         orderBy,
         include: {
           customer: true,
-          items: { include: { media: true, product: true } },
+          items: { include: { media: true, product: { include: { category: true } } } },
           ledgerEntries: true,
           payments: true,
           vendorTasks: { include: { vendor: true } },
@@ -203,11 +204,15 @@ export class OrderService {
             const product = i.product;
             const referenceImages = i.media ? i.media.filter((m: any) => m.type === 'REFERENCE').map((m: any) => m.url) : [];
             const printImages = i.media ? i.media.filter((m: any) => m.type === 'PRODUCTION').map((m: any) => m.url) : [];
-            const isPieceItem = i.variant === 'Piece' || 
-              i.productName?.toLowerCase().includes('puff') || 
-              i.productName?.toLowerCase().includes('bake') || 
-              product?.categoryId === 'cmuts899k0000ygu3pigymkyy' ||
-              i.weight === 0;
+            const isPieceItem = isPieceOrNonWeightItem({
+              productName: i.productName || product?.name,
+              variant: i.variant,
+              weight: i.weight,
+              categoryId: product?.categoryId,
+              category: product?.category,
+              requiredVendors: product?.requiredVendors,
+              sku: product?.sku,
+            }) || i.weight === 0;
             return {
               id: i.id,
               name: i.productName || product?.name || 'Custom Item',
@@ -216,7 +221,7 @@ export class OrderService {
               price: Number(i.price),
               qty: i.quantity,
               weight: (!isPieceItem && i.weight && i.weight > 0) ? (i.weight < 1 ? `${i.weight * 1000}g` : `${i.weight}kg`) : undefined,
-              flavor: (isPieceItem && (i.flavor === 'Regular' || !i.flavor)) ? undefined : (i.flavor || undefined),
+              flavor: isPieceItem ? undefined : (i.flavor || undefined),
               notes: i.notes || undefined,
               messageOnCake: i.messageOnCake || undefined,
               image: i.image || product?.thumbnail || undefined,

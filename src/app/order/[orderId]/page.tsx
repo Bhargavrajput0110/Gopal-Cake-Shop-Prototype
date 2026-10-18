@@ -10,6 +10,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { generateInvoicePDF } from "@/lib/invoice";
 import { BackButton } from "@/components/ui/BackButton";
+import { isPieceOrNonWeightItem } from "@/lib/itemUtils";
 
 interface Order {
   id: string;
@@ -51,13 +52,16 @@ export default function OrderStatusPage() {
   const handleDownloadInvoice = () => {
     if (!order) return;
     
-    const invoiceItems = order.items.map(item => ({
-      name: item.name,
-      qty: item.qty,
-      weight: item.weight || "1kg",
-      flavor: item.flavour || "Chocolate",
-      price: order.grandTotal / (item.qty || 1)
-    }));
+    const invoiceItems = order.items.map(item => {
+      const isPiece = isPieceOrNonWeightItem(item);
+      return {
+        name: item.name,
+        qty: item.qty,
+        weight: isPiece ? '' : (item.weight || ''),
+        flavor: isPiece ? '' : (item.flavour || ''),
+        price: order.grandTotal / (item.qty || 1)
+      };
+    });
 
     const invoiceData = {
       orderId: order.id,
@@ -314,8 +318,12 @@ export default function OrderStatusPage() {
                 {order.items.map((item, idx) => (
                   <div key={idx} className="flex justify-between items-start gap-4">
                     <div>
-                      <p className="font-serif font-bold text-lg text-foreground">{item.name} <span className="text-foreground/50 text-base font-normal">({item.weight})</span></p>
-                      <p className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50 mt-1">Flavour: <span className="text-secondary">{item.flavour || "Not Specified"}</span></p>
+                      <p className="font-serif font-bold text-lg text-foreground">
+                        {item.name} {!isPieceOrNonWeightItem(item) && item.weight ? <span className="text-foreground/50 text-base font-normal">({item.weight})</span> : null}
+                      </p>
+                      {!isPieceOrNonWeightItem(item) && item.flavour && item.flavour !== "Not Specified" && (
+                        <p className="text-[10px] font-sans font-bold uppercase tracking-widest text-foreground/50 mt-1">Flavour: <span className="text-secondary">{item.flavour}</span></p>
+                      )}
                       {item.cakeText && (
                         <p className="text-sm font-serif italic text-foreground/80 border-l-2 border-primary/30 pl-3 mt-3 py-0.5">
                           "{item.cakeText}"

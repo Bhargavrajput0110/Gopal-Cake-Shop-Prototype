@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isPieceOrNonWeightItem, formatItemWeight } from '@/lib/itemUtils';
 
 export async function GET(req: Request, { params }: { params: Promise<{ orderId: string }> | { orderId: string } }) {
   try {
@@ -39,10 +40,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ orderId:
       customerPhone: order.customer?.phone || "",
       branch: order.branch?.name || "Main Branch",
       items: order.items.map(item => ({
-        name: item.productName || item.designName || "Custom Cake",
+        name: item.productName || item.designName || "Custom Item",
         qty: item.quantity,
-        weight: `${item.weight}kg`,
-        flavour: item.flavor || "Standard"
+        weight: formatItemWeight(item) || "",
+        flavour: isPieceOrNonWeightItem(item) ? "" : (item.flavor || "")
       })),
       subtotal: Number(order.subtotal),
       discount: Number(order.discount),

@@ -7,6 +7,7 @@ import { QcChecklistModal } from "./QcChecklistModal"
 import { PauseModal, IngredientRequestModal, ImageModal } from "./ActionModals"
 import { PackingChecklistModal } from "./PackingChecklistModal"
 import { Camera, ArrowDown2, ArrowUp2, Clock, Gallery, Pause, Warning2, Message } from "iconsax-react"
+import { isPieceOrNonWeightItem, formatItemWeight } from "@/lib/itemUtils"
 
 interface ProductionCardProps {
   item: ChefProductionItemDTO
@@ -111,10 +112,12 @@ export function ProductionCard({ item, queueNumber }: ProductionCardProps) {
           <div className="flex-1 min-w-0">
             <h4 className="font-bold text-foreground text-sm leading-tight mb-1">{item.productName}</h4>
             <div className="flex flex-wrap gap-1">
-              <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded text-[10px] font-bold">
-                {item.weight < 1 ? `${item.weight * 1000}g` : `${item.weight}kg`}
-              </span>
-              {item.flavor && (
+              {!isPieceOrNonWeightItem(item) && formatItemWeight(item) && (
+                <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded text-[10px] font-bold">
+                  {formatItemWeight(item)}
+                </span>
+              )}
+              {!isPieceOrNonWeightItem(item) && item.flavor && (
                 <span className="bg-[var(--brand-champagne)]/20 text-[#8B3A52] px-1.5 py-0.5 rounded text-[10px] font-bold">
                   Flavor: {item.flavor}
                 </span>

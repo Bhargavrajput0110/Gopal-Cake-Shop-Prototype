@@ -24,13 +24,17 @@ import { WEIGHT_OPTIONS, getActiveFlavours, getFlavourSurcharge } from "@/lib/fl
 import { Trash } from "iconsax-react";
 import { GoogleAddressPicker } from "@/components/home/GoogleAddressPicker";
 import { saveOrderToHistory } from "@/lib/orderHistory";
+import { isPieceOrNonWeightItem } from "@/lib/itemUtils";
 
-function parseWeightToNumber(weightStr: string): number {
+function parseWeightToNumber(weightStr: string, item?: any): number {
+  if (item && isPieceOrNonWeightItem(item)) return 0;
   if (!weightStr) return 0.5;
+  const lower = weightStr.toLowerCase();
+  if (lower.includes("bouquet") || lower.includes("piece") || lower.includes("unit")) return 0;
   const num = parseFloat(weightStr);
-  if (weightStr.toLowerCase().includes("kg")) return num;
-  if (weightStr.toLowerCase().includes("g")) return num / 1000;
-  return num;
+  if (lower.includes("kg")) return num;
+  if (lower.includes("g")) return num / 1000;
+  return 0; // If not specifying kg or g, it's not a weight!
 }
 
 export default function CheckoutPage() {
@@ -289,8 +293,8 @@ export default function CheckoutPage() {
           items: items.map((i) => ({
             productId: i.productId,
             quantity: i.quantity,
-            weight: parseWeightToNumber(i.variant || ""),
-            flavor: i.flavor || "Classic",
+            weight: parseWeightToNumber(i.variant || "", i),
+            flavor: isPieceOrNonWeightItem(i) ? undefined : (i.flavor || "Classic"),
             messageOnCake: i.messageOnCake || "",
             notes: i.notes || "",
             price: i.price,
@@ -468,8 +472,8 @@ export default function CheckoutPage() {
               ? { house: "Store Pickup", street: "Uma Char Rasta Branch", area: "Vadodara", city: "Vadodara", pin: "390001", landmark: "Picked up by customer" }
               : { house: formData.house, street: formData.street, area: formData.area || "Vadodara", city: formData.city, pin: formData.pin || "390001", landmark: formData.landmark },
           items: items.map((i) => ({
-            productId: i.productId, quantity: i.quantity, weight: parseWeightToNumber(i.variant || ""),
-            flavor: i.flavor || "Classic", messageOnCake: i.messageOnCake || "", notes: i.notes || "",
+            productId: i.productId, quantity: i.quantity, weight: parseWeightToNumber(i.variant || "", i),
+            flavor: isPieceOrNonWeightItem(i) ? undefined : (i.flavor || "Classic"), messageOnCake: i.messageOnCake || "", notes: i.notes || "",
             price: i.price, isCustomizable: i.isCustomizable, isPhotoCake: i.isPhotoCake,
             printImage: i.printImage, referenceImages: i.referenceImages,
           })),

@@ -4,6 +4,7 @@ import { MoneyArchive, Card, Mobile, Calendar2, Clock, Location, User, Tag, Warn
 import { useCart } from "@/context/CartContext"
 import { OrdersApiClient } from "@/lib/api/orders.api"
 import { GoogleAddressPicker } from "@/components/home/GoogleAddressPicker"
+import { isPieceOrNonWeightItem } from "@/lib/itemUtils"
 
 interface PaymentDialogProps {
   onClose: () => void
@@ -240,8 +241,7 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
           productId: item.productId,
           quantity: item.quantity,
           weight: (() => {
-            const isPieceItem = item.variant === 'Piece' || item.name?.toLowerCase().includes('puff') || item.name?.toLowerCase().includes('bake');
-            if (isPieceItem) return 0;
+            if (isPieceOrNonWeightItem(item)) return 0;
             const w = item.variant || item.weight || "1kg";
             if (typeof w === 'number') return w;
             const str = String(w).toLowerCase();
@@ -250,8 +250,8 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
             return parseFloat(str) || 1;
           })(),
           flavor: (() => {
-            const isPieceItem = item.variant === 'Piece' || item.name?.toLowerCase().includes('puff') || item.name?.toLowerCase().includes('bake');
-            if (isPieceItem && (item.flavor === 'Regular' || !item.flavor)) return undefined;
+            if (isPieceOrNonWeightItem(item)) return undefined;
+            if (item.flavor === 'Regular' || !item.flavor) return undefined;
             return item.flavor || undefined;
           })(),
           messageOnCake: item.messageOnCake,

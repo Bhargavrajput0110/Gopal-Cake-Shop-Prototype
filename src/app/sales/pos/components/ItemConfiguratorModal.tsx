@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query"
 import { fetchClient } from "@/lib/api/client"
 import { ALL_FLAVOURS, getFlavourSurcharge } from "@/lib/flavours"
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader"
+import { isFlowerOrBouquetItem, isHotBakeOrSavouriesItem } from "@/lib/itemUtils"
 
 interface ItemConfiguratorModalProps {
   cartItemId: string
@@ -18,21 +19,9 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
   const { items: cart, updateItemConfig } = useCart()
   const item = cart.find(i => i.cartItemId === cartItemId)
 
-  const isFlowerOrBouquet = Boolean(
-    item?.name?.toLowerCase().includes("bouquet") ||
-    item?.name?.toLowerCase().includes("rose") ||
-    item?.name?.toLowerCase().includes("flower") ||
-    item?.variant?.toLowerCase().includes("bouquet") ||
-    (Array.isArray(item?.requiredVendors) && item.requiredVendors.includes("VENDOR_FLORIST"))
-  );
-
-  const isHotBake = Boolean(
-    item?.name?.toLowerCase().includes("puff") ||
-    item?.name?.toLowerCase().includes("bake") ||
-    item?.variant === "Piece"
-  );
-
-  const isCake = !isFlowerOrBouquet && !isHotBake;
+  const isFlowerOrBouquet = isFlowerOrBouquetItem(item)
+  const isHotBake = isHotBakeOrSavouriesItem(item)
+  const isCake = !isFlowerOrBouquet && !isHotBake
 
   // Base price per kg — used to auto-recalculate when weight changes
   const basePricePerKg = React.useRef<number>(
@@ -40,7 +29,7 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
   )
 
   const [price, setPrice] = React.useState<number>(item?.price || 0)
-  const [weight, setWeight] = React.useState<string>(String(item?.weight || (isCake ? 1 : 1)))
+  const [weight, setWeight] = React.useState<string>(String(item?.weight || (isCake ? 1 : 0)))
   const [flavor, setFlavor] = React.useState(item?.flavor || "")
   const [messageOnCake, setMessageOnCake] = React.useState(item?.messageOnCake || "")
   const [requiredVendors, setRequiredVendors] = React.useState<string[]>(item?.requiredVendors || [])
@@ -94,7 +83,7 @@ export function ItemConfiguratorModal({ cartItemId, onClose }: ItemConfiguratorM
     }
     updateItemConfig(cartItemId, {
       price,
-      weight: isCake ? (parseFloat(weight) || 1) : 1,
+      weight: isCake ? (parseFloat(weight) || 1) : 0,
       flavor: isCake ? flavor : undefined,
       messageOnCake: isHotBake ? undefined : messageOnCake,
       shape: "",

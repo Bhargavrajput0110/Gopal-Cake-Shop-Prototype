@@ -4,6 +4,7 @@ import { useCart } from "@/context/CartContext"
 import { ItemConfiguratorModal } from "./ItemConfiguratorModal"
 import { OrdersApiClient } from "@/lib/api/orders.api"
 import { useSession } from "next-auth/react"
+import { isPieceOrNonWeightItem } from "@/lib/itemUtils"
 
 interface CartPanelProps {
   onCheckout: () => void
@@ -36,7 +37,7 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
         items: cart.map(i => ({
           productId: i.productId,
           quantity: i.quantity,
-          weight: i.weight || 1,
+          weight: isPieceOrNonWeightItem(i) ? 0 : (i.weight || 1),
           flavor: i.flavor,
           messageOnCake: i.messageOnCake,
           designId: i.designId,
@@ -112,7 +113,7 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
                 <div className="flex-1 min-w-0">
                   <p className="font-display font-bold text-base md:text-lg text-foreground truncate">{item.name}</p>
                   <p className="text-muted-foreground font-ui text-[9px] uppercase tracking-widest font-black truncate">
-                    {item.weight && item.weight > 0 && !item.name?.toLowerCase().includes('puff') && !item.name?.toLowerCase().includes('bake') ? `${item.weight}kg ` : ''}
+                    {!isPieceOrNonWeightItem(item) && item.weight && item.weight > 0 ? `${item.weight}kg ` : ''}
                     {item.flavor && item.flavor !== 'Regular' ? `• ${item.flavor} ` : ''}
                     {item.shape ? `• ${item.shape}` : ''}
                   </p>

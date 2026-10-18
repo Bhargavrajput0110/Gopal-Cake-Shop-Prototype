@@ -12,6 +12,7 @@ import { prisma } from '@/lib/prisma';
 import { LoggerService } from '@/services/LoggerService';
 import { FinancialService } from '@/services/FinancialService';
 import { getBranchPhone, toBranchShortName } from '@/lib/branches';
+import { isPieceOrNonWeightItem, formatItemWeight } from '@/lib/itemUtils';
 
 // ─── Canonical DTO ────────────────────────────────────────────────────────────
 
@@ -99,7 +100,12 @@ export class NotificationDataAggregator {
         items: {
           include: {
             product: {
-              select: { thumbnail: true, mediumImage: true },
+              select: {
+                thumbnail: true,
+                mediumImage: true,
+                categoryId: true,
+                category: { select: { slug: true, name: true } },
+              },
             },
             media: true,  // OrderItemMedia — includes REFERENCE type images
           },
@@ -136,14 +142,25 @@ export class NotificationDataAggregator {
       .filter((item) => !item.parentItemId) // Exclude internal vendor child items (ACRYLIC, FLORIST, PHOTO)
       .map((item) => {
         const parts: string[] = [`${item.quantity}x ${item.productName}`];
-        if (item.weight) {
-          const w = Number(item.weight);
-          parts.push(w < 1 ? `${w * 1000}g` : `${w}kg`);
+        const isNonWeight = isPieceOrNonWeightItem({
+          productName: item.productName,
+          variant: item.variant,
+          weight: item.weight,
+          categoryId: item.product?.categoryId,
+          category: item.product?.category,
+        });
+
+        if (!isNonWeight) {
+          const weightStr = formatItemWeight(item);
+          if (weightStr) parts.push(weightStr);
+          if (item.flavor && item.flavor !== 'Regular') {
+            parts.push(`(${item.flavor})`);
+          }
         }
-        if (item.flavor && item.flavor !== 'Regular') {
-          parts.push(`(${item.flavor})`);
+
+        if (item.variant && !['Piece', 'Unit', '1 Bouquet'].includes(item.variant) && !item.variant.toLowerCase().includes('bouquet')) {
+          parts.push(item.variant);
         }
-        if (item.variant) parts.push(item.variant);
         return parts.join(' - ');
       })
       .join(', ');

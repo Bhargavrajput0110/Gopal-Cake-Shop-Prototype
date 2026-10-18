@@ -8,6 +8,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { Reserve, Warning2, TickCircle, Clock, CloseSquare, Danger, Bag, Refresh2 } from "iconsax-react";
 import { toBranchId, BRANCHES, BranchId, toBranchShortName } from "@/lib/branches";
 import { formatTime, formatDate, formatDayLabel, matchesDayFilter } from "@/lib/formatTime";
+import { isPieceOrNonWeightItem } from "@/lib/itemUtils";
 
 // Standard bakery ingredients for the missing ingredients modal
 const COMMON_INGREDIENTS = [
@@ -428,12 +429,12 @@ export default function ChefDashboardPage() {
                   <div className="flex-1 min-w-0">
                     <p className={`font-black text-gray-900 text-lg leading-tight ${isChecked ? 'line-through' : ''}`}>{item.name}</p>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {item.weight && !item.name?.toLowerCase().includes('puff') && !item.name?.toLowerCase().includes('bake') && (
-                        <p className="font-bold text-gray-500 text-xs uppercase bg-gray-100 px-2 py-0.5 rounded">{item.weight}</p>
-                      )}
-                      {item.flavor && item.flavor !== 'Regular' && (
-                        <p className="font-bold text-[var(--brand-champagne-dark,#8B3A52)] text-xs uppercase bg-[var(--brand-champagne,#F6E9D8)] px-2 py-0.5 rounded">{item.flavor}</p>
-                      )}
+                      {!isPieceOrNonWeightItem(item) && item.weight && (
+                         <p className="font-bold text-gray-500 text-xs uppercase bg-gray-100 px-2 py-0.5 rounded">{item.weight}</p>
+                       )}
+                      {!isPieceOrNonWeightItem(item) && item.flavor && item.flavor !== 'Regular' && (
+                         <p className="font-bold text-[var(--brand-champagne-dark,#8B3A52)] text-xs uppercase bg-[var(--brand-champagne,#F6E9D8)] px-2 py-0.5 rounded">{item.flavor}</p>
+                       )}
                     </div>
                     {/* 🎂 MESSAGE ON CAKE — huge unmissable banner */}
                     {item.messageOnCake && (

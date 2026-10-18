@@ -15,6 +15,7 @@ import { OutboxService } from '@/lib/events/OutboxService'
 import { SettingsService } from '@/services/SettingsService'
 import { toBranchId, generateSequentialOrderNumber, getBranchNumericCode } from '@/lib/branches'
 import { DistanceFactory } from '@/services/distance/DistanceFactory'
+import { isPieceOrNonWeightItem } from '@/lib/itemUtils'
 
 export interface CheckoutContext {
   source: OrderSource
@@ -158,7 +159,7 @@ export class StorefrontEngine {
 
     // 2. Validate Items & Pricing
     const productIds = payload.items.map(i => i.productId)
-    const products = await prisma.product.findMany({ where: { id: { in: productIds } } })
+    const products = await prisma.product.findMany({ where: { id: { in: productIds } }, include: { category: true } })
     const designs = await prisma.design.findMany({ where: { id: { in: productIds } } })
     
     const allVendors = await prisma.user.findMany({
@@ -209,10 +210,14 @@ export class StorefrontEngine {
       let unitPrice = 0;
       let usedWeightConfig = false;
 
-      const isPieceItem = item.weight === 0 || 
-        product?.name?.toLowerCase().includes('puff') || 
-        product?.name?.toLowerCase().includes('bake') || 
-        (product as any)?.categoryId === 'cmuts899k0000ygu3pigymkyy';
+      const isPieceItem = item.weight === 0 || isPieceOrNonWeightItem({
+        productName: product?.name,
+        variant: (item as any).variant,
+        categoryId: (product as any)?.categoryId,
+        category: (product as any)?.category,
+        requiredVendors: (product as any)?.requiredVendors,
+        sku: (product as any)?.sku,
+      });
 
       if (isPieceItem) {
         unitPrice = Number(product.basePrice || 0);

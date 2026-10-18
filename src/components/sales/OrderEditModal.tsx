@@ -4,6 +4,7 @@ import { CloseSquare, Save2 } from "iconsax-react";
 import { motion } from "framer-motion";
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
 import { ALL_FLAVOURS } from "@/lib/flavours";
+import { isPieceOrNonWeightItem } from "@/lib/itemUtils";
 
 interface OrderEditModalProps {
   order: Order;
@@ -179,42 +180,44 @@ export function OrderEditModal({ order, onClose, onSuccess }: OrderEditModalProp
               <div key={idx} className="space-y-3 p-4 border rounded-xl bg-gray-50">
                 <p className="text-sm font-black text-gray-900">📦 {item.name}</p>
 
-                {/* Weight + Flavor side by side */}
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <label className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Weight (kg)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 1, 1.5, 2"
-                      value={itemEdits[idx]?.weight || ""}
-                      onChange={(e) => {
-                        const next = [...itemEdits];
-                        next[idx] = { ...next[idx], weight: e.target.value };
-                        setItemEdits(next);
-                      }}
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#C5A059] bg-white"
-                    />
+                {/* Weight + Flavor side by side (only for cakes) */}
+                {!isPieceOrNonWeightItem(item) && (
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Weight (kg)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 1, 1.5, 2"
+                        value={itemEdits[idx]?.weight || ""}
+                        onChange={(e) => {
+                          const next = [...itemEdits];
+                          next[idx] = { ...next[idx], weight: e.target.value };
+                          setItemEdits(next);
+                        }}
+                        className="w-full border border-border rounded-lg px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#C5A059] bg-white"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Flavor</label>
+                      <select
+                        value={itemEdits[idx]?.flavor || ""}
+                        onChange={(e) => {
+                          const next = [...itemEdits];
+                          next[idx] = { ...next[idx], flavor: e.target.value };
+                          setItemEdits(next);
+                        }}
+                        className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C5A059] bg-white"
+                      >
+                        <option value="">Standard Flavor</option>
+                        {ALL_FLAVOURS.map((f, i) => (
+                          <option key={`${f.id}-${i}`} value={f.name}>
+                            {f.name} {f.surchargePerHalfKg ? `(+₹${f.surchargePerHalfKg}/500g)` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <label className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Flavor</label>
-                    <select
-                      value={itemEdits[idx]?.flavor || ""}
-                      onChange={(e) => {
-                        const next = [...itemEdits];
-                        next[idx] = { ...next[idx], flavor: e.target.value };
-                        setItemEdits(next);
-                      }}
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C5A059] bg-white"
-                    >
-                      <option value="">Standard Flavor</option>
-                      {ALL_FLAVOURS.map((f, i) => (
-                        <option key={`${f.id}-${i}`} value={f.name}>
-                          {f.name} {f.surchargePerHalfKg ? `(+₹${f.surchargePerHalfKg}/500g)` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                )}
 
                 {/* Message on Cake */}
                 <div>

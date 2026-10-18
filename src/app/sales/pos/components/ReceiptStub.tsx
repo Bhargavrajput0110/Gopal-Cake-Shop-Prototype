@@ -4,6 +4,7 @@ import { fetchClient } from "@/lib/api/client"
 import { Printer, DocumentDownload, TickCircle, CloseSquare } from "iconsax-react"
 import { generateInvoicePDF } from "@/lib/invoice"
 import { toBranchDisplayName, getBranchPhone } from "@/lib/branches"
+import { isPieceOrNonWeightItem, formatItemWeight } from "@/lib/itemUtils"
 
 interface ReceiptStubProps {
   orderId: string
@@ -37,11 +38,12 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
   const handleDownloadPDF = () => {
     try {
       const invoiceItems = (order.items || []).map((item: any) => {
-        const isPiece = item.variant === 'Piece' || item.name?.toLowerCase().includes('puff') || item.productName?.toLowerCase().includes('puff') || item.name?.toLowerCase().includes('bake') || parseNumber(item.weight) <= 0;
+        const isPiece = isPieceOrNonWeightItem(item);
+        const weightFormatted = formatItemWeight(item);
         return {
           name: item.productName || item.name || 'Custom Cake',
           qty: Number(item.quantity || item.qty || 1),
-          weight: isPiece ? '' : (parseNumber(item.weight || 0) < 1 ? `${parseNumber(item.weight || 0) * 1000}g` : `${parseNumber(item.weight || 0)}kg`),
+          weight: isPiece ? '' : (weightFormatted || ''),
           flavor: (isPiece && (item.flavor === 'Regular' || !item.flavor)) ? '' : (item.flavor || item.flavour || ''),
           price: Number(item.price || 0)
         };
@@ -226,10 +228,10 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
                 <span>₹{(parseNumber(item.price) * parseNumber(item.quantity)).toFixed(2)}</span>
               </div>
               <div className="pl-3 text-[10px] text-gray-600 space-y-0.5 mt-0.5">
-                {parseNumber(item.weight) > 0 && !item.productName?.toLowerCase().includes('puff') && !item.name?.toLowerCase().includes('puff') && !item.productName?.toLowerCase().includes('bake') && (
-                  <div>Weight: <span className="font-bold">{parseNumber(item.weight) < 1 ? `${parseNumber(item.weight) * 1000}g` : `${parseNumber(item.weight)}kg`}</span> {item.flavor && item.flavor !== 'Regular' ? `| Flavor: ${item.flavor}` : ''}</div>
+                {!isPieceOrNonWeightItem(item) && formatItemWeight(item) && (
+                  <div>Weight: <span className="font-bold">{formatItemWeight(item)}</span> {item.flavor && item.flavor !== 'Regular' ? `| Flavor: ${item.flavor}` : ''}</div>
                 )}
-                {(!parseNumber(item.weight) || item.productName?.toLowerCase().includes('puff') || item.name?.toLowerCase().includes('puff')) && item.flavor && item.flavor !== 'Regular' && (
+                {isPieceOrNonWeightItem(item) && item.flavor && item.flavor !== 'Regular' && (
                   <div>Flavor: <span className="font-bold">{item.flavor}</span></div>
                 )}
                 {item.designName && (

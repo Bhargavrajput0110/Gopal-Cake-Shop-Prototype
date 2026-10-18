@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { generateInvoicePDF } from "@/lib/invoice";
 import { fetchClient } from "@/lib/api/client";
+import { isPieceOrNonWeightItem } from "@/lib/itemUtils";
 
 interface OrderItem {
   name: string;
@@ -141,13 +142,16 @@ export default function CustomerOrdersPage() {
   };
 
   const handleDownloadInvoice = (order: Order) => {
-    const invoiceItems = order.items.map(item => ({
-      name: item.name,
-      qty: item.qty,
-      weight: item.weight || "1kg",
-      flavor: (item as any).flavour || (item as any).flavor || "Chocolate",
-      price: (order.grandTotal ?? order.totalAmount ?? 0) / (item.qty || 1)
-    }));
+    const invoiceItems = order.items.map(item => {
+      const isPiece = isPieceOrNonWeightItem(item);
+      return {
+        name: item.name,
+        qty: item.qty,
+        weight: isPiece ? '' : (item.weight || ''),
+        flavor: isPiece ? '' : ((item as any).flavour || (item as any).flavor || ''),
+        price: (order.grandTotal ?? order.totalAmount ?? 0) / (item.qty || 1)
+      };
+    });
 
     const invoiceData = {
       orderId: order.id,
@@ -467,7 +471,7 @@ export default function CustomerOrdersPage() {
                                 <div key={index} className="flex justify-between items-start py-2.5 px-3 bg-white border border-[#2C1A14]/5 rounded-xl text-xs">
                                   <div>
                                     <p className="font-bold text-[#2C1A14]">{item.name} <span className="text-muted-foreground font-normal">x {item.qty}</span></p>
-                                    {item.weight && <span className="text-[10px] text-muted-foreground font-medium mr-3">Weight: {item.weight}</span>}
+                                    {!isPieceOrNonWeightItem(item) && item.weight && <span className="text-[10px] text-muted-foreground font-medium mr-3">Weight: {item.weight}</span>}
                                     {item.notes && <p className="text-[10px] italic text-[#D4AF37] mt-0.5">Note: &quot;{item.notes}&quot;</p>}
                                   </div>
                                 </div>
