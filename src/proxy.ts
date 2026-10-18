@@ -46,6 +46,7 @@ const { auth } = NextAuth(authConfig);
  * Matched by prefix (startsWith).
  */
 const PUBLIC_PREFIXES = [
+  '/',
   '/login',
   '/forgot-password',
   '/menu',
@@ -53,6 +54,9 @@ const PUBLIC_PREFIXES = [
   '/about',
   '/track',
   '/custom',
+  '/cart',
+  '/checkout',
+  '/contact',
   '/customer/login',
   '/customer/register',
   // Public API routes (unauthenticated reads, checkout, order tracking)
@@ -96,6 +100,7 @@ const PROTECTED_PREFIXES = [
 ];
 
 function isPublicPath(pathname: string): boolean {
+  if (pathname === '/' || pathname === '') return true;
   return PUBLIC_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(p + '/') || pathname.startsWith(p + '?')
   );
@@ -214,21 +219,39 @@ export default auth(function proxy(req: NextRequest) {
     // Authenticated and authorized — fall through
   }
 
-  // ── 2. Request ID configured above ─────────────────────────────────────────
+  // ── 2. Security Headers ────────────────────────────────────────────────────
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  const csp = `
-    default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live;
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com https:;
-    font-src 'self' https://fonts.gstatic.com;
-    connect-src 'self' https://vercel.live wss://ws-us3.pusher.com https://images.unsplash.com https://api.cloudinary.com;
-    media-src 'self' https://res.cloudinary.com;
-  `.replace(/\s{2,}/g, ' ').trim();
+  // Protect internal admin/staff dashboards against clickjacking while allowing
+  // public storefront pages to load inside Google Search App, Instagram, WhatsApp, etc.
+  const isProtected = isProtectedPath(pathname);
+  if (isProtected) {
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  }
+
+  const csp = isProtected
+    ? `
+      default-src 'self';
+      script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live;
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com https:;
+      font-src 'self' https://fonts.gstatic.com;
+      connect-src 'self' https://vercel.live wss://ws-us3.pusher.com https://images.unsplash.com https://api.cloudinary.com;
+      media-src 'self' https://res.cloudinary.com;
+      frame-ancestors 'self';
+    `.replace(/\s{2,}/g, ' ').trim()
+    : `
+      default-src 'self';
+      script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://*.google.com https://*.googleapis.com https://*.google-analytics.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com https:;
+      font-src 'self' https://fonts.gstatic.com data:;
+      connect-src 'self' https://vercel.live wss://ws-us3.pusher.com https://images.unsplash.com https://api.cloudinary.com https://*.google.com https://*.googleapis.com https://*.google-analytics.com;
+      media-src 'self' https://res.cloudinary.com;
+      frame-ancestors *;
+    `.replace(/\s{2,}/g, ' ').trim();
   response.headers.set('Content-Security-Policy', csp);
 
   // ── 4. Tiered Rate Limiting ────────────────────────────────────────────────
