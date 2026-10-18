@@ -327,19 +327,29 @@ function SalesDashboardContent() {
 
   return (
     <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} className="space-y-6 min-h-[calc(100vh-8rem)] lg:h-[calc(100vh-8rem)] flex flex-col pb-12">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+      <div className="flex items-center justify-between gap-3 shrink-0">
         <div>
           <div className="mb-2">
             <BackButton fallback="/sales" label="Back to Sales" variant="outline" size="sm" />
           </div>
-          <h2 className="text-3xl font-black tracking-tight font-serif text-[#3E2723] flex items-center gap-2">
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight font-serif text-[#3E2723] flex items-center gap-2 flex-wrap">
             Orders
-            <span className="ml-2 bg-[#3E2723] text-white px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider">
+            <span className="bg-[#3E2723] text-white px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider">
               {toBranchShortName(activeBranch)} Branch
             </span>
           </h2>
           <p className="text-muted-foreground text-xs mt-0.5 tracking-wide">Manage, track, and dispatch your daily queue.</p>
         </div>
+        <button
+          onClick={() => {
+            window.location.reload();
+          }}
+          className="px-3.5 py-2 bg-white border border-[#C5A059]/40 text-[#3E2723] rounded-xl text-xs font-black hover:bg-[#FDFBF7] active:scale-95 transition-all shadow-xs flex items-center gap-1.5 shrink-0"
+          title="Reload page to fetch latest version"
+        >
+          <span>🔄</span>
+          <span>Refresh</span>
+        </button>
       </div>
 
       <SalesFilterBar 
