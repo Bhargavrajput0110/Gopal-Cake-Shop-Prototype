@@ -767,11 +767,26 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
     : photoPrintItems.reduce((acc: number, i: any) => acc + (i.qty || 1), 0) || 1;
   const photoComponentLabel = photoPrintItems[0]?.name || (photoPrintItems[0] as any)?.productName || "PHOTO Component";
 
-  // Customization note (dietary, custom baking instructions)
-  const customizationNote = order.items.find((i: any) => i.notes)?.notes || (order as any).notes;
+  // Filter display items so internal vendor sub-components (like "PHOTO Component" or parentItemId) don't show as separate cakes
+  const displayItems = order.items.filter((item: any) => {
+    const name = (item.name || item.productName || "").toLowerCase();
+    if (item.parentItemId) return false;
+    if (name.includes("photo component") || name.includes("print component")) return false;
+    return true;
+  });
+  const primaryItems = displayItems.length > 0 ? displayItems : order.items;
 
-  // Delivery instructions
-  const deliveryInstructions = order.customerInstructions || (order as any).deliveryInstructions;
+  // Customization note (dietary, custom baking instructions, or customerNotes)
+  const customizationNote = order.items.find((i: any) => i.notes)?.notes || (order as any).notes || (order as any).customerNotes;
+
+  // Delivery instructions:
+  // 1. Only show for actual DELIVERY orders (not PICKUP)
+  // 2. Only show if not identical to the cake customization note
+  const isDeliveryOrder = order.orderType === 'delivery' || (order as any).deliveryType === 'DELIVERY';
+  const rawDeliveryInstructions = order.customerInstructions || (order as any).deliveryInstructions;
+  const deliveryInstructions = (isDeliveryOrder && rawDeliveryInstructions && rawDeliveryInstructions.trim().toLowerCase() !== customizationNote?.trim().toLowerCase())
+    ? rawDeliveryInstructions
+    : null;
 
   // Due time formatting & SLA warning
   const dueDateTime = new Date(order.timeTarget);
@@ -975,7 +990,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
         {/* 2. Product Item Box: Thumbnail + Title + Weight + Flavour Pill (Matching AI Mockup) */}
         <div className="space-y-1.5">
-          {order.items.map((item, idx) => {
+          {primaryItems.map((item, idx) => {
             const itemRef = item.referenceImages?.[0] || allRefImages[0];
             const itemThumb = itemRef || cakeImageUrl;
             return (
@@ -1388,7 +1403,7 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
             className="md:hidden p-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl font-black flex items-center justify-center active:scale-95 shadow-sm"
             title="Call Customer"
           >
-            <Call className="w-5 h-5" />
+            <Call size={20} color="#2563EB" variant="Bold" />
           </a>
           <button 
             onClick={() => {
