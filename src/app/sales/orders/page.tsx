@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Call, TickCircle, Warning2, Gift, Reserve, Notification, Clock, Lock1, Edit2, CloseSquare, Receipt21, Profile2User } from "iconsax-react";
+import { 
+  Call, TickCircle, Warning2, Gift, Reserve, Notification, Clock, Lock1, Edit2, CloseSquare, 
+  Receipt21, Profile2User, Cake, Gallery, ClipboardText, DocumentText, User, Card, Shop, TruckFast, SearchNormal1 
+} from "iconsax-react";
+import { ChefHat } from "lucide-react";
 import { useOrders, Order, TimelineEvent } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { SearchNormal1 } from "iconsax-react";
 import { Button } from "@/components/ui/button";
 import { ReceiptStub } from "@/app/sales/pos/components/ReceiptStub";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
@@ -731,585 +734,762 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
     return s.replace(/_/g," ");
   };
 
-  // Use first reference image as thumbnail if no cakeImage, so salesperson sees the customer's ref photo
+  // Computed helpers for eye-catchy structured representation matching AI mockup
   const allRefImages = order.items.flatMap((i: any) => i.referenceImages || []);
   const allPrintImages = order.items.flatMap((i: any) => i.printImages || []);
   const cakeImageUrl = order.cakeImage || allRefImages[0] || "https://images.unsplash.com/photo-1562777717-b6c338435d72?auto=format&fit=crop&q=80&w=600&h=600";
 
+  // Message on cake: check across all items or order
+  const messagesOnCake = order.items
+    .map((i: any) => i.messageOnCake)
+    .filter(Boolean);
+  const primaryMessageOnCake = messagesOnCake.length > 0 ? messagesOnCake.join(" / ") : null;
+
+  // Photo prints: check printImages or component
+  const photoPrintItems = order.items.filter((i: any) => 
+    (i.printImages && i.printImages.length > 0) || 
+    i.name?.toLowerCase().includes("photo") || 
+    i.productName?.toLowerCase().includes("photo")
+  );
+  const hasPhotoPrint = allPrintImages.length > 0 || photoPrintItems.length > 0;
+  const totalPrints = allPrintImages.length > 0 
+    ? allPrintImages.length 
+    : photoPrintItems.reduce((acc: number, i: any) => acc + (i.qty || 1), 0) || 1;
+  const photoComponentLabel = photoPrintItems[0]?.name || (photoPrintItems[0] as any)?.productName || "PHOTO Component";
+
+  // Customization note (dietary, custom baking instructions)
+  const customizationNote = order.items.find((i: any) => i.notes)?.notes || (order as any).notes;
+
+  // Delivery instructions
+  const deliveryInstructions = order.customerInstructions || (order as any).deliveryInstructions;
+
+  // Due time formatting & SLA warning
+  const dueDateTime = new Date(order.timeTarget);
+  const isValidDueTime = !isNaN(dueDateTime.getTime());
+  const formattedDueTime = isValidDueTime
+    ? dueDateTime.toLocaleString("en-IN", { 
+        day: "numeric", 
+        month: "short", 
+        hour: "2-digit", 
+        minute: "2-digit", 
+        hour12: true 
+      })
+    : "Pending Schedule";
+
+  const minutesUntilDue = isValidDueTime ? (dueDateTime.getTime() - Date.now()) / (1000 * 60) : 9999;
+  const isUrgentSla = minutesUntilDue > 0 && minutesUntilDue <= 60 && !["COMPLETED", "CANCELLED", "DELIVERED"].includes(order.status as string);
+
   return (
     <>
       <motion.div layout initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.95}}
-        className={`bg-white backdrop-blur-md rounded-2xl shadow-md overflow-hidden flex flex-col md:flex-row group transition-all duration-300 relative border ${
-          order.status === 'COMPLETED' ? 'border-emerald-200 bg-emerald-50/30 opacity-80' :
+        className={`bg-white rounded-3xl shadow-sm overflow-hidden flex flex-col group transition-all duration-300 relative border p-4 sm:p-5 space-y-3.5 ${
+          order.status === 'COMPLETED' ? 'border-emerald-200 bg-emerald-50/20 opacity-85' :
           order.status === 'CANCELLED' ? 'border-rose-200 bg-rose-50/20 opacity-75' :
-          animationClass ? `border-[#C5A059]/20 ${animationClass}` :
-          'border-[#C5A059]/20 hover:border-[#C5A059]/50 hover:shadow-lg'
+          animationClass ? `border-[#C5A059]/40 ${animationClass}` :
+          'border-slate-200/90 hover:border-[#C5A059]/50 hover:shadow-md'
         }`}>
 
-
-        {/* Large Prominent Cake Image Section (Zomato/Blinkit Partner Style) */}
-        <div 
-          onClick={() => setIsImageZoomed(true)}
-          className="w-full h-56 sm:h-64 md:w-52 md:h-auto bg-slate-900 shrink-0 relative cursor-pointer overflow-hidden group/img border-b md:border-b-0 md:border-r border-[#C5A059]/10"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src={cakeImageUrl} 
-            alt="Cake preview" 
-            className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500" 
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
-          
-          {/* Badge indicating this is the Design Reference */}
-          {allRefImages.length > 0 && (
-            <div className="absolute top-0 left-0 w-full bg-blue-600/90 text-white text-[9px] font-black uppercase tracking-widest text-center py-1 backdrop-blur-sm shadow-sm z-10">
-              Design Ref
-            </div>
-          )}
-
-          <div className="absolute top-2 left-2 flex flex-col gap-1">
-            <span className="bg-black/60 backdrop-blur-md text-white px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm w-fit">
-              🔍 Tap to Zoom
-            </span>
-            {allPrintImages.length > 0 && (
-              <span className="bg-purple-600/90 backdrop-blur-md text-white px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm w-fit border border-purple-400">
-                🖨️ Photo Print
-              </span>
-            )}
+        {/* 1. Header: Order Number + Badges (Matching AI Mockup) */}
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
+          <div>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Order</span>
+            <h3 className="text-2xl sm:text-3xl font-serif font-black text-slate-900 tracking-tight leading-none mt-0.5">
+              {order.orderNumber || order.id}
+            </h3>
           </div>
 
-          {order.isSurprise && (
-            <div className="absolute top-2 right-2 bg-purple-600/90 text-white backdrop-blur-md px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md">
-              <Gift className="w-3 h-3" /> Surprise
-            </div>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Status Badge */}
+            <span className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-2xs border ${
+              order.status === 'WAITING_FOR_CHEF' 
+                ? 'bg-[#FFF4E5] text-[#B45309] border-[#FCD34D]/80' 
+                : order.status === 'MAKING' || order.status === 'DECORATING' || order.status === 'CHEF_ACCEPTED'
+                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                : order.status === 'READY_FOR_PICKUP'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                : order.status === 'COMPLETED' || order.status === 'DELIVERED'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : order.status === 'CANCELLED'
+                ? 'bg-rose-50 text-rose-600 border-rose-200'
+                : 'bg-[#C5A059]/10 text-[#3E2723] border-[#C5A059]/30'
+            }`}>
+              {['WAITING_FOR_CHEF', 'MAKING', 'DECORATING', 'CHEF_ACCEPTED'].includes(order.status as string) && (
+                <ChefHat className="w-4 h-4 text-[#B45309]" />
+              )}
+              {['READY_FOR_PICKUP', 'COMPLETED', 'DELIVERED'].includes(order.status as string) && (
+                <TickCircle className="w-4 h-4 text-emerald-600" />
+              )}
+              {statusLabel(order.status)}
+            </span>
 
-          {/* Quick Cake Spec Bar overlaid on photo bottom */}
-          <div className="absolute bottom-2 left-2 right-2 text-white text-xs font-bold bg-black/50 backdrop-blur-md px-2.5 py-1.5 rounded-lg flex items-center justify-between">
-            <span className="truncate">{order.items[0]?.name || "Custom Cake"}</span>
-            {order.items[0]?.weight && <span className="bg-[#C5A059] text-white text-[10px] font-black px-1.5 py-0.5 rounded ml-1 shrink-0">{order.items[0].weight}</span>}
+            {/* Fulfillment type badge */}
+            <span className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-2xs border ${
+              order.orderType === 'delivery'
+                ? 'bg-[#EEF2FF] text-[#4338CA] border-[#C7D2FE]'
+                : 'bg-[#EBF5FF] text-[#1D4ED8] border-[#BFDBFE]'
+            }`}>
+              {order.orderType === 'delivery' ? (
+                <TruckFast className="w-4 h-4 text-[#4338CA]" variant="Bold" />
+              ) : (
+                <Shop className="w-4 h-4 text-[#1D4ED8]" variant="Bold" />
+              )}
+              {order.orderType === 'delivery' ? 'Delivery' : 'Pickup'}
+            </span>
+
+            {order.delayLevel === "delayed" && (
+              <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                <Warning2 className="w-3.5 h-3.5" /> Delayed
+              </span>
+            )}
+            {order.delayLevel === "warning" && (
+              <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                <Warning2 className="w-3.5 h-3.5" /> Issue
+              </span>
+            )}
+            {order.isSurprise && (
+              <span className="bg-purple-100 text-purple-700 border border-purple-200 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                <Gift className="w-3.5 h-3.5" /> Surprise
+              </span>
+            )}
+            {isLocked && !(["COMPLETED","CANCELLED"] as string[]).includes(order.status as string) && (
+              <span className="bg-slate-100 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                <Lock1 className="w-3.5 h-3.5" /> Locked
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="p-4 sm:p-5 flex-1 grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <h3 className="text-xl sm:text-2xl font-serif font-black text-[#3E2723]">{order.orderNumber || order.id}</h3>
-              <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-2xs border ${
-                order.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                order.status === 'CANCELLED' ? 'bg-rose-50 text-rose-600 border-rose-200' :
-                'bg-[#C5A059]/10 text-[#3E2723] border-[#C5A059]/30'
+        {/* Inter-Branch Transfer Status Banner */}
+        {(() => {
+          const transfers = (order as any).transfers || [];
+          const activeTransfer = transfers.find((t: any) => 
+            ['PENDING', 'ACCEPTED', 'IN_TRANSIT'].includes(t.status)
+          ) || transfers[0];
+
+          const isHotBake = order.items?.some((i: any) => 
+            i.categoryId === 'cmuts899k0000ygu3pigymkyy' ||
+            i.productName?.toLowerCase().includes('puff') ||
+            i.name?.toLowerCase().includes('puff') ||
+            i.productName?.toLowerCase().includes('bake') ||
+            i.name?.toLowerCase().includes('bake')
+          );
+
+          if (activeTransfer) {
+            const fromName = toBranchShortName(activeTransfer.fromBranchId);
+            const toName = toBranchShortName(activeTransfer.toBranchId);
+            const isReceived = activeTransfer.status === 'RECEIVED';
+            const isInTransit = activeTransfer.status === 'IN_TRANSIT';
+            const driverName = (order as any).driver?.name || 'Driver';
+
+            return (
+              <div className={`p-3 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs ${
+                isReceived 
+                  ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950'
+                  : isInTransit
+                  ? 'bg-amber-50/80 border-amber-300 text-amber-950'
+                  : 'bg-blue-50/80 border-blue-300 text-blue-950'
               }`}>
-                {statusLabel(order.status)}
-              </span>
-              {/* Fulfillment type badge — always visible */}
-              <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest border ${
-                order.orderType === 'delivery'
-                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              }`}>
-                {order.orderType === 'delivery' ? '🚚 Delivery' : '🏪 Pickup'}
-              </span>
-              {order.delayLevel==="delayed" && <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1 animate-pulse"><Warning2 className="w-3 h-3"/>Delayed</span>}
-              {order.delayLevel==="warning" && <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><Warning2 className="w-3 h-3"/>Issue</span>}
-              {isLocked && !(["COMPLETED","CANCELLED"] as string[]).includes(order.status as string) && <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest flex items-center gap-1"><Lock1 className="w-3 h-3"/>Locked</span>}
-            </div>
-
-            
-            {/* Inter-Branch Transfer Status Banner */}
-            {(() => {
-              const transfers = (order as any).transfers || [];
-              const activeTransfer = transfers.find((t: any) => 
-                ['PENDING', 'ACCEPTED', 'IN_TRANSIT'].includes(t.status)
-              ) || transfers[0];
-
-              const isHotBake = order.items?.some((i: any) => 
-                i.categoryId === 'cmuts899k0000ygu3pigymkyy' ||
-                i.productName?.toLowerCase().includes('puff') ||
-                i.name?.toLowerCase().includes('puff') ||
-                i.productName?.toLowerCase().includes('bake') ||
-                i.name?.toLowerCase().includes('bake')
-              );
-
-              if (activeTransfer) {
-                const fromName = toBranchShortName(activeTransfer.fromBranchId);
-                const toName = toBranchShortName(activeTransfer.toBranchId);
-                const isReceived = activeTransfer.status === 'RECEIVED';
-                const isInTransit = activeTransfer.status === 'IN_TRANSIT';
-                const driverName = (order as any).driver?.name || 'Driver';
-
-                return (
-                  <div className={`mt-2 mb-3 p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs ${
-                    isReceived 
-                      ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950'
-                      : isInTransit
-                      ? 'bg-amber-50/80 border-amber-300 text-amber-950'
-                      : 'bg-blue-50/80 border-blue-300 text-blue-950'
-                  }`}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">🚚</span>
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/90 border shadow-2xs">
-                            {isReceived ? '✅ Arrived at Branch' : isInTransit ? '🛵 In Transit' : '🏭 Ready at Factory'}
-                          </span>
-                          <span className="text-xs font-black">
-                            {fromName} Factory ➔ {toName} Branch
-                          </span>
-                        </div>
-                        <p className="text-[11px] font-medium opacity-85 mt-0.5">
-                          {isReceived 
-                            ? `Received at ${toName} branch. Ready for counter handover to customer.`
-                            : isInTransit
-                            ? `Picked up by ${driverName}. On the way to ${toName} branch.`
-                            : `Baked at ${fromName} Factory. Awaiting driver pickup to transfer to ${toName} branch.`}
-                        </p>
-                      </div>
-                    </div>
-
-                    {!isReceived && (
-                      <button
-                        onClick={onAssignDriver}
-                        className="self-start sm:self-center shrink-0 px-3 py-1.5 bg-[#3E2723] text-white rounded-lg text-xs font-bold hover:bg-[#2c1c19] active:scale-95 transition-all shadow-sm flex items-center gap-1.5"
-                      >
-                        <Profile2User className="w-3.5 h-3.5 text-[#C5A059]" />
-                        {(order as any).driver ? `Change Driver (${driverName})` : 'Assign Driver'}
-                      </button>
-                    )}
-                  </div>
-                );
-              }
-
-              const orderBranchCode = (order as any).branchId || order.branch;
-              if (isHotBake && toBranchId(orderBranchCode) !== 'varasiya') {
-                return (
-                  <div className="mt-2 mb-3 p-2.5 rounded-xl border bg-amber-50/80 border-amber-300 text-amber-950 flex items-center justify-between gap-2 shadow-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">🔥</span>
-                      <span className="text-xs font-bold">
-                        Hot Bakes: Baked at Warasiya Factory ➔ Transfer to {toBranchShortName(orderBranchCode)} Branch required
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🚚</span>
+                  <div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/90 border shadow-2xs">
+                        {isReceived ? '✅ Arrived at Branch' : isInTransit ? '🛵 In Transit' : '🏭 Ready at Factory'}
+                      </span>
+                      <span className="text-xs font-black">
+                        {fromName} Factory ➔ {toName} Branch
                       </span>
                     </div>
-                    <button
-                      onClick={onAssignDriver}
-                      className="shrink-0 px-3 py-1 bg-[#3E2723] text-white rounded-lg text-xs font-bold hover:bg-[#2c1c19] active:scale-95 transition-all shadow-sm flex items-center gap-1"
-                    >
-                      <Profile2User className="w-3.5 h-3.5 text-[#C5A059]" />
-                      Assign Driver
-                    </button>
+                    <p className="text-[11px] font-medium opacity-85 mt-0.5">
+                      {isReceived 
+                        ? `Received at ${toName} branch. Ready for counter handover to customer.`
+                        : isInTransit
+                        ? `Picked up by ${driverName}. On the way to ${toName} branch.`
+                        : `Baked at ${fromName} Factory. Awaiting driver pickup to transfer to ${toName} branch.`}
+                    </p>
                   </div>
-                );
-              }
-
-              return null;
-            })()}
-
-            {/* Transfer History View */}
-            {(order as any).transferHistory && (order as any).transferHistory.length > 0 && (
-              <div className="mb-3 p-2 bg-emerald-50/50 border border-emerald-200 rounded-lg flex items-center gap-2 overflow-x-auto hide-scrollbar">
-                <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest shrink-0">Branch Ops:</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-emerald-900 shrink-0">{toBranchShortName((order as any).transferHistory[0].from)}</span>
-                  {(order as any).transferHistory.map((th: any, i: number) => (
-                    <span key={i} className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-emerald-400 text-[10px] font-black">➔</span>
-                      <span className="text-xs font-bold text-emerald-900">{toBranchShortName(th.to)}</span>
-                    </span>
-                  ))}
                 </div>
-              </div>
-            )}
 
-            <div className="space-y-2">
-              {order.items.map((item,i)=>(
-                <div key={i} className="flex flex-col">
-                  <p className="text-sm font-black text-gray-900">
-                    {item.qty}x {item.name || (item as any).productName}
-                    {item.weight&&<span className="text-muted-foreground font-semibold"> ({item.weight})</span>}
-                    {(item as any).flavor && <span className="ml-1 text-xs text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">• {(item as any).flavor}</span>}
-                  </p>
-                  {/* 🎂 MESSAGE ON CAKE — most critical field, always visible */}
-                  {(item as any).messageOnCake && (
-                    <div className="mt-1.5 flex items-start gap-1.5 bg-rose-50 border border-rose-300 rounded-xl px-3 py-2 shadow-sm">
-                      <span className="text-rose-500 text-sm shrink-0 mt-0.5">🎂</span>
-                      <div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-rose-600 block leading-none mb-0.5">Message on Cake</span>
-                        <span className="text-xs font-black text-rose-900 font-mono">&quot;{(item as any).messageOnCake}&quot;</span>
-                      </div>
+                {!isReceived && (
+                  <button
+                    onClick={onAssignDriver}
+                    className="self-start sm:self-center shrink-0 px-3 py-1.5 bg-[#3E2723] text-white rounded-lg text-xs font-bold hover:bg-[#2c1c19] active:scale-95 transition-all shadow-sm flex items-center gap-1.5"
+                  >
+                    <Profile2User className="w-3.5 h-3.5 text-[#C5A059]" />
+                    {(order as any).driver ? `Change Driver (${driverName})` : 'Assign Driver'}
+                  </button>
+                )}
+              </div>
+            );
+          }
+
+          const orderBranchCode = (order as any).branchId || order.branch;
+          if (isHotBake && toBranchId(orderBranchCode) !== 'varasiya') {
+            return (
+              <div className="p-3 rounded-2xl border bg-amber-50/80 border-amber-300 text-amber-950 flex items-center justify-between gap-2 shadow-2xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🔥</span>
+                  <span className="text-xs font-bold">
+                    Hot Bakes: Baked at Warasiya Factory ➔ Transfer to {toBranchShortName(orderBranchCode)} Branch required
+                  </span>
+                </div>
+                <button
+                  onClick={onAssignDriver}
+                  className="shrink-0 px-3 py-1 bg-[#3E2723] text-white rounded-lg text-xs font-bold hover:bg-[#2c1c19] active:scale-95 transition-all shadow-sm flex items-center gap-1"
+                >
+                  <Profile2User className="w-3.5 h-3.5 text-[#C5A059]" />
+                  Assign Driver
+                </button>
+              </div>
+            );
+          }
+
+          return null;
+        })()}
+
+        {/* Transfer History View */}
+        {(order as any).transferHistory && (order as any).transferHistory.length > 0 && (
+          <div className="p-2 bg-emerald-50/50 border border-emerald-200 rounded-xl flex items-center gap-2 overflow-x-auto hide-scrollbar">
+            <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest shrink-0">Branch Ops:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-emerald-900 shrink-0">{toBranchShortName((order as any).transferHistory[0].from)}</span>
+              {(order as any).transferHistory.map((th: any, i: number) => (
+                <span key={i} className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-emerald-400 text-[10px] font-black">➔</span>
+                  <span className="text-xs font-bold text-emerald-900">{toBranchShortName(th.to)}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 2. Product Item Box: Thumbnail + Title + Weight + Flavour Pill (Matching AI Mockup) */}
+        <div className="space-y-2.5">
+          {order.items.map((item, idx) => {
+            const itemRef = item.referenceImages?.[0] || allRefImages[0];
+            const itemThumb = itemRef || cakeImageUrl;
+            return (
+              <div key={idx} className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-3.5 flex items-center gap-3.5 sm:gap-4 shadow-2xs hover:border-slate-300 transition-all">
+                {/* Square Cake Photo Thumbnail with Zoom & Weight badge */}
+                <div 
+                  onClick={() => setIsImageZoomed(true)}
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden relative shrink-0 border border-slate-200 cursor-pointer group/thumb bg-slate-900 shadow-2xs"
+                  title="Tap to zoom cake image"
+                >
+                  <img 
+                    src={itemThumb} 
+                    alt={item.name || "Cake"} 
+                    className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300" 
+                  />
+                  <div className="absolute inset-0 bg-black/10 group-hover/thumb:bg-black/25 transition-colors" />
+                  
+                  {/* Weight badge overlaid at bottom right corner */}
+                  {item.weight && (
+                    <span className="absolute bottom-1.5 right-1.5 bg-black/75 backdrop-blur-xs text-white text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
+                      {item.weight}
+                    </span>
+                  )}
+                </div>
+
+                {/* Item info */}
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-tight truncate leading-snug">
+                    {item.qty > 1 ? `${item.qty}x ` : ""}{item.name || (item as any).productName || "Custom Cake"}
+                  </h4>
+                  {item.weight && (
+                    <p className="text-sm font-semibold text-slate-500 mt-0.5">
+                      {item.weight}
+                    </p>
+                  )}
+                  {(item as any).flavor && (
+                    <div className="mt-1.5">
+                      <span className="inline-flex items-center px-3 py-1 rounded-lg bg-[#FAF0E6] text-[#78350F] text-xs font-bold border border-[#F3E5D8]">
+                        {(item as any).flavor}
+                      </span>
                     </div>
                   )}
+
+                  {/* Design Ref photos button if customer submitted photos */}
                   {(item as any).referenceImages && (item as any).referenceImages.length > 0 && (
-                    <div className="flex gap-2 mt-1.5 flex-wrap items-center bg-gray-50 p-2 rounded-lg border border-gray-200">
-                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mr-1">Design Ref:</span>
-                      {/* Small preview thumbnails (max 3) */}
-                      {(item as any).referenceImages.slice(0, 3).map((img: string, idx: number) => (
+                    <div className="flex gap-1.5 mt-2 flex-wrap items-center">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Ref:</span>
+                      {(item as any).referenceImages.slice(0, 3).map((img: string, rIdx: number) => (
                         <button
-                          key={`ref-${idx}`}
-                          onClick={() => setRefImageModal({ images: (item as any).referenceImages, idx })}
-                          className="w-8 h-8 rounded-md overflow-hidden border-2 border-blue-300 hover:border-blue-500 transition-all shadow-sm shrink-0"
-                          title={`View reference photo ${idx + 1}`}
+                          key={`ref-${rIdx}`}
+                          onClick={(e) => { e.stopPropagation(); setRefImageModal({ images: (item as any).referenceImages, idx: rIdx }); }}
+                          className="w-7 h-7 rounded-lg overflow-hidden border border-blue-300 hover:border-blue-500 transition-all shadow-2xs shrink-0"
                         >
-                          <img src={img} alt={`Ref ${idx + 1}`} className="w-full h-full object-cover" />
+                          <img src={img} alt={`Ref ${rIdx + 1}`} className="w-full h-full object-cover" />
                         </button>
                       ))}
                       <button
-                        onClick={() => setRefImageModal({ images: (item as any).referenceImages, idx: 0 })}
-                        className="text-[10px] font-black bg-blue-600 text-white px-2 py-1 rounded-lg hover:bg-blue-700 flex items-center gap-1 transition-colors shadow-sm"
+                        onClick={(e) => { e.stopPropagation(); setRefImageModal({ images: (item as any).referenceImages, idx: 0 }); }}
+                        className="text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md hover:bg-blue-100"
                       >
                         {(item as any).referenceImages.length} Photo{(item as any).referenceImages.length > 1 ? 's' : ''}
                       </button>
                     </div>
                   )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-                  {(item as any).printImages && (item as any).printImages.length > 0 && (
-                    <div className="flex gap-2 mt-1.5 flex-wrap items-center bg-purple-50 p-2 rounded-lg border border-purple-200">
-                      <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest mr-1">Photo Print:</span>
-                      {/* Small preview thumbnails (max 3) */}
-                      {(item as any).printImages.slice(0, 3).map((img: string, idx: number) => (
-                        <button
-                          key={`print-${idx}`}
-                          onClick={() => setRefImageModal({ images: (item as any).printImages, idx })}
-                          className="w-8 h-8 rounded-md overflow-hidden border-2 border-purple-400 hover:border-purple-600 transition-all shadow-sm shrink-0"
-                          title={`View print photo ${idx + 1}`}
-                        >
-                          <img src={img} alt={`Print ${idx + 1}`} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => setRefImageModal({ images: (item as any).printImages, idx: 0 })}
-                        className="text-[10px] font-black bg-purple-600 text-white px-2 py-1 rounded-lg hover:bg-purple-700 flex items-center gap-1 transition-colors shadow-sm"
-                      >
-                        {(item as any).printImages.length} Print{(item as any).printImages.length > 1 ? 's' : ''}
-                      </button>
-                    </div>
-                  )}
+        {/* 3. Card 1: MESSAGE ON CAKE (Matching AI Mockup Rose/Pink Box) */}
+        {primaryMessageOnCake && (
+          <div className="bg-[#FFF5F6] border border-[#FED4DA] rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 sm:gap-4 shadow-2xs">
+            <div className="w-11 h-11 rounded-xl bg-white border border-rose-200 flex items-center justify-center shrink-0 shadow-2xs">
+              <Cake className="w-6 h-6 text-rose-500" variant="Bold" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-rose-500 block leading-tight">
+                MESSAGE ON CAKE
+              </span>
+              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5 break-words">
+                &ldquo;{primaryMessageOnCake}&rdquo;
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 4. Card 2: PHOTO PRINT (Matching AI Mockup Purple/Lavender Box) */}
+        {hasPhotoPrint && (
+          <div className="bg-[#FAF5FF] border border-[#E9D5FF] rounded-2xl p-3.5 sm:p-4 flex items-start gap-3.5 sm:gap-4 shadow-2xs">
+            <div className="w-11 h-11 rounded-xl bg-white border border-purple-200 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+              <Gallery className="w-6 h-6 text-purple-600" variant="Bold" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-purple-700">
+                  PHOTO PRINT
+                </span>
+                <span className="bg-[#7C3AED] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-2xs">
+                  {totalPrints} Print{totalPrints > 1 ? 's' : ''}
+                </span>
+              </div>
+              <p className="text-sm sm:text-base font-black text-slate-900 mt-1">
+                {totalPrints}x {photoComponentLabel}
+              </p>
+              
+              {/* Clickable Print Image Thumbnails */}
+              {allPrintImages.length > 0 && (
+                <div className="flex gap-2 mt-2 flex-wrap items-center">
+                  {allPrintImages.slice(0, 4).map((img: string, pIdx: number) => (
+                    <button
+                      key={`print-${pIdx}`}
+                      onClick={() => setRefImageModal({ images: allPrintImages, idx: pIdx })}
+                      className="w-9 h-9 rounded-lg overflow-hidden border-2 border-purple-300 hover:border-purple-600 transition-all shadow-xs shrink-0"
+                      title="Preview photo for print"
+                    >
+                      <img src={img} alt={`Print ${pIdx + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setRefImageModal({ images: allPrintImages, idx: 0 })}
+                    className="text-[10px] font-black bg-purple-600 text-white px-2.5 py-1 rounded-lg hover:bg-purple-700 shadow-2xs"
+                  >
+                    View / Download
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 5. Card 3: CAKE CUSTOMIZATION NOTE (Matching AI Mockup Amber Box + BOLD RED Text) */}
+        {customizationNote && (
+          <div className="bg-[#FEFCE8] border border-[#FEF08A] rounded-2xl p-3.5 sm:p-4 flex items-start gap-3.5 sm:gap-4 shadow-2xs">
+            <div className="w-11 h-11 rounded-xl bg-white border border-amber-200 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+              <ClipboardText className="w-6 h-6 text-amber-600" variant="Bold" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-700 block leading-tight">
+                CAKE CUSTOMIZATION NOTE
+              </span>
+              <p className="text-base sm:text-lg font-black text-[#DC2626] tracking-tight mt-0.5 leading-snug break-words">
+                &ldquo;{customizationNote}&rdquo;
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 6. Card 4: DELIVERY INSTRUCTIONS (Matching AI Mockup Ice Blue Box) */}
+        {deliveryInstructions && (
+          <div className="bg-[#F0F9FF] border border-[#BAE6FD] rounded-2xl p-3.5 sm:p-4 flex items-start gap-3.5 sm:gap-4 shadow-2xs">
+            <div className="w-11 h-11 rounded-xl bg-white border border-blue-200 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+              <DocumentText className="w-6 h-6 text-blue-600" variant="Bold" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-blue-600 block leading-tight">
+                DELIVERY INSTRUCTIONS
+              </span>
+              <p className="text-sm sm:text-base font-black text-slate-900 tracking-tight mt-0.5 leading-snug break-words">
+                &ldquo;{deliveryInstructions}&rdquo;
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Assigned Partners / Vendor Tasks */}
+        {order.vendorTasks && order.vendorTasks.length > 0 && (
+          <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-2xl text-purple-950 text-xs font-bold space-y-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-purple-700 block">
+              Assigned Partners ({order.vendorTasks.length})
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {order.vendorTasks.map((vt, idx) => (
+                <div key={idx} className="flex flex-col text-[11px] text-purple-900 bg-white p-2.5 rounded-xl border border-purple-100 shadow-2xs">
+                  <div className="flex items-center justify-between font-extrabold">
+                    <span>{vt.vendorName || vt.vendorType}</span>
+                    <span className="text-[9px] uppercase px-2 py-0.5 bg-purple-100 text-purple-800 rounded font-black">{vt.status}</span>
+                  </div>
+                  {vt.instructions && <p className="text-[11px] font-medium text-purple-800 mt-1 italic">&ldquo;{vt.instructions}&rdquo;</p>}
                 </div>
               ))}
             </div>
-            {order.items.some(i=>i.notes) && (
-              <div className="mt-2.5 p-2.5 bg-amber-50 border border-amber-300/60 rounded-xl text-amber-950 text-xs font-bold">
-                <span className="text-[10px] font-black uppercase text-amber-700 block mb-0.5">Cake Customization Note:</span>
-                &quot;{order.items.find(i=>i.notes)?.notes}&quot;
-              </div>
-            )}
-            {order.customerInstructions && (
-              <div className="mt-2.5 p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-950 text-xs font-bold">
-                <span className="text-[10px] font-black uppercase text-blue-700 block mb-0.5">Delivery Instructions:</span>
-                &quot;{order.customerInstructions}&quot;
-              </div>
-            )}
-            {order.vendorTasks && order.vendorTasks.length > 0 && (
-              <div className="mt-2.5 p-2.5 bg-purple-50 border border-purple-200 rounded-xl text-purple-950 text-xs font-bold space-y-1">
-                <span className="text-[10px] font-black uppercase tracking-widest text-purple-700 block">
-                  🤝 Assigned Partners ({order.vendorTasks.length}):
-                </span>
-                {order.vendorTasks.map((vt, idx) => (
-                  <div key={idx} className="flex flex-col text-[11px] text-purple-900 bg-white/70 p-2 rounded-lg border border-purple-100">
-                    <div className="flex items-center justify-between font-extrabold">
-                      <span>{vt.vendorName || vt.vendorType}</span>
-                      <span className="text-[9px] uppercase px-1.5 py-0.5 bg-purple-200 text-purple-800 rounded font-black">{vt.status}</span>
-                    </div>
-                    {vt.instructions && <p className="text-[11px] font-medium text-purple-800 mt-0.5 italic">&quot;{vt.instructions}&quot;</p>}
-                  </div>
-                ))}
-              </div>
-            )}
+          </div>
+        )}
+
+        {/* 7. Customer & Payment (2-Column Grid Matching AI Mockup) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+          {/* Customer Box */}
+          <div className="bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-2xs">
+            <div className="w-11 h-11 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-600 shrink-0">
+              <User className="w-5 h-5 text-slate-700" variant="Bold" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block leading-tight">
+                CUSTOMER
+              </span>
+              <p className="text-base font-black text-slate-900 truncate leading-tight mt-0.5">
+                {order.customerName}
+              </p>
+              <a 
+                href={`tel:${order.customerPhone}`} 
+                className="text-xs font-black text-blue-600 hover:underline flex items-center gap-1 mt-0.5 tracking-wide"
+              >
+                {order.customerPhone}
+              </a>
+            </div>
           </div>
 
-          <div className="flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-start mb-3 bg-secondary/20 p-3 rounded-xl border border-black/5">
-                <div>
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">Customer</p>
-                  <p className="text-sm font-black text-gray-900">{order.customerName}</p>
-                  <a href={`tel:${order.customerPhone}`} className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mt-0.5">
-                    <Call className="w-3 h-3 text-blue-600" /> {order.customerPhone}
-                  </a>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">Payment</p>
-                  <div className="flex flex-col items-end gap-0.5">
-                    <p className="text-xs font-bold text-muted-foreground">Total: ₹{order.grandTotal || 0}</p>
-                    {order.status === "QUOTE_DRAFT" ? (
-                      <p className="text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md mt-0.5">Quote Requested</p>
-                    ) : order.status === "QUOTE_SENT" ? (
-                      <p className="text-xs font-black text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md mt-0.5">Quote Sent (Due: ₹{order.pendingBalance || order.grandTotal})</p>
-                    ) : order.status === "CANCELLED" ? (
-                      <p className="text-xs font-black text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md mt-0.5">Cancelled</p>
-                    ) : order.pendingBalance > 0 ? (
-                      <p className="text-xs font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded-md mt-0.5">Due: ₹{order.pendingBalance}</p>
-                    ) : order.grandTotal === 0 ? (
-                      <p className="text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md mt-0.5">Quote Pending</p>
-                    ) : (
-                      <p className="text-xs font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md mt-0.5">Paid Full</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs text-slate-700 bg-slate-100 p-2.5 rounded-xl border border-slate-200 font-bold">
-                <Clock className="w-4 h-4 text-[#C5A059] shrink-0" />
-                <span suppressHydrationWarning>Due: {new Date(order.timeTarget).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",hour12:true})}</span>
+          {/* Payment Box */}
+          <div className="bg-slate-50/90 border border-slate-200/90 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-2xs">
+            <div className="w-11 h-11 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-600 shrink-0">
+              <Card className="w-5 h-5 text-slate-700" variant="Bold" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block leading-tight">
+                PAYMENT
+              </span>
+              <p className="text-base font-black text-slate-900 leading-tight mt-0.5">
+                Total: ₹{(order.grandTotal || 0).toLocaleString("en-IN")}
+              </p>
+              <div className="mt-1">
+                {order.status === "QUOTE_DRAFT" ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-black bg-amber-100 text-amber-800">
+                    Quote Requested
+                  </span>
+                ) : order.status === "QUOTE_SENT" ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-black bg-purple-100 text-purple-800">
+                    Quote Sent (Due: ₹{(order.pendingBalance || order.grandTotal).toLocaleString("en-IN")})
+                  </span>
+                ) : order.status === "CANCELLED" ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-black bg-slate-100 text-slate-600">
+                    Cancelled
+                  </span>
+                ) : order.pendingBalance > 0 ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-black bg-rose-100 text-rose-700">
+                    Due: ₹{order.pendingBalance.toLocaleString("en-IN")}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black bg-emerald-100 text-emerald-800">
+                    <TickCircle className="w-3.5 h-3.5 text-emerald-700" variant="Bold" /> Paid Full
+                  </span>
+                )}
               </div>
             </div>
-
-            {/* Bargain Negotiation Control Panel */}
-            {order.status === "QUOTE_DRAFT" && (
-              <div className="mt-4 p-3 bg-primary/5 rounded-xl border border-primary/20 space-y-3">
-                <span className="text-[10px] font-black text-primary uppercase tracking-widest block">Send Quote to Customer</span>
-                
-                <div className="flex gap-2 items-center">
-                  <span className="text-xs font-bold text-muted-foreground">Price: ₹</span>
-                  <input 
-                    type="number"
-                    min="0"
-                    value={quotePrice || ''}
-                    onWheel={(e) => e.currentTarget.blur()}
-                    onKeyDown={(e) => {
-                      if (['-', '+', 'e', 'E', '.'].includes(e.key)) e.preventDefault();
-                    }}
-                    onChange={(e) => {
-                      const val = Math.max(0, parseInt(e.target.value) || 0);
-                      setQuotePrice(val);
-                    }}
-                    className="flex-1 bg-white border border-border rounded-md px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
-                    placeholder="Enter custom cake price..."
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  {[0, 50, 100, 150].map(amt => (
-                    <button
-                      key={amt}
-                      type="button"
-                      onClick={() => setSelectedDiscount(amt)}
-                      className={`flex-1 py-1 rounded text-xs font-bold transition-all ${selectedDiscount === amt ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-white border border-border text-foreground hover:bg-secondary'}`}
-                    >
-                      {amt === 0 ? 'No Disc.' : `-₹${amt}`}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  disabled={submittingQuote || quotePrice <= 0}
-                  onClick={handleSendQuote}
-                  className="w-full bg-[#C5A059] text-white py-2 rounded-md text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-                >
-                  Send Negotiated Quote (Final Total: ₹{Math.max(0, quotePrice - selectedDiscount)})
-                </button>
-              </div>
-            )}
-
-            {/* Zomato / Blinkit Partner Style 1-Tap Action Bar */}
-            <div className="mt-4 pt-3 border-t border-gray-200 flex flex-wrap gap-2 items-center">
-              {/* Primary Workflow Button */}
-              {order.status === "QUOTE_SENT" && (
-                <button 
-                  onClick={async () => {
-                    try {
-                      await updateOrderStatus(order.id, "QUOTE_SENT", false, "Salesperson", { basePrice: order.grandTotal });
-                      onWhatsApp(`Automated WhatsApp quote re-sent via Meta API to ${order.customerPhone}`);
-                      onMutated();
-                    } catch (e) {
-                      alert("Failed to re-send automated quote");
-                    }
-                  }} 
-                  className="flex-1 min-w-[150px] bg-[#25D366] text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-[#128C7E] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"
-                >
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Resend Automated Quote (Meta API)
-                </button>
-              )}
-              {order.status==="NEW" && (
-                <button onClick={handleApprove} className="flex-1 min-w-[120px] bg-emerald-600 text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
-                  <TickCircle className="w-5 h-5" /> Approve
-                </button>
-              )}
-              {order.pendingBalance > 0 && !(["NEW","QUOTE_DRAFT","QUOTE_SENT","COMPLETED","CANCELLED"] as string[]).includes(order.status as string) && (
-
-                <button onClick={handleCollectPayment} className="flex-1 min-w-[140px] bg-amber-500 text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-amber-600 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
-                  <Gift className="w-5 h-5" /> Collect ₹{order.pendingBalance}
-                </button>
-              )}
-              {order.status === "READY_FOR_PICKUP" && (order.orderType === "pickup" || (order as any).deliveryType === "PICKUP") && (() => {
-                const hasReceivedTransfer = (order as any).transfers?.some((t: any) => t.status === 'RECEIVED');
-                return (
-                  <button 
-                    disabled={isNotifyingReady}
-                    onClick={handleNotifyReady} 
-                    className={`flex-1 min-w-[150px] text-white px-3 py-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform disabled:opacity-50 ${hasReceivedTransfer ? 'bg-purple-600 hover:bg-purple-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
-                    title={hasReceivedTransfer ? "Cake has arrived at this branch — notify customer via WhatsApp" : "Notify customer via WhatsApp that cake is ready for pickup at store"}
-                  >
-                    {isNotifyingReady ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Notifying...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Notification className="w-4 h-4 text-white" />
-                        {hasReceivedTransfer ? "Notify Customer" : "Ready For Pickup"}
-                      </>
-                    )}
-                  </button>
-                );
-              })()}
-
-              {order.pendingBalance === 0 && order.status === "READY_FOR_PICKUP" && (order.orderType === "pickup" || (order as any).deliveryType === "PICKUP") && (() => {
-                const transfers = (order as any).transfers || [];
-                const activeTransfer = transfers.find((t: any) => ['PENDING', 'ACCEPTED', 'IN_TRANSIT'].includes(t.status));
-                const isHotBake = order.items?.some((i: any) => 
-                  i.categoryId === 'cmuts899k0000ygu3pigymkyy' ||
-                  i.productName?.toLowerCase().includes('puff') ||
-                  i.name?.toLowerCase().includes('puff') ||
-                  i.productName?.toLowerCase().includes('bake') ||
-                  i.name?.toLowerCase().includes('bake')
-                );
-                const orderBranchCode = (order as any).branchId || order.branch;
-                const isAwaitingTransfer = isHotBake && toBranchId(orderBranchCode) !== 'varasiya' && activeTransfer && activeTransfer.status !== 'RECEIVED';
-
-                if (isAwaitingTransfer) {
-                  return (
-                    <button 
-                      disabled
-                      className="flex-1 min-w-[130px] bg-amber-100 text-amber-800 border border-amber-300 px-3 py-3 rounded-xl text-xs font-black cursor-not-allowed flex items-center justify-center gap-1.5 shadow-sm opacity-90"
-                      title="Item is at Warasiya Factory / In transit. Awaiting driver arrival at Uma."
-                    >
-                      <Lock1 className="w-4 h-4 text-amber-700" /> Awaiting Arrival from Factory
-                    </button>
-                  );
-                }
-
-                return (
-                  <button 
-                    disabled={isHandingOver}
-                    onClick={handleHandover} 
-                    className="flex-1 min-w-[130px] bg-[#3E2723] text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-[#2c1c19] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform disabled:opacity-50"
-                  >
-                    {isHandingOver ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Handing over...</span>
-                      </>
-                    ) : (
-                      <>
-                        <TickCircle className="w-5 h-5 text-[#C5A059]" /> Handover Cake
-                      </>
-                    )}
-                  </button>
-                );
-              })()}
-
-              {/* Quick Call & WhatsApp Buttons on Mobile Phone */}
-              <a 
-                href={`tel:${order.customerPhone}`}
-                className="md:hidden p-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl font-black flex items-center justify-center active:scale-95 shadow-sm"
-                title="Call Customer"
-              >
-                <Call className="w-5 h-5" />
-              </a>
-              <button 
-                onClick={() => {
-                  const cleanPhone = order.customerPhone.replace(/\D/g, "");
-                  const waUrl = `https://wa.me/91${cleanPhone}?text=Hi%20${encodeURIComponent(order.customerName.split(' ')[0])},%20regarding%20your%20Gopal%20Cakes%20order%20${encodeURIComponent(order.orderNumber || order.id)}:`;
-                  window.open(waUrl, "_blank");
-                  onWhatsApp(`Opened WhatsApp for ${order.customerPhone}`);
-                }}
-                className="md:hidden p-3 bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 rounded-xl font-black flex items-center justify-center active:scale-95 shadow-sm"
-                title="WhatsApp Customer"
-              >
-                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              </button>
-              
-              {/* Desktop Secondary Buttons */}
-              <div className="hidden md:flex gap-2 flex-1">
-                 {canEdit && (
-                   <button onClick={onAssignVendor} className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-purple-700 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
-                     <Reserve className="w-3.5 h-3.5" /> Assign Vendor
-                   </button>
-                 )}
-                 {canEdit && (
-                   <button onClick={onEdit} className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
-                     <Edit2 className="w-3.5 h-3.5" /> Edit Order
-                   </button>
-                 )}
-                 <button onClick={onViewTimeline} className="px-3 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors shadow-sm">
-                   <Clock className="w-3.5 h-3.5 text-[#C5A059]" /> Timeline
-                 </button>
-                 <button onClick={onReceipt} className="px-3 py-2 bg-white border border-[#C5A059]/40 text-[#3E2723] rounded-lg text-xs font-bold hover:bg-[#FDFBF7] flex items-center justify-center gap-1.5 transition-colors shadow-sm">
-                   <Receipt21 className="w-3.5 h-3.5 text-[#C5A059]" /> Bill
-                 </button>
-                 <a href={`tel:${order.customerPhone}`} className="px-3 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors shadow-sm">
-                   <Call className="w-3.5 h-3.5 text-blue-600" /> Call
-                 </a>
-                 <button 
-                   onClick={() => {
-                     const cleanPhone = order.customerPhone.replace(/\D/g, "");
-                     const waUrl = `https://wa.me/91${cleanPhone}?text=Hi%20${encodeURIComponent(order.customerName.split(' ')[0])},%20regarding%20your%20Gopal%20Cakes%20order%20${encodeURIComponent(order.orderNumber || order.id)}:`;
-                     window.open(waUrl, "_blank");
-                     onWhatsApp(`Opened WhatsApp for ${order.customerPhone}`);
-                   }} 
-                   className="px-3 py-2 bg-[#25D366] text-white rounded-lg text-xs font-bold hover:bg-[#128C7E] flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-                 >
-                   WhatsApp
-                 </button>
-              </div>
-
-              {/* Mobile Menu for Edit / Timeline / Vendor */}
-              <button onClick={() => setShowMoreActions(true)} className="md:hidden px-3 py-3 bg-gray-100 text-gray-800 rounded-xl font-bold flex items-center justify-center transition-colors active:scale-95 shadow-sm border border-gray-200">
-                 <span className="text-xl leading-none -mt-1 font-serif">&#8942;</span>
-              </button>
-            </div>
-
-            {/* Mobile Bottom Sheet for More Actions */}
-            <AnimatePresence>
-              {showMoreActions && (
-                <>
-                  <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setShowMoreActions(false)} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] md:hidden" />
-                  <motion.div initial={{y:"100%"}} animate={{y:0}} exit={{y:"100%"}} transition={{type:"spring", bounce:0, duration:0.4}} className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 pb-safe pt-4 z-[160] md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.15)] flex flex-col gap-3">
-                    <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
-                    <h4 className="text-center font-black text-[#3E2723] font-serif text-xl mb-4">Order Actions: {order.orderNumber || order.id}</h4>
-                    
-                    {canEdit && (
-                      <button onClick={() => { setShowMoreActions(false); onEdit(); }} className="w-full bg-blue-50 text-blue-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-blue-200 active:scale-95 transition-transform text-left">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0"><Edit2 className="w-5 h-5 text-blue-600" /></div>
-                        <div>
-                          <div className="text-sm font-black">Edit Order Details</div>
-                          <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Modify items, prices & customer info</div>
-                        </div>
-                      </button>
-                    )}
-                    {canEdit && (
-                      <button onClick={() => { setShowMoreActions(false); onAssignVendor(); }} className="w-full bg-purple-50 text-purple-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-purple-200 active:scale-95 transition-transform text-left">
-                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0"><Reserve className="w-5 h-5 text-purple-600" /></div>
-                        <div>
-                          <div className="text-sm font-black">Assign Vendor Partner</div>
-                          <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Assign photo prints, flowers or toppers</div>
-                        </div>
-                      </button>
-                    )}
-                    <button onClick={() => { setShowMoreActions(false); onViewTimeline(); }} className="w-full bg-orange-50 text-orange-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-orange-200 active:scale-95 transition-transform text-left">
-                      <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0"><Clock className="w-5 h-5 text-orange-600" /></div>
-                      <div>
-                        <div className="text-sm font-black">View Order Timeline</div>
-                        <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Track status changes & kitchen events</div>
-                      </div>
-                    </button>
-                    <a href={`tel:${order.customerPhone}`} onClick={() => setShowMoreActions(false)} className="w-full bg-emerald-50 text-emerald-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-emerald-200 active:scale-95 transition-transform text-left">
-                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0"><Call className="w-5 h-5 text-emerald-600" /></div>
-                      <div>
-                        <div className="text-sm font-black">Call Customer</div>
-                        <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">{order.customerPhone}</div>
-                      </div>
-                    </a>
-                    
-                    <button onClick={() => setShowMoreActions(false)} className="w-full mt-2 py-4 rounded-2xl font-black text-gray-600 bg-gray-100 active:scale-95 transition-transform">
-                      Close Menu
-                    </button>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
           </div>
         </div>
+
+        {/* 8. Card 6: DUE TIME (Matching AI Mockup Mint Green Box + Clock Icon + Timestamp) */}
+        <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3.5 sm:gap-4 shadow-2xs">
+          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-full bg-emerald-100/90 text-emerald-800 flex items-center justify-center shrink-0">
+              <Clock className="w-6 h-6 text-emerald-700" variant="Bold" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-800 block leading-tight">
+                DUE TIME
+              </span>
+              <p className="text-xl sm:text-2xl font-black text-emerald-950 tracking-tight mt-0.5" suppressHydrationWarning>
+                {formattedDueTime}
+              </p>
+            </div>
+          </div>
+
+          {/* 1-Hour SLA Warning pill if urgent */}
+          {isUrgentSla && (
+            <span className="bg-rose-500 text-white text-[10px] sm:text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-xl shadow-xs animate-pulse shrink-0">
+              1-Hour SLA Warning!
+            </span>
+          )}
+        </div>
+
+        {/* Bargain Negotiation Control Panel (if QUOTE_DRAFT) */}
+        {order.status === "QUOTE_DRAFT" && (
+          <div className="p-3 bg-primary/5 rounded-2xl border border-primary/20 space-y-3">
+            <span className="text-[10px] font-black text-primary uppercase tracking-widest block">Send Quote to Customer</span>
+            
+            <div className="flex gap-2 items-center">
+              <span className="text-xs font-bold text-muted-foreground">Price: ₹</span>
+              <input 
+                type="number"
+                min="0"
+                value={quotePrice || ''}
+                onWheel={(e) => e.currentTarget.blur()}
+                onKeyDown={(e) => {
+                  if (['-', '+', 'e', 'E', '.'].includes(e.key)) e.preventDefault();
+                }}
+                onChange={(e) => {
+                  const val = Math.max(0, parseInt(e.target.value) || 0);
+                  setQuotePrice(val);
+                }}
+                className="flex-1 bg-white border border-border rounded-md px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
+                placeholder="Enter custom cake price..."
+              />
+            </div>
+
+            <div className="flex gap-2">
+              {[0, 50, 100, 150].map(amt => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setSelectedDiscount(amt)}
+                  className={`flex-1 py-1 rounded text-xs font-bold transition-all ${selectedDiscount === amt ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-white border border-border text-foreground hover:bg-secondary'}`}
+                >
+                  {amt === 0 ? 'No Disc.' : `-₹${amt}`}
+                </button>
+              ))}
+            </div>
+            <button
+              disabled={submittingQuote || quotePrice <= 0}
+              onClick={handleSendQuote}
+              className="w-full bg-[#C5A059] text-white py-2 rounded-md text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+            >
+              Send Negotiated Quote (Final Total: ₹{Math.max(0, quotePrice - selectedDiscount)})
+            </button>
+          </div>
+        )}
+
+        {/* 9. Action Bar: 1-Tap Workflow Buttons + Desktop / Mobile Menu */}
+        <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-2 items-center">
+          {order.status === "QUOTE_SENT" && (
+            <button 
+              onClick={async () => {
+                try {
+                  await updateOrderStatus(order.id, "QUOTE_SENT", false, "Salesperson", { basePrice: order.grandTotal });
+                  onWhatsApp(`Automated WhatsApp quote re-sent via Meta API to ${order.customerPhone}`);
+                  onMutated();
+                } catch (e) {
+                  alert("Failed to re-send automated quote");
+                }
+              }} 
+              className="flex-1 min-w-[150px] bg-[#25D366] text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-[#128C7E] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"
+            >
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Resend Automated Quote (Meta API)
+            </button>
+          )}
+          {order.status==="NEW" && (
+            <button onClick={handleApprove} className="flex-1 min-w-[120px] bg-emerald-600 text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
+              <TickCircle className="w-5 h-5" /> Approve
+            </button>
+          )}
+          {order.pendingBalance > 0 && !(["NEW","QUOTE_DRAFT","QUOTE_SENT","COMPLETED","CANCELLED"] as string[]).includes(order.status as string) && (
+            <button onClick={handleCollectPayment} className="flex-1 min-w-[140px] bg-amber-500 text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-amber-600 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
+              <Gift className="w-5 h-5" /> Collect ₹{order.pendingBalance.toLocaleString("en-IN")}
+            </button>
+          )}
+          {order.status === "READY_FOR_PICKUP" && (order.orderType === "pickup" || (order as any).deliveryType === "PICKUP") && (() => {
+            const hasReceivedTransfer = (order as any).transfers?.some((t: any) => t.status === 'RECEIVED');
+            return (
+              <button 
+                disabled={isNotifyingReady}
+                onClick={handleNotifyReady} 
+                className={`flex-1 min-w-[150px] text-white px-3 py-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform disabled:opacity-50 ${hasReceivedTransfer ? 'bg-purple-600 hover:bg-purple-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                title={hasReceivedTransfer ? "Cake has arrived at this branch — notify customer via WhatsApp" : "Notify customer via WhatsApp that cake is ready for pickup at store"}
+              >
+                {isNotifyingReady ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Notifying...</span>
+                  </>
+                ) : (
+                  <>
+                    <Notification className="w-4 h-4 text-white" />
+                    {hasReceivedTransfer ? "Notify Customer" : "Ready For Pickup"}
+                  </>
+                )}
+              </button>
+            );
+          })()}
+
+          {order.pendingBalance === 0 && order.status === "READY_FOR_PICKUP" && (order.orderType === "pickup" || (order as any).deliveryType === "PICKUP") && (() => {
+            const transfers = (order as any).transfers || [];
+            const activeTransfer = transfers.find((t: any) => ['PENDING', 'ACCEPTED', 'IN_TRANSIT'].includes(t.status));
+            const isHotBake = order.items?.some((i: any) => 
+              i.categoryId === 'cmuts899k0000ygu3pigymkyy' ||
+              i.productName?.toLowerCase().includes('puff') ||
+              i.name?.toLowerCase().includes('puff') ||
+              i.productName?.toLowerCase().includes('bake') ||
+              i.name?.toLowerCase().includes('bake')
+            );
+            const orderBranchCode = (order as any).branchId || order.branch;
+            const isAwaitingTransfer = isHotBake && toBranchId(orderBranchCode) !== 'varasiya' && activeTransfer && activeTransfer.status !== 'RECEIVED';
+
+            if (isAwaitingTransfer) {
+              return (
+                <button 
+                  disabled
+                  className="flex-1 min-w-[130px] bg-amber-100 text-amber-800 border border-amber-300 px-3 py-3 rounded-xl text-xs font-black cursor-not-allowed flex items-center justify-center gap-1.5 shadow-sm opacity-90"
+                  title="Item is at Warasiya Factory / In transit. Awaiting driver arrival at Uma."
+                >
+                  <Lock1 className="w-4 h-4 text-amber-700" /> Awaiting Arrival from Factory
+                </button>
+              );
+            }
+
+            return (
+              <button 
+                disabled={isHandingOver}
+                onClick={handleHandover} 
+                className="flex-1 min-w-[130px] bg-[#3E2723] text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-[#2c1c19] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform disabled:opacity-50"
+              >
+                {isHandingOver ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Handing over...</span>
+                  </>
+                ) : (
+                  <>
+                    <TickCircle className="w-5 h-5 text-[#C5A059]" /> Handover Cake
+                  </>
+                )}
+              </button>
+            );
+          })()}
+
+          {/* Quick Call & WhatsApp Buttons on Mobile */}
+          <a 
+            href={`tel:${order.customerPhone}`}
+            className="md:hidden p-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl font-black flex items-center justify-center active:scale-95 shadow-sm"
+            title="Call Customer"
+          >
+            <Call className="w-5 h-5" />
+          </a>
+          <button 
+            onClick={() => {
+              const cleanPhone = order.customerPhone.replace(/\D/g, "");
+              const waUrl = `https://wa.me/91${cleanPhone}?text=Hi%20${encodeURIComponent(order.customerName.split(' ')[0])},%20regarding%20your%20Gopal%20Cakes%20order%20${encodeURIComponent(order.orderNumber || order.id)}:`;
+              window.open(waUrl, "_blank");
+              onWhatsApp(`Opened WhatsApp for ${order.customerPhone}`);
+            }}
+            className="md:hidden p-3 bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 rounded-xl font-black flex items-center justify-center active:scale-95 shadow-sm"
+            title="WhatsApp Customer"
+          >
+            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          </button>
+          
+          {/* Desktop Secondary Buttons */}
+          <div className="hidden md:flex gap-2 flex-1">
+             {canEdit && (
+               <button onClick={onAssignVendor} className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-purple-700 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
+                 <Reserve className="w-3.5 h-3.5" /> Assign Vendor
+               </button>
+             )}
+             {canEdit && (
+               <button onClick={onEdit} className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95">
+                 <Edit2 className="w-3.5 h-3.5" /> Edit Order
+               </button>
+             )}
+             <button onClick={onViewTimeline} className="px-3 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors shadow-sm">
+               <Clock className="w-3.5 h-3.5 text-[#C5A059]" /> Timeline
+             </button>
+             <button onClick={onReceipt} className="px-3 py-2 bg-white border border-[#C5A059]/40 text-[#3E2723] rounded-lg text-xs font-bold hover:bg-[#FDFBF7] flex items-center justify-center gap-1.5 transition-colors shadow-sm">
+               <Receipt21 className="w-3.5 h-3.5 text-[#C5A059]" /> Bill
+             </button>
+             <a href={`tel:${order.customerPhone}`} className="px-3 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors shadow-sm">
+               <Call className="w-3.5 h-3.5 text-blue-600" /> Call
+             </a>
+             <button 
+               onClick={() => {
+                 const cleanPhone = order.customerPhone.replace(/\D/g, "");
+                 const waUrl = `https://wa.me/91${cleanPhone}?text=Hi%20${encodeURIComponent(order.customerName.split(' ')[0])},%20regarding%20your%20Gopal%20Cakes%20order%20${encodeURIComponent(order.orderNumber || order.id)}:`;
+                 window.open(waUrl, "_blank");
+                 onWhatsApp(`Opened WhatsApp for ${order.customerPhone}`);
+               }} 
+               className="px-3 py-2 bg-[#25D366] text-white rounded-lg text-xs font-bold hover:bg-[#128C7E] flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+             >
+               WhatsApp
+             </button>
+          </div>
+
+          {/* Mobile Menu for Edit / Timeline / Vendor */}
+          <button onClick={() => setShowMoreActions(true)} className="md:hidden px-3.5 py-3 bg-gray-100 text-gray-800 rounded-xl font-bold flex items-center justify-center transition-colors active:scale-95 shadow-sm border border-gray-200">
+             <span className="text-xl leading-none -mt-1 font-serif">&#8942;</span>
+          </button>
+        </div>
+
+        {/* Mobile Bottom Sheet for More Actions */}
+        <AnimatePresence>
+          {showMoreActions && (
+            <>
+              <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setShowMoreActions(false)} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] md:hidden" />
+              <motion.div initial={{y:"100%"}} animate={{y:0}} exit={{y:"100%"}} transition={{type:"spring", bounce:0, duration:0.4}} className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2rem] p-6 pb-safe pt-4 z-[160] md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.15)] flex flex-col gap-3">
+                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
+                <h4 className="text-center font-black text-[#3E2723] font-serif text-xl mb-4">Order Actions: {order.orderNumber || order.id}</h4>
+                
+                {canEdit && (
+                  <button onClick={() => { setShowMoreActions(false); onEdit(); }} className="w-full bg-blue-50 text-blue-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-blue-200 active:scale-95 transition-transform text-left">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0"><Edit2 className="w-5 h-5 text-blue-600" /></div>
+                    <div>
+                      <div className="text-sm font-black">Edit Order Details</div>
+                      <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Modify items, prices & customer info</div>
+                    </div>
+                  </button>
+                )}
+                {canEdit && (
+                  <button onClick={() => { setShowMoreActions(false); onAssignVendor(); }} className="w-full bg-purple-50 text-purple-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-purple-200 active:scale-95 transition-transform text-left">
+                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0"><Reserve className="w-5 h-5 text-purple-600" /></div>
+                    <div>
+                      <div className="text-sm font-black">Assign Vendor Partner</div>
+                      <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Assign photo prints, flowers or toppers</div>
+                    </div>
+                  </button>
+                )}
+                <button onClick={() => { setShowMoreActions(false); onViewTimeline(); }} className="w-full bg-orange-50 text-orange-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-orange-200 active:scale-95 transition-transform text-left">
+                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0"><Clock className="w-5 h-5 text-orange-600" /></div>
+                  <div>
+                    <div className="text-sm font-black">View Order Timeline</div>
+                    <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Track status changes & kitchen events</div>
+                  </div>
+                </button>
+                <a href={`tel:${order.customerPhone}`} onClick={() => setShowMoreActions(false)} className="w-full bg-emerald-50 text-emerald-700 py-4 rounded-2xl font-bold flex items-center gap-3 px-4 border border-emerald-200 active:scale-95 transition-transform text-left">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0"><Call className="w-5 h-5 text-emerald-600" /></div>
+                  <div>
+                    <div className="text-sm font-black">Call Customer</div>
+                    <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">{order.customerPhone}</div>
+                  </div>
+                </a>
+                
+                <button onClick={() => setShowMoreActions(false)} className="w-full mt-2 py-4 rounded-2xl font-black text-gray-600 bg-gray-100 active:scale-95 transition-transform">
+                  Close Menu
+                </button>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* Fullscreen Cake Image Zoom Modal */}
