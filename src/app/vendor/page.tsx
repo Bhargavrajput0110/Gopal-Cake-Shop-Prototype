@@ -581,21 +581,25 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
                 )}
               </div>
            </div>
-        ) : (p.designImageUrl || task.designImageUrl || task.image) ? (
+        ) : (p.designImageUrl || task.designImageUrl || task.image || p.image || p.gallery?.[0]) ? (
           <div className="relative flex-1 flex items-center justify-center group/img min-h-[340px] bg-black">
-            <img src={p.designImageUrl || task.designImageUrl || task.image} alt="Reference" className="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover/img:scale-105" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.designImageUrl || task.designImageUrl || task.image || p.image || p.gallery?.[0]} alt="Reference" className="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover/img:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
             
             {/* Hover Action */}
             <div className="absolute inset-0 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-4 z-10">
-              <button onClick={() => onImageClick(p.designImageUrl || task.designImageUrl || task.image)} className="p-4 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-2xl border border-white/40" title="View Fullscreen">
+              <button onClick={() => onImageClick(p.designImageUrl || task.designImageUrl || task.image || p.image || p.gallery?.[0])} className="p-4 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-2xl border border-white/40" title="View Fullscreen">
                 <Maximize className="w-6 h-6" />
               </button>
             </div>
             
             <div className="absolute bottom-4 left-6 right-6 flex justify-between items-center z-10">
               <span className="font-ui text-[9px] uppercase tracking-widest font-black text-amber-300 bg-black/60 px-3 py-1 rounded-full backdrop-blur-md border border-amber-400/30">
-                🎂 Cake Design & Reference Photo
+                {task.productName?.toLowerCase().includes('flower') || task.productName?.toLowerCase().includes('bouquet') || p.productName?.toLowerCase().includes('bouquet') || task.assignedVendor?.role === 'VENDOR_FLORIST' || task.vendorType === 'flower'
+                  ? '🌸 Bouquet & Floral Reference'
+                  : '🎂 Design & Reference Photo'
+                }
               </span>
             </div>
           </div>
@@ -606,7 +610,7 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
               📝
             </div>
             <span className="font-ui text-[9px] uppercase tracking-widest font-black text-amber-400 mb-1">Requirement Specification</span>
-            <h3 className="font-display font-black text-2xl text-white mb-3">{task.productName}</h3>
+            <h3 className="font-display font-black text-2xl text-white mb-3">{p.productName || task.productName}</h3>
             <div className="bg-white/10 border border-white/15 p-4 rounded-xl mb-4 backdrop-blur-md">
               <p className="font-ui text-[8px] uppercase tracking-widest font-black text-purple-300 mb-1">Custom Notes</p>
               <p className="font-editorial italic text-amber-200 text-sm font-bold leading-relaxed whitespace-pre-wrap">
@@ -655,7 +659,7 @@ function TaskCard({ task, o, p, statusLabel, btnAction, btnLabel, btnColor, onUp
                 </button>
               )}
             </div>
-            <h2 className={`font-display font-black text-3xl md:text-4xl leading-tight ${isCompleted ? 'text-gray-500' : 'text-gray-900'}`}>{task.productName}</h2>
+            <h2 className={`font-display font-black text-3xl md:text-4xl leading-tight ${isCompleted ? 'text-gray-500' : 'text-gray-900'}`}>{p.productName || task.productName}</h2>
           </div>
           {task.quantity > 1 && (
           <div className="text-right shrink-0 bg-amber-50/70 border border-amber-200/80 px-5 py-3 rounded-2xl shadow-sm">

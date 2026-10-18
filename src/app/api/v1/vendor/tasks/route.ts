@@ -68,13 +68,21 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
       parentItem: {
         select: {
           productName: true,
+          image: true,
           designImageUrl: true,
           notes: true,
-          media: true
+          media: true,
+          product: {
+            select: {
+              name: true,
+              thumbnail: true,
+              mediumImage: true
+            }
+          }
         }
       },
       assignedVendor: {
-        select: { id: true, name: true, role: true }
+        select: { id: true, name: true, role: true, phone: true }
       }
     },
     orderBy: { createdAt: 'asc' }
@@ -101,12 +109,20 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
         include: {
           items: {
             where: { parentItemId: { not: null } }, // only fetch child items from order
-            include: { media: true, parentItem: { include: { media: true } } }
+            include: { 
+              media: true, 
+              parentItem: { 
+                include: { 
+                  media: true,
+                  product: { select: { thumbnail: true, mediumImage: true } }
+                } 
+              } 
+            }
           },
           branch: { select: { name: true } }
         }
       },
-      vendor: { select: { id: true, name: true, role: true } }
+      vendor: { select: { id: true, name: true, role: true, phone: true } }
     },
     orderBy: { createdAt: 'asc' }
   });
@@ -116,41 +132,53 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
     const parentMedia = item.parentItem?.media || [];
     const itemMedia = item.media || [];
     const productionMedia = parentMedia.find((m: any) => m.type === 'PRODUCTION') || itemMedia.find((m: any) => m.type === 'PRODUCTION');
-    const cakeImg = item.designImageUrl || item.image || item.parentItem?.designImageUrl || "";
-    const customerPhoto = productionMedia?.url || item.image || item.designImageUrl || "";
+    const referenceMedia = parentMedia.find((m: any) => m.type === 'REFERENCE') || itemMedia.find((m: any) => m.type === 'REFERENCE');
+
+    const cakeImg = item.image 
+      || item.designImageUrl 
+      || item.parentItem?.image 
+      || item.parentItem?.designImageUrl 
+      || item.parentItem?.product?.thumbnail 
+      || item.parentItem?.product?.mediumImage 
+      || referenceMedia?.url 
+      || "";
+
+    const customerPhoto = productionMedia?.url || item.image || item.parentItem?.image || item.designImageUrl || "";
     const gallery = Array.from(new Set([cakeImg, customerPhoto, ...itemMedia.map((m: any) => m.url), ...parentMedia.map((m: any) => m.url)].filter(Boolean)));
+    const effectiveInstructions = item.notes || item.parentItem?.notes || "";
+    const displayName = item.parentItem?.productName || item.productName;
 
-      // Normalize OrderItem status to vendor task lifecycle
-      let vendorStatus = 'pending';
-      if (item.status === 'CHEF_ACCEPTED') vendorStatus = 'accepted';
-      else if (item.status === 'MAKING' || item.status === 'DECORATING') vendorStatus = 'in_production';
-      else if (['READY_FOR_PICKUP', 'PACKED'].includes(item.status)) vendorStatus = 'ready';
-      else if (['DELIVERED', 'COMPLETED'].includes(item.status)) vendorStatus = 'delivered';
-      else vendorStatus = 'pending';
+    // Normalize OrderItem status to vendor task lifecycle
+    let vendorStatus = 'pending';
+    if (item.status === 'CHEF_ACCEPTED') vendorStatus = 'accepted';
+    else if (item.status === 'MAKING' || item.status === 'DECORATING') vendorStatus = 'in_production';
+    else if (['READY_FOR_PICKUP', 'PACKED'].includes(item.status)) vendorStatus = 'ready';
+    else if (['DELIVERED', 'COMPLETED'].includes(item.status)) vendorStatus = 'delivered';
+    else vendorStatus = 'pending';
 
-      return {
-        id: item.id,
-        sourceType: 'ORDER_ITEM',
-        orderItemId: item.id,
-        vendorId: item.assignedVendor?.id || user.id,
-        assignedVendor: item.assignedVendor,
-        instructions: item.notes || "",
-        designImageUrl: cakeImg,
-        customerPhotoUrl: customerPhoto,
-        order: {
-          id: item.order?.id,
-          orderNumber: item.order?.orderNumber || "Task",
-          status: item.order?.status,
-          branchId: item.order?.branchId,
-          branch: { name: item.order?.branch?.name || "Kitchen" },
-          targetDate: item.order?.targetDate
-        },
-        productName: item.productName,
-        quantity: item.quantity,
-        status: vendorStatus,
+    return {
+      id: item.id,
+      sourceType: 'ORDER_ITEM',
+      orderItemId: item.id,
+      vendorId: item.assignedVendor?.id || user.id,
+      assignedVendor: item.assignedVendor,
+      instructions: effectiveInstructions,
+      designImageUrl: cakeImg,
+      customerPhotoUrl: customerPhoto,
+      order: {
+        id: item.order?.id,
+        orderNumber: item.order?.orderNumber || "Task",
+        status: item.order?.status,
+        branchId: item.order?.branchId,
+        branch: { name: item.order?.branch?.name || "Kitchen" },
+        targetDate: item.order?.targetDate
+      },
+      productName: displayName,
+      quantity: item.quantity,
+      status: vendorStatus,
       parentItem: {
-        productName: item.parentItem?.productName || item.productName || "Custom Assignment",
-        notes: item.notes || item.parentItem?.notes || "",
+        productName: displayName,
+        notes: effectiveInstructions,
         designImageUrl: cakeImg,
         customerPhotoUrl: customerPhoto,
         gallery: gallery
@@ -174,17 +202,33 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
 
     // Find the CORRECT child item matching this vendor type
     const matchingChildItem = items.find((i: any) =>
-      i.productName === expectedName
+      i.productName === expectedName || (expectedName && i.productName?.includes(expectedName.replace(' Component', '')))
     ) || items[0] || {};
 
     const notesJson = typeof vt.notes === 'object' && vt.notes !== null ? vt.notes : {};
     const itemMedia = matchingChildItem.media || [];
     const parentMedia = matchingChildItem.parentItem?.media || [];
-    const productionMedia = itemMedia.find((m: any) => m.type === 'PRODUCTION');
+    const productionMedia = itemMedia.find((m: any) => m.type === 'PRODUCTION') || parentMedia.find((m: any) => m.type === 'PRODUCTION');
 
-    const cakeImg = notesJson.designImageUrl || matchingChildItem.designImageUrl || matchingChildItem.image || matchingChildItem.parentItem?.designImageUrl || "";
-    const customerPhoto = notesJson.photoUrl || productionMedia?.url || matchingChildItem.designImageUrl || matchingChildItem.image || "";
+    const cakeImg = notesJson.designImageUrl 
+      || matchingChildItem.image 
+      || matchingChildItem.designImageUrl 
+      || matchingChildItem.parentItem?.image 
+      || matchingChildItem.parentItem?.designImageUrl 
+      || matchingChildItem.parentItem?.product?.thumbnail 
+      || matchingChildItem.parentItem?.product?.mediumImage 
+      || "";
+
+    const customerPhoto = notesJson.photoUrl 
+      || productionMedia?.url 
+      || matchingChildItem.image 
+      || matchingChildItem.parentItem?.image 
+      || matchingChildItem.designImageUrl 
+      || "";
+
     const gallery = Array.from(new Set([cakeImg, customerPhoto, ...itemMedia.map((m: any) => m.url), ...parentMedia.map((m: any) => m.url)].filter(Boolean)));
+    const effectiveInstructions = vt.instructions || matchingChildItem.notes || matchingChildItem.parentItem?.notes || "";
+    const displayName = matchingChildItem.parentItem?.productName || matchingChildItem.productName || expectedName || vt.vendorType + ' Component';
 
     return {
       id: vt.id,
@@ -192,7 +236,7 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
       vendorTaskId: vt.id,
       vendorId: vt.vendorId || user.id,
       assignedVendor: vt.vendor,
-      instructions: vt.instructions || "",
+      instructions: effectiveInstructions,
       order: {
         id: vt.order?.id,
         orderNumber: vt.order?.orderNumber || "Task",
@@ -201,15 +245,14 @@ export const GET = withApiHandler(async (ctx: HandlerContext) => {
         branch: { name: vt.order?.branch?.name || "Kitchen" },
         targetDate: vt.order?.targetDate
       },
-      // Show the CORRECT component name — not whatever item[0] is
-      productName: expectedName || vt.vendorType + ' Component',
+      productName: displayName,
       quantity: matchingChildItem.quantity || 1,
       status: vt.status || 'accepted',
       designImageUrl: cakeImg,
       customerPhotoUrl: customerPhoto,
       parentItem: {
-        productName: matchingChildItem.parentItem?.productName || vt.order?.orderNumber || "Custom Assignment",
-        notes: vt.instructions || "",
+        productName: displayName,
+        notes: effectiveInstructions,
         designImageUrl: cakeImg,
         customerPhotoUrl: customerPhoto,
         gallery: gallery

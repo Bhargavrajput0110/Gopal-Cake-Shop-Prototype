@@ -100,25 +100,106 @@ export default function VendorManagementPage() {
     }
   };
 
-  const renderTaskCard = (task: any, borderColor: string) => (
-    <div key={task.id} className={`bg-card p-4 rounded-xl shadow-sm border ${borderColor}`}>
-      <div className="flex justify-between items-start mb-2">
-        <span className="font-bold text-sm">{task.order?.orderNumber || "Unknown"}</span>
-        {getStatusBadge(task.status)}
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+
+  const renderTaskCard = (task: any, borderColor: string) => {
+    const bouquetImg = task.parentItem?.gallery?.[0] 
+      || task.designImageUrl 
+      || task.customerPhotoUrl 
+      || task.parentItem?.designImageUrl 
+      || task.image 
+      || task.parentItem?.image 
+      || "";
+
+    const vendorPhone = task.assignedVendor?.phone 
+      || (task.assignedVendor?.role === 'VENDOR_FLORIST' ? '9558951977' : '') 
+      || (task.productName?.toLowerCase().includes('flower') || task.productName?.toLowerCase().includes('bouquet') ? '9558951977' : '');
+
+    const itemName = task.parentItem?.productName || task.productName || "Custom Order";
+    const orderNum = task.order?.orderNumber || task.order?.id?.slice(-6) || "Order";
+    const dueDateStr = task.order?.targetDate ? format(new Date(task.order.targetDate), 'dd MMM, hh:mm a') : "ASAP";
+    const branchName = task.order?.branch?.name || "Main Kitchen";
+    const notesStr = task.instructions || task.parentItem?.notes || "";
+
+    const waText = encodeURIComponent(
+      `🌸 *GOPAL CAKES — VENDOR DISPATCH*\n\n` +
+      `*Order:* #${orderNum}\n` +
+      `*Item:* ${itemName} (Qty: ${task.quantity || 1})\n` +
+      `*Due:* ${dueDateStr}\n` +
+      `*Branch:* ${branchName}\n` +
+      (notesStr ? `*Notes:* ${notesStr}\n` : '') +
+      (bouquetImg ? `*Photo Link:* ${bouquetImg}\n` : '') +
+      `\nPlease confirm acceptance.`
+    );
+
+    return (
+      <div key={task.id} className={`bg-card p-4 rounded-xl shadow-sm border ${borderColor} flex flex-col justify-between gap-3`}>
+        <div>
+          <div className="flex justify-between items-start mb-2">
+            <span className="font-mono font-bold text-sm bg-gray-100 px-2 py-0.5 rounded">#{orderNum}</span>
+            {getStatusBadge(task.status)}
+          </div>
+
+          <div className="flex gap-3 items-start mt-2">
+            {bouquetImg ? (
+              <div 
+                onClick={() => setFullscreenImage(bouquetImg)}
+                className="w-16 h-16 rounded-lg overflow-hidden border border-border shrink-0 cursor-pointer relative group bg-black/5"
+                title="Click to view full photo"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={bouquetImg} alt={itemName} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[9px] font-bold">
+                  🔍
+                </div>
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-lg bg-gray-100 border border-border shrink-0 flex items-center justify-center text-xs text-gray-400 font-bold">
+                No Img
+              </div>
+            )}
+
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground leading-tight">{itemName}</p>
+              {task.assignedVendor?.name && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  👤 <span className="font-semibold text-gray-800">{task.assignedVendor.name}</span>
+                  {vendorPhone && <span className="ml-1 text-[10px] text-gray-500 font-mono">({vendorPhone})</span>}
+                </p>
+              )}
+              {notesStr && (
+                <p className="text-xs bg-amber-50 text-amber-900 border border-amber-200 p-1.5 rounded-md mt-1.5 font-medium italic">
+                  📝 &quot;{notesStr}&quot;
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-border flex flex-col gap-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="flex items-center gap-1 font-semibold">
+              <Clock className="w-3.5 h-3.5 text-amber-600" /> 
+              Due: {dueDateStr}
+            </span>
+            <span className="text-[10px] uppercase font-bold text-gray-500">{branchName}</span>
+          </div>
+
+          {vendorPhone && (
+            <a
+              href={`https://wa.me/91${vendorPhone.replace(/\D/g, '')}?text=${waText}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-xs active:scale-[0.98]"
+            >
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.099.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.158.572 4.186 1.569 5.941l-1.669 6.095 6.257-1.641c1.706.929 3.659 1.458 5.738 1.458 6.627 0 12-5.373 12-12 0-6.627-5.373-12-12-12z"/></svg>
+              Send Photo & Details on WhatsApp
+            </a>
+          )}
+        </div>
       </div>
-      <p className="text-sm font-medium">{task.productName || task.parentItem?.productName || "Custom Request"}</p>
-      {task.assignedVendor?.name && (
-        <p className="text-xs text-muted-foreground mt-1">Assigned to: {task.assignedVendor.name}</p>
-      )}
-      <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <Clock className="w-3 h-3" /> 
-          Due: {task.order?.targetDate ? format(new Date(task.order.targetDate), 'MMM d, p') : "N/A"}
-        </span>
-        <button className="text-primary font-bold hover:underline">Re-assign</button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderVendorList = (vList: any[]) => {
     if (vList.length === 0) return null;
@@ -294,6 +375,27 @@ export default function VendorManagementPage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Fullscreen Image Lightbox Modal */}
+      {fullscreenImage && (
+        <div 
+          onClick={() => setFullscreenImage(null)} 
+          className="fixed inset-0 bg-black/95 backdrop-blur-md z-[300] flex flex-col items-center justify-center p-4 cursor-pointer"
+        >
+          <button 
+            onClick={() => setFullscreenImage(null)} 
+            className="absolute top-6 right-6 text-white bg-white/20 p-3 rounded-full hover:bg-white/30 transition-all text-xl font-bold leading-none"
+          >
+            ✕
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={fullscreenImage} 
+            alt="Fullscreen preview" 
+            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/20" 
+          />
         </div>
       )}
     </div>

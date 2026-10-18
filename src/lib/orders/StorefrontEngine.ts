@@ -295,14 +295,20 @@ export class StorefrontEngine {
         const vendorNotes: Record<string, string> = (item as any).vendorNotes || {};
         for (const vRole of mergedRequiredVendors) {
           const vendor = allVendors.find(v => v.role === vRole)
-          const vendorNote = vendorNotes[vRole as string] || '';
+          const vendorNote = vendorNotes[vRole as string] || (item.notes ? item.notes : '');
+          const componentPrefix = (vRole as string).replace('VENDOR_', '');
+          const itemImg = product.thumbnail || (item as any).image || design?.imageUrl || (item as any).designImageUrl || null;
+          const designImg = design?.imageUrl || (item as any).designImageUrl || null;
+
           allChildItemsToCreate.push({
             parentItemId,
-            productName: `${(vRole as string).replace('VENDOR_', '')} Component`,
+            productName: `${componentPrefix} Component`,
             price: 0,
             quantity: item.quantity,
             weight: 0, // use 0 not null since weight is Float (not nullable) in schema
             notes: vendorNote || null,
+            image: itemImg,
+            designImageUrl: designImg,
             status: OrderItemStatus.WAITING_FOR_CHEF,
             assignedVendorId: vendor ? vendor.id : null,
           })
