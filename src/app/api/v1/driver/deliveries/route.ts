@@ -150,9 +150,20 @@ export const GET = withApiHandler(async (ctx) => {
       ? new Date(customerTarget.getTime() - 90 * 60 * 1000)
       : customerTarget;
 
-    const formattedDeadline = internalDeadline.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const formattedDeadline = internalDeadline.toLocaleTimeString('en-IN', { 
+      hour: 'numeric', 
+      minute: '2-digit', 
+      hour12: true, 
+      timeZone: 'Asia/Kolkata' 
+    });
+    const formattedCustomerPickupTime = customerTarget.toLocaleTimeString('en-IN', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Kolkata',
+    });
     const notePrefix = isPickupOrder
-      ? `INTER-BRANCH TRANSFER (STORE PICKUP): Deliver to ${toBranchName} by ${formattedDeadline} (1.5 hrs before customer pickup time).`
+      ? `INTER-BRANCH TRANSFER (STORE PICKUP): Deliver to ${toBranchName} by ${formattedDeadline} (1.5 hrs before customer pickup at ${formattedCustomerPickupTime}).`
       : `INTER-BRANCH TRANSFER (HOME DELIVERY): Move order to ${toBranchName} for final delivery by ${formattedDeadline}.`;
 
     const fromBranchIdCanonical = toBranchId(transfer.fromBranchId);
