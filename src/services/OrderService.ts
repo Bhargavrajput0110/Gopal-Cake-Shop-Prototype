@@ -44,8 +44,14 @@ export class OrderService {
 
     if (targetBranchValues.length > 0) {
       // SPECIAL REQUIREMENT: Warasiya sales desk MUST also see orders from OTHER branches
-      // IF the order contains Hot Bake items (categoryId 'cmuts899k0000ygu3pigymkyy' or puff/bake in name)
-      if ((role === 'SALES' || role === 'MANAGER') && (targetBranchValues.includes('varasiya') || targetBranchValues.includes('warasiya') || targetBranchValues.includes('cmswuiiu000021su3kv1mr41f'))) {
+      // IF the order contains Hot Bake items (categoryId 'cmuts899k0000ygu3pigymkyy' or puff/bake/patties in name)
+      const normalizedRole = (role || '').toUpperCase();
+      const isSalesOrManager = ['SALES', 'SALESPERSON', 'MANAGER', 'ADMIN'].includes(normalizedRole);
+      const isWarasiya = targetBranchValues.some(b => 
+        ['varasiya', 'warasiya', 'cmswuiiu000021su3kv1mr41f'].includes(b.toLowerCase())
+      );
+
+      if (isSalesOrManager && isWarasiya) {
         if (!whereClause.AND) whereClause.AND = [];
         (whereClause.AND as any[]).push({
           OR: [
@@ -55,8 +61,10 @@ export class OrderService {
                  some: {
                    OR: [
                      { product: { categoryId: 'cmuts899k0000ygu3pigymkyy' } },
+                     { product: { category: { slug: 'hot-bakes' } } },
                      { productName: { contains: 'puff', mode: 'insensitive' } },
-                     { productName: { contains: 'bake', mode: 'insensitive' } }
+                     { productName: { contains: 'bake', mode: 'insensitive' } },
+                     { productName: { contains: 'patties', mode: 'insensitive' } }
                    ]
                  }
                }
@@ -75,9 +83,13 @@ export class OrderService {
       delete whereClause.branchId; // See from all branches
       whereClause.items = {
         some: {
-          product: {
-            categoryId: 'cmuts899k0000ygu3pigymkyy' // Hot Bakes category ID
-          }
+          OR: [
+            { product: { categoryId: 'cmuts899k0000ygu3pigymkyy' } },
+            { product: { category: { slug: 'hot-bakes' } } },
+            { productName: { contains: 'puff', mode: 'insensitive' } },
+            { productName: { contains: 'bake', mode: 'insensitive' } },
+            { productName: { contains: 'patties', mode: 'insensitive' } }
+          ]
         }
       };
     }
