@@ -26,16 +26,13 @@ test.describe('Kitchen Workflow', () => {
     
     await expect(page.getByRole('heading', { name: /KDS Terminal/i })).toBeVisible();
 
-    // 3. Verify order appears in Queue tab and accept it
+    // 3. Verify order appears in Total Orders tab and accept it
     await expect(page.getByText(cakeName)).toBeVisible({ timeout: 15000 });
     const orderCard = page.locator('.rounded-xl').filter({ hasText: cakeName });
     await orderCard.getByRole('button', { name: /Accept Order/i }).click();
 
-    // Wait for order to leave Queue tab
-    await expect(page.getByText(cakeName)).toBeHidden();
-
-    // 4. Switch to Active tab and verify order is being made
-    await page.getByRole('button', { name: /^Active/i }).click();
+    // 4. Switch to Ongoing tab and verify order is being made
+    await page.getByRole('button', { name: /^(Active|Ongoing)/i }).click();
     await expect(page.getByText(cakeName)).toBeVisible();
 
     // 5. Mark order as Ready

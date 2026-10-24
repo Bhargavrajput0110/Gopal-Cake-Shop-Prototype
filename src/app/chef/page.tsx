@@ -77,6 +77,7 @@ export default function ChefDashboardPage() {
   
   const [activeBranch, setActiveBranch] = useState<BranchId>("khanderao");
   const [activeTab, setActiveTab] = useState<"queue" | "myTasks" | "ready">("queue");
+  const [totalFilter, setTotalFilter] = useState<"all" | "pending">("all");
   const [dayFilter, setDayFilter] = useState<'YESTERDAY' | 'TODAY' | 'TOMORROW' | 'ALL'>('TODAY');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -132,19 +133,23 @@ export default function ChefDashboardPage() {
     .filter(o => ["READY_FOR_PICKUP", "PENDING_ASSIGNMENT", "ASSIGNED_TO_DRIVER"].includes(o.status) && matchesDayFilter(o.timeTarget, dayFilter))
     .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
 
-  // Header Stats
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
-  
-  const todayOrders = branchOrders.filter(o => {
-    if (!o.timeTarget) return false;
-    const t = new Date(o.timeTarget).getTime();
-    return t >= todayStart.getTime() && t <= todayEnd.getTime();
-  });
-  
-  const statsTotal = todayOrders.length;
+  // Total Orders & Header Stats
+  const totalOrders = branchOrders
+    .filter(o => {
+      if (o.status === 'CANCELLED') return false;
+      if (dayFilter === 'ALL') return true;
+      return matchesDayFilter(o.timeTarget, dayFilter);
+    })
+    .sort((a, b) => {
+      // Pending orders first so chef sees new tickets to accept immediately
+      const aPending = a.status === 'WAITING_FOR_CHEF' ? 0 : 1;
+      const bPending = b.status === 'WAITING_FOR_CHEF' ? 0 : 1;
+      if (aPending !== bPending) return aPending - bPending;
+      return new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime();
+    });
+
+  const statsTotal = totalOrders.length;
+  const statsPending = queueOrders.length;
   const statsActive = myTasksOrders.length;
   const statsCompleted = readyOrders.length;
 
@@ -286,7 +291,7 @@ export default function ChefDashboardPage() {
 
   const handleAcceptOrder = async (order: Order) => {
     await transitionOrderAction(order.id, "chef-accept");
-    showToast(`Ticket ${order.orderNumber ? order.orderNumber : order.id.slice(-6)} moved to My Tasks!`);
+    showToast(`Ticket ${order.orderNumber ? order.orderNumber : order.id.slice(-6)} moved to Ongoing!`);
   };
 
   const handleMarkReady = async (order: Order) => {
@@ -558,21 +563,42 @@ export default function ChefDashboardPage() {
           </div>
           
           {/* Header Stats */}
-          <div className="flex items-center gap-3 md:gap-6 bg-gray-800 border border-gray-700 rounded-xl px-3 md:px-5 py-1.5 overflow-x-auto w-full md:w-auto">
-            <div className="flex flex-col items-center">
-              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Today</span>
+          <div className="flex items-center gap-2.5 md:gap-5 bg-gray-800 border border-gray-700 rounded-xl px-3 md:px-5 py-1.5 overflow-x-auto w-full md:w-auto">
+            <button 
+              onClick={() => { setActiveTab("queue"); setTotalFilter("all"); }}
+              className="flex flex-col items-center hover:opacity-80 transition-opacity cursor-pointer group"
+              title="View Total Orders"
+            >
+              <span className="text-[9px] text-gray-400 group-hover:text-gray-200 font-bold uppercase tracking-widest">Total</span>
               <span className="text-sm md:text-lg font-black text-white">{statsTotal}</span>
-            </div>
+            </button>
             <div className="w-px h-6 bg-gray-700"></div>
-            <div className="flex flex-col items-center">
-              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Active</span>
+            <button 
+              onClick={() => { setActiveTab("queue"); setTotalFilter("pending"); }}
+              className="flex flex-col items-center hover:opacity-80 transition-opacity cursor-pointer group"
+              title="View Pending Orders"
+            >
+              <span className="text-[9px] text-rose-300 group-hover:text-rose-200 font-bold uppercase tracking-widest">Pending</span>
+              <span className="text-sm md:text-lg font-black text-rose-400">{statsPending}</span>
+            </button>
+            <div className="w-px h-6 bg-gray-700"></div>
+            <button 
+              onClick={() => setActiveTab("myTasks")}
+              className="flex flex-col items-center hover:opacity-80 transition-opacity cursor-pointer group"
+              title="View Ongoing Orders"
+            >
+              <span className="text-[9px] text-amber-300 group-hover:text-amber-200 font-bold uppercase tracking-widest">Ongoing</span>
               <span className="text-sm md:text-lg font-black text-amber-400">{statsActive}</span>
-            </div>
+            </button>
             <div className="w-px h-6 bg-gray-700"></div>
-            <div className="flex flex-col items-center">
-              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Done</span>
+            <button 
+              onClick={() => setActiveTab("ready")}
+              className="flex flex-col items-center hover:opacity-80 transition-opacity cursor-pointer group"
+              title="View Ready Orders"
+            >
+              <span className="text-[9px] text-emerald-300 group-hover:text-emerald-200 font-bold uppercase tracking-widest">Ready</span>
               <span className="text-sm md:text-lg font-black text-emerald-400">{statsCompleted}</span>
-            </div>
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
@@ -626,16 +652,38 @@ export default function ChefDashboardPage() {
 
           {/* Ticket State Tabs */}
           <div className="flex bg-gray-800 p-1 rounded-xl w-full md:w-auto shrink-0">
-            <button onClick={() => setActiveTab("queue")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'queue' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
-              Queue 
-              {queueOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'queue' ? 'bg-rose-500 text-white' : 'bg-gray-700 text-gray-300'}`}>{queueOrders.length}</span>}
+            <button 
+              onClick={() => { setActiveTab("queue"); setTotalFilter("all"); }} 
+              className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'queue' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}
+            >
+              Total Orders
+              {totalOrders.length > 0 && (
+                <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'queue' ? 'bg-gray-900 text-white' : 'bg-gray-700 text-gray-300'}`}>
+                  {totalOrders.length}
+                </span>
+              )}
             </button>
-            <button onClick={() => setActiveTab("myTasks")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'myTasks' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}>
-              Active 
-              {myTasksOrders.length > 0 && <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'myTasks' ? 'bg-gray-900 text-white' : 'bg-gray-700 text-gray-300'}`}>{myTasksOrders.length}</span>}
+            <button 
+              onClick={() => setActiveTab("myTasks")} 
+              className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'myTasks' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}
+            >
+              Ongoing 
+              {myTasksOrders.length > 0 && (
+                <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'myTasks' ? 'bg-gray-900 text-white' : 'bg-gray-700 text-gray-300'}`}>
+                  {myTasksOrders.length}
+                </span>
+              )}
             </button>
-            <button onClick={() => setActiveTab("ready")} className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'ready' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}>
+            <button 
+              onClick={() => setActiveTab("ready")} 
+              className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'ready' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+            >
               Ready
+              {readyOrders.length > 0 && (
+                <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'ready' ? 'bg-white text-emerald-800' : 'bg-gray-700 text-gray-300'}`}>
+                  {readyOrders.length}
+                </span>
+              )}
             </button>
           </div>
 
@@ -645,16 +693,58 @@ export default function ChefDashboardPage() {
       {/* Main KDS Board */}
       <div className="p-4 md:p-8">
         {activeTab === "queue" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {queueOrders.length === 0 ? (
-              <div className="col-span-full py-32 flex flex-col items-center justify-center text-gray-400">
-                <Reserve className="w-20 h-20 mb-4 opacity-20" />
-                <h3 className="text-3xl font-black mb-2 text-gray-300">QUEUE CLEAR</h3>
-                <p className="font-bold text-sm uppercase tracking-widest">Waiting for incoming tickets...</p>
+          <div className="space-y-4">
+            {/* Quick sub-filter for Total Orders */}
+            {totalOrders.length > 0 && (
+              <div className="flex items-center gap-2 pb-1">
+                <button
+                  onClick={() => setTotalFilter("all")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
+                    totalFilter === 'all'
+                      ? 'bg-gray-900 text-white shadow-sm'
+                      : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  }`}
+                >
+                  All ({totalOrders.length})
+                </button>
+                <button
+                  onClick={() => setTotalFilter("pending")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                    totalFilter === 'pending'
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  }`}
+                >
+                  Pending ({queueOrders.length})
+                  {queueOrders.length > 0 && (
+                    <span className={`w-2 h-2 rounded-full ${totalFilter === 'pending' ? 'bg-white animate-pulse' : 'bg-rose-500'}`} />
+                  )}
+                </button>
               </div>
-            ) : (
-              queueOrders.map(order => <TicketCard key={order.id} order={order} isQueue={true} />)
             )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {(totalFilter === "pending" ? queueOrders : totalOrders).length === 0 ? (
+                <div className="col-span-full py-32 flex flex-col items-center justify-center text-gray-400">
+                  <Reserve className="w-20 h-20 mb-4 opacity-20" />
+                  <h3 className="text-3xl font-black mb-2 text-gray-300">
+                    {totalFilter === "pending" ? "NO PENDING ORDERS" : "NO ORDERS FOUND"}
+                  </h3>
+                  <p className="font-bold text-sm uppercase tracking-widest">
+                    {totalFilter === "pending" ? "All incoming tickets have been accepted" : "Waiting for incoming tickets..."}
+                  </p>
+                </div>
+              ) : (
+                (totalFilter === "pending" ? queueOrders : totalOrders).map(order => (
+                  <TicketCard 
+                    key={order.id} 
+                    order={order} 
+                    isQueue={order.status === "WAITING_FOR_CHEF"}
+                    isReady={["READY_FOR_PICKUP", "PENDING_ASSIGNMENT", "ASSIGNED_TO_DRIVER"].includes(order.status)}
+                  />
+                ))
+              )}
+            </div>
           </div>
         )}
 
@@ -663,8 +753,8 @@ export default function ChefDashboardPage() {
             {myTasksOrders.length === 0 ? (
               <div className="col-span-full py-32 flex flex-col items-center justify-center text-gray-400">
                 <Refresh2 className="w-20 h-20 mb-4 opacity-20" />
-                <h3 className="text-3xl font-black mb-2 text-gray-300">NO ACTIVE TICKETS</h3>
-                <p className="font-bold text-sm uppercase tracking-widest">Accept an order from the queue</p>
+                <h3 className="text-3xl font-black mb-2 text-gray-300">NO ONGOING TICKETS</h3>
+                <p className="font-bold text-sm uppercase tracking-widest">Accept an order from the tickets list</p>
               </div>
             ) : (
               myTasksOrders.map(order => <TicketCard key={order.id} order={order} />)
@@ -785,7 +875,7 @@ export default function ChefDashboardPage() {
                 {newOrderPopup.count > 1 ? (
                   <p className="text-sm font-bold text-gray-500 mt-2">{newOrderPopup.count} new orders arrived.</p>
                 ) : (
-                  <p className="text-sm font-bold text-gray-500 mt-2">Order #{newOrderPopup.recentId} just entered the queue.</p>
+                  <p className="text-sm font-bold text-gray-500 mt-2">Order #{newOrderPopup.recentId} just arrived.</p>
                 )}
                 <button onClick={() => setNewOrderPopup(null)} className="mt-3 w-full bg-emerald-500 text-white text-xs font-black uppercase tracking-widest py-2.5 rounded-lg hover:bg-emerald-600 transition-transform active:scale-95">
                   Acknowledge
