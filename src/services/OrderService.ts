@@ -138,12 +138,38 @@ export class OrderService {
       whereClause.status = { in: ['NEW', 'WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING'] };
     }
     if (filters?.hasIssues) {
-      // For now, let's say "issues" means customerNotes is not null, or some items have notes. 
-      // Also we don't want completed orders.
       whereClause.status = { notIn: ['READY_FOR_PICKUP', 'PENDING_ASSIGNMENT', 'ASSIGNED_TO_DRIVER', 'PICKED_UP', 'ON_THE_WAY', 'DELIVERED', 'COMPLETED', 'CANCELLED'] };
-      // This is a naive approximation since Prisma doesn't easily let us filter by JSON properties inside a related model array in one query.
-      // So we will just filter by customerNotes initially, and then maybe frontend can further filter.
-      whereClause.customerNotes = { not: null };
+      const sixtyMinutesAgo = new Date(Date.now() - 60 * 60 * 1000);
+      whereClause.OR = [
+        { customerNotes: { not: null } },
+        // Vendor SLA Breach: Vendor task pending/assigned for more than 60 minutes
+        {
+          createdAt: { lte: sixtyMinutesAgo },
+          vendorTasks: {
+            some: {
+              status: { in: ['PENDING', 'pending', 'ASSIGNED', 'assigned'] }
+            }
+          }
+        },
+        // Vendor Rejected task: immediate issue
+        {
+          vendorTasks: {
+            some: {
+              status: { in: ['REJECTED', 'rejected'] }
+            }
+          }
+        },
+        // Vendor component item pending for more than 60 minutes
+        {
+          createdAt: { lte: sixtyMinutesAgo },
+          items: {
+            some: {
+              parentItemId: { not: null },
+              status: { in: ['PENDING', 'WAITING_FOR_CHEF'] }
+            }
+          }
+        }
+      ];
     }
 
     if (filters?.liveOnly) {
@@ -293,10 +319,13 @@ export class OrderService {
             id: vt.id,
             vendorId: vt.vendorId,
             vendorName: vt.vendor?.name,
+            vendorPhone: vt.vendor?.phone,
             vendorType: vt.vendorType,
             status: vt.status.toLowerCase(),
             instructions: vt.instructions,
-            notes: vt.notes || []
+            notes: vt.notes || [],
+            createdAt: vt.createdAt,
+            updatedAt: vt.updatedAt,
           })),
           ingredientRequests: ((o as any).ingredientRequests || []).map((ir: any) => ({
             id: ir.id,
@@ -361,10 +390,13 @@ export class OrderService {
         id: vt.id,
         vendorId: vt.vendorId,
         vendorName: vt.vendor?.name,
+        vendorPhone: vt.vendor?.phone,
         vendorType: vt.vendorType,
         status: vt.status.toLowerCase(),
         instructions: vt.instructions,
-        notes: vt.notes || []
+        notes: vt.notes || [],
+        createdAt: vt.createdAt,
+        updatedAt: vt.updatedAt,
       })),
       ingredientRequests: ((o as any).ingredientRequests || []).map((ir: any) => ({
         id: ir.id,

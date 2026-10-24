@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { BackButton } from "@/components/ui/BackButton";
 import NumberTicker from "@/components/magicui/NumberTicker";
 import { toBranchId, BRANCHES, BranchId, toBranchShortName } from "@/lib/branches";
+import { checkOrderVendorSla } from "@/lib/vendorSla";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 
@@ -32,6 +33,7 @@ export default function SalesOverviewPage() {
       return taskAcc + (Array.isArray(task.notes) ? task.notes.filter((n: any) => !n.read).length : 0);
     }, 0) || 0);
   }, 0);
+  const vendorSlaBreaches = branchOrders.filter(o => checkOrderVendorSla(o).isBreached).length;
 
 
   const containerVariants = { hidden:{opacity:0}, show:{opacity:1,transition:{staggerChildren:0.08}} };
@@ -62,6 +64,44 @@ export default function SalesOverviewPage() {
           </a>
         </div>
       </motion.div>
+
+      {/* High-Urgency Vendor SLA Breach Banner */}
+      {vendorSlaBreaches > 0 && (
+        <motion.div variants={itemVariants} className="p-4 sm:p-5 rounded-2xl bg-rose-50 border border-rose-300 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 border border-rose-200 flex items-center justify-center text-xl shrink-0">
+              🚨
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-ui text-xs font-black uppercase tracking-wider text-rose-950">
+                  {vendorSlaBreaches} Vendor SLA {vendorSlaBreaches === 1 ? 'Breach' : 'Breaches'} Detected
+                </span>
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-200 text-rose-900 uppercase">
+                  Pending &gt; 60 Min / Rejected
+                </span>
+              </div>
+              <p className="text-xs text-rose-800 font-medium mt-0.5">
+                External partners (Photo Print / Florist / Acrylic) have not confirmed tasks within 60 min. Kitchen cannot finish cake decoration!
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+            <a 
+              href="/sales/orders?hasIssues=true"
+              className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs text-center flex-1 sm:flex-initial"
+            >
+              View Orders
+            </a>
+            <a 
+              href="/sales/vendors"
+              className="px-4 py-2 bg-white border border-rose-300 text-rose-900 hover:bg-rose-100 rounded-xl text-xs font-bold transition-all shadow-xs text-center flex-1 sm:flex-initial"
+            >
+              Vendor Desk
+            </a>
+          </div>
+        </motion.div>
+      )}
 
       {/* Priority Alerts */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

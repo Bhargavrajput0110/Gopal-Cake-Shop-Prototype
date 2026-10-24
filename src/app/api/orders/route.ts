@@ -67,19 +67,29 @@ export async function POST(req: Request) {
       };
     });
 
+    const isQuote = body.status === 'QUOTE_DRAFT';
+    const subtotal = Math.max(0, Number(body.subtotal) || 0);
+    const deliveryCharge = Math.max(0, Number(body.deliveryCharge) || 0);
+    const discount = Math.max(0, Number(body.discount) || 0);
+    const grandTotal = Math.max(0, Number(body.grandTotal) || (subtotal + deliveryCharge - discount));
+
+    if (!isQuote && grandTotal <= 0) {
+      return NextResponse.json({ success: false, error: "Total amount must be greater than zero for standard orders." }, { status: 400 });
+    }
+
     const orderData = {
         customerId: customer.id,
         branchId: resolvedBranchId,
         source: OrderSource.WEBSITE,
-        type: body.status === 'QUOTE_DRAFT' ? OrderType.QUOTE : OrderType.ORDER,
-        status: body.status === 'QUOTE_DRAFT' ? OrderStatus.QUOTE_DRAFT : (body.status === 'WAITING_FOR_CHEF' ? OrderStatus.WAITING_FOR_CHEF : OrderStatus.NEW),
+        type: isQuote ? OrderType.QUOTE : OrderType.ORDER,
+        status: isQuote ? OrderStatus.QUOTE_DRAFT : (body.status === 'WAITING_FOR_CHEF' ? OrderStatus.WAITING_FOR_CHEF : OrderStatus.NEW),
         deliveryType: body.orderType === 'delivery' ? DeliveryType.DELIVERY : DeliveryType.PICKUP,
         targetDate: new Date(body.timeTarget),
         deliveryAddress: body.delivery?.address || null,
-        subtotal: body.subtotal || 0,
-        deliveryCharge: body.deliveryCharge || 0,
-        discount: body.discount || 0,
-        totalAmount: body.grandTotal || 0,
+        subtotal: isQuote ? 0 : subtotal,
+        deliveryCharge,
+        discount,
+        totalAmount: isQuote ? 0 : grandTotal,
         internalNotes: body.isSurprise ? 'SURPRISE ORDER' : null,
         items: {
           create: itemsData

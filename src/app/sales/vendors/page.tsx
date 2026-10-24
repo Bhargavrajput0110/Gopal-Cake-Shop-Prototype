@@ -132,12 +132,28 @@ export default function VendorManagementPage() {
       `\nPlease confirm acceptance.`
     );
 
+    const taskCreatedAt = task.createdAt || task.order?.createdAt;
+    const minsElapsed = taskCreatedAt ? Math.floor((Date.now() - new Date(taskCreatedAt).getTime()) / 60000) : 0;
+    const isUnacceptedOverdue = ['pending', 'waiting_for_chef', 'assigned'].includes((task.status || '').toLowerCase()) && minsElapsed >= 60;
+    const isRejected = (task.status || '').toLowerCase() === 'rejected';
+
     return (
-      <div key={task.id} className={`bg-card p-4 rounded-xl shadow-sm border ${borderColor} flex flex-col justify-between gap-3`}>
+      <div key={task.id} className={`bg-card p-4 rounded-xl shadow-sm border ${isUnacceptedOverdue || isRejected ? 'border-rose-400 bg-rose-50/20' : borderColor} flex flex-col justify-between gap-3`}>
         <div>
-          <div className="flex justify-between items-start mb-2">
+          <div className="flex justify-between items-start mb-2 gap-1.5 flex-wrap">
             <span className="font-mono font-bold text-sm bg-gray-100 px-2 py-0.5 rounded">#{orderNum}</span>
-            {getStatusBadge(task.status)}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {isRejected ? (
+                <span className="text-[10px] font-black uppercase tracking-wider text-rose-800 bg-rose-100 border border-rose-300 px-2 py-0.5 rounded">
+                  ⚠️ Rejected ({minsElapsed}m)
+                </span>
+              ) : isUnacceptedOverdue ? (
+                <span className="text-[10px] font-black uppercase tracking-wider text-rose-800 bg-rose-100 border border-rose-300 px-2 py-0.5 rounded animate-pulse">
+                  ⚠️ SLA Breach ({minsElapsed}m)
+                </span>
+              ) : null}
+              {getStatusBadge(task.status)}
+            </div>
           </div>
 
           <div className="flex gap-3 items-start mt-2">

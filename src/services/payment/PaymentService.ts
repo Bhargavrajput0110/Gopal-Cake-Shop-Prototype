@@ -33,6 +33,20 @@ export class PaymentService {
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new Error('Order not found');
 
+    const orderTotal = Number(order.totalAmount);
+
+    // Business Rule & Anti-Tampering:
+    // Online customer orders require a minimum 50% advance before the order can be accepted.
+    if (order.source === 'WEBSITE' || !method || method === 'RAZORPAY') {
+      const minAdvance = Math.ceil(orderTotal * 0.50);
+      if (amount < minAdvance - 1) { // 1 rupee rounding buffer
+        throw new Error(`Minimum 50% advance payment (₹${minAdvance}) is required for online orders.`);
+      }
+      if (amount > orderTotal + 0.05) {
+        throw new Error(`Payment amount (₹${amount}) cannot exceed the order total (₹${orderTotal}).`);
+      }
+    }
+
     const gatewayOrder = await this.provider.createOrder({
       amount: Math.round(amount * 100), // Converting to paise
       currency: 'INR',
@@ -40,7 +54,7 @@ export class PaymentService {
     });
 
     const isAdvance = amount < Number(order.totalAmount) - 0.01;
-    const paymentType = isAdvance ? PaymentStatus.PENDING && ('ADVANCE' as const) : ('FULL' as const);
+    const paymentType = isAdvance ? ('ADVANCE' as const) : ('FULL' as const);
 
     const existingPending = await prisma.payment.findFirst({
       where: { orderId, status: PaymentStatus.PENDING }

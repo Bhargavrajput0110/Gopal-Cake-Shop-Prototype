@@ -263,15 +263,17 @@ export class StorefrontEngine {
         unitPrice += surcharge
       }
 
-      // Apply override if permitted
-      if (context.canOverridePrice && item.overridePrice !== undefined) {
-        unitPrice = item.overridePrice
+      // Apply override if permitted (strictly for internal staff POS/Admin, NEVER for public WEBSITE)
+      if (context.canOverridePrice && item.overridePrice !== undefined && context.source !== OrderSource.WEBSITE) {
+        unitPrice = Math.max(0, item.overridePrice);
       }
 
       // If it's a Quote from the public website, line price should be 0 because the Sales team will set it later.
       // If it's from POS/Sales, respect the provided or calculated price.
       if (payload.type === 'QUOTE' && context.source === OrderSource.WEBSITE) {
-        unitPrice = 0
+        unitPrice = 0;
+      } else if (context.source === OrderSource.WEBSITE && unitPrice <= 0) {
+        throw new Error(`Invalid price for item ${product?.name || item.productId}. Please refresh cart and try again.`);
       }
 
       const lineTotal = unitPrice * item.quantity

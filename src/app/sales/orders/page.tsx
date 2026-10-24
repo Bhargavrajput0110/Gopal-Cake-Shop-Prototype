@@ -25,6 +25,7 @@ import { SalesFilterBar } from "@/components/sales/SalesFilterBar";
 import { WhatsAppToast } from "@/components/ui/WhatsAppToast";
 import { BackButton } from "@/components/ui/BackButton";
 import { useOrderTransitionAnimation, TransitionAnimation } from "@/hooks/useOrderTransitionAnimation";
+import { checkOrderVendorSla } from "@/lib/vendorSla";
 
 let audioCtx: AudioContext | null = null;
 
@@ -987,6 +988,40 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
             </div>
           </div>
         )}
+
+        {/* Vendor SLA Breach Alert */}
+        {(() => {
+          const sla = checkOrderVendorSla(order);
+          if (!sla.isBreached) return null;
+          return (
+            <div className="p-3 rounded-xl border border-rose-300 bg-rose-50/95 text-rose-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-start gap-2.5">
+                <span className="text-xl shrink-0 mt-0.5">🚨</span>
+                <div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-black text-rose-950 uppercase tracking-wider">
+                      VENDOR SLA BREACH ({sla.minutesElapsed}m)
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-200 text-rose-900 uppercase">
+                      {sla.reason === 'REJECTED' ? 'REJECTED' : 'UNACCEPTED >60M'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-rose-800 font-medium mt-0.5">
+                    {sla.taskType}: Partner has not confirmed task after {sla.minutesElapsed} minutes. Kitchen sponge ready, but decoration cannot proceed!
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 self-start sm:self-center shrink-0">
+                <a
+                  href="/sales/vendors"
+                  className="px-3 py-1.5 bg-rose-700 hover:bg-rose-800 text-white rounded-lg text-[11px] font-bold shadow-xs transition-all flex items-center gap-1"
+                >
+                  Vendor Desk ➔
+                </a>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* 2. Product Item Box: Thumbnail + Title + Weight + Flavour Pill (Matching AI Mockup) */}
         <div className="space-y-1.5">

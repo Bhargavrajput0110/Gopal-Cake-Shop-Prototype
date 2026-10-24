@@ -83,7 +83,8 @@ const handler = async (ctx: HandlerContext) => {
       shape: item.shape,
       referenceImages: item.referenceImages,
       printImage: item.printImage,
-      overridePrice: item.price,
+      // SECURITY: Public website orders must never override catalog prices
+      overridePrice: data.type === 'QUOTE' ? 0 : undefined,
     })),
     deliveryType: data.deliveryType,
     targetDate: data.deliveryDate,
@@ -101,7 +102,7 @@ const handler = async (ctx: HandlerContext) => {
   // 3. Create context and run Engine
   const context: CheckoutContext = {
     source: OrderSource.WEBSITE,
-    canOverridePrice: true, // Strictly use frontend pricing per user instructions
+    canOverridePrice: false, // SECURITY: Strictly reject client-supplied price overrides for public storefront
     canOverrideDelivery: false,
     canAssignPriority: false
   }

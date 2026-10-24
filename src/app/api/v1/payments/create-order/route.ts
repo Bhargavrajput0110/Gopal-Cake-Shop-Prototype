@@ -7,8 +7,9 @@ export async function POST(req: Request) {
   try {
     const { orderId, amount, method } = await req.json();
 
-    if (!orderId || !amount) {
-      return NextResponse.json({ error: 'Missing orderId or amount' }, { status: 400 });
+    const parsedAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (!orderId || typeof parsedAmount !== 'number' || isNaN(parsedAmount) || parsedAmount <= 0) {
+      return NextResponse.json({ error: 'Missing or invalid orderId or amount' }, { status: 400 });
     }
 
     const provider = new RazorpayProvider();
