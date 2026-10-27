@@ -107,8 +107,14 @@ function SalesDashboardContent() {
 
   const employeeId = searchParams.get("employeeId") || "";
 
-  // Determine branch using canonical IDs
-  const [activeBranch, setActiveBranch] = useState<BranchId>(() => {
+  const urlBranch = searchParams.get("branch");
+
+  // Determine branch using URL param, employee ID, or session branch (supports "all" for multi-branch view)
+  const [activeBranch, setActiveBranch] = useState<BranchId | "all">(() => {
+    if (urlBranch) {
+      if (urlBranch === "all") return "all";
+      return toBranchId(urlBranch);
+    }
     if (employeeId) {
       if (employeeId.includes("-UMA-")) return "uma";
       if (employeeId.includes("-KHM-")) return "khanderao";
@@ -119,20 +125,25 @@ function SalesDashboardContent() {
     if ((session?.user as any)?.branchId) {
       return toBranchId((session?.user as any).branchId);
     }
-    return "khanderao"; // Default
+    const role = ((session?.user as any)?.role || "").toUpperCase();
+    if (role === "ADMIN" || role === "SUPER_ADMIN") {
+      return "all"; // Admins default to All Branches
+    }
+    return "khanderao"; // Default fallback
   });
 
   useEffect(() => {
-    if (employeeId) {
+    if (urlBranch) {
+      setActiveBranch(urlBranch === "all" ? "all" : toBranchId(urlBranch));
+    } else if (employeeId) {
       if (employeeId.includes("-UMA-")) setActiveBranch("uma");
       else if (employeeId.includes("-KHM-")) setActiveBranch("khanderao");
       else if (employeeId.includes("-ELR-")) setActiveBranch("elora");
       else if (employeeId.includes("-WAS-")) setActiveBranch("varasiya");
     } else if ((session?.user as any)?.branchId) {
-      // Convert real DB CUID to canonical short code
       setActiveBranch(toBranchId((session?.user as any).branchId));
     }
-  }, [employeeId, session?.user]);
+  }, [urlBranch, employeeId, session?.user]);
 
   const fetchOrders = async (signal?: AbortSignal, silent = false) => {
     if (!silent) setLoading(true);
@@ -147,7 +158,11 @@ function SalesDashboardContent() {
       const params = new URLSearchParams();
       params.append("page", page.toString());
       params.append("limit", "20");
-      params.append("branch", activeBranch);
+      if (activeBranch && activeBranch !== "all") {
+        params.append("branch", activeBranch);
+      } else {
+        params.append("branch", "all");
+      }
       
       let statusParams = "";
       if (effectiveFilter === "Pending Verification") statusParams = "NEW,QUOTE_DRAFT,QUOTE_SENT";
@@ -333,12 +348,31 @@ function SalesDashboardContent() {
           <div className="mb-2">
             <BackButton fallback="/sales" label="Back to Sales" variant="outline" size="sm" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight font-serif text-[#3E2723] flex items-center gap-2 flex-wrap">
-            Orders
-            <span className="bg-[#3E2723] text-white px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider">
-              {toBranchShortName(activeBranch)} Branch
-            </span>
-          </h2>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight font-serif text-[#3E2723]">
+              Orders
+            </h2>
+            {/* Interactive Branch Switcher */}
+            <select
+              value={activeBranch}
+              onChange={(e) => {
+                const b = e.target.value as BranchId | "all";
+                setActiveBranch(b);
+                setPage(1);
+                const p = new URLSearchParams(searchParams.toString());
+                p.set("branch", b);
+                p.set("page", "1");
+                window.history.replaceState(null, "", `${pathname}?${p.toString()}`);
+              }}
+              className="bg-white border-2 border-[#C5A059]/60 text-[#3E2723] font-bold text-xs uppercase tracking-wider px-3 py-1.5 rounded-xl shadow-xs cursor-pointer hover:border-[#C5A059] outline-none transition-all"
+            >
+              <option value="all">🌐 All Branches</option>
+              <option value="khanderao">🏪 Khanderao Branch</option>
+              <option value="uma">🎂 Uma Branch (Main)</option>
+              <option value="varasiya">🏭 Warasiya (Factory)</option>
+              <option value="elora">🏬 Ellora Park Branch</option>
+            </select>
+          </div>
           <p className="text-muted-foreground text-xs mt-0.5 tracking-wide">Manage, track, and dispatch your daily queue.</p>
         </div>
         <button

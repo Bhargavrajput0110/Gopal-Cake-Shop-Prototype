@@ -57,10 +57,12 @@ export function formatDayLabel(date: Date | string | null | undefined): string {
  * Checks whether a date falls in the window for a given day filter.
  * @param date - the date to check
  * @param filter - 'YESTERDAY' | 'TODAY' | 'TOMORROW' | 'ALL'
+ * @param includeOverdue - if true and filter is 'TODAY', also include past dates so overdue active tickets remain visible
  */
 export function matchesDayFilter(
   date: Date | string | null | undefined,
-  filter: 'YESTERDAY' | 'TODAY' | 'TOMORROW' | 'ALL'
+  filter: 'YESTERDAY' | 'TODAY' | 'TOMORROW' | 'ALL',
+  includeOverdue: boolean = false
 ): boolean {
   if (filter === 'ALL') return true;
   if (!date) return false;
@@ -75,6 +77,11 @@ export function matchesDayFilter(
   targetDay.setDate(today.getDate() + offset);
   const nextDay = new Date(targetDay);
   nextDay.setDate(targetDay.getDate() + 1);
+
+  // If includeOverdue is enabled and filter is TODAY, include all active orders scheduled for today or earlier
+  if (includeOverdue && filter === 'TODAY') {
+    return d < nextDay;
+  }
 
   return d >= targetDay && d < nextDay;
 }

@@ -85,14 +85,14 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
           deliveryScope: (session.user as any).deliveryScope || null
         }
         appRole = ((session.user as any).role as string)?.toUpperCase() as Role
-        branchId = (session.user as any).branchId ? toBranchId((session.user as any).branchId) : 'khanderao'
+        branchId = (session.user as any).branchId ? toBranchId((session.user as any).branchId) : null
       } else {
         // 2. Try Supabase Auth (used by mobile apps / external clients)
         const { data: authData } = await supabase.auth.getUser()
         if (authData?.user) {
           user = authData.user
           appRole = user.user_metadata?.role || null
-          branchId = user.user_metadata?.branchId ? toBranchId(user.user_metadata.branchId) : 'khanderao'
+          branchId = user.user_metadata?.branchId ? toBranchId(user.user_metadata.branchId) : null
         }
       }
 
@@ -160,8 +160,10 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
       
       if (branchId) {
         branchId = toBranchId(branchId)
+      } else if (appRole === 'ADMIN' || appRole === 'SUPER_ADMIN') {
+        branchId = null // Admins have global access across all branches
       } else {
-        branchId = 'khanderao'
+        branchId = null
       }
 
 

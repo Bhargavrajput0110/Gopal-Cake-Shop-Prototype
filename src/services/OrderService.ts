@@ -36,8 +36,10 @@ export class OrderService {
 
     // Branch isolation logic
     let targetBranchValues: string[] = [];
-    if (filters?.branch) {
+    if (filters?.branch && filters.branch !== 'all') {
       targetBranchValues = getBranchFilterValues(filters.branch);
+    } else if (filters?.branch === 'all') {
+      targetBranchValues = []; // explicitly show all branches
     } else if (branchId) {
       targetBranchValues = getBranchFilterValues(branchId);
     }

@@ -75,9 +75,15 @@ export default function ChefDashboardPage() {
   const { data: session } = useSession();
   const { orders, updateOrderFields, transitionOrderAction, addIngredientRequest, refetchOrders } = useOrders();
   
-  const [activeBranch, setActiveBranch] = useState<BranchId>("khanderao");
-  const [activeTab, setActiveTab] = useState<"queue" | "myTasks" | "ready">("queue");
-  const [totalFilter, setTotalFilter] = useState<"all" | "pending">("all");
+  const [activeBranch, setActiveBranch] = useState<BranchId | "all">(() => {
+    if ((session?.user as any)?.branchId) {
+      return toBranchId((session?.user as any).branchId);
+    }
+    const role = ((session?.user as any)?.role || "").toUpperCase();
+    if (role === "ADMIN" || role === "SUPER_ADMIN") return "all";
+    return "khanderao";
+  });
+  const [activeTab, setActiveTab] = useState<"queue" | "myTasks" | "ready" | "all">("queue");
   const [dayFilter, setDayFilter] = useState<'YESTERDAY' | 'TODAY' | 'TOMORROW' | 'ALL'>('TODAY');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -102,20 +108,25 @@ export default function ChefDashboardPage() {
       const bId = (session.user as any).branchId || (session.user as any).branch;
       if (bId) {
         setActiveBranch(toBranchId(bId));
+      } else {
+        const role = ((session.user as any).role || "").toUpperCase();
+        if (role === "ADMIN" || role === "SUPER_ADMIN") {
+          setActiveBranch("all");
+        }
       }
     }
   }, [session]);
 
   // Filtering orders for the active branch
   const isHotBakeChef = session?.user?.name?.toLowerCase().includes('santosh') || session?.user?.name?.toLowerCase().includes('hot bake');
-  const branchOrders = orders.filter(o => isHotBakeChef || toBranchId(o.branch) === activeBranch);
+  const branchOrders = orders.filter(o => isHotBakeChef || activeBranch === "all" || toBranchId(o.branch) === activeBranch);
 
-  // Queue: orders waiting for chef strictly respecting day filter
+  // Queue: orders waiting for chef strictly respecting day filter (plus overdue unmade orders on TODAY)
   const queueOrders = branchOrders
     .filter(o => {
       if (o.status !== "WAITING_FOR_CHEF") return false;
       if (dayFilter === 'ALL') return true;
-      return matchesDayFilter(o.timeTarget, dayFilter);
+      return matchesDayFilter(o.timeTarget, dayFilter, true);
     })
     .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
   
@@ -124,7 +135,7 @@ export default function ChefDashboardPage() {
     .filter(o => {
       if (!["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(o.status)) return false;
       if (dayFilter === 'ALL') return true;
-      return matchesDayFilter(o.timeTarget, dayFilter);
+      return matchesDayFilter(o.timeTarget, dayFilter, true);
     })
     .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
     
@@ -138,7 +149,7 @@ export default function ChefDashboardPage() {
     .filter(o => {
       if (o.status === 'CANCELLED') return false;
       if (dayFilter === 'ALL') return true;
-      return matchesDayFilter(o.timeTarget, dayFilter);
+      return matchesDayFilter(o.timeTarget, dayFilter, true);
     })
     .sort((a, b) => {
       // Pending orders first so chef sees new tickets to accept immediately
@@ -544,41 +555,27 @@ export default function ChefDashboardPage() {
             </h1>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden sm:inline">Station:</span>
-              {(() => {
-                const isChefRole = String((session?.user as any)?.role || '').toLowerCase() === 'chef';
-                return (
-                  <select 
-                    value={activeBranch} 
-                    onChange={(e) => setActiveBranch(e.target.value as BranchId)}
-                    disabled={isChefRole}
-                    className="bg-gray-800 text-amber-400 font-bold text-xs uppercase tracking-widest px-2.5 py-1 rounded-lg border border-gray-700 outline-none disabled:opacity-75 disabled:cursor-not-allowed"
-                  >
-                    {BRANCHES.filter(b => !isChefRole || b.id === activeBranch).map(b => (
-                      <option key={b.id} value={b.id}>{b.shortName} KITCHEN</option>
-                    ))}
-                  </select>
-                );
-              })()}
+              <select 
+                value={activeBranch} 
+                onChange={(e) => setActiveBranch(e.target.value as BranchId | "all")}
+                className="bg-gray-800 text-amber-400 font-bold text-xs uppercase tracking-widest px-2.5 py-1.5 rounded-lg border border-gray-700 outline-none cursor-pointer hover:border-gray-500 transition-colors shadow-xs"
+              >
+                <option value="all">🌐 ALL KITCHENS</option>
+                {BRANCHES.map(b => (
+                  <option key={b.id} value={b.id}>{b.shortName} KITCHEN</option>
+                ))}
+              </select>
             </div>
           </div>
           
           {/* Header Stats */}
           <div className="flex items-center gap-2.5 md:gap-5 bg-gray-800 border border-gray-700 rounded-xl px-3 md:px-5 py-1.5 overflow-x-auto w-full md:w-auto">
             <button 
-              onClick={() => { setActiveTab("queue"); setTotalFilter("all"); }}
+              onClick={() => setActiveTab("queue")}
               className="flex flex-col items-center hover:opacity-80 transition-opacity cursor-pointer group"
-              title="View Total Orders"
+              title="View Pending Incoming Orders"
             >
-              <span className="text-[9px] text-gray-400 group-hover:text-gray-200 font-bold uppercase tracking-widest">Total</span>
-              <span className="text-sm md:text-lg font-black text-white">{statsTotal}</span>
-            </button>
-            <div className="w-px h-6 bg-gray-700"></div>
-            <button 
-              onClick={() => { setActiveTab("queue"); setTotalFilter("pending"); }}
-              className="flex flex-col items-center hover:opacity-80 transition-opacity cursor-pointer group"
-              title="View Pending Orders"
-            >
-              <span className="text-[9px] text-rose-300 group-hover:text-rose-200 font-bold uppercase tracking-widest">Pending</span>
+              <span className="text-[9px] text-rose-300 group-hover:text-rose-200 font-bold uppercase tracking-widest">Incoming</span>
               <span className="text-sm md:text-lg font-black text-rose-400">{statsPending}</span>
             </button>
             <div className="w-px h-6 bg-gray-700"></div>
@@ -598,6 +595,15 @@ export default function ChefDashboardPage() {
             >
               <span className="text-[9px] text-emerald-300 group-hover:text-emerald-200 font-bold uppercase tracking-widest">Ready</span>
               <span className="text-sm md:text-lg font-black text-emerald-400">{statsCompleted}</span>
+            </button>
+            <div className="w-px h-6 bg-gray-700"></div>
+            <button 
+              onClick={() => setActiveTab("all")}
+              className="flex flex-col items-center hover:opacity-80 transition-opacity cursor-pointer group"
+              title="View All Day Tickets"
+            >
+              <span className="text-[9px] text-gray-400 group-hover:text-gray-200 font-bold uppercase tracking-widest">Total</span>
+              <span className="text-sm md:text-lg font-black text-white">{statsTotal}</span>
             </button>
           </div>
 
@@ -651,37 +657,48 @@ export default function ChefDashboardPage() {
           </div>
 
           {/* Ticket State Tabs */}
-          <div className="flex bg-gray-800 p-1 rounded-xl w-full md:w-auto shrink-0">
+          <div className="flex bg-gray-800 p-1 rounded-xl w-full md:w-auto shrink-0 gap-1 overflow-x-auto">
             <button 
-              onClick={() => { setActiveTab("queue"); setTotalFilter("all"); }} 
-              className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'queue' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}
+              onClick={() => setActiveTab("queue")} 
+              className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'queue' ? 'bg-rose-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
             >
-              Total Orders
-              {totalOrders.length > 0 && (
-                <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'queue' ? 'bg-gray-900 text-white' : 'bg-gray-700 text-gray-300'}`}>
-                  {totalOrders.length}
+              Incoming Queue
+              {queueOrders.length > 0 && (
+                <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'queue' ? 'bg-white text-rose-700 animate-pulse font-black' : 'bg-rose-500 text-white'}`}>
+                  {queueOrders.length}
                 </span>
               )}
             </button>
             <button 
               onClick={() => setActiveTab("myTasks")} 
-              className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'myTasks' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}
+              className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'myTasks' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-400 hover:text-white'}`}
             >
               Ongoing 
               {myTasksOrders.length > 0 && (
-                <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'myTasks' ? 'bg-gray-900 text-white' : 'bg-gray-700 text-gray-300'}`}>
+                <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'myTasks' ? 'bg-gray-900 text-white font-black' : 'bg-gray-700 text-gray-300'}`}>
                   {myTasksOrders.length}
                 </span>
               )}
             </button>
             <button 
               onClick={() => setActiveTab("ready")} 
-              className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-5 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'ready' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+              className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'ready' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
             >
               Ready
               {readyOrders.length > 0 && (
-                <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'ready' ? 'bg-white text-emerald-800' : 'bg-gray-700 text-gray-300'}`}>
+                <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'ready' ? 'bg-white text-emerald-800 font-black' : 'bg-gray-700 text-gray-300'}`}>
                   {readyOrders.length}
+                </span>
+              )}
+            </button>
+            <button 
+              onClick={() => setActiveTab("all")} 
+              className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2 rounded-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'all' ? 'bg-gray-700 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+            >
+              All Tickets
+              {totalOrders.length > 0 && (
+                <span className={`px-2 py-0.5 rounded text-[10px] ${activeTab === 'all' ? 'bg-gray-900 text-white font-black' : 'bg-gray-700 text-gray-300'}`}>
+                  {totalOrders.length}
                 </span>
               )}
             </button>
@@ -694,48 +711,42 @@ export default function ChefDashboardPage() {
       <div className="p-4 md:p-8">
         {activeTab === "queue" && (
           <div className="space-y-4">
-            {/* Quick sub-filter for Total Orders */}
-            {totalOrders.length > 0 && (
-              <div className="flex items-center gap-2 pb-1">
-                <button
-                  onClick={() => setTotalFilter("all")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
-                    totalFilter === 'all'
-                      ? 'bg-gray-900 text-white shadow-sm'
-                      : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                  }`}
-                >
-                  All ({totalOrders.length})
-                </button>
-                <button
-                  onClick={() => setTotalFilter("pending")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                    totalFilter === 'pending'
-                      ? 'bg-rose-600 text-white shadow-sm'
-                      : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                  }`}
-                >
-                  Pending ({queueOrders.length})
-                  {queueOrders.length > 0 && (
-                    <span className={`w-2 h-2 rounded-full ${totalFilter === 'pending' ? 'bg-white animate-pulse' : 'bg-rose-500'}`} />
-                  )}
-                </button>
-              </div>
-            )}
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {(totalFilter === "pending" ? queueOrders : totalOrders).length === 0 ? (
+              {queueOrders.length === 0 ? (
                 <div className="col-span-full py-32 flex flex-col items-center justify-center text-gray-400">
                   <Reserve className="w-20 h-20 mb-4 opacity-20" />
                   <h3 className="text-3xl font-black mb-2 text-gray-300">
-                    {totalFilter === "pending" ? "NO PENDING ORDERS" : "NO ORDERS FOUND"}
+                    NO PENDING TICKETS
                   </h3>
-                  <p className="font-bold text-sm uppercase tracking-widest">
-                    {totalFilter === "pending" ? "All incoming tickets have been accepted" : "Waiting for incoming tickets..."}
+                  <p className="font-bold text-sm uppercase tracking-widest text-gray-400">
+                    All incoming tickets have been accepted and moved to Ongoing.
                   </p>
                 </div>
               ) : (
-                (totalFilter === "pending" ? queueOrders : totalOrders).map(order => (
+                queueOrders.map(order => (
+                  <TicketCard 
+                    key={order.id} 
+                    order={order} 
+                    isQueue={true}
+                    isReady={false}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "all" && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {totalOrders.length === 0 ? (
+                <div className="col-span-full py-32 flex flex-col items-center justify-center text-gray-400">
+                  <Reserve className="w-20 h-20 mb-4 opacity-20" />
+                  <h3 className="text-3xl font-black mb-2 text-gray-300">NO ORDERS FOUND</h3>
+                  <p className="font-bold text-sm uppercase tracking-widest">Waiting for incoming tickets...</p>
+                </div>
+              ) : (
+                totalOrders.map(order => (
                   <TicketCard 
                     key={order.id} 
                     order={order} 
