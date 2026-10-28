@@ -52,8 +52,27 @@ export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing,
     return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
   }, [availableBranches, formData.branchId]);
 
+  const assignedBranchLabel = React.useMemo(() => {
+    if (!formData.branchId) return null;
+    const match = branchOptions.find((b) => b.id === formData.branchId);
+    return match ? match.label : formData.branchId;
+  }, [formData.branchId, branchOptions]);
+
   return (
     <form onSubmit={onSubmit} className="space-y-6 pb-8">
+      {/* ── User summary card when editing ─────────────────────── */}
+      {isEditing && (
+        <div className="flex items-center gap-3.5 p-4 rounded-xl bg-muted/40 border border-border">
+          <div className="w-11 h-11 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm border border-primary/20 shrink-0">
+            {formData.name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h4 className="text-sm font-bold text-foreground truncate">{formData.name}</h4>
+            <p className="text-xs text-muted-foreground truncate">{formData.email || "No email provided"}</p>
+            {formData.phone && <p className="text-[11px] text-muted-foreground mt-0.5">📞 {formData.phone}</p>}
+          </div>
+        </div>
+      )}
 
       {/* ── Identity fields (invite only) ─────────────────────── */}
       {!isEditing && (
@@ -190,7 +209,7 @@ export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing,
         <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
           What this role can access
         </h3>
-        <RoleCapabilities role={role} />
+        <RoleCapabilities role={role} assignedBranchName={assignedBranchLabel} />
       </div>
 
       {/* ── Submit ──────────────────────────────────────────────── */}
