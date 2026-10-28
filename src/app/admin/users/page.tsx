@@ -172,9 +172,9 @@ export default function AdminUsers() {
       </div>
 
       <Sheet open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <SheetContent className="sm:max-w-md w-full overflow-y-auto">
+        <SheetContent className="sm:max-w-lg w-full overflow-y-auto">
           <SheetHeader className="mb-6">
-            <SheetTitle>{editingUser ? "Edit User Role" : "Invite New User"}</SheetTitle>
+            <SheetTitle>{editingUser ? `Edit Role & Access — ${editingUser.name}` : "Invite New User"}</SheetTitle>
           </SheetHeader>
           <UserForm
             formData={formData}
