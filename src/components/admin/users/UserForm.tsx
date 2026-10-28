@@ -5,13 +5,7 @@ import { Save2, Send, Warning2, TickCircle } from "iconsax-react";
 import { Role } from "@prisma/client";
 import { InviteUserDTO } from "@/dtos/UserSchemas";
 import { RoleCapabilities, ROLE_META } from "./RoleCapabilities";
-
-const BRANCHES = [
-  { id: "khanderao", label: "Khanderao Market" },
-  { id: "uma", label: "Uma Branch" },
-  { id: "warasiya", label: "Warasiya" },
-  { id: "ellorapark", label: "Ellora Park" },
-];
+import { BRANCH_LABELS } from "./columns";
 
 const ROLE_NEEDS_BRANCH: Role[] = ["MANAGER", "SALESPERSON", "CHEF", "DELIVERY"];
 const ROLES_NO_BRANCH: Role[] = ["ADMIN", "VENDOR_FLORIST", "VENDOR_PHOTO", "VENDOR_ACRYLIC"];
@@ -22,9 +16,10 @@ interface UserFormProps {
   onSubmit: (e: React.FormEvent) => void;
   isSaving: boolean;
   isEditing: boolean;
+  availableBranches?: { id: string; name: string }[];
 }
 
-export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing }: UserFormProps) {
+export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing, availableBranches }: UserFormProps) {
   const role = formData.role as Role;
   const meta = ROLE_META[role];
   const needsBranch = ROLE_NEEDS_BRANCH.includes(role);
@@ -32,6 +27,30 @@ export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing 
   const isVendor = role?.startsWith("VENDOR_");
 
   const branchMissing = needsBranch && !formData.branchId;
+
+  // Build resolved branch list from live DB branches + fallbacks
+  const branchOptions = React.useMemo(() => {
+    const map = new Map<string, string>();
+    if (availableBranches?.length) {
+      for (const b of availableBranches) {
+        map.set(b.id, b.name);
+      }
+    }
+    // Known core branches
+    if (!map.has("cmswuiiu000021su3kv1mr41f")) map.set("cmswuiiu000021su3kv1mr41f", "Factory Warasiya");
+    if (!map.has("khanderao")) map.set("khanderao", "Khanderao Market");
+    if (!map.has("uma")) map.set("uma", "Uma Branch");
+    if (!map.has("cmswuiita00011su3977ajl1z")) map.set("cmswuiita00011su3977ajl1z", "Market Branch");
+    if (!map.has("cmswuiiun00031su3vfrn9eq5")) map.set("cmswuiiun00031su3vfrn9eq5", "Ellora Park");
+
+    // If current user's branchId is not in the map, add it
+    if (formData.branchId && !map.has(formData.branchId)) {
+      const fallbackName = BRANCH_LABELS[formData.branchId] || formData.branchId;
+      map.set(formData.branchId, fallbackName);
+    }
+
+    return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
+  }, [availableBranches, formData.branchId]);
 
   return (
     <form onSubmit={onSubmit} className="space-y-6 pb-8">
@@ -132,7 +151,7 @@ export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing 
               className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
             >
               <option value="">— Select a branch —</option>
-              {BRANCHES.map((b) => (
+              {branchOptions.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.label}
                 </option>

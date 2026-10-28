@@ -66,6 +66,7 @@ export function DataTable<TData, TValue = unknown>({
   filters,
   savedViews,
   onSavedViewSelect,
+  onRowClick,
   rowActions,
   bulkActions,
   exportActions,
@@ -494,7 +495,11 @@ export function DataTable<TData, TValue = unknown>({
               <tr
                 key={row.id}
                 data-state={row.getIsSelected() ? "selected" : undefined}
-                className="transition-colors hover:bg-muted/40 data-[state=selected]:bg-primary/5"
+                onClick={() => onRowClick?.(row.original)}
+                className={cn(
+                  "transition-colors hover:bg-muted/40 data-[state=selected]:bg-primary/5",
+                  onRowClick && "cursor-pointer hover:bg-primary/5"
+                )}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td

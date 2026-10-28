@@ -92,6 +92,8 @@ export interface DataTableProps<TData, TValue = unknown> {
   onSavedViewSelect?: (view: SavedFilterView) => void
 
   // ── Row & Bulk actions ────────────────────────────────────────────────────
+  /** Callback fired when a table row is clicked */
+  onRowClick?: (row: TData) => void
   rowActions?: RowAction<TData>[]
   bulkActions?: BulkAction<TData>[]
   exportActions?: ExportActions

@@ -1,27 +1,40 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Add, ArrowLeft } from "iconsax-react";
+import { Add } from "iconsax-react";
 import { BackButton } from "@/components/ui/BackButton";
-import Link from "next/link";
 import { DashboardSection } from "@/components/ui/dashboard-widgets";
 import { DataTable } from "@/components/ui/data-table";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { columns } from "@/components/admin/users/columns";
+import { getUserColumns } from "@/components/admin/users/columns";
 import { UserFilters } from "@/components/admin/users/UserFilters";
 import { UserForm } from "@/components/admin/users/UserForm";
 import { useUsers } from "@/hooks/useUsers";
+import { useBranches } from "@/hooks/useBranches";
 import { UserResponseDTO, InviteUserDTO } from "@/dtos/UserSchemas";
 import { AccountStatus } from "@prisma/client";
 
 export default function AdminUsers() {
   const { users, isLoading, inviteUser, updateRole, updateStatus } = useUsers();
-  
+  const { branches } = useBranches();
+
+  // Branch map for looking up human-readable branch names
+  const branchMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (branches?.length) {
+      for (const b of branches) {
+        map[b.id] = b.name;
+        if (b.code) map[b.code.toLowerCase()] = b.name;
+      }
+    }
+    return map;
+  }, [branches]);
+
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserResponseDTO | null>(null);
@@ -111,11 +124,35 @@ export default function AdminUsers() {
     }
   };
 
+  const handleDirectActivate = async (id: string) => {
+    try {
+      await updateStatus(id, { status: 'ACTIVE' });
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || "Failed to activate user.");
+    }
+  };
+
+  // Generate customized table columns with direct action triggers and dynamic branch mapping
+  const columns = useMemo(() => {
+    return getUserColumns({
+      onEdit: (user) => handleOpenModal(user),
+      onStatusChange: (id, action) => {
+        if (action === 'ACTIVATE') {
+          handleDirectActivate(id);
+        } else {
+          setStatusAction({ id, action });
+        }
+      },
+      branchMap,
+    });
+  }, [branchMap]);
+
   return (
     <div className="space-y-6 pb-16">
       <DashboardSection 
         title="Users & Roles"
-        description="Manage employee accounts, roles, and branch assignments."
+        description="Manage employee accounts, role capabilities, and branch assignments."
         action={
           <div className="flex gap-3">
             <BackButton fallback="/admin" label="Back" variant="outline" />
@@ -132,29 +169,14 @@ export default function AdminUsers() {
           columns={columns}
           data={filteredUsers}
           isLoading={isLoading}
-          persistState={true}
+          persistState={false}
+          onRowClick={(user) => handleOpenModal(user)}
           toolbar={
             <UserFilters 
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
             />
           }
-          rowActions={[
-            {
-              label: "Edit Role",
-              onClick: (row) => handleOpenModal(row)
-            },
-            {
-              label: "Suspend",
-              variant: "default",
-              onClick: (row) => setStatusAction({ id: row.id, action: 'SUSPEND' })
-            },
-            {
-              label: "Deactivate",
-              variant: "destructive",
-              onClick: (row) => setStatusAction({ id: row.id, action: 'DEACTIVATE' })
-            }
-          ]}
         />
         {!isLoading && filteredUsers.length === 0 && (
           <div className="flex flex-col items-center justify-center p-12 text-center">
@@ -172,9 +194,11 @@ export default function AdminUsers() {
       </div>
 
       <Sheet open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <SheetContent className="sm:max-w-lg w-full overflow-y-auto">
+        <SheetContent className="sm:max-w-xl w-full overflow-y-auto">
           <SheetHeader className="mb-6">
-            <SheetTitle>{editingUser ? `Edit Role & Access — ${editingUser.name}` : "Invite New User"}</SheetTitle>
+            <SheetTitle>
+              {editingUser ? `Edit Role & Access — ${editingUser.name}` : "Invite New User"}
+            </SheetTitle>
           </SheetHeader>
           <UserForm
             formData={formData}
@@ -182,6 +206,7 @@ export default function AdminUsers() {
             onSubmit={handleSave}
             isSaving={isSaving}
             isEditing={!!editingUser}
+            availableBranches={branches}
           />
         </SheetContent>
       </Sheet>
