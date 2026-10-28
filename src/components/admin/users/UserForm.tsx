@@ -13,7 +13,6 @@ const BRANCH_SUBTITLES: Record<string, string> = {
   cmswuiiu000021su3kv1mr41f: "Central Factory & Baking Unit",
   varasiya: "Central Factory & Baking Unit",
   khanderao: "HQ Retail Showroom",
-  cmswuiita00011su3977ajl1z: "Market Branch Outlet",
   uma: "Main Outlet (Waghodia)",
   cmswuiiun00031su3vfrn9eq5: "Ellora Park Retail Branch",
   elora: "Ellora Park Retail Branch",
@@ -42,25 +41,36 @@ export function UserForm({
   const isDeliveryRole = role === "DELIVERY";
   const needsSingleBranch = ROLES_SINGLE_BRANCH.includes(role);
 
-  // Build resolved branch list from live DB branches + fallbacks
+  // Normalize legacy Market branchId to canonical khanderao
+  React.useEffect(() => {
+    if (formData.branchId === "cmswuiita00011su3977ajl1z") {
+      setFormData(prev => ({ ...prev, branchId: "khanderao" }));
+    }
+  }, [formData.branchId, setFormData]);
+
+  // Build resolved branch list from live DB branches (strictly 4 branches)
   const branchOptions = React.useMemo(() => {
     const map = new Map<string, string>();
     if (availableBranches?.length) {
       for (const b of availableBranches) {
+        // Exclude any legacy duplicate Market branch entry
+        if (b.id === "cmswuiita00011su3977ajl1z" || b.name.toLowerCase() === "market branch") {
+          continue;
+        }
         map.set(b.id, b.name);
       }
     }
-    // Known core branches
+    // Exactly 4 canonical branches
     if (!map.has("cmswuiiu000021su3kv1mr41f")) map.set("cmswuiiu000021su3kv1mr41f", "Factory Warasiya");
     if (!map.has("khanderao")) map.set("khanderao", "Khanderao Market");
     if (!map.has("uma")) map.set("uma", "Uma Branch");
-    if (!map.has("cmswuiita00011su3977ajl1z")) map.set("cmswuiita00011su3977ajl1z", "Market Branch");
     if (!map.has("cmswuiiun00031su3vfrn9eq5")) map.set("cmswuiiun00031su3vfrn9eq5", "Ellora Park");
 
     // If current user's branchId is not in the map, add it
-    if (formData.branchId && !map.has(formData.branchId)) {
-      const fallbackName = BRANCH_LABELS[formData.branchId] || formData.branchId;
-      map.set(formData.branchId, fallbackName);
+    const activeBranchId = formData.branchId === "cmswuiita00011su3977ajl1z" ? "khanderao" : formData.branchId;
+    if (activeBranchId && !map.has(activeBranchId)) {
+      const fallbackName = BRANCH_LABELS[activeBranchId] || activeBranchId;
+      map.set(activeBranchId, fallbackName);
     }
 
     return Array.from(map.entries()).map(([id, label]) => ({ id, label }));

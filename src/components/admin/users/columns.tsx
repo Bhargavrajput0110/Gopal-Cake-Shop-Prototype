@@ -19,7 +19,7 @@ const ROLE_STYLES: Record<Role, { label: string; cls: string }> = {
 export const BRANCH_LABELS: Record<string, string> = {
   // Database CUID IDs
   cmswuiiu000021su3kv1mr41f: "Factory Warasiya",
-  cmswuiita00011su3977ajl1z: "Market Branch",
+  cmswuiita00011su3977ajl1z: "Khanderao Market",
   cmswuiiun00031su3vfrn9eq5: "Ellora Park",
   // Common codes and slugs
   khanderao:                 "Khanderao Market",
@@ -27,7 +27,7 @@ export const BRANCH_LABELS: Record<string, string> = {
   uma:                       "Uma Branch",
   warasiya:                  "Factory Warasiya",
   ellorapark:                "Ellora Park",
-  market:                    "Market Branch",
+  market:                    "Khanderao Market",
 }
 
 export function getBranchDisplayName(branchId?: string | null, branchMap?: Record<string, string>): string | null {

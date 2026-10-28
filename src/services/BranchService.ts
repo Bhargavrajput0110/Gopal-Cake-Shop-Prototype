@@ -4,7 +4,7 @@ import { BranchResponseDTO, CreateBranchDTO } from '@/dtos/BranchSchemas'
 export class BranchService {
   static async listBranches(includeInactive = true): Promise<BranchResponseDTO[]> {
     const branches = await prisma.branch.findMany({
-      where: includeInactive ? { id: { not: 'khanderao' } } : { isActive: true, id: { not: 'khanderao' } },
+      where: includeInactive ? undefined : { isActive: true },
       orderBy: { name: 'asc' },
     })
 

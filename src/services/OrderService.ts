@@ -17,7 +17,7 @@ export class OrderService {
   ): Promise<{ data: OrderResponseDTO[], total: number }> {
     const BRANCH_CUID_MAP: Record<string, string> = {
       'elora': 'cmswuiiun00031su3vfrn9eq5',
-      'khanderao': 'cmswuiita00011su3977ajl1z',
+      'khanderao': 'khanderao',
       'varasiya': 'cmswuiiu000021su3kv1mr41f',
       'uma': 'uma',
     };

@@ -128,7 +128,7 @@ export class StorefrontEngine {
               { id: canonicalId },
               { code: { equals: canonicalId, mode: 'insensitive' } },
               { code: { equals: getBranchNumericCode(canonicalId), mode: 'insensitive' } },
-              { id: (canonicalId === 'varasiya' ? 'cmswuiiu000021su3kv1mr41f' : canonicalId === 'elora' ? 'cmswuiiun00031su3vfrn9eq5' : canonicalId === 'khanderao' ? 'cmswuiita00011su3977ajl1z' : 'uma') }
+              { id: (canonicalId === 'varasiya' ? 'cmswuiiu000021su3kv1mr41f' : canonicalId === 'elora' ? 'cmswuiiun00031su3vfrn9eq5' : canonicalId === 'khanderao' ? 'khanderao' : 'uma') }
             ] 
           }
         })

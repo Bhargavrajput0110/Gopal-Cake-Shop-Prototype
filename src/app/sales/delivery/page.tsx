@@ -19,7 +19,7 @@ type DriverWorkload = {
 
 export default function DeliveryCoordinationPage() {
   const { data: session } = useSession();
-  const branchMap: Record<string, string> = { 'cmswuiita00011su3977ajl1z': 'Khanderao Branch', 'uma': 'Uma Branch', 'cmswuiiu000021su3kv1mr41f': 'Varasiya Branch', 'cmswuiiun00031su3vfrn9eq5': 'Ellora Branch' };
+  const branchMap: Record<string, string> = { 'khanderao': 'Khanderao Branch', 'cmswuiita00011su3977ajl1z': 'Khanderao Branch', 'uma': 'Uma Branch', 'cmswuiiu000021su3kv1mr41f': 'Varasiya Branch', 'cmswuiiun00031su3vfrn9eq5': 'Ellora Branch' };
   const currentBranch = branchMap[(session?.user as any)?.branchId] || "Your Branch";
   
   const { orders, assignDriverToOrder } = useOrders();
