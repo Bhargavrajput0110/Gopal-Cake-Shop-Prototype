@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Add, ArrowLeft } from "iconsax-react";
+import { Add, ArrowLeft, Cake } from "iconsax-react";
 import { BackButton } from "@/components/ui/BackButton";
 import Link from "next/link";
 import { DashboardSection } from "@/components/ui/dashboard-widgets";
@@ -397,11 +397,25 @@ export default function AdminProducts() {
       </div>
 
       <Sheet open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <SheetContent className="sm:max-w-2xl w-full flex flex-col h-full">
-          <SheetHeader className="mb-4 shrink-0">
-            <SheetTitle>{editingProduct ? "Edit Product" : "Add New Product"}</SheetTitle>
+        <SheetContent className="sm:max-w-2xl w-full flex flex-col h-full p-6 sm:p-8">
+          <SheetHeader className="pb-4 border-b border-border shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
+                <Cake className="w-5 h-5" />
+              </div>
+              <div>
+                <SheetTitle className="text-lg font-bold text-foreground">
+                  {editingProduct ? `Edit ${editingProduct.name || "Product"}` : "Add New Product"}
+                </SheetTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {editingProduct
+                    ? "Update pricing, category, flavors, weights, and product images."
+                    : "Fill in the details below to add a new handcrafted cake or treat to the catalogue."}
+                </p>
+              </div>
+            </div>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto pr-2 pb-10 hide-scrollbar">
+          <div className="flex-1 overflow-y-auto pt-5 pr-1 pb-6 custom-scrollbar">
             <ProductForm
               formData={formData}
               setFormData={setFormData}
