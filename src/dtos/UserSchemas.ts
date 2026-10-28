@@ -7,11 +7,13 @@ export const InviteUserSchema = z.object({
   phone: z.string().nullable().optional(),
   role: z.nativeEnum(Role),
   branchId: z.string().nullable().optional(),
+  deliveryScope: z.string().nullable().optional(),
 })
 
 export const UpdateUserRoleSchema = z.object({
   role: z.nativeEnum(Role),
   branchId: z.string().nullable().optional(),
+  deliveryScope: z.string().nullable().optional(),
 })
 
 export const UpdateUserStatusSchema = z.object({
@@ -30,6 +32,7 @@ export type UserResponseDTO = {
   role: Role
   status: AccountStatus
   branchId: string | null
+  deliveryScope?: string | null
   createdAt: string
   lastLoginAt: string | null
 }

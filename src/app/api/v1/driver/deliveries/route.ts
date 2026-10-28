@@ -35,6 +35,9 @@ export const GET = withApiHandler(async (ctx) => {
       branchFilter = { branchId: { in: ['uma', 'cmswuiiu000021su3kv1mr41f'] } };
     } else if (scope === 'WARASHIYA_PLUS_ASSIGNED' || scope === 'WARASHIYA') {
       branchFilter = { branchId: 'cmswuiiu000021su3kv1mr41f' };
+    } else if (scope && scope.includes(',')) {
+      const branchList = scope.split(',').map((s: string) => s.trim()).filter(Boolean);
+      branchFilter = { branchId: { in: branchList } };
     } else if (user.branchId) {
       branchFilter = { branchId: user.branchId };
     } else {

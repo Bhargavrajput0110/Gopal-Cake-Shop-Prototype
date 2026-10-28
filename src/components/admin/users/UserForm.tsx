@@ -7,8 +7,17 @@ import { InviteUserDTO } from "@/dtos/UserSchemas";
 import { RoleCapabilities, ROLE_META } from "./RoleCapabilities";
 import { BRANCH_LABELS } from "./columns";
 
-const ROLE_NEEDS_BRANCH: Role[] = ["MANAGER", "SALESPERSON", "CHEF", "DELIVERY"];
-const ROLES_NO_BRANCH: Role[] = ["ADMIN", "VENDOR_FLORIST", "VENDOR_PHOTO", "VENDOR_ACRYLIC"];
+const ROLES_SINGLE_BRANCH: Role[] = ["MANAGER", "SALESPERSON", "CHEF"];
+
+const BRANCH_SUBTITLES: Record<string, string> = {
+  cmswuiiu000021su3kv1mr41f: "Central Factory & Baking Unit",
+  varasiya: "Central Factory & Baking Unit",
+  khanderao: "HQ Retail Showroom",
+  cmswuiita00011su3977ajl1z: "Market Branch Outlet",
+  uma: "Main Outlet (Waghodia)",
+  cmswuiiun00031su3vfrn9eq5: "Ellora Park Retail Branch",
+  elora: "Ellora Park Retail Branch",
+};
 
 interface UserFormProps {
   formData: InviteUserDTO;
@@ -19,14 +28,19 @@ interface UserFormProps {
   availableBranches?: { id: string; name: string }[];
 }
 
-export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing, availableBranches }: UserFormProps) {
+export function UserForm({
+  formData,
+  setFormData,
+  onSubmit,
+  isSaving,
+  isEditing,
+  availableBranches,
+}: UserFormProps) {
   const role = formData.role as Role;
-  const meta = ROLE_META[role];
-  const needsBranch = ROLE_NEEDS_BRANCH.includes(role);
   const isGlobal = role === "ADMIN";
   const isVendor = role?.startsWith("VENDOR_");
-
-  const branchMissing = needsBranch && !formData.branchId;
+  const isDeliveryRole = role === "DELIVERY";
+  const needsSingleBranch = ROLES_SINGLE_BRANCH.includes(role);
 
   // Build resolved branch list from live DB branches + fallbacks
   const branchOptions = React.useMemo(() => {
@@ -52,11 +66,122 @@ export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing,
     return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
   }, [availableBranches, formData.branchId]);
 
+  const allBranchIds = React.useMemo(() => branchOptions.map((b) => b.id), [branchOptions]);
+
+  // Selected branch IDs for delivery persons
+  const selectedDeliveryBranchIds = React.useMemo(() => {
+    if (!isDeliveryRole) return [];
+    const scope = formData.deliveryScope;
+
+    // Global delivery: ALL_BRANCHES, GLOBAL, or null branchId in editing
+    if (
+      scope === "ALL_BRANCHES" ||
+      scope === "GLOBAL" ||
+      (isEditing && !formData.branchId && (!scope || scope === ""))
+    ) {
+      return allBranchIds;
+    }
+
+    if (scope && scope.includes(",")) {
+      return scope.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+
+    if (scope === "UMA_WARASHIYA_PLUS_ASSIGNED") {
+      return ["uma", "cmswuiiu000021su3kv1mr41f"];
+    }
+
+    if (scope === "WARASHIYA_PLUS_ASSIGNED" || scope === "WARASHIYA") {
+      return ["cmswuiiu000021su3kv1mr41f"];
+    }
+
+    if (formData.branchId) {
+      return [formData.branchId];
+    }
+
+    return [];
+  }, [isDeliveryRole, formData.deliveryScope, formData.branchId, allBranchIds, isEditing]);
+
+  const isAllDeliverySelected =
+    isDeliveryRole &&
+    (formData.deliveryScope === "ALL_BRANCHES" ||
+      (selectedDeliveryBranchIds.length === allBranchIds.length && allBranchIds.length > 0));
+
+  const handleSelectAllBranches = () => {
+    setFormData((prev) => ({
+      ...prev,
+      deliveryScope: "ALL_BRANCHES",
+      branchId: null,
+    }));
+  };
+
+  const handleClearAllBranches = () => {
+    setFormData((prev) => ({
+      ...prev,
+      deliveryScope: "",
+      branchId: null,
+    }));
+  };
+
+  const handleToggleDeliveryBranch = (bId: string) => {
+    let next: string[];
+    if (isAllDeliverySelected) {
+      next = allBranchIds.filter((id) => id !== bId);
+    } else if (selectedDeliveryBranchIds.includes(bId)) {
+      next = selectedDeliveryBranchIds.filter((id) => id !== bId);
+    } else {
+      next = [...selectedDeliveryBranchIds, bId];
+    }
+
+    if (next.length === 0) {
+      setFormData((prev) => ({
+        ...prev,
+        deliveryScope: "",
+        branchId: null,
+      }));
+    } else if (next.length === allBranchIds.length) {
+      setFormData((prev) => ({
+        ...prev,
+        deliveryScope: "ALL_BRANCHES",
+        branchId: null,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        deliveryScope: next.join(","),
+        branchId: next[0] || null,
+      }));
+    }
+  };
+
   const assignedBranchLabel = React.useMemo(() => {
+    if (role === "ADMIN") return "Global (All branches & central operations)";
+    if (isDeliveryRole) {
+      if (isAllDeliverySelected || formData.deliveryScope === "ALL_BRANCHES") {
+        return "Global (All 5 branches covered)";
+      }
+      if (selectedDeliveryBranchIds.length > 1) {
+        return `${selectedDeliveryBranchIds.length} Branches Assigned`;
+      }
+      if (selectedDeliveryBranchIds.length === 1) {
+        const found = branchOptions.find((b) => b.id === selectedDeliveryBranchIds[0]);
+        return found ? found.label : selectedDeliveryBranchIds[0];
+      }
+      return null;
+    }
     if (!formData.branchId) return null;
     const match = branchOptions.find((b) => b.id === formData.branchId);
     return match ? match.label : formData.branchId;
-  }, [formData.branchId, branchOptions]);
+  }, [
+    role,
+    isDeliveryRole,
+    isAllDeliverySelected,
+    formData.deliveryScope,
+    selectedDeliveryBranchIds,
+    formData.branchId,
+    branchOptions,
+  ]);
+
+  const branchMissing = needsSingleBranch && !formData.branchId;
 
   return (
     <form onSubmit={onSubmit} className="space-y-6 pb-8">
@@ -133,14 +258,16 @@ export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing,
           <select
             required
             value={formData.role}
-            onChange={(e) =>
+            onChange={(e) => {
+              const newRole = e.target.value as Role;
+              const willBeDelivery = newRole === "DELIVERY";
               setFormData({
                 ...formData,
-                role: e.target.value as Role,
-                // Reset branch when switching to global/vendor role
-                branchId: ROLES_NO_BRANCH.includes(e.target.value as Role) ? null : formData.branchId,
-              })
-            }
+                role: newRole,
+                branchId: newRole === "ADMIN" ? null : willBeDelivery ? null : formData.branchId,
+                deliveryScope: willBeDelivery ? "ALL_BRANCHES" : null,
+              });
+            }}
             className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
           >
             <optgroup label="Management">
@@ -160,8 +287,99 @@ export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing,
           </select>
         </div>
 
-        {/* Branch scope */}
-        {needsBranch && (
+        {/* ── Delivery Multi-Branch Selection ───────────────────── */}
+        {isDeliveryRole && (
+          <div className="space-y-3 p-4 rounded-xl border border-border bg-muted/20">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <span>Assigned Delivery Coverage</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    Multi-Branch
+                  </span>
+                </label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Select which branches this delivery driver can accept orders and dispatch from.
+                </p>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleSelectAllBranches}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isAllDeliverySelected
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "bg-card hover:bg-emerald-500/10 hover:text-emerald-700 text-foreground border border-border"
+                  }`}
+                >
+                  <TickCircle className="w-3.5 h-3.5" variant={isAllDeliverySelected ? "Bold" : "Linear"} />
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearAllBranches}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-card hover:bg-destructive/10 hover:text-destructive text-muted-foreground border border-border transition-all cursor-pointer"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            {/* Global delivery indicator */}
+            {isAllDeliverySelected && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25">
+                <TickCircle className="w-4 h-4 text-emerald-600 shrink-0" variant="Bold" />
+                <span className="text-xs font-semibold text-emerald-800">
+                  <strong>Global Delivery Driver:</strong> Covers all {allBranchIds.length} branches across Vadodara.
+                </span>
+              </div>
+            )}
+
+            {/* Branch Checkboxes Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              {branchOptions.map((b) => {
+                const checked = selectedDeliveryBranchIds.includes(b.id);
+                return (
+                  <div
+                    key={b.id}
+                    onClick={() => handleToggleDeliveryBranch(b.id)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border text-xs font-medium cursor-pointer transition-all select-none ${
+                      checked
+                        ? "bg-card border-primary/50 text-foreground shadow-xs ring-1 ring-primary/20"
+                        : "bg-background/60 border-border text-muted-foreground hover:bg-card hover:text-foreground"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {}} // handled by div onClick
+                      className="w-4 h-4 rounded text-primary border-input focus:ring-primary/40 cursor-pointer accent-primary shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-foreground truncate">{b.label}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {BRANCH_SUBTITLES[b.id] || "Branch Outlet"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Warning if nothing selected */}
+            {selectedDeliveryBranchIds.length === 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-destructive font-semibold mt-1">
+                <Warning2 className="w-4 h-4 shrink-0" />
+                No branch selected — driver will have NO access to delivery tasks.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Single Branch Selector (Manager, Sales, Chef) ────── */}
+        {needsSingleBranch && (
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-foreground">Assigned Branch *</label>
             <select
@@ -209,7 +427,11 @@ export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing,
         <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
           What this role can access
         </h3>
-        <RoleCapabilities role={role} assignedBranchName={assignedBranchLabel} />
+        <RoleCapabilities
+          role={role}
+          assignedBranchName={assignedBranchLabel}
+          deliveryScope={formData.deliveryScope}
+        />
       </div>
 
       {/* ── Submit ──────────────────────────────────────────────── */}
@@ -217,7 +439,7 @@ export function UserForm({ formData, setFormData, onSubmit, isSaving, isEditing,
         <button
           type="submit"
           disabled={isSaving}
-          className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer"
         >
           {isSaving ? (
             "Processing…"

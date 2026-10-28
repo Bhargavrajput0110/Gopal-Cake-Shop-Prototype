@@ -315,9 +315,10 @@ const CATEGORY_TABS = [
 interface RoleCapabilitiesProps {
   role: Role;
   assignedBranchName?: string | null;
+  deliveryScope?: string | null;
 }
 
-export function RoleCapabilities({ role, assignedBranchName }: RoleCapabilitiesProps) {
+export function RoleCapabilities({ role, assignedBranchName, deliveryScope }: RoleCapabilitiesProps) {
   const roleInfo = ROLE_DETAILS[role] || ROLE_DETAILS.SALESPERSON;
   const [activeTab, setActiveTab] = React.useState<string>("all");
 
@@ -337,6 +338,13 @@ export function RoleCapabilities({ role, assignedBranchName }: RoleCapabilitiesP
     }
     return { granted, denied };
   }, [role]);
+
+  const isGlobalDelivery =
+    role === "DELIVERY" &&
+    (deliveryScope === "ALL_BRANCHES" ||
+      deliveryScope === "GLOBAL" ||
+      assignedBranchName?.toLowerCase().includes("global") ||
+      assignedBranchName?.toLowerCase().includes("all"));
 
   return (
     <div className="space-y-4">
@@ -374,6 +382,8 @@ export function RoleCapabilities({ role, assignedBranchName }: RoleCapabilitiesP
               Effective Data Scope:{" "}
               {role === "ADMIN" ? (
                 <strong className="text-emerald-600">Global (All branches & central operations)</strong>
+              ) : isGlobalDelivery ? (
+                <strong className="text-emerald-600">🌐 Global Delivery (All branches covered)</strong>
               ) : role.startsWith("VENDOR_") ? (
                 <strong className="text-amber-600">Task-Isolated (Only sees assigned custom items)</strong>
               ) : assignedBranchName ? (

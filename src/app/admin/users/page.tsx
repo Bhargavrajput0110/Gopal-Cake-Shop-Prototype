@@ -62,12 +62,23 @@ export default function AdminUsers() {
   const handleOpenModal = (user?: UserResponseDTO) => {
     if (user) {
       setEditingUser(user);
+      // Auto-detect delivery scope for drivers if not explicitly set
+      let initialScope = user.deliveryScope || "";
+      if (user.role === "DELIVERY" && !initialScope) {
+        if (!user.branchId || user.email?.includes("global")) {
+          initialScope = "ALL_BRANCHES";
+        } else {
+          initialScope = user.branchId;
+        }
+      }
+
       setFormData({
         name: user.name,
         email: user.email || "",
         phone: user.phone || "",
         role: user.role,
         branchId: user.branchId || "",
+        deliveryScope: initialScope,
       });
     } else {
       setEditingUser(null);
@@ -77,6 +88,7 @@ export default function AdminUsers() {
         phone: "",
         role: "SALESPERSON",
         branchId: "",
+        deliveryScope: "",
       });
     }
     setIsModalOpen(true);
@@ -87,13 +99,21 @@ export default function AdminUsers() {
     setIsSaving(true);
     
     try {
-      const payload = {
+      const isDelivery = formData.role === 'DELIVERY';
+      const isGlobalDelivery = isDelivery && (formData.deliveryScope === 'ALL_BRANCHES' || !formData.deliveryScope);
+      
+      const payload: InviteUserDTO = {
         ...formData,
-        branchId: formData.role === 'ADMIN' ? null : (formData.branchId || null),
+        branchId: formData.role === 'ADMIN' || isGlobalDelivery ? null : (formData.branchId || null),
+        deliveryScope: isDelivery ? (formData.deliveryScope || 'ALL_BRANCHES') : null,
       };
 
       if (editingUser) {
-        await updateRole(editingUser.id, { role: payload.role, branchId: payload.branchId });
+        await updateRole(editingUser.id, { 
+          role: payload.role, 
+          branchId: payload.branchId,
+          deliveryScope: payload.deliveryScope,
+        });
       } else {
         await inviteUser(payload);
       }

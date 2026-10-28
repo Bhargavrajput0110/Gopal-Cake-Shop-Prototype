@@ -185,7 +185,8 @@ export function getUserColumns({
       accessorKey: "branchId",
       header: "Scope",
       cell: ({ row }) => {
-        const role = row.original.role as Role
+        const user = row.original
+        const role = user.role as Role
         if (role === "ADMIN") {
           return (
             <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
@@ -200,7 +201,52 @@ export function getUserColumns({
             </span>
           )
         }
-        const branchLabel = getBranchDisplayName(row.original.branchId, branchMap)
+        if (role === "DELIVERY") {
+          const scope = user.deliveryScope
+          if (scope === "ALL_BRANCHES" || scope === "GLOBAL" || (!user.branchId && user.email?.includes("global"))) {
+            return (
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
+                🌐 All Branches
+              </span>
+            )
+          }
+          if (scope && scope.includes(",")) {
+            const count = scope.split(",").length
+            return (
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-500/20">
+                🚚 {count} Branches
+              </span>
+            )
+          }
+          if (scope === "UMA_WARASHIYA_PLUS_ASSIGNED") {
+            return (
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-500/20">
+                🚚 Uma + Warasiya
+              </span>
+            )
+          }
+          const branchLabel = getBranchDisplayName(user.branchId, branchMap)
+          if (branchLabel) {
+            return (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-foreground bg-muted/60 px-2.5 py-1 rounded-md border border-border">
+                🏪 {branchLabel}
+              </span>
+            )
+          }
+          if (scope) {
+            return (
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
+                🌐 {scope}
+              </span>
+            )
+          }
+          return (
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-md border border-destructive/20">
+              ⚠️ No Access
+            </span>
+          )
+        }
+        const branchLabel = getBranchDisplayName(user.branchId, branchMap)
         return branchLabel ? (
           <span className="inline-flex items-center gap-1 text-xs font-semibold text-foreground bg-muted/60 px-2.5 py-1 rounded-md border border-border">
             🏪 {branchLabel}
