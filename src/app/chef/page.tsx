@@ -121,21 +121,21 @@ export default function ChefDashboardPage() {
   const isHotBakeChef = session?.user?.name?.toLowerCase().includes('santosh') || session?.user?.name?.toLowerCase().includes('hot bake');
   const branchOrders = orders.filter(o => isHotBakeChef || activeBranch === "all" || toBranchId(o.branch) === activeBranch);
 
-  // Queue: orders waiting for chef strictly respecting day filter (plus overdue unmade orders on TODAY)
+  // Queue: ONLY orders waiting for chef for the selected day (strict — no overdue carry-forward)
   const queueOrders = branchOrders
     .filter(o => {
       if (o.status !== "WAITING_FOR_CHEF") return false;
       if (dayFilter === 'ALL') return true;
-      return matchesDayFilter(o.timeTarget, dayFilter, true);
+      return matchesDayFilter(o.timeTarget, dayFilter);
     })
     .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
   
-  // My Tasks: active in-progress tasks strictly respecting day filter
+  // My Tasks: active in-progress tasks for the selected day (strict)
   const myTasksOrders = branchOrders
     .filter(o => {
       if (!["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(o.status)) return false;
       if (dayFilter === 'ALL') return true;
-      return matchesDayFilter(o.timeTarget, dayFilter, true);
+      return matchesDayFilter(o.timeTarget, dayFilter);
     })
     .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime());
     
@@ -149,7 +149,7 @@ export default function ChefDashboardPage() {
     .filter(o => {
       if (o.status === 'CANCELLED') return false;
       if (dayFilter === 'ALL') return true;
-      return matchesDayFilter(o.timeTarget, dayFilter, true);
+      return matchesDayFilter(o.timeTarget, dayFilter);
     })
     .sort((a, b) => {
       // Pending orders first so chef sees new tickets to accept immediately
