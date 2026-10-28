@@ -118,16 +118,27 @@ export default function AdminProducts() {
   };
 
   const filteredProductsWithCategory = useMemo(() => {
-    const categoryMap = new Map(categories.map(c => [c.categoryId, c.name]));
+    const categoryMap = new Map<string, string>();
+    categories.forEach((c: any) => {
+      if (c.id) categoryMap.set(c.id, c.name);
+      if (c.slug) categoryMap.set(c.slug, c.name);
+      if (c.categoryId) categoryMap.set(c.categoryId, c.name);
+    });
     
-    return products.map(p => ({
-      ...p,
-      productId: p.id,
-      price: p.basePrice,
-      images: p.thumbnail ? [p.thumbnail] : [],
-      categoryName: categoryMap.get(p.categoryId) || "Unknown",
-      status: p.availableForSale ? 'active' : 'sold-out'
-    })) as ProductWithCategory[];
+    return products.map(p => {
+      const directCatName = (p as any).category?.name;
+      const mappedName = p.categoryId ? categoryMap.get(p.categoryId) : undefined;
+      const resolvedName = directCatName || mappedName || "General";
+
+      return {
+        ...p,
+        productId: p.id,
+        price: p.basePrice,
+        images: p.thumbnail ? [p.thumbnail] : [],
+        categoryName: resolvedName,
+        status: p.availableForSale ? 'active' : 'sold-out'
+      };
+    }) as ProductWithCategory[];
   }, [products, categories]);
 
   const handleOpenModal = (product?: Product) => {
@@ -142,11 +153,14 @@ export default function AdminProducts() {
          } catch(e) {}
       }
       
+      const matchingCat = categories.find((c: any) => c.id === product.categoryId || c.slug === product.categoryId || c.categoryId === product.categoryId);
+      const resolvedCatId: string = (matchingCat ? (matchingCat.categoryId || matchingCat.slug || matchingCat.id) : (product.categoryId || "")) || "";
+
       setFormData({
         name: product.name,
         description: product.description || "",
         price: (product.basePrice || 0).toString(),
-        categoryId: product.categoryId || "",
+        categoryId: resolvedCatId,
         status: product.availableForSale ? "active" : "out_of_stock",
         images: product.thumbnail ? [product.thumbnail] : [],
         weightOptions: weightOptionsStr,

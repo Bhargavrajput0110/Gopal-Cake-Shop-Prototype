@@ -4,6 +4,8 @@ import { SearchNormal1 } from "iconsax-react"
 export interface Category {
   categoryId: string
   name: string
+  id?: string
+  slug?: string
   productId?: string // Keeping legacy type structure
 }
 
