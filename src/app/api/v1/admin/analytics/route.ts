@@ -119,17 +119,16 @@ export const GET = withApiHandler(async (ctx) => {
 
     const completedOrders = (ordersByStatus.COMPLETED || 0) + (ordersByStatus.DELIVERED || 0);
 
-    const pendingOrders = (ordersByStatus.NEW || 0) + 
-                          (ordersByStatus.WAITING_FOR_CHEF || 0) + 
-                          (ordersByStatus.CHEF_ACCEPTED || 0) + 
-                          (ordersByStatus.MAKING || 0) + 
-                          (ordersByStatus.DECORATING || 0) + 
-                          (ordersByStatus.READY_FOR_PICKUP || 0) + 
-                          (ordersByStatus.PENDING_ASSIGNMENT || 0) + 
-                          (ordersByStatus.ASSIGNED_TO_DRIVER || 0) + 
-                          (ordersByStatus.PICKED_UP || 0) + 
-                          (ordersByStatus.ON_THE_WAY || 0) + 
-                          (ordersByStatus.OUT_FOR_DELIVERY || 0);
+    // "Pending" = orders being actively worked on in the kitchen pipeline.
+    // Excludes READY_FOR_PICKUP (counted as readyOrders),
+    // PENDING_ASSIGNMENT / ASSIGNED_TO_DRIVER (counted as pendingDelivery),
+    // and PICKED_UP / ON_THE_WAY / OUT_FOR_DELIVERY (counted as activeDeliveries)
+    // so that all KPI cards are mutually exclusive and add up to totalOrders correctly.
+    const pendingOrders = (ordersByStatus.NEW || 0) +
+                          (ordersByStatus.WAITING_FOR_CHEF || 0) +
+                          (ordersByStatus.CHEF_ACCEPTED || 0) +
+                          (ordersByStatus.MAKING || 0) +
+                          (ordersByStatus.DECORATING || 0);
 
     const readyOrders = (ordersByStatus.READY_FOR_PICKUP || 0);
     const pendingDelivery = (ordersByStatus.PENDING_ASSIGNMENT || 0) + (ordersByStatus.ASSIGNED_TO_DRIVER || 0);

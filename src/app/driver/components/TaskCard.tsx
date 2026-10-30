@@ -134,28 +134,28 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
     <div className={`bg-white/80 backdrop-blur-md rounded-[2rem] border transition-all duration-500 overflow-hidden ${borderColor}`}>
       
       {/* Header Banner */}
-      <div className="px-6 py-4 flex justify-between items-center bg-[#FCF9F2] border-b border-border/40">
+      <div className="px-4 py-3 sm:px-6 sm:py-4 flex justify-between items-center bg-[#FCF9F2] border-b border-border/40">
         <div className="flex flex-col">
-          <span className="font-serif text-2xl font-black leading-none">{item.orderNumber}</span>
-          <span className="text-[10px] font-bold opacity-70 uppercase tracking-[0.2em] mt-1 flex items-center gap-1.5 text-primary">
+          <span className="font-serif text-xl sm:text-2xl font-black leading-none">{item.orderNumber}</span>
+          <span className="text-[9px] sm:text-[10px] font-bold opacity-70 uppercase tracking-[0.2em] mt-1 flex items-center gap-1.5 text-primary">
             <TaskIcon className="w-3.5 h-3.5" /> {taskTitle}
           </span>
         </div>
         <div className="text-right flex flex-col items-end">
-          <span className="font-serif text-xl font-black leading-none flex items-center gap-1.5 text-gray-900">
-            <Clock className="w-4 h-4 opacity-70 text-amber-600"/> {formatTime(item.timeTarget)}
+          <span className="font-serif text-base sm:text-xl font-black leading-none flex items-center gap-1.5 text-gray-900">
+            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 opacity-70 text-amber-600"/> {formatTime(item.timeTarget)}
           </span>
-          <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md mt-1 border border-amber-200/80">
+          <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md mt-1 border border-amber-200/80">
             📅 {formatDayLabel(item.timeTarget)} ({formatDate(item.timeTarget)})
           </span>
-          <span className="text-[8px] font-bold opacity-70 uppercase tracking-[0.2em] mt-0.5 text-foreground/50">DUE DATE & TIME</span>
+          <span className="text-[7px] sm:text-[8px] font-bold opacity-70 uppercase tracking-[0.2em] mt-0.5 text-foreground/50">DUE DATE & TIME</span>
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         
         {/* Status indicator */}
-        <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-foreground/70 bg-secondary/5 px-4 py-2 rounded-xl border border-secondary/10">
+        <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-foreground/70 bg-secondary/5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-secondary/10">
           <span>Status</span>
           <span className="text-primary">{item.status.replace(/_/g, ' ')}</span>
         </div>

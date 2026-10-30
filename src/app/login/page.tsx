@@ -4,10 +4,9 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = 'force-dynamic';
 
 export default async function LoginPage() {
-  // Only show the 4 canonical spec branches in the login branch selector.
-  // KHD (Khanderao Market) is retained in the DB for historical orders
-  // but is excluded from staff login since no spec staff is assigned there.
-  const SPEC_BRANCH_CODES = ['UMA', 'MARKET', 'WARASIYA', 'ELLORAPARK'];
+  // Include all 4 canonical branches in the login branch selector:
+  // UMA, KHD (Khanderao Market), WARASIYA, ELLORAPARK
+  const SPEC_BRANCH_CODES = ['UMA', 'KHD', 'WARASIYA', 'ELLORAPARK', 'MARKET'];
 
   const dbBranches = await prisma.branch.findMany({
     where: { isActive: true, code: { in: SPEC_BRANCH_CODES } },

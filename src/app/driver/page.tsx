@@ -296,100 +296,104 @@ export default function DriverDashboard() {
       </AnimatePresence>
       
       {/* Header */}
-      <header className="bg-white/40 backdrop-blur-md border-b border-border/40 p-6 sticky top-0 z-20 flex justify-between items-center shadow-sm">
+      <header className="bg-white/80 md:backdrop-blur-md border-b border-border/60 px-4 py-3 sm:p-6 sticky top-0 z-20 flex justify-between items-center shadow-xs">
         <div>
-          <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground leading-none">Driver Tasks</h1>
-          <p className="text-[10px] font-sans font-bold text-primary uppercase tracking-[0.2em] mt-1">Driving as {activeDriver.name}</p>
+          <h1 className="font-serif text-xl sm:text-3xl font-bold tracking-tight text-foreground leading-none">Driver Tasks</h1>
+          <p className="text-[9px] sm:text-[10px] font-sans font-bold text-primary uppercase tracking-[0.2em] mt-0.5 sm:mt-1">Driving as {activeDriver.name}</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {offlineQueue.length > 0 && (
-            <span className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm border border-amber-200">
-              <Refresh className="w-3 h-3 animate-spin" /> {offlineQueue.length} Pending
+            <span className="bg-amber-100 text-amber-700 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[8px] sm:text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 shadow-xs border border-amber-200">
+              <Refresh className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" /> {offlineQueue.length} Pending
             </span>
           )}
           {isOnline ? (
-            <span className="text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest shadow-sm">
-              <Wifi className="w-3 h-3" /> Online
+            <span className="text-emerald-600 bg-emerald-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-emerald-100 flex items-center gap-1 text-[8px] sm:text-[9px] font-bold uppercase tracking-widest shadow-xs">
+              <Wifi className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Online
             </span>
           ) : (
-            <span className="text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest shadow-sm">
-              <WifiSquare className="w-3 h-3" /> Offline
+            <span className="text-rose-600 bg-rose-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-rose-100 flex items-center gap-1 text-[8px] sm:text-[9px] font-bold uppercase tracking-widest shadow-xs">
+              <WifiSquare className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Offline
             </span>
           )}
         </div>
       </header>
 
-      {/* Date Filter */}
-      <div className="px-6 pt-4 pb-2">
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          <button 
-            onClick={() => setSelectedDate(getLocalDateString(new Date()))}
-            className={`px-4 py-2 rounded-full font-bold text-xs whitespace-nowrap transition-all ${selectedDate === getLocalDateString(new Date()) ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-          >
-            Today
-          </button>
-          <button 
-            onClick={() => {
-              const d = new Date()
-              d.setDate(d.getDate() + 1)
-              setSelectedDate(getLocalDateString(d))
-            }}
-            className={`px-4 py-2 rounded-full font-bold text-xs whitespace-nowrap transition-all ${selectedDate === getLocalDateString(new Date(new Date().setDate(new Date().getDate() + 1))) ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-          >
-            Tomorrow
-          </button>
-          <input 
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-1.5 rounded-full font-bold text-xs bg-muted text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary/20"
-          />
+      {/* Date Filter & Summary Ribbon */}
+      <div className="px-3 sm:px-6 pt-3 pb-1">
+        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1.5 scrollbar-hide">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button 
+              onClick={() => setSelectedDate(getLocalDateString(new Date()))}
+              className={`px-3 py-1.5 rounded-full font-bold text-[11px] sm:text-xs whitespace-nowrap transition-all ${selectedDate === getLocalDateString(new Date()) ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+            >
+              Today
+            </button>
+            <button 
+              onClick={() => {
+                const d = new Date()
+                d.setDate(d.getDate() + 1)
+                setSelectedDate(getLocalDateString(d))
+              }}
+              className={`px-3 py-1.5 rounded-full font-bold text-[11px] sm:text-xs whitespace-nowrap transition-all ${selectedDate === getLocalDateString(new Date(new Date().setDate(new Date().getDate() + 1))) ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+            >
+              Tomorrow
+            </button>
+            <input 
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-2.5 py-1 rounded-full font-bold text-[11px] sm:text-xs bg-muted text-muted-foreground border-none outline-none focus:ring-1 focus:ring-primary/40"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Summary Pills — TASK OVERVIEW */}
-      <div className="px-6 pt-2 pb-2">
-        <h2 className="text-xs font-bold text-foreground/50 uppercase tracking-widest mb-3">Tasks for {new Date(selectedDate).toLocaleDateString()}</h2>
-        <div className="flex flex-wrap gap-2">
-           <div className="flex items-center gap-2 bg-blue-600 border border-blue-700 px-3 py-1.5 rounded-lg text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
-              <Shop className="w-3.5 h-3.5" /> Vendor Pickups ({vendorCount})
+      {/* Summary Pills — Swipeable on mobile */}
+      <div className="px-3 sm:px-6 pt-1 pb-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+           <div className="flex items-center gap-1 bg-blue-600 border border-blue-700 px-2.5 py-1 rounded-lg text-white font-black text-[9px] sm:text-[10px] uppercase tracking-wider shrink-0 shadow-xs">
+              <Shop className="w-3 h-3" /> Vendors ({vendorCount})
            </div>
-           <div className="flex items-center gap-2 bg-purple-600 border border-purple-700 px-3 py-1.5 rounded-lg text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
-              <User className="w-3.5 h-3.5" /> Customer Deliveries ({customerCount})
+           <div className="flex items-center gap-1 bg-purple-600 border border-purple-700 px-2.5 py-1 rounded-lg text-white font-black text-[9px] sm:text-[10px] uppercase tracking-wider shrink-0 shadow-xs">
+              <User className="w-3 h-3" /> Customers ({customerCount})
            </div>
-           <div className="flex items-center gap-2 bg-orange-500 border border-orange-600 px-3 py-1.5 rounded-lg text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
-              <ArrowRight className="w-3.5 h-3.5" /> Branch Transfers ({branchCount})
+           <div className="flex items-center gap-1 bg-orange-500 border border-orange-600 px-2.5 py-1 rounded-lg text-white font-black text-[9px] sm:text-[10px] uppercase tracking-wider shrink-0 shadow-xs">
+              <ArrowRight className="w-3 h-3" /> Transfers ({branchCount})
            </div>
-           <div className="flex items-center gap-2 bg-emerald-500 border border-emerald-600 px-3 py-1.5 rounded-lg text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
-              <TickCircle className="w-3.5 h-3.5" /> Completed ({completedTasks.length})
+           <div className="flex items-center gap-1 bg-emerald-500 border border-emerald-600 px-2.5 py-1 rounded-lg text-white font-black text-[9px] sm:text-[10px] uppercase tracking-wider shrink-0 shadow-xs">
+              <TickCircle className="w-3 h-3" /> Done ({completedTasks.length})
            </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="p-6 pb-2 flex gap-3">
+      <div className="px-3 sm:px-6 py-2 flex gap-1.5 sm:gap-3">
         <button 
           onClick={() => setActiveTab('AVAILABLE')}
-          className={`flex-1 py-3.5 rounded-full font-bold text-[11px] uppercase tracking-widest transition-all duration-300 shadow-sm ${activeTab === 'AVAILABLE' ? 'bg-amber-500 text-white border border-amber-600' : 'bg-white/60 text-foreground/70 border border-white hover:border-secondary/20 hover:text-secondary'}`}
+          className={`flex-1 py-2 sm:py-3 px-1.5 rounded-xl sm:rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-wider transition-all duration-200 shadow-xs flex items-center justify-center gap-1 ${activeTab === 'AVAILABLE' ? 'bg-amber-500 text-white border border-amber-600' : 'bg-white text-foreground/70 border border-border/80 hover:border-secondary/20 hover:text-secondary'}`}
         >
-          Available ({availableTasks.length})
+          <span>Available</span>
+          <span className="opacity-90">({availableTasks.length})</span>
         </button>
         <button 
           onClick={() => setActiveTab('PENDING')}
-          className={`flex-1 py-3.5 rounded-full font-bold text-[11px] uppercase tracking-widest transition-all duration-300 shadow-sm ${activeTab === 'PENDING' ? 'bg-primary text-primary-foreground border border-primary/20' : 'bg-white/60 text-foreground/70 border border-white hover:border-secondary/20 hover:text-secondary'}`}
+          className={`flex-1 py-2 sm:py-3 px-1.5 rounded-xl sm:rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-wider transition-all duration-200 shadow-xs flex items-center justify-center gap-1 ${activeTab === 'PENDING' ? 'bg-primary text-primary-foreground border border-primary/20' : 'bg-white text-foreground/70 border border-border/80 hover:border-secondary/20 hover:text-secondary'}`}
         >
-          My Tasks ({pendingTasks.length})
+          <span>My Tasks</span>
+          <span className="opacity-90">({pendingTasks.length})</span>
         </button>
         <button 
           onClick={() => setActiveTab('COMPLETED')}
-          className={`flex-1 py-3.5 rounded-full font-bold text-[11px] uppercase tracking-widest transition-all duration-300 shadow-sm ${activeTab === 'COMPLETED' ? 'bg-emerald-500 text-white border border-emerald-600' : 'bg-white/60 text-foreground/70 border border-white hover:border-secondary/20 hover:text-secondary'}`}
+          className={`flex-1 py-2 sm:py-3 px-1.5 rounded-xl sm:rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-wider transition-all duration-200 shadow-xs flex items-center justify-center gap-1 ${activeTab === 'COMPLETED' ? 'bg-emerald-500 text-white border border-emerald-600' : 'bg-white text-foreground/70 border border-border/80 hover:border-secondary/20 hover:text-secondary'}`}
         >
-          Completed ({completedTasks.length})
+          <span>Done</span>
+          <span className="opacity-90">({completedTasks.length})</span>
         </button>
       </div>
 
       {/* List */}
-      <div className="p-4 space-y-4">
+      <div className="px-3 sm:px-6 py-2 space-y-3 sm:space-y-4">
         {isLoading && tasks.length === 0 ? (
           <div className="text-center p-8 text-muted-foreground font-bold">Loading route...</div>
         ) : activeTab === 'AVAILABLE' ? (

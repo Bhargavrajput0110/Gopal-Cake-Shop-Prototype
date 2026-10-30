@@ -267,7 +267,7 @@ export default function AnalyticsPage() {
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
                 <div>
                   <p className="text-[10px] font-ui uppercase font-bold text-gray-500 tracking-wider truncate w-24" title={src.name}>{src.name}</p>
-                  <p className="text-sm font-black font-display">₹{src.value.toLocaleString()}</p>
+                  <p className="text-sm font-black font-display">₹{src.value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
                 </div>
               </div>
             ))}

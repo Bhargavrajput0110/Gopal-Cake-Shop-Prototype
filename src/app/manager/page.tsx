@@ -147,7 +147,7 @@ export default function ManagerDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard 
             title="Revenue (Today)" 
-            value={`₹${revenue.toLocaleString()}`} 
+            value={`₹${revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`} 
             icon={Moneys} 
             trend={kpis.revenueVsPreviousPeriod?.changePercent > 0 ? `+${kpis.revenueVsPreviousPeriod.changePercent}%` : `${kpis.revenueVsPreviousPeriod?.changePercent}%`} 
             trendLabel="vs yesterday" 

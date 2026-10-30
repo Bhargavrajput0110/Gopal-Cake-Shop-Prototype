@@ -147,9 +147,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   // socket kept as null — Supabase Realtime is used instead of Socket.io
   const socket: Socket | null = null;
 
+  const isFetchingRef = React.useRef(false);
+
   const refetchOrders = async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
-      const res = await fetch(`/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=1000&liveOnly=true&_t=${Date.now()}`);
+      const res = await fetch(`/api/v1/orders?sortField=targetDate&sortOrder=asc&limit=150&liveOnly=true&_t=${Date.now()}`);
       if (!res.ok || !res.headers.get("content-type")?.includes("application/json")) {
         return;
       }
@@ -159,6 +163,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       }
     } catch (err) {
       console.warn("Could not fetch orders:", err);
+    } finally {
+      isFetchingRef.current = false;
     }
   };
 
@@ -182,15 +188,19 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     // Fetch orders immediately on component mount
     refetchOrders();
 
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     // Subscribe to any INSERT or UPDATE on the Order table via Supabase Realtime
-    // When any order changes in the DB, all connected POS screens refetch instantly
+    // When any order changes in the DB, all connected POS screens refetch with debounce
     const channel = supabase
       .channel('orders-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'Order' },
         () => {
-          refetchOrders();
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            refetchOrders();
+          }, 350);
         }
       )
       .subscribe((status) => {
@@ -199,12 +209,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         }
       });
 
-    // Fallback polling: Ensure UI refreshes every 30s for serverless/RLS issues on live site
+    // Fallback polling: Ensure UI refreshes every 30s only when screen is active
     const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       refetchOrders();
     }, 30000);
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
       clearInterval(interval);
     };

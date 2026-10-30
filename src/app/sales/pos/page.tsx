@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion"
 export default function POSPage() {
   const { items: cart, subtotal, clearCart } = useCart()
   const [isPaymentOpen, setIsPaymentOpen] = React.useState(false)
+  const [isMobileCartOpen, setIsMobileCartOpen] = React.useState(false)
   const [successOrder, setSuccessOrder] = React.useState<string | null>(null)
   const [isBulkModalOpen, setIsBulkModalOpen] = React.useState(false)
   
@@ -92,6 +93,7 @@ export default function POSPage() {
 
   const handleCheckoutSuccess = (orderId: string) => {
     setIsPaymentOpen(false)
+    setIsMobileCartOpen(false)
     setSuccessOrder(orderId)
     clearCart() 
   }
@@ -185,46 +187,79 @@ export default function POSPage() {
       </header>
 
       {/* POS Body */}
-      <main className="flex-1 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden p-2 sm:p-6 gap-6 z-10 relative max-w-[1440px] mx-auto w-full pb-24 xl:pb-6">
+      <main className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden p-2 sm:p-4 lg:p-6 gap-4 lg:gap-6 z-10 relative max-w-[1536px] mx-auto w-full pb-24 lg:pb-6">
         {/* Left Side: Product Grid / Form */}
-        <div className="flex-1 w-full xl:h-full xl:min-w-[500px]">
+        <div className="flex-1 w-full lg:h-full lg:min-w-[420px]">
           <ProductGrid products={products} categories={categories} designs={designs} isLoading={isLoadingProducts || isLoadingCategories} />
         </div>
 
-        {/* Right Side: Cart */}
-        <div id="pos-cart-panel" className="w-full xl:w-[420px] shrink-0 xl:h-full scroll-mt-20">
+        {/* Right Side: Cart (Persistent split-screen on landscape tablets and desktop) */}
+        <div id="pos-cart-panel" className="hidden lg:block w-full lg:w-[380px] xl:w-[420px] shrink-0 lg:h-full">
           <CartPanel onCheckout={() => setIsPaymentOpen(true)} />
         </div>
       </main>
 
-      {/* Sticky Floating Mobile Order Cart Bar (Only visible on small/medium mobile screens) */}
+      {/* Floating Mobile/Tablet Order Cart Button (Only on < lg screens) */}
       {cart.length > 0 && (
-        <div className="xl:hidden fixed bottom-16 left-4 right-4 z-40 animate-in slide-in-from-bottom duration-300">
+        <div className="lg:hidden fixed bottom-6 left-4 right-4 z-40 animate-in slide-in-from-bottom duration-300">
           <button
-            onClick={() => {
-              const cartElement = document.getElementById('pos-cart-panel');
-              if (cartElement) {
-                cartElement.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
-            className="w-full py-4 px-5 bg-gradient-to-r from-[var(--brand-deep-rose)] to-amber-700 text-white rounded-2xl font-ui font-black text-xs uppercase tracking-widest shadow-2xl flex items-center justify-between border-2 border-white/30 active:scale-[0.98] transition-transform"
+            onClick={() => setIsMobileCartOpen(true)}
+            className="w-full py-3.5 px-4 bg-gradient-to-r from-[var(--brand-deep-rose)] to-amber-700 text-white rounded-2xl font-ui font-black text-xs uppercase tracking-widest shadow-2xl flex items-center justify-between border-2 border-white/30 active:scale-[0.98] transition-transform"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white text-[var(--brand-deep-rose)] font-black text-sm flex items-center justify-center shadow-md">
+              <div className="w-7 h-7 rounded-full bg-white text-[var(--brand-deep-rose)] font-black text-xs flex items-center justify-center shadow-md">
                 {cart.length}
               </div>
               <div className="text-left">
-                <p className="font-bold text-[10px] text-pink-100 leading-none">ORDER CART READY</p>
-                <p className="font-black text-xs text-white tracking-wider mt-0.5">VIEW CART & CHECKOUT</p>
+                <p className="font-bold text-[9px] text-pink-100 leading-none">ORDER CART</p>
+                <p className="font-black text-xs text-white tracking-wider mt-0.5">REVIEW & CHECKOUT</p>
               </div>
             </div>
             <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/20">
-              <span className="font-display font-black text-base text-white">₹{subtotal.toFixed(2)}</span>
-              <span className="text-amber-200 text-base font-bold">→</span>
+              <span className="font-display font-black text-sm text-white">₹{subtotal.toFixed(2)}</span>
+              <span className="text-amber-200 text-sm font-bold">→</span>
             </div>
           </button>
         </div>
       )}
+
+      {/* Mobile / Portrait Tablet Slide-up Cart Drawer */}
+      <AnimatePresence>
+        {isMobileCartOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end"
+          >
+            <motion.div 
+              initial={{ y: "100%" }} 
+              animate={{ y: 0 }} 
+              exit={{ y: "100%" }} 
+              transition={{ type: "spring", damping: 25, stiffness: 250 }}
+              className="bg-white rounded-t-3xl max-h-[88vh] h-[88vh] flex flex-col overflow-hidden shadow-2xl border-t border-border"
+            >
+              <div className="p-3 bg-muted/40 border-b flex justify-between items-center px-5 shrink-0">
+                <span className="font-ui text-xs font-black uppercase tracking-widest text-foreground">
+                  Order Cart ({cart.length} items)
+                </span>
+                <button 
+                  onClick={() => setIsMobileCartOpen(false)}
+                  className="px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-foreground text-xs font-bold uppercase tracking-wider"
+                >
+                  ✕ Close
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2">
+                <CartPanel onCheckout={() => {
+                  setIsMobileCartOpen(false);
+                  setIsPaymentOpen(true);
+                }} />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Modals */}
       <AnimatePresence>
