@@ -4,13 +4,25 @@ import { Card, Warning2, TickCircle } from "iconsax-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { useOrders } from "@/context/OrderContext";
 import { ReceiptStub } from "@/app/sales/pos/components/ReceiptStub";
+import { useSession } from "next-auth/react";
+import { toBranchId } from "@/lib/branches";
 
 export default function PaymentTrackingPage() {
   const { orders } = useOrders();
+  const { data: session } = useSession();
   const [filter, setFilter] = useState("ALL");
   const [collectingId, setCollectingId] = useState<string | null>(null);
   const [receiptId, setReceiptId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<string>("");
+
+  const userRole = ((session?.user as any)?.role || "").toUpperCase();
+  const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+  const userBranchId = (session?.user as any)?.branchId ? toBranchId((session?.user as any).branchId) : null;
+
+  const branchOrders = useMemo(() => {
+    if (isAdmin || !userBranchId) return orders;
+    return orders.filter(o => toBranchId(o.branch) === userBranchId);
+  }, [orders, isAdmin, userBranchId]);
 
   const { totalCollectedToday, pendingBalances, advancePayments } = useMemo(() => {
     let collectedToday = 0;
@@ -29,7 +41,7 @@ export default function PaymentTrackingPage() {
       );
     };
 
-    orders.forEach(o => {
+    branchOrders.forEach(o => {
       let todayCollectedForOrder = 0;
 
       if (o.payments && Array.isArray(o.payments) && o.payments.length > 0) {
@@ -52,17 +64,17 @@ export default function PaymentTrackingPage() {
     });
 
     return { totalCollectedToday: collectedToday, pendingBalances: pending, advancePayments: advances };
-  }, [orders]);
+  }, [branchOrders]);
 
   const displayOrders = useMemo(() => {
-    return orders
+    return branchOrders
       .filter(o => {
         if (filter === "PENDING") return o.pendingBalance > 0;
         if (filter === "PAID") return o.pendingBalance <= 0;
         return true;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [orders, filter]);
+  }, [branchOrders, filter]);
 
   const handleCollect = async (orderId: string, amount: number) => {
     if (!amount || amount <= 0) return;

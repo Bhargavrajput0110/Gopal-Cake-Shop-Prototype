@@ -86,9 +86,14 @@ export default function ChefDashboardPage() {
   const { data: session } = useSession();
   const { orders, updateOrderFields, transitionOrderAction, addIngredientRequest, refetchOrders } = useOrders();
   
+  const userRole = ((session?.user as any)?.role || "").toUpperCase();
+  const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+  const userBranchId = (session?.user as any)?.branchId || (session?.user as any)?.branch;
+  const canonicalUserBranch = userBranchId ? toBranchId(userBranchId) : null;
+
   const [activeBranch, setActiveBranch] = useState<BranchId | "all">(() => {
-    if ((session?.user as any)?.branchId) {
-      return toBranchId((session?.user as any).branchId);
+    if (userBranchId) {
+      return toBranchId(userBranchId);
     }
     const role = ((session?.user as any)?.role || "").toUpperCase();
     if (role === "ADMIN" || role === "SUPER_ADMIN") return "all";
@@ -117,20 +122,28 @@ export default function ChefDashboardPage() {
   useEffect(() => {
     if (session?.user) {
       const bId = (session.user as any).branchId || (session.user as any).branch;
-      if (bId) {
-        setActiveBranch(toBranchId(bId));
+      const role = ((session.user as any).role || "").toUpperCase();
+      const admin = role === "ADMIN" || role === "SUPER_ADMIN";
+      if (!admin) {
+        if (bId) {
+          setActiveBranch(toBranchId(bId));
+        }
       } else {
-        const role = ((session.user as any).role || "").toUpperCase();
-        if (role === "ADMIN" || role === "SUPER_ADMIN") {
+        if (!bId && activeBranch !== "all") {
           setActiveBranch("all");
         }
       }
     }
   }, [session]);
 
+  // For non-admin chefs: ALWAYS strictly enforce their assigned branch.
+  const effectiveBranch: BranchId | "all" = isAdmin
+    ? activeBranch
+    : (canonicalUserBranch || (activeBranch !== "all" ? activeBranch : "khanderao"));
+
   // Filtering orders for the active branch
   const isHotBakeChef = session?.user?.name?.toLowerCase().includes('santosh') || session?.user?.name?.toLowerCase().includes('hot bake');
-  const branchOrders = orders.filter(o => isHotBakeChef || activeBranch === "all" || toBranchId(o.branch) === activeBranch);
+  const branchOrders = orders.filter(o => isHotBakeChef || effectiveBranch === "all" || toBranchId(o.branch) === effectiveBranch);
 
   // Queue: ONLY orders waiting for chef for the selected day (strict — no overdue carry-forward)
   const queueOrders = branchOrders
@@ -564,19 +577,29 @@ export default function ChefDashboardPage() {
             <h1 className="text-lg sm:text-xl font-black tracking-tight flex items-center gap-2">
               <Reserve className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" /> KDS Terminal
             </h1>
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest hidden sm:inline">Station:</span>
-              <select 
-                value={activeBranch} 
-                onChange={(e) => setActiveBranch(e.target.value as BranchId | "all")}
-                className="bg-gray-800 text-amber-400 font-bold text-[11px] sm:text-xs uppercase tracking-wider px-2 py-1 rounded-lg border border-gray-700 outline-none cursor-pointer hover:border-gray-500 transition-colors shadow-xs"
-              >
-                <option value="all">🌐 ALL KITCHENS</option>
-                {BRANCHES.map(b => (
-                  <option key={b.id} value={b.id}>{b.shortName} KITCHEN</option>
-                ))}
-              </select>
-            </div>
+            {isAdmin ? (
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest hidden sm:inline">Station:</span>
+                <select 
+                  value={activeBranch} 
+                  onChange={(e) => setActiveBranch(e.target.value as BranchId | "all")}
+                  className="bg-gray-800 text-amber-400 font-bold text-[11px] sm:text-xs uppercase tracking-wider px-2 py-1 rounded-lg border border-gray-700 outline-none cursor-pointer hover:border-gray-500 transition-colors shadow-xs"
+                >
+                  <option value="all">🌐 ALL KITCHENS</option>
+                  {BRANCHES.map(b => (
+                    <option key={b.id} value={b.id}>{b.shortName} KITCHEN</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest hidden sm:inline">Station:</span>
+                <div className="bg-gray-800 text-amber-400 font-bold text-[11px] sm:text-xs uppercase tracking-wider px-2.5 py-1 rounded-lg border border-gray-700 shadow-xs flex items-center gap-1.5 select-none">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>{BRANCHES.find(b => b.id === effectiveBranch)?.shortName || 'KITCHEN'} KITCHEN</span>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Header Stats */}

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { Car, TickCircle, Location, Box, Danger } from "iconsax-react";
 import { useOrders } from "@/context/OrderContext";
 import { BackButton } from "@/components/ui/BackButton";
+import { toBranchId } from "@/lib/branches";
 
 type DriverWorkload = {
   driverId: string;
@@ -19,6 +20,11 @@ type DriverWorkload = {
 
 export default function DeliveryCoordinationPage() {
   const { data: session } = useSession();
+  const userRole = ((session?.user as any)?.role || "").toUpperCase();
+  const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+  const userBranchId = (session?.user as any)?.branchId ? toBranchId((session?.user as any).branchId) : null;
+  const matchesUserBranch = (branch: any) => isAdmin || !userBranchId || toBranchId(branch) === userBranchId;
+
   const branchMap: Record<string, string> = { 'khanderao': 'Khanderao Branch', 'cmswuiita00011su3977ajl1z': 'Khanderao Branch', 'uma': 'Uma Branch', 'cmswuiiu000021su3kv1mr41f': 'Varasiya Branch', 'cmswuiiun00031su3vfrn9eq5': 'Ellora Branch' };
   const currentBranch = branchMap[(session?.user as any)?.branchId] || "Your Branch";
   
@@ -59,8 +65,9 @@ export default function DeliveryCoordinationPage() {
   // Sort helper
   const sortByTimeTarget = (a: any, b: any) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime();
 
-  // Fetch pending delivery orders (today only)
+  // Fetch pending delivery orders (today only, scoped to branch)
   const pendingDeliveries = orders.filter(o =>
+    matchesUserBranch(o.branch) &&
     o.orderType === "delivery" &&
     isToday(o.timeTarget) &&
     ["NEW", "WAITING_FOR_CHEF", "CHEF_ACCEPTED", "MAKING", "DECORATING", "READY_FOR_PICKUP", "PENDING_ASSIGNMENT"].includes(o.status) &&
@@ -68,20 +75,23 @@ export default function DeliveryCoordinationPage() {
     !(o.status === "READY_FOR_PICKUP" && o.items?.some((i: any) => i.assignedVendorId && !['DELIVERED'].includes(i.status || '')))
   ).sort(sortByTimeTarget);
 
-  // Active customer delivery trips (today only)
+  // Active customer delivery trips (today only, scoped to branch)
   const activeDeliveries = orders.filter(o =>
+    matchesUserBranch(o.branch) &&
     o.orderType === "delivery" &&
     isToday(o.timeTarget) &&
     ["ASSIGNED_TO_DRIVER", "PICKED_UP", "ON_THE_WAY", "OUT_FOR_DELIVERY"].includes(o.status)
   ).sort(sortByTimeTarget);
 
-  // Vendor pickup trips in progress (today only)
+  // Vendor pickup trips in progress (today only, scoped to branch)
   const vendorPickupTrips = orders.filter(o =>
+    matchesUserBranch(o.branch) &&
     isToday(o.timeTarget) &&
     o.items?.some((i: any) => !!i.assignedVendorId && ['READY_FOR_PICKUP'].includes(i.status || ''))
   ).sort(sortByTimeTarget);
 
   const completedDeliveries = orders.filter(o =>
+    matchesUserBranch(o.branch) &&
     o.orderType === "delivery" && isToday(o.timeTarget) && o.status === "DELIVERED"
   ).sort(sortByTimeTarget);
 
