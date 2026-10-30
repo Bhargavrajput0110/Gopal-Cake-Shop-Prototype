@@ -187,7 +187,7 @@ export default function POSPage() {
       </header>
 
       {/* POS Body */}
-      <main className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden p-2 sm:p-4 lg:p-6 gap-4 lg:gap-6 z-10 relative max-w-[1536px] mx-auto w-full pb-24 lg:pb-6">
+      <main className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden p-2 sm:p-4 lg:p-6 gap-4 lg:gap-6 z-10 relative max-w-[1536px] mx-auto w-full pb-36 md:pb-28 lg:pb-6">
         {/* Left Side: Product Grid / Form */}
         <div className="flex-1 w-full lg:h-full lg:min-w-[420px]">
           <ProductGrid products={products} categories={categories} designs={designs} isLoading={isLoadingProducts || isLoadingCategories} />
@@ -201,7 +201,7 @@ export default function POSPage() {
 
       {/* Floating Mobile/Tablet Order Cart Button (Only on < lg screens) */}
       {cart.length > 0 && (
-        <div className="lg:hidden fixed bottom-6 left-4 right-4 z-40 animate-in slide-in-from-bottom duration-300">
+        <div className="lg:hidden fixed bottom-[78px] md:bottom-6 left-3 right-3 sm:left-4 sm:right-4 z-40 animate-in slide-in-from-bottom duration-300 max-w-lg mx-auto">
           <button
             onClick={() => setIsMobileCartOpen(true)}
             className="w-full py-3.5 px-4 bg-gradient-to-r from-[var(--brand-deep-rose)] to-amber-700 text-white rounded-2xl font-ui font-black text-xs uppercase tracking-widest shadow-2xl flex items-center justify-between border-2 border-white/30 active:scale-[0.98] transition-transform"
@@ -230,7 +230,7 @@ export default function POSPage() {
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }} 
-            className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end"
+            className="lg:hidden fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex flex-col justify-end"
           >
             <motion.div 
               initial={{ y: "100%" }} 
