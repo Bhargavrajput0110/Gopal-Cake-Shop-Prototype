@@ -173,11 +173,15 @@ export class OrderTransitionService {
           updateData.chefId = actorId
         }
 
-        // If this action carries pricing details (like send-quote), update the amounts
+        // If this action carries pricing details (like send-quote or approve), update the amounts
         if (basePrice !== undefined) {
-          updateData.baseAmount = basePrice
+          updateData.subtotal = basePrice
           updateData.discount = discount ?? 0
           updateData.totalAmount = Math.max(0, basePrice - (discount || 0)) + Number(order.deliveryCharge || 0)
+        }
+
+        if (order.type === 'QUOTE' && nextState === 'WAITING_FOR_CHEF') {
+          updateData.type = 'ORDER'
         }
 
         const updatedOrder = await tx.order.updateMany({
@@ -188,7 +192,14 @@ export class OrderTransitionService {
           data: updateData
         })
 
-        if (['CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'READY_FOR_PICKUP'].includes(nextState)) {
+        if (basePrice !== undefined) {
+          await tx.orderItem.updateMany({
+            where: { orderId },
+            data: { price: basePrice }
+          })
+        }
+
+        if (['WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'READY_FOR_PICKUP'].includes(nextState)) {
           await tx.orderItem.updateMany({
             where: { orderId },
             data: {

@@ -2,14 +2,22 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useOrders } from "@/context/OrderContext";
+import { useSession } from "next-auth/react";
+import { toBranchId } from "@/lib/branches";
 import { VolumeHigh, VolumeSlash } from "iconsax-react";
 
 export function WarningSiren() {
+  const { data: session } = useSession();
   const { orders } = useOrders();
   const [sirenActive, setSirenActive] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const audioCtx = useRef<AudioContext | null>(null);
+
+  const userRole = ((session?.user as any)?.role || "").toUpperCase();
+  const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+  const userBranchId = (session?.user as any)?.branchId || (session?.user as any)?.branch;
+  const canonicalUserBranch = userBranchId ? toBranchId(userBranchId) : null;
 
   // 1. Unlock Audio Context on first user interaction
   useEffect(() => {
@@ -42,6 +50,16 @@ export function WarningSiren() {
       const now = Date.now();
       const isUrgent = orders.some((o) => {
         if (!o.timeTarget) return false;
+
+        // Filter by branch for non-admins
+        if (!isAdmin && canonicalUserBranch && toBranchId(o.branch) !== canonicalUserBranch) {
+          return false;
+        }
+
+        // For chefs, only WAITING_FOR_CHEF (new unaccepted orders due soon) should trigger the siren
+        if (userRole === "CHEF" && o.status !== "WAITING_FOR_CHEF") {
+          return false;
+        }
         
         // Ignore orders that are already being worked on or completed
         const ignoreStatuses = [
@@ -75,7 +93,7 @@ export function WarningSiren() {
     checkDeadlines();
     const interval = setInterval(checkDeadlines, 15000); // Check every 15s
     return () => clearInterval(interval);
-  }, [orders]);
+  }, [orders, isAdmin, canonicalUserBranch, userRole]);
 
   // 3. Play the siren sound periodically if active
   useEffect(() => {

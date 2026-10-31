@@ -141,9 +141,28 @@ export default function ChefDashboardPage() {
     ? activeBranch
     : (canonicalUserBranch || (activeBranch !== "all" ? activeBranch : "khanderao"));
 
+  // Kitchen KDS only manages approved operational orders:
+  // Incoming ('WAITING_FOR_CHEF'), In Production ('CHEF_ACCEPTED', 'MAKING', 'DECORATING'),
+  // or Ready/Handed over ('READY_FOR_PICKUP', 'PENDING_ASSIGNMENT', 'ASSIGNED_TO_DRIVER', 'COMPLETED', 'DELIVERED').
+  // Unapproved quotes (QUOTE_DRAFT, QUOTE_SENT), drafts (DRAFT), and pending verification (NEW) belong strictly to Sales Desk.
+  const KITCHEN_ALLOWED_STATUSES = useMemo(() => new Set([
+    'WAITING_FOR_CHEF',
+    'CHEF_ACCEPTED',
+    'MAKING',
+    'DECORATING',
+    'READY_FOR_PICKUP',
+    'PENDING_ASSIGNMENT',
+    'ASSIGNED_TO_DRIVER',
+    'COMPLETED',
+    'DELIVERED'
+  ]), []);
+
   // Filtering orders for the active branch
   const isHotBakeChef = session?.user?.name?.toLowerCase().includes('santosh') || session?.user?.name?.toLowerCase().includes('hot bake');
-  const branchOrders = orders.filter(o => isHotBakeChef || effectiveBranch === "all" || toBranchId(o.branch) === effectiveBranch);
+  const branchOrders = orders.filter(o => 
+    KITCHEN_ALLOWED_STATUSES.has(o.status) &&
+    (isHotBakeChef || effectiveBranch === "all" || toBranchId(o.branch) === effectiveBranch)
+  );
 
   // Queue: ONLY orders waiting for chef for the selected day (strict — no overdue carry-forward)
   const queueOrders = branchOrders
@@ -427,10 +446,11 @@ export default function ChefDashboardPage() {
           )}
           
           {(() => {
-            const allImages = [
+            const rawImages = [
               ...(order.cakeImage ? [order.cakeImage] : []),
               ...order.items.flatMap(i => [...(i.referenceImages || []), ...(i.printImages || [])])
-            ].filter(Boolean);
+            ].filter(Boolean) as string[];
+            const allImages = Array.from(new Set(rawImages));
 
             return allImages.length > 0 ? (
               <div className="mb-4 flex gap-2 overflow-x-auto pb-2 custom-scrollbar">

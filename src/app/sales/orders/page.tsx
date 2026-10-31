@@ -816,6 +816,31 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
     }
   };
 
+  const handleApproveQuote = async () => {
+    const finalPrice = quotePrice > 0 ? quotePrice : (order.grandTotal || 0);
+    if (finalPrice <= 0) {
+      alert("Please enter a valid price greater than ₹0 before approving to kitchen.");
+      return;
+    }
+    setSubmittingQuote(true);
+    try {
+      const finalTotal = Math.max(0, finalPrice - selectedDiscount);
+      await updateOrderFields(order.id, { 
+        grandTotal: finalTotal,
+        pendingBalance: finalTotal - (order.advancePaid || 0)
+      });
+      await updateOrderStatus(order.id, "WAITING_FOR_CHEF", false, "Salesperson", { discount: selectedDiscount, basePrice: finalPrice });
+      
+      onWhatsApp(`Order #${order.orderNumber} approved and sent to kitchen for ₹${finalTotal}! 🎂`);
+      onMutated();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to approve order to kitchen");
+    } finally {
+      setSubmittingQuote(false);
+    }
+  };
+
   const statusLabel = (s: string) => {
     if(s==="NEW") return "Pending Verification";
     if(s==="QUOTE_DRAFT") return "Quote Requested (Bargain)";
@@ -1411,33 +1436,58 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                 </button>
               ))}
             </div>
-            <button
-              disabled={submittingQuote || quotePrice <= 0}
-              onClick={handleSendQuote}
-              className="w-full bg-[#C5A059] text-white py-2 rounded-md text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-            >
-              Send Negotiated Quote (Final Total: ₹{Math.max(0, quotePrice - selectedDiscount)})
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                disabled={submittingQuote || quotePrice <= 0}
+                onClick={handleSendQuote}
+                className="flex-1 bg-[#C5A059] text-white py-2.5 rounded-xl text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                Send Negotiated Quote (₹{Math.max(0, quotePrice - selectedDiscount)})
+              </button>
+              <button
+                disabled={submittingQuote || quotePrice <= 0}
+                onClick={handleApproveQuote}
+                className="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-700 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+              >
+                <TickCircle className="w-4 h-4" /> Approve & Send to Kitchen
+              </button>
+            </div>
           </div>
         )}
 
         {/* 9. Action Bar: 1-Tap Workflow Buttons + Desktop / Mobile Menu */}
         <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-2 items-center">
           {order.status === "QUOTE_SENT" && (
-            <button 
-              onClick={async () => {
-                try {
-                  await updateOrderStatus(order.id, "QUOTE_SENT", false, "Salesperson", { basePrice: order.grandTotal });
-                  onWhatsApp(`Automated WhatsApp quote re-sent via Meta API to ${order.customerPhone}`);
-                  onMutated();
-                } catch (e) {
-                  alert("Failed to re-send automated quote");
-                }
-              }} 
-              className="flex-1 min-w-[150px] bg-[#25D366] text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-[#128C7E] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"
-            >
-              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Resend Automated Quote (Meta API)
-            </button>
+            <>
+              <button 
+                onClick={async () => {
+                  try {
+                    await updateOrderStatus(order.id, "QUOTE_SENT", false, "Salesperson", { basePrice: order.grandTotal });
+                    onWhatsApp(`Automated WhatsApp quote re-sent via Meta API to ${order.customerPhone}`);
+                    onMutated();
+                  } catch (e) {
+                    alert("Failed to re-send automated quote");
+                  }
+                }} 
+                className="flex-1 min-w-[150px] bg-[#25D366] text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-[#128C7E] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Resend Quote (WhatsApp)
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    await updateOrderStatus(order.id, "WAITING_FOR_CHEF", false, "Salesperson", { basePrice: order.grandTotal, discount: 0 });
+                    onWhatsApp(`Custom Cake Quote #${order.orderNumber} confirmed and sent to kitchen! 🍰`);
+                    onMutated();
+                  } catch (e) {
+                    alert("Failed to approve quote to kitchen");
+                  }
+                }} 
+                className="flex-1 min-w-[150px] bg-emerald-600 text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"
+              >
+                <TickCircle className="w-5 h-5" /> Approve & Send to Kitchen
+              </button>
+            </>
           )}
           {order.status==="NEW" && (
             <button onClick={handleApprove} className="flex-1 min-w-[120px] bg-emerald-600 text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
