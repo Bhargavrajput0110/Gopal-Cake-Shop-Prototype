@@ -123,15 +123,24 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     }
 
     const newTotal = updates.totalAmount !== undefined ? updates.totalAmount : updates.grandTotal;
+    const newSubtotal = updates.subtotal !== undefined ? updates.subtotal : newTotal;
 
     const updatedOrder = await prisma.order.update({
       where: { id },
       data: {
         customerNotes: updates.customerInstructions !== undefined ? updates.customerInstructions : undefined,
         targetDate: updates.timeTarget !== undefined && updates.timeTarget !== null ? new Date(updates.timeTarget) : undefined,
+        subtotal: newSubtotal !== undefined ? newSubtotal : undefined,
         totalAmount: newTotal !== undefined ? newTotal : undefined,
       }
     })
+
+    if (newSubtotal !== undefined) {
+      await prisma.orderItem.updateMany({
+        where: { orderId: id },
+        data: { price: newSubtotal }
+      });
+    }
 
     // Create Audit Log
     if (Object.keys(changes).length > 0) {

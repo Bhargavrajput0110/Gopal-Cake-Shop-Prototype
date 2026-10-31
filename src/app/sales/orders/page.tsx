@@ -708,9 +708,17 @@ export default function OrderManagementPage() {
 
 function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVendor, onAssignDriver, onWhatsApp, onMutated }: { order: Order; onViewTimeline: () => void; onReceipt: () => void; onEdit: () => void; onAssignVendor: () => void; onAssignDriver: () => void; onWhatsApp: (msg: string) => void; onMutated: () => void }) {
   const { updateOrderStatus, updateOrderFields, updateVendorTaskStatus } = useOrders();
-  const [quotePrice, setQuotePrice] = useState<number>(order.grandTotal || 0);
+  const [quotePrice, setQuotePrice] = useState<string>(() => {
+    return order.grandTotal && order.grandTotal > 0 ? String(order.grandTotal) : "";
+  });
   const [selectedDiscount, setSelectedDiscount] = useState<number>(0);
   const [submittingQuote, setSubmittingQuote] = useState(false);
+
+  useEffect(() => {
+    if (order.grandTotal && order.grandTotal > 0) {
+      setQuotePrice(String(order.grandTotal));
+    }
+  }, [order.grandTotal]);
   const [showMoreActions, setShowMoreActions] = useState(false);
   const [isHandingOver, setIsHandingOver] = useState(false);
   const [isNotifyingReady, setIsNotifyingReady] = useState(false);
@@ -790,18 +798,20 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
   };
 
   const handleSendQuote = async () => {
-    if (quotePrice <= 0) {
+    const priceNum = parseInt(quotePrice, 10) || 0;
+    if (priceNum <= 0) {
       alert("Please enter a valid quote price greater than ₹0.");
       return;
     }
     setSubmittingQuote(true);
     try {
-      const finalTotal = Math.max(0, quotePrice - selectedDiscount);
+      const finalTotal = Math.max(0, priceNum - selectedDiscount);
       await updateOrderFields(order.id, { 
         grandTotal: finalTotal,
+        subtotal: priceNum,
         pendingBalance: finalTotal - (order.advancePaid || 0)
       });
-      await updateOrderStatus(order.id, "QUOTE_SENT", false, "Salesperson", { discount: selectedDiscount, basePrice: quotePrice });
+      await updateOrderStatus(order.id, "QUOTE_SENT", false, "Salesperson", { discount: selectedDiscount, basePrice: priceNum });
       
       let msg = `Automated WhatsApp quote of ₹${finalTotal} sent via Meta Cloud API to customer (${order.customerPhone}).`;
       if (selectedDiscount > 0) msg = `Automated WhatsApp quote of ₹${finalTotal} (included ₹${selectedDiscount} discount) sent via Meta Cloud API.`;
@@ -817,19 +827,20 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
   };
 
   const handleApproveQuote = async () => {
-    const finalPrice = quotePrice > 0 ? quotePrice : (order.grandTotal || 0);
-    if (finalPrice <= 0) {
+    const priceNum = parseInt(quotePrice, 10) || (order.grandTotal || 0);
+    if (priceNum <= 0) {
       alert("Please enter a valid price greater than ₹0 before approving to kitchen.");
       return;
     }
     setSubmittingQuote(true);
     try {
-      const finalTotal = Math.max(0, finalPrice - selectedDiscount);
+      const finalTotal = Math.max(0, priceNum - selectedDiscount);
       await updateOrderFields(order.id, { 
         grandTotal: finalTotal,
+        subtotal: priceNum,
         pendingBalance: finalTotal - (order.advancePaid || 0)
       });
-      await updateOrderStatus(order.id, "WAITING_FOR_CHEF", false, "Salesperson", { discount: selectedDiscount, basePrice: finalPrice });
+      await updateOrderStatus(order.id, "WAITING_FOR_CHEF", false, "Salesperson", { discount: selectedDiscount, basePrice: priceNum });
       
       onWhatsApp(`Order #${order.orderNumber} approved and sent to kitchen for ₹${finalTotal}! 🎂`);
       onMutated();
@@ -1400,27 +1411,33 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
           )}
         </div>
 
-        {/* Bargain Negotiation Control Panel (if QUOTE_DRAFT) */}
-        {order.status === "QUOTE_DRAFT" && (
-          <div className="p-3 bg-primary/5 rounded-2xl border border-primary/20 space-y-3">
-            <span className="text-[10px] font-black text-primary uppercase tracking-widest block">Send Quote to Customer</span>
+        {/* Bargain Negotiation Control Panel (for QUOTE_DRAFT and QUOTE_SENT) */}
+        {(order.status === "QUOTE_DRAFT" || order.status === "QUOTE_SENT") && (
+          <div className="p-3.5 bg-primary/5 rounded-2xl border-2 border-primary/20 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-black text-primary uppercase tracking-widest block">
+                {order.status === "QUOTE_SENT" ? "Negotiate / Update Quote Price" : "Write Custom Cake Quote"}
+              </span>
+              {order.status === "QUOTE_SENT" && (
+                <span className="text-[10px] font-black bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full border border-purple-200">
+                  Current: ₹{order.grandTotal}
+                </span>
+              )}
+            </div>
             
             <div className="flex gap-2 items-center">
-              <span className="text-xs font-bold text-muted-foreground">Price: ₹</span>
+              <span className="text-sm font-black text-foreground">Price: ₹</span>
               <input 
-                type="number"
-                min="0"
-                value={quotePrice || ''}
-                onWheel={(e) => e.currentTarget.blur()}
-                onKeyDown={(e) => {
-                  if (['-', '+', 'e', 'E', '.'].includes(e.key)) e.preventDefault();
-                }}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={quotePrice}
                 onChange={(e) => {
-                  const val = Math.max(0, parseInt(e.target.value) || 0);
-                  setQuotePrice(val);
+                  const clean = e.target.value.replace(/[^0-9]/g, "");
+                  setQuotePrice(clean);
                 }}
-                className="flex-1 bg-white border border-border rounded-md px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
-                placeholder="Enter custom cake price..."
+                className="flex-1 bg-white border-2 border-border rounded-xl px-3 py-2 text-base font-bold focus:ring-2 focus:ring-primary focus:border-primary outline-none shadow-xs text-slate-900"
+                placeholder="Enter custom cake price (e.g. 900)..."
               />
             </div>
 
@@ -1430,24 +1447,25 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
                   key={amt}
                   type="button"
                   onClick={() => setSelectedDiscount(amt)}
-                  className={`flex-1 py-1 rounded text-xs font-bold transition-all ${selectedDiscount === amt ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-white border border-border text-foreground hover:bg-secondary'}`}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedDiscount === amt ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-white border border-border text-foreground hover:bg-secondary'}`}
                 >
                   {amt === 0 ? 'No Disc.' : `-₹${amt}`}
                 </button>
               ))}
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button
-                disabled={submittingQuote || quotePrice <= 0}
+                disabled={submittingQuote || !quotePrice || parseInt(quotePrice, 10) <= 0}
                 onClick={handleSendQuote}
-                className="flex-1 bg-[#C5A059] text-white py-2.5 rounded-xl text-xs font-bold hover:bg-[#b08c48] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                className="flex-1 bg-[#C5A059] text-white py-2.5 rounded-xl text-xs font-black hover:bg-[#b08c48] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs active:scale-95"
               >
-                Send Negotiated Quote (₹{Math.max(0, quotePrice - selectedDiscount)})
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                {order.status === "QUOTE_SENT" ? `Update Quote (₹${Math.max(0, (parseInt(quotePrice, 10) || 0) - selectedDiscount)})` : `Send Quote Link (₹${Math.max(0, (parseInt(quotePrice, 10) || 0) - selectedDiscount)})`}
               </button>
               <button
-                disabled={submittingQuote || quotePrice <= 0}
+                disabled={submittingQuote || !quotePrice || parseInt(quotePrice, 10) <= 0}
                 onClick={handleApproveQuote}
-                className="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-700 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+                className="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-black hover:bg-emerald-700 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm active:scale-95"
               >
                 <TickCircle className="w-4 h-4" /> Approve & Send to Kitchen
               </button>
@@ -1457,38 +1475,6 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
 
         {/* 9. Action Bar: 1-Tap Workflow Buttons + Desktop / Mobile Menu */}
         <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-2 items-center">
-          {order.status === "QUOTE_SENT" && (
-            <>
-              <button 
-                onClick={async () => {
-                  try {
-                    await updateOrderStatus(order.id, "QUOTE_SENT", false, "Salesperson", { basePrice: order.grandTotal });
-                    onWhatsApp(`Automated WhatsApp quote re-sent via Meta API to ${order.customerPhone}`);
-                    onMutated();
-                  } catch (e) {
-                    alert("Failed to re-send automated quote");
-                  }
-                }} 
-                className="flex-1 min-w-[150px] bg-[#25D366] text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-[#128C7E] flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"
-              >
-                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Resend Quote (WhatsApp)
-              </button>
-              <button 
-                onClick={async () => {
-                  try {
-                    await updateOrderStatus(order.id, "WAITING_FOR_CHEF", false, "Salesperson", { basePrice: order.grandTotal, discount: 0 });
-                    onWhatsApp(`Custom Cake Quote #${order.orderNumber} confirmed and sent to kitchen! 🍰`);
-                    onMutated();
-                  } catch (e) {
-                    alert("Failed to approve quote to kitchen");
-                  }
-                }} 
-                className="flex-1 min-w-[150px] bg-emerald-600 text-white px-3 py-3 rounded-xl text-xs font-black hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"
-              >
-                <TickCircle className="w-5 h-5" /> Approve & Send to Kitchen
-              </button>
-            </>
-          )}
           {order.status==="NEW" && (
             <button onClick={handleApprove} className="flex-1 min-w-[120px] bg-emerald-600 text-white px-3 py-3 rounded-xl text-sm font-black hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
               <TickCircle className="w-5 h-5" /> Approve
