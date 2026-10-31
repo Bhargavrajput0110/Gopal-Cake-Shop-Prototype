@@ -19,11 +19,14 @@ import Link from "next/link"
 // semantic Design System variants.
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" | "success" | "warning" | "info" }> = {
+  QUOTE_DRAFT:         { label: "Quote Draft",  variant: "warning" },
+  QUOTE_SENT:          { label: "Quote Sent",   variant: "info" },
+  QUOTE_APPROVED:      { label: "Quote Approved", variant: "success" },
   NEW:                 { label: "NEW",          variant: "info" },
   DRAFT:               { label: "Draft",        variant: "secondary" },
   WAITING_FOR_CHEF:    { label: "Waiting",      variant: "warning" },
   CHEF_ACCEPTED:       { label: "Accepted",     variant: "warning" },
-  MAKING:              { label: "MAKING",    variant: "warning" },
+  MAKING:              { label: "MAKING",       variant: "warning" },
   DECORATING:          { label: "DECORATING",   variant: "secondary" },
   READY_FOR_PICKUP:    { label: "Ready",        variant: "success" },
   PENDING_ASSIGNMENT:  { label: "Dispatch",     variant: "info" },
@@ -31,13 +34,14 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secon
   PICKED_UP:           { label: "Picked Up",    variant: "info" },
   ON_THE_WAY:          { label: "On the Way",   variant: "info" },
   DELIVERED:           { label: "DELIVERED",    variant: "success" },
-  FAILED_DELIVERY:     { label: "FAILED_DELIVERY",       variant: "destructive" },
+  FAILED_DELIVERY:     { label: "FAILED_DELIVERY", variant: "destructive" },
   CANCELLED:           { label: "CANCELLED",    variant: "destructive" },
   COMPLETED:           { label: "Completed",    variant: "success" },
 }
 
 const BOARD_COLUMNS: { label: string; statuses: string[] }[] = [
-  { label: "New & Draft",      statuses: ["NEW", "DRAFT"] },
+  { label: "Quotes & Inquiries", statuses: ["QUOTE_DRAFT", "QUOTE_SENT"] },
+  { label: "New & Draft",      statuses: ["NEW", "DRAFT", "QUOTE_APPROVED"] },
   { label: "In Kitchen",       statuses: ["WAITING_FOR_CHEF", "CHEF_ACCEPTED", "MAKING", "DECORATING"] },
   { label: "Ready",            statuses: ["READY_FOR_PICKUP", "PENDING_ASSIGNMENT"] },
   { label: "Out for Delivery", statuses: ["ASSIGNED_TO_DRIVER", "PICKED_UP", "ON_THE_WAY"] },
@@ -319,6 +323,14 @@ export default function LiveOrdersPage() {
                           <span className="text-xs text-muted-foreground">{formatTimeAgo(order.createdAt)}</span>
                           <span className="font-black text-sm text-primary">₹{order.grandTotal?.toFixed(0)}</span>
                         </div>
+                        {order.status === "QUOTE_DRAFT" && (
+                          <Link
+                            href={`/sales/orders?search=${order.orderNumber || order.id}`}
+                            className="block mt-2 text-center py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs"
+                          >
+                            Set Price & Approve in Sales &rarr;
+                          </Link>
+                        )}
                       </motion.div>
                     ))}
                   </AnimatePresence>

@@ -194,23 +194,28 @@ function SalesDashboardContent() {
       const tomorrow = new Date(Date.now() + 86400000);
       const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
       
-      if (effectiveDateFilter === "today") {
-        params.append("startDate", todayStr);
-        params.append("endDate", todayStr);
-      } else if (effectiveDateFilter === "tomorrow") {
-        params.append("startDate", tomorrowStr);
-        params.append("endDate", tomorrowStr);
-      } else if (effectiveDateFilter === "custom" && effectiveCustomDate) {
-        params.append("startDate", effectiveCustomDate);
-        params.append("endDate", effectiveCustomDate);
-      } else if (effectiveDateFilter === "next3days") {
-        params.append("startDate", todayStr);
-        const next3 = new Date(Date.now() + 3 * 86400000);
-        params.append("endDate", `${next3.getFullYear()}-${String(next3.getMonth() + 1).padStart(2, '0')}-${String(next3.getDate()).padStart(2, '0')}`);
-      } else if (effectiveDateFilter === "next15days") {
-        params.append("startDate", todayStr);
-        const next15 = new Date(Date.now() + 15 * 86400000);
-        params.append("endDate", `${next15.getFullYear()}-${String(next15.getMonth() + 1).padStart(2, '0')}-${String(next15.getDate()).padStart(2, '0')}`);
+      // Quotes & pending verification must never be restricted by target date,
+      // as custom cake quotes submitted today for tomorrow or next week require immediate pricing!
+      const isPendingVerification = effectiveFilter === "Pending Verification";
+      if (!isPendingVerification) {
+        if (effectiveDateFilter === "today") {
+          params.append("startDate", todayStr);
+          params.append("endDate", todayStr);
+        } else if (effectiveDateFilter === "tomorrow") {
+          params.append("startDate", tomorrowStr);
+          params.append("endDate", tomorrowStr);
+        } else if (effectiveDateFilter === "custom" && effectiveCustomDate) {
+          params.append("startDate", effectiveCustomDate);
+          params.append("endDate", effectiveCustomDate);
+        } else if (effectiveDateFilter === "next3days") {
+          params.append("startDate", todayStr);
+          const next3 = new Date(Date.now() + 3 * 86400000);
+          params.append("endDate", `${next3.getFullYear()}-${String(next3.getMonth() + 1).padStart(2, '0')}-${String(next3.getDate()).padStart(2, '0')}`);
+        } else if (effectiveDateFilter === "next15days") {
+          params.append("startDate", todayStr);
+          const next15 = new Date(Date.now() + 15 * 86400000);
+          params.append("endDate", `${next15.getFullYear()}-${String(next15.getMonth() + 1).padStart(2, '0')}-${String(next15.getDate()).padStart(2, '0')}`);
+        }
       }
       
       // Enforce due date and time ascending sort (earliest due orders first) across all views
@@ -404,6 +409,35 @@ function SalesDashboardContent() {
           <span>Refresh</span>
         </button>
       </div>
+
+      {serverOrders.filter(o => o.status === "QUOTE_DRAFT").length > 0 && filter !== "Pending Verification" && (
+        <div 
+          onClick={() => {
+            setFilter("Pending Verification");
+            setPage(1);
+            const p = new URLSearchParams(searchParams.toString());
+            p.set("status", "Pending Verification");
+            p.set("page", "1");
+            window.history.replaceState(null, "", `${pathname}?${p.toString()}`);
+          }}
+          className="bg-amber-500/10 border-2 border-amber-500/40 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-500/20 transition-all shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <span className="p-2 bg-amber-500 text-white rounded-xl font-bold text-base shrink-0">🎂</span>
+            <div>
+              <p className="font-black text-amber-950 text-xs sm:text-sm">
+                {serverOrders.filter(o => o.status === "QUOTE_DRAFT").length} Custom Cake Quote{serverOrders.filter(o => o.status === "QUOTE_DRAFT").length > 1 ? "s" : ""} Waiting for Price Approval!
+              </p>
+              <p className="text-[11px] text-amber-800/80 mt-0.5 font-medium">
+                Customer submitted a custom cake inquiry. Click here to review, enter price, and send quote.
+              </p>
+            </div>
+          </div>
+          <span className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg shrink-0 transition-colors shadow-xs">
+            Review Quotes &rarr;
+          </span>
+        </div>
+      )}
 
       <SalesFilterBar 
         status={filter}

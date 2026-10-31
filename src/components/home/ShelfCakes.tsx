@@ -180,7 +180,7 @@ function ShelfProductCard({ product }: { product: any }) {
       </motion.div>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-md p-0 bg-background z-[150] border-l-0 shadow-2xl"
+        className="w-full sm:max-w-md p-0 bg-background border-l-0 shadow-2xl"
       >
         <QuickBuyForm
           product={product}

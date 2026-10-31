@@ -119,14 +119,30 @@ export class OrderService {
       ]
     }
     if (filters?.startDate || filters?.endDate) {
-      whereClause.targetDate = {}
+      const dateCondition: Prisma.DateTimeFilter = {}
       if (filters?.startDate) {
         // Parse the incoming YYYY-MM-DD string as midnight IST (+05:30)
-        whereClause.targetDate.gte = new Date(`${filters.startDate}T00:00:00+05:30`)
+        dateCondition.gte = new Date(`${filters.startDate}T00:00:00+05:30`)
       }
       if (filters?.endDate) {
         // Parse the incoming YYYY-MM-DD string as 23:59:59 IST (+05:30)
-        whereClause.targetDate.lte = new Date(`${filters.endDate}T23:59:59.999+05:30`)
+        dateCondition.lte = new Date(`${filters.endDate}T23:59:59.999+05:30`)
+      }
+
+      // CRITICAL: Custom cake quotes (QUOTE_DRAFT / QUOTE_SENT) require immediate sales pricing
+      // and customer negotiation regardless of whether the target event date is today or next week.
+      // Never hide actionable quotes behind targetDate when viewing All or Pending Verification.
+      const isExplicitNonQuoteFilter = filters?.status && !filters.status.includes('QUOTE_DRAFT');
+      if (isExplicitNonQuoteFilter) {
+        whereClause.targetDate = dateCondition;
+      } else {
+        if (!whereClause.AND) whereClause.AND = [];
+        (whereClause.AND as any[]).push({
+          OR: [
+            { targetDate: dateCondition },
+            { status: { in: ['QUOTE_DRAFT', 'QUOTE_SENT'] } }
+          ]
+        });
       }
     }
     if (filters?.dueSoon) {
