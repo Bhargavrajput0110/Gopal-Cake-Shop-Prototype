@@ -5,12 +5,30 @@ import { useOrders, type Order, type OrderStatus } from "@/context/OrderContext"
 import { DataTable, type ColumnDef, type RowAction, type ToolbarFilter, type BulkAction } from "@/components/ui/data-table"
 import { PageHeader } from "@/components/ui/page-header"
 import { Badge } from "@/components/ui/badge"
-import { Clock, Car, Shop, Bag, Call, Eye, CloseCircle, TickCircle, Element4, TextalignJustifycenter, Receipt21 } from "iconsax-react"
+import {
+  Clock,
+  Car,
+  Shop,
+  Bag,
+  Call,
+  Eye,
+  CloseCircle,
+  TickCircle,
+  Element4,
+  TextalignJustifycenter,
+  Receipt21,
+  TruckFast,
+  Refresh2,
+  Calendar,
+  Buildings2
+} from "iconsax-react"
 import { ReceiptStub } from "@/app/sales/pos/components/ReceiptStub"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { OrderDetailsDialog } from "@/components/admin/orders/OrderDetailsDialog"
 import { ReassignDriverDialog } from "@/components/admin/orders/ReassignDriverDialog"
+import { BRANCHES, toBranchId, type BranchId } from "@/lib/branches"
+import { matchesDayFilter } from "@/lib/formatTime"
 import Link from "next/link"
 
 // ─── Status Config ────────────────────────────────────────────────────────────
@@ -167,11 +185,36 @@ const tableFilters: ToolbarFilter[] = [
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LiveOrdersPage() {
-  const { orders, transitionOrderAction } = useOrders()
+  const { orders, transitionOrderAction, refetchOrders } = useOrders()
   const [view, setView] = useState<"board" | "list">("board")
+  const [selectedBranch, setSelectedBranch] = useState<BranchId | "all">("all")
+  const [dateFilter, setDateFilter] = useState<'TODAY' | 'TOMORROW' | 'YESTERDAY' | 'ALL'>('TODAY')
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [reassignOrderId, setReassignOrderId] = useState<string | null>(null)
   const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null)
+
+  // 1-Tap Admin Action handler
+  const handleCardAction = async (e: React.MouseEvent, orderId: string, actionVerb: string) => {
+    e.stopPropagation()
+    setLoadingOrderId(orderId)
+    try {
+      await transitionOrderAction(orderId, actionVerb)
+    } finally {
+      setLoadingOrderId(null)
+    }
+  }
+
+  // Live Refresh handler
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await refetchOrders()
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   // Row actions — preserve existing business logic, wrapped in Design System pattern
   const rowActions: RowAction<Order>[] = [
@@ -221,19 +264,57 @@ export default function LiveOrdersPage() {
     },
   ]
 
-  const filteredOrders = [...orders].sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime())
-  const activeOrders = filteredOrders.filter(
-    (o) => !["DELIVERED", "FAILED_DELIVERY", "CANCELLED", "COMPLETED"].includes(o.status)
-  )
-  const archivedOrders = filteredOrders.filter((o) =>
-    ["DELIVERED", "FAILED_DELIVERY", "CANCELLED", "COMPLETED"].includes(o.status)
-  )
+  // Branch & Date counts
+  const branchCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: orders.length }
+    for (const b of BRANCHES) {
+      counts[b.id] = orders.filter((o) => toBranchId(o.branch) === b.id).length
+    }
+    return counts
+  }, [orders])
+
+  const dateCounts = useMemo(() => {
+    const branchFiltered =
+      selectedBranch === "all"
+        ? orders
+        : orders.filter((o) => toBranchId(o.branch) === selectedBranch)
+
+    return {
+      TODAY: branchFiltered.filter((o) => matchesDayFilter(o.timeTarget, "TODAY")).length,
+      TOMORROW: branchFiltered.filter((o) => matchesDayFilter(o.timeTarget, "TOMORROW")).length,
+      YESTERDAY: branchFiltered.filter((o) => matchesDayFilter(o.timeTarget, "YESTERDAY")).length,
+      ALL: branchFiltered.length,
+    }
+  }, [orders, selectedBranch])
+
+  // Filtered orders respecting BOTH branch & date selection
+  const filteredOrders = useMemo(() => {
+    return [...orders]
+      .filter((o) => {
+        if (selectedBranch !== "all" && toBranchId(o.branch) !== selectedBranch) return false
+        if (dateFilter !== "ALL" && !matchesDayFilter(o.timeTarget, dateFilter)) return false
+        return true
+      })
+      .sort((a, b) => new Date(a.timeTarget).getTime() - new Date(b.timeTarget).getTime())
+  }, [orders, selectedBranch, dateFilter])
+
+  const activeOrders = useMemo(() => {
+    return filteredOrders.filter(
+      (o) => !["DELIVERED", "FAILED_DELIVERY", "CANCELLED", "COMPLETED"].includes(o.status)
+    )
+  }, [filteredOrders])
+
+  const archivedOrders = useMemo(() => {
+    return filteredOrders.filter((o) =>
+      ["DELIVERED", "FAILED_DELIVERY", "CANCELLED", "COMPLETED"].includes(o.status)
+    )
+  }, [filteredOrders])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Live Orders"
-        description={`${orders.length} total orders — real-time from Supabase`}
+        description={`${filteredOrders.length} orders displayed (${activeOrders.length} active) — real-time from Supabase`}
         actions={
           <div className="flex items-center gap-4">
             <div className="flex bg-secondary p-1 rounded-lg">
@@ -260,9 +341,122 @@ export default function LiveOrdersPage() {
         }
       />
 
-      {/* ── Board View (existing, unchanged logic) ──────────────────────── */}
+      {/* ── Branch & Date Filters Toolbar ────────────────────────────────── */}
+      <div className="bg-card border border-border p-3.5 rounded-2xl shadow-xs space-y-3">
+        {/* Branch Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1 mr-1">
+            <Buildings2 className="w-3.5 h-3.5 text-primary" /> Branch:
+          </span>
+          <button
+            onClick={() => setSelectedBranch("all")}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer",
+              selectedBranch === "all"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+            )}
+          >
+            <span>All Branches</span>
+            <span className={cn(
+              "px-1.5 py-0.5 rounded-full text-[10px]",
+              selectedBranch === "all" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+            )}>
+              {branchCounts.all ?? 0}
+            </span>
+          </button>
+          {BRANCHES.map((b) => {
+            const count = branchCounts[b.id] ?? 0
+            const active = selectedBranch === b.id
+            return (
+              <button
+                key={b.id}
+                onClick={() => setSelectedBranch(b.id)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer",
+                  active
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                )}
+              >
+                <span>{b.shortName}</span>
+                <span className={cn(
+                  "px-1.5 py-0.5 rounded-full text-[10px]",
+                  active ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+                )}>
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Date Filters + Live Refresh */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-border/50">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1 mr-1">
+              <Calendar className="w-3.5 h-3.5 text-amber-500" /> Date:
+            </span>
+            {(
+              [
+                { id: "TODAY", label: "Daily (Today)", count: dateCounts.TODAY },
+                { id: "TOMORROW", label: "Tomorrow", count: dateCounts.TOMORROW },
+                { id: "YESTERDAY", label: "Yesterday", count: dateCounts.YESTERDAY },
+                { id: "ALL", label: "All Dates", count: dateCounts.ALL },
+              ] as const
+            ).map((df) => {
+              const active = dateFilter === df.id
+              return (
+                <button
+                  key={df.id}
+                  onClick={() => setDateFilter(df.id)}
+                  className={cn(
+                    "px-3 py-1 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer",
+                    active
+                      ? df.id === "TODAY"
+                        ? "bg-amber-500 text-white shadow-xs"
+                        : df.id === "TOMORROW"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : df.id === "YESTERDAY"
+                        ? "bg-slate-700 text-white shadow-xs"
+                        : "bg-foreground text-background shadow-xs"
+                      : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  )}
+                >
+                  <span>{df.label}</span>
+                  <span className={cn(
+                    "px-1.5 py-0.5 rounded-full text-[10px]",
+                    active ? "bg-black/20 text-white" : "bg-muted text-muted-foreground"
+                  )}>
+                    {df.count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground hidden sm:inline">
+              Filtered: <strong>{filteredOrders.length}</strong> orders
+            </span>
+            <button
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              title="Refresh Live Orders"
+              className={cn(
+                "p-1.5 rounded-lg border border-border bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer",
+                isRefreshing && "animate-spin text-primary"
+              )}
+            >
+              <Refresh2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Board View ─────────────────────────────────────────────────── */}
       {view === "board" && (
-        <div className="flex gap-4 overflow-x-auto pb-4" style={{ maxHeight: "calc(100vh - 12rem)" }}>
+        <div className="flex gap-4 overflow-x-auto pb-4" style={{ maxHeight: "calc(100vh - 15rem)" }}>
           {BOARD_COLUMNS.map((col) => {
             const colOrders = filteredOrders
               .filter((o) => col.statuses.includes(o.status))
@@ -282,57 +476,165 @@ export default function LiveOrdersPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                   <AnimatePresence initial={false}>
-                    {colOrders.map((order) => (
-                      <motion.div
-                        key={order.id}
-                        layout
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="bg-card border border-border p-3.5 rounded-xl shadow-sm hover:border-primary/30 transition-all cursor-pointer"
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <span className="font-bold text-foreground text-xs">{order.orderNumber || order.id}</span>
-                            {order.isSurprise && (
-                              <Badge variant="secondary" className="ml-1.5 text-[9px]">Surprise</Badge>
-                            )}
-                            {order.priorityLevel === "high" && (
-                              <Badge variant="destructive" className="ml-1.5 text-[9px]">Urgent</Badge>
-                            )}
+                    {colOrders.map((order) => {
+                      const isOrderLoading = loadingOrderId === order.id
+                      return (
+                        <motion.div
+                          key={order.id}
+                          layout
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          onClick={() => setSelectedOrderId(order.id)}
+                          className="bg-card border border-border p-3.5 rounded-xl shadow-sm hover:border-primary/50 transition-all cursor-pointer group"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <span className="font-bold text-foreground text-xs">{order.orderNumber || order.id}</span>
+                              {order.isSurprise && (
+                                <Badge variant="secondary" className="ml-1.5 text-[9px]">Surprise</Badge>
+                              )}
+                              {order.priorityLevel === "high" && (
+                                <Badge variant="destructive" className="ml-1.5 text-[9px]">Urgent</Badge>
+                              )}
+                            </div>
+                            <Badge variant={STATUS_CONFIG[order.status]?.variant ?? "secondary"}>
+                              {STATUS_CONFIG[order.status]?.label ?? order.status}
+                            </Badge>
                           </div>
-                          <Badge variant={STATUS_CONFIG[order.status]?.variant ?? "secondary"}>
-                            {STATUS_CONFIG[order.status]?.label ?? order.status}
-                          </Badge>
-                        </div>
-                        <p className="font-semibold text-sm text-foreground truncate">{order.customerName}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {order.items?.map((i: any) => `${i.name}${i.weight ? ` (${i.weight})` : ""}`).join(", ")}
-                        </p>
-                        <div className="mt-3 pt-2.5 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <OrderTypeIcon type={order.orderType} />
-                            <span>{order.branch}</span>
+                          <p className="font-semibold text-sm text-foreground truncate">{order.customerName}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {order.items?.map((i: any) => `${i.name}${i.weight ? ` (${i.weight})` : ""}`).join(", ")}
+                          </p>
+                          <div className="mt-3 pt-2.5 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <OrderTypeIcon type={order.orderType} />
+                              <span className="font-medium">{order.branch}</span>
+                            </div>
+                            <div className="flex items-center gap-1 font-bold text-foreground">
+                              <Clock className="w-3 h-3" />
+                              {formatTimeTarget(order.timeTarget)}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 font-bold text-foreground">
-                            <Clock className="w-3 h-3" />
-                            {formatTimeTarget(order.timeTarget)}
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-muted-foreground">{formatTimeAgo(order.createdAt)}</span>
+                            <span className="font-black text-sm text-primary">₹{order.grandTotal?.toFixed(0)}</span>
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-muted-foreground">{formatTimeAgo(order.createdAt)}</span>
-                          <span className="font-black text-sm text-primary">₹{order.grandTotal?.toFixed(0)}</span>
-                        </div>
-                        {order.status === "QUOTE_DRAFT" && (
-                          <Link
-                            href={`/sales/orders?search=${order.orderNumber || order.id}`}
-                            className="block mt-2 text-center py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs"
+
+                          {/* ── 1-Tap Universal Admin Actions ── */}
+                          <div
+                            className="mt-2.5 pt-2 border-t border-border/50 flex items-center gap-1.5"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            Set Price & Approve in Sales &rarr;
-                          </Link>
-                        )}
-                      </motion.div>
-                    ))}
+                            {/* SALES ACTIONS */}
+                            {order.status === "QUOTE_DRAFT" && (
+                              <Link
+                                href={`/sales/orders?search=${order.orderNumber || order.id}`}
+                                className="flex-1 text-center py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs"
+                              >
+                                Set Price & Approve &rarr;
+                              </Link>
+                            )}
+                            {order.status === "QUOTE_SENT" && (
+                              <button
+                                onClick={(e) => handleCardAction(e, order.id, "approve")}
+                                disabled={isOrderLoading}
+                                className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                              >
+                                {isOrderLoading ? "Updating…" : "Approve → Kitchen"}
+                              </button>
+                            )}
+                            {(order.status === "NEW" || order.status === "DRAFT" || order.status === "QUOTE_APPROVED") && (
+                              <button
+                                onClick={(e) => handleCardAction(e, order.id, "approve")}
+                                disabled={isOrderLoading}
+                                className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                              >
+                                {isOrderLoading ? "Updating…" : "Send to Kitchen"}
+                              </button>
+                            )}
+
+                            {/* CHEF / KITCHEN ACTIONS */}
+                            {order.status === "WAITING_FOR_CHEF" && (
+                              <button
+                                onClick={(e) => handleCardAction(e, order.id, "chef-accept")}
+                                disabled={isOrderLoading}
+                                className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                              >
+                                {isOrderLoading ? "Updating…" : "Accept Ticket"}
+                              </button>
+                            )}
+                            {order.status === "CHEF_ACCEPTED" && (
+                              <button
+                                onClick={(e) => handleCardAction(e, order.id, "start-making")}
+                                disabled={isOrderLoading}
+                                className="flex-1 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                              >
+                                {isOrderLoading ? "Updating…" : "Start Baking"}
+                              </button>
+                            )}
+                            {order.status === "MAKING" && (
+                              <button
+                                onClick={(e) => handleCardAction(e, order.id, "start-decorating")}
+                                disabled={isOrderLoading}
+                                className="flex-1 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                              >
+                                {isOrderLoading ? "Updating…" : "Start Decorating"}
+                              </button>
+                            )}
+                            {order.status === "DECORATING" && (
+                              <button
+                                onClick={(e) => handleCardAction(e, order.id, "ready")}
+                                disabled={isOrderLoading}
+                                className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                              >
+                                {isOrderLoading ? "Updating…" : "Mark Ready"}
+                              </button>
+                            )}
+
+                            {/* DISPATCH / DELIVERY / HANDOVER ACTIONS */}
+                            {(order.status === "READY_FOR_PICKUP" || order.status === "PENDING_ASSIGNMENT") && (
+                              <>
+                                {order.orderType === "delivery" ? (
+                                  <button
+                                    onClick={() => setReassignOrderId(order.id)}
+                                    className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1 cursor-pointer"
+                                  >
+                                    <TruckFast className="w-3.5 h-3.5" /> Assign Driver
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={(e) => handleCardAction(e, order.id, "complete")}
+                                    disabled={isOrderLoading}
+                                    className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1 disabled:opacity-50 cursor-pointer"
+                                  >
+                                    <TickCircle className="w-3.5 h-3.5" /> Handover / Complete
+                                  </button>
+                                )}
+                              </>
+                            )}
+                            {(order.status === "ASSIGNED_TO_DRIVER" || order.status === "PICKED_UP" || order.status === "ON_THE_WAY") && (
+                              <button
+                                onClick={(e) => handleCardAction(e, order.id, "deliver")}
+                                disabled={isOrderLoading}
+                                className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1 disabled:opacity-50 cursor-pointer"
+                              >
+                                <TickCircle className="w-3.5 h-3.5" /> Mark Delivered
+                              </button>
+                            )}
+
+                            {/* Bill / Receipt Print Icon */}
+                            <button
+                              onClick={() => setReceiptOrderId(order.id)}
+                              title="Print / View Bill"
+                              className="p-1.5 border border-border hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            >
+                              <Receipt21 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </motion.div>
+                      )
+                    })}
                   </AnimatePresence>
                   {colOrders.length === 0 && (
                     <div className="py-8 text-center text-muted-foreground text-sm opacity-50">No orders</div>
@@ -353,8 +655,12 @@ export default function LiveOrdersPage() {
               </h3>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {archivedOrders.slice(0, 10).map((order) => (
-                <div key={order.id} className="bg-card border border-border/40 p-3 rounded-xl opacity-70 text-xs">
+              {archivedOrders.slice(0, 15).map((order) => (
+                <div
+                  key={order.id}
+                  onClick={() => setSelectedOrderId(order.id)}
+                  className="bg-card border border-border/40 p-3 rounded-xl opacity-80 text-xs hover:border-primary/40 hover:opacity-100 transition-all cursor-pointer"
+                >
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-bold">{order.orderNumber || order.id}</span>
                     <Badge variant={STATUS_CONFIG[order.status]?.variant ?? "secondary"}>
@@ -362,9 +668,15 @@ export default function LiveOrdersPage() {
                     </Badge>
                   </div>
                   <p className="font-medium text-foreground truncate">{order.customerName}</p>
-                  <p className="text-muted-foreground">₹{order.grandTotal?.toFixed(0)}</p>
+                  <div className="flex justify-between items-center text-muted-foreground mt-1">
+                    <span>{order.branch}</span>
+                    <span className="font-bold text-foreground">₹{order.grandTotal?.toFixed(0)}</span>
+                  </div>
                 </div>
               ))}
+              {archivedOrders.length === 0 && (
+                <div className="py-8 text-center text-muted-foreground text-sm opacity-50">No delivered orders</div>
+              )}
             </div>
           </div>
         </div>
