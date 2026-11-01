@@ -163,14 +163,55 @@ const RBAC_MATRIX: Record<Role, Record<Capability, Scope>> = {
 }
 
 /**
- * Evaluates whether a user can perform an action based on their effective permissions and scope.
+ * Evaluates whether a user can perform an action based on their effective permissions, scope, and custom overrides.
  */
 export function hasPermission(
   userRole: Role, 
   userBranchId: string | null, 
   capability: Capability, 
-  contextBranchId?: string | null
+  contextBranchId?: string | null,
+  customPermissions?: string | Record<string, boolean> | null
 ): boolean {
+  // Check custom permission overrides first
+  if (customPermissions) {
+    try {
+      const overrides: Record<string, boolean> = typeof customPermissions === 'string'
+        ? JSON.parse(customPermissions)
+        : customPermissions;
+
+      // Capability-to-key mapping
+      const keyMap: Record<Capability, string[]> = {
+        [PERMISSIONS.VIEW_ORDERS]: ['view_orders'],
+        [PERMISSIONS.UPDATE_ORDER_FULL]: ['order_overrides', 'pos_orders'],
+        [PERMISSIONS.UPDATE_ORDER_CHEF]: ['kds_screen', 'cake_prep_stages'],
+        [PERMISSIONS.UPDATE_ORDER_DRIVER]: ['driver_dispatch'],
+        [PERMISSIONS.MANAGE_INVENTORY]: ['stock_transfers'],
+        [PERMISSIONS.MANAGE_CUSTOMERS]: ['customers_crm'],
+        [PERMISSIONS.MANAGE_REPORTS]: ['financial_reports'],
+        [PERMISSIONS.MANAGE_PRODUCTS]: ['catalog_pricing'],
+        [PERMISSIONS.MANAGE_CATEGORIES]: ['catalog_pricing'],
+        [PERMISSIONS.MANAGE_COUPONS]: ['catalog_pricing'],
+        [PERMISSIONS.MANAGE_SETTINGS]: ['settings_users'],
+        [PERMISSIONS.MANAGE_USERS]: ['settings_users'],
+        [PERMISSIONS.MANAGE_ROLES]: ['settings_users'],
+        [PERMISSIONS.MANAGE_BRANCHES]: ['settings_users'],
+        [PERMISSIONS.MANAGE_NOTIFICATIONS]: ['settings_users', 'view_orders'],
+      };
+
+      const mappedKeys = keyMap[capability] || [];
+      // If any mapped key is explicitly true, allow access
+      if (mappedKeys.some(k => overrides[k] === true)) {
+        return true;
+      }
+      // If all mapped keys are explicitly false, deny access
+      if (mappedKeys.length > 0 && mappedKeys.every(k => overrides[k] === false)) {
+        return false;
+      }
+    } catch (e) {
+      // In case of invalid JSON, fallback to role matrix
+    }
+  }
+
   // 1. Get user's default permission set from Role
   const permissionSet = RBAC_MATRIX[userRole]
   if (!permissionSet) return false // Failsafe

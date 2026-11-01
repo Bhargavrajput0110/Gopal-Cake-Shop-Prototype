@@ -198,25 +198,45 @@ export default auth(function proxy(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
     
-    // STRICT ROLE-BASED ACCESS CONTROL (RBAC)
+    // STRICT ROLE-BASED ACCESS CONTROL (RBAC) WITH ADMIN CUSTOM PERMISSIONS OVERRIDES
     const role = (session.user as any)?.role?.toUpperCase();
+    const rawPerms = (session.user as any)?.customPermissions;
+    let customPerms: Record<string, boolean> = {};
+    if (rawPerms) {
+      try {
+        customPerms = typeof rawPerms === 'string' ? JSON.parse(rawPerms) : rawPerms;
+      } catch (e) {}
+    }
     
-    if (pathname.startsWith('/admin') && role !== 'ADMIN') {
+    if (pathname.startsWith('/admin') && role !== 'ADMIN' && !customPerms['settings_users']) {
       return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
     }
-    if (pathname.startsWith('/chef') && role !== 'CHEF' && role !== 'ADMIN') {
+    
+    // Check Chef portal access: Allowed if CHEF, ADMIN, or explicitly granted kds_screen or cake_prep_stages
+    const hasChefAccess = role === 'CHEF' || role === 'ADMIN' || customPerms['kds_screen'] === true || customPerms['cake_prep_stages'] === true;
+    if (pathname.startsWith('/chef') && !hasChefAccess) {
       return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
     }
-    if (pathname.startsWith('/sales') && role !== 'SALESPERSON' && role !== 'MANAGER' && role !== 'ADMIN') {
+    
+    // Check Sales portal access: Allowed if SALESPERSON, MANAGER, ADMIN, or granted POS/orders access
+    const hasSalesAccess = role === 'SALESPERSON' || role === 'MANAGER' || role === 'ADMIN' || customPerms['pos_orders'] === true || customPerms['view_orders'] === true;
+    if (pathname.startsWith('/sales') && !hasSalesAccess) {
       return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
     }
-    if ((pathname.startsWith('/driver') || pathname.startsWith('/delivery')) && role !== 'DELIVERY' && role !== 'ADMIN') {
+    
+    // Check Driver portal access: Allowed if DELIVERY, ADMIN, or granted driver dispatch
+    const hasDriverAccess = role === 'DELIVERY' || role === 'ADMIN' || customPerms['driver_dispatch'] === true;
+    if ((pathname.startsWith('/driver') || pathname.startsWith('/delivery')) && !hasDriverAccess) {
       return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
     }
+    
     if (pathname.startsWith('/manager') && role !== 'MANAGER' && role !== 'ADMIN') {
       return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
     }
-    if (pathname.startsWith('/vendor') && !role?.startsWith('VENDOR') && role !== 'ADMIN') {
+    
+    // Check Vendor portal access
+    const hasVendorAccess = role?.startsWith('VENDOR') || role === 'ADMIN' || customPerms['vendor_florist'] === true || customPerms['vendor_photo'] === true || customPerms['vendor_acrylic'] === true;
+    if (pathname.startsWith('/vendor') && !hasVendorAccess) {
       return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
     }
     // Authenticated and authorized — fall through

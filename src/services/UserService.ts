@@ -19,6 +19,7 @@ export class UserService {
       status: u.status,
       branchId: u.branchId,
       deliveryScope: u.deliveryScope,
+      customPermissions: u.customPermissions,
       createdAt: u.createdAt.toISOString(),
       lastLoginAt: (u.lastLoginAt || u.lastActivityAt)?.toISOString() || null,
     }))
@@ -39,6 +40,7 @@ export class UserService {
         role: dto.role,
         branchId: dto.branchId,
         deliveryScope: dto.deliveryScope || null,
+        customPermissions: dto.customPermissions || null,
         status: 'INVITED',
         passwordHash: 'INVITE_PENDING',
         invitedAt: new Date(),
@@ -65,6 +67,7 @@ export class UserService {
       status: user.status,
       branchId: user.branchId,
       deliveryScope: user.deliveryScope,
+      customPermissions: user.customPermissions,
       createdAt: user.createdAt.toISOString(),
       lastLoginAt: (user.lastLoginAt || user.lastActivityAt)?.toISOString() || null,
     }
@@ -95,6 +98,7 @@ export class UserService {
         role: dto.role,
         branchId: dto.branchId,
         deliveryScope: dto.deliveryScope !== undefined ? dto.deliveryScope : undefined,
+        customPermissions: dto.customPermissions !== undefined ? dto.customPermissions : undefined,
       }
     })
 
@@ -124,6 +128,7 @@ export class UserService {
       status: user.status,
       branchId: user.branchId,
       deliveryScope: user.deliveryScope,
+      customPermissions: user.customPermissions,
       createdAt: user.createdAt.toISOString(),
       lastLoginAt: (user.lastLoginAt || user.lastActivityAt)?.toISOString() || null,
     }

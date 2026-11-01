@@ -10,7 +10,7 @@ export default function ManagerLayout({
   children: React.ReactNode
 }) {
   return (
-    <SessionProvider>
+    <SessionProvider refetchInterval={30} refetchOnWindowFocus={true}>
       <div className="min-h-screen bg-background">
         <AppSidebar config={MANAGER_NAV_CONFIG} />
         <div className="md:pl-64 flex flex-col min-h-screen">

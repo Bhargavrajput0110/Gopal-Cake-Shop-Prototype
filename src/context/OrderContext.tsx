@@ -94,12 +94,27 @@ export type Order = {
   productionStartTime?: string;
   delayLevel?: "none" | "warning" | "delayed";
   assignedChef?: string;
+  assignedChefName?: string;
+  assignedChefId?: string;
   assignedDriverId?: string;
   assignedDriverName?: string;
+  deliveryAssignedByName?: string;
+  createdByName?: string;
+  createdById?: string;
+  deliveryAddress?: string;
   vendorTasks?: VendorTask[];
   cakeImage?: string;
   ingredientRequests?: IngredientRequest[];
-  timeline?: TimelineEvent[];
+  timeline?: (TimelineEvent | {
+    id?: string;
+    action?: string;
+    status?: string;
+    nextState?: string;
+    note?: string;
+    actorName?: string;
+    actorRole?: string;
+    createdAt?: string;
+  })[];
   transferHistory?: { from: string; to: string; note: string; timestamp: string }[];
   auditLog?: AuditEntry[];
   requestedDiscountOverride?: {

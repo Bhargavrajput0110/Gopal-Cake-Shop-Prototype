@@ -35,12 +35,15 @@ export const authConfig = {
       return baseUrl;
     },
     async jwt({ token, user }) {
+      // On first sign-in, seed token from credential authorize()
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
         token.branchId = (user as any).branchId;
         token.deliveryScope = (user as any).deliveryScope;
+        token.customPermissions = (user as any).customPermissions;
       }
+
       return token;
     },
     async session({ session, token }) {
@@ -49,6 +52,7 @@ export const authConfig = {
         (session.user as any).role = token.role;
         (session.user as any).branchId = token.branchId;
         (session.user as any).deliveryScope = token.deliveryScope;
+        (session.user as any).customPermissions = token.customPermissions;
       }
       return session;
     },

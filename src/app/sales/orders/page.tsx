@@ -1425,6 +1425,67 @@ function OrderDetailsCard({ order, onViewTimeline, onReceipt, onEdit, onAssignVe
           )}
         </div>
 
+        {/* Delivery Address Box */}
+        {isDeliveryOrder && (order.deliveryAddress || (order as any).delivery?.address) && (
+          <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-xl p-2.5 flex items-start gap-2 shadow-2xs">
+            <span className="text-base shrink-0 mt-0.5">📍</span>
+            <div className="min-w-0 flex-1">
+              <span className="text-[8px] font-black uppercase tracking-wider text-emerald-700 block leading-tight">
+                DELIVERY ADDRESS
+              </span>
+              <p className="text-xs font-bold text-slate-900 leading-snug mt-0.5 break-words">
+                {order.deliveryAddress || (order as any).delivery?.address}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Staff Responsibilities & Stage Strip */}
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 space-y-1 shadow-2xs text-[11px]">
+          <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-slate-400 pb-0.5 border-b border-slate-200/60">
+            <span>Staff Responsibilities</span>
+            <span className="text-slate-700 font-extrabold uppercase">{order.status.replace(/_/g, ' ')}</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 items-center pt-0.5">
+            {(order.createdByName || order.createdBy) && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold border border-blue-200 text-[10px]">
+                <User size={11} variant="Bold" /> Sales: {order.createdByName || order.createdBy}
+              </span>
+            )}
+            {(order.assignedChefName || order.assignedChef || ['WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'READY_FOR_PICKUP'].includes(order.status)) && (
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold border text-[10px] ${
+                (order.assignedChefName || order.assignedChef)
+                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                  : 'bg-amber-50/50 text-amber-600 border-dashed border-amber-300'
+              }`}>
+                <ChefHat className="w-3 h-3" /> Chef: {order.assignedChefName || order.assignedChef || 'Waiting for Chef'}
+              </span>
+            )}
+            {isDeliveryOrder && (
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold border text-[10px] ${
+                order.assignedDriverName
+                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                  : 'bg-rose-50 text-rose-700 border-rose-200'
+              }`}>
+                <TruckFast size={11} variant="Bold" />
+                {order.assignedDriverName ? (
+                  <>
+                    Driver: {order.assignedDriverName}
+                    {order.deliveryAssignedByName && <span className="text-[9px] opacity-75 font-normal"> (by {order.deliveryAssignedByName})</span>}
+                  </>
+                ) : (
+                  'Driver: Unassigned'
+                )}
+              </span>
+            )}
+            {!isDeliveryOrder && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold border border-slate-200 text-[10px]">
+                <Shop size={11} variant="Bold" /> Store Pickup
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Bargain Negotiation Control Panel (for QUOTE_DRAFT and QUOTE_SENT) */}
         {(order.status === "QUOTE_DRAFT" || order.status === "QUOTE_SENT") && (
           <div className="p-3.5 bg-primary/5 rounded-2xl border-2 border-primary/20 space-y-3">

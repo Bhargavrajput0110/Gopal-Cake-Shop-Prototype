@@ -105,7 +105,25 @@ export class OrderTransitionService {
       return
     }
 
-    const config = OrderStateMachine.validate(action, currentState, appRole, order.deliveryType as any)
+    let effectiveRole: AppRole = appRole;
+    if (['chef-accept', 'start-making', 'start-decorating', 'ready'].includes(action) && appRole !== 'CHEF' && appRole !== 'ADMIN') {
+      try {
+        const actor = await prisma.user.findUnique({
+          where: { id: actorId },
+          select: { customPermissions: true }
+        });
+        if (actor?.customPermissions) {
+          const perms = JSON.parse(actor.customPermissions);
+          if (perms.kds_screen || perms.cake_prep_stages) {
+            effectiveRole = 'CHEF';
+          }
+        }
+      } catch (e) {
+        // Fallback to appRole
+      }
+    }
+
+    const config = OrderStateMachine.validate(action, currentState, effectiveRole, order.deliveryType as any)
 
     if (config.requireReason && !note) {
       throw new Error('REASON_REQUIRED')
@@ -169,7 +187,7 @@ export class OrderTransitionService {
           status: nextState
         }
 
-        if (action === 'chef-accept' && role === 'CHEF') {
+        if (action === 'chef-accept') {
           updateData.chefId = actorId
         }
 
@@ -204,7 +222,7 @@ export class OrderTransitionService {
             where: { orderId },
             data: {
               status: nextState as any,
-              ...(action === 'chef-accept' && role === 'CHEF' ? { assignedChefId: actorId } : {})
+              ...(action === 'chef-accept' ? { assignedChefId: actorId } : {})
             }
           })
         }

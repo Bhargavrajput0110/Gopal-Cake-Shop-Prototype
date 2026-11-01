@@ -11,7 +11,7 @@ export default function ChefLayout({
   children: React.ReactNode
 }) {
   return (
-    <SessionProvider>
+    <SessionProvider refetchInterval={30} refetchOnWindowFocus={true}>
       <WarningSiren />
       <div className="h-screen flex flex-col bg-background">
         {/* Chef KDS is full-width — no sidebar, but has a topbar for context/sign-out */}

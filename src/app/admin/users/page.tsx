@@ -79,6 +79,7 @@ export default function AdminUsers() {
         role: user.role,
         branchId: user.branchId || "",
         deliveryScope: initialScope,
+        customPermissions: user.customPermissions || "",
       });
     } else {
       setEditingUser(null);
@@ -89,6 +90,7 @@ export default function AdminUsers() {
         role: "SALESPERSON",
         branchId: "",
         deliveryScope: "",
+        customPermissions: "",
       });
     }
     setIsModalOpen(true);
@@ -106,6 +108,7 @@ export default function AdminUsers() {
         ...formData,
         branchId: formData.role === 'ADMIN' || isGlobalDelivery ? null : (formData.branchId || null),
         deliveryScope: isDelivery ? (formData.deliveryScope || 'ALL_BRANCHES') : null,
+        customPermissions: formData.customPermissions || null,
       };
 
       if (editingUser) {
@@ -113,6 +116,7 @@ export default function AdminUsers() {
           role: payload.role, 
           branchId: payload.branchId,
           deliveryScope: payload.deliveryScope,
+          customPermissions: payload.customPermissions,
         });
       } else {
         await inviteUser(payload);

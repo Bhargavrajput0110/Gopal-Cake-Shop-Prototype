@@ -227,13 +227,32 @@ export class OrderService {
         orderBy,
         include: {
           customer: true,
-          items: { include: { media: true, product: { include: { category: true } } } },
+          items: {
+            include: {
+              media: true,
+              product: { include: { category: true } },
+              assignedChef: true
+            }
+          },
           ledgerEntries: true,
           payments: true,
           vendorTasks: { include: { vendor: true } },
           ingredientRequests: { include: { requestedBy: true } },
           transfers: { orderBy: { createdAt: 'asc' } },
           driver: true,
+          chef: true,
+          createdBy: true,
+          deliveryAssignments: {
+            where: { status: 'ACTIVE' },
+            orderBy: { assignedAt: 'desc' },
+            take: 1,
+            include: { deliveryPerson: true, assignedBy: true }
+          },
+          timeline: {
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+            include: { actor: true }
+          }
         }
       }),
       db.order.count({ where: whereClause }),
@@ -242,6 +261,16 @@ export class OrderService {
     const result = {
       data: await Promise.all(orders.map(async (o) => {
         const finSummary = await FinancialService.calculateFinancialSummary(o);
+        const activeAssignment = (o as any).deliveryAssignments?.[0];
+        const assignedDriverName = (o as any).driver?.name || activeAssignment?.deliveryPerson?.name || undefined;
+        const assignedDriverId = (o as any).driver?.id || activeAssignment?.deliveryPerson?.id || undefined;
+        const assignedChefName = (o as any).chef?.name || (o.items?.find((i: any) => i.assignedChef)?.assignedChef?.name) || undefined;
+        const assignedChefId = (o as any).chefId || (o.items?.find((i: any) => i.assignedChef)?.assignedChef?.id) || undefined;
+        const createdByName = (o as any).createdBy?.name || undefined;
+        const createdById = (o as any).createdById || undefined;
+        const deliveryAssignedByName = activeAssignment?.assignedBy?.name || undefined;
+        const deliveryAddress = o.deliveryAddress || o.customer?.address || undefined;
+
         return {
           id: o.id,
           orderNumber: o.orderNumber,
@@ -250,8 +279,31 @@ export class OrderService {
           branch: o.branchId, // Use branchId directly or map to name
           status: o.status,
           orderType: o.deliveryType?.toLowerCase() || 'pickup',
-          assignedDriverName: (o as any).driver?.name || undefined,
-          assignedDriverId: (o as any).driver?.id || undefined,
+          assignedDriverName,
+          assignedDriverId,
+          assignedChefName,
+          assignedChefId,
+          assignedChef: assignedChefName,
+          createdByName,
+          createdById,
+          createdBy: createdByName,
+          deliveryAssignedByName,
+          deliveryAddress,
+          delivery: {
+            address: deliveryAddress || '',
+            latitude: o.deliveryLatitude || undefined,
+            longitude: o.deliveryLongitude || undefined,
+          },
+          timeline: (o as any).timeline?.map((tl: any) => ({
+            id: tl.id,
+            action: tl.action,
+            status: tl.status,
+            nextState: tl.nextState,
+            note: tl.note,
+            actorName: tl.actor?.name || 'Staff',
+            actorRole: tl.actor?.role || tl.role,
+            createdAt: tl.createdAt,
+          })),
           grandTotal: finSummary.totalAmount,
           timeTarget: o.targetDate,
           createdAt: o.createdAt,
@@ -383,21 +435,43 @@ export class OrderService {
     const o = await db.order.findUnique({ 
       where: { id },
       include: { 
+        customer: true,
+        driver: true,
+        chef: true,
+        createdBy: true,
+        items: { include: { assignedChef: true, media: true } },
         ledgerEntries: true,
         vendorTasks: { include: { vendor: true } },
         ingredientRequests: { include: { requestedBy: true } },
+        deliveryAssignments: {
+          where: { status: 'ACTIVE' },
+          orderBy: { assignedAt: 'desc' },
+          take: 1,
+          include: { deliveryPerson: true, assignedBy: true }
+        }
       } 
     })
     if (!o) return null
 
     const finSummary = await FinancialService.calculateFinancialSummary(o);
+    const activeAssignment = (o as any).deliveryAssignments?.[0];
 
     return {
       id: o.id,
+      orderNumber: o.orderNumber,
       customerId: o.customerId,
+      customer: o.customer ? { name: o.customer.name, phone: o.customer.phone } : undefined,
       branchId: o.branchId,
       status: o.status,
       deliveryType: o.deliveryType,
+      deliveryAddress: o.deliveryAddress || o.customer?.address || undefined,
+      assignedDriverName: (o as any).driver?.name || activeAssignment?.deliveryPerson?.name || undefined,
+      assignedDriverId: (o as any).driver?.id || activeAssignment?.deliveryPerson?.id || undefined,
+      assignedChefName: (o as any).chef?.name || (o.items?.find((i: any) => i.assignedChef)?.assignedChef?.name) || undefined,
+      assignedChefId: (o as any).chefId || undefined,
+      createdByName: (o as any).createdBy?.name || undefined,
+      createdById: (o as any).createdById || undefined,
+      deliveryAssignedByName: activeAssignment?.assignedBy?.name || undefined,
       totalAmount: finSummary.totalAmount,
       advancePaid: finSummary.paidAmount,
       pendingBalance: finSummary.outstandingAmount,

@@ -1,9 +1,10 @@
-"use client"
+"use client";
 
+import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Logout } from "iconsax-react"
+import { Logout, Cake, Shop, Car, Reserve } from "iconsax-react"
 import { cn } from "@/lib/utils"
 import type { AppConfig } from "./navigation.types"
 import { useSession } from "next-auth/react"
@@ -17,6 +18,44 @@ export function AppSidebar({ config }: AppSidebarProps) {
   const pathname = usePathname()
   const sessionObj = useSession ? useSession() : null
   const session = sessionObj?.data
+
+  const rawPerms = (session?.user as any)?.customPermissions
+  const customPerms: Record<string, boolean> = React.useMemo(() => {
+    if (!rawPerms) return {}
+    try {
+      return typeof rawPerms === 'string' ? JSON.parse(rawPerms) : rawPerms
+    } catch {
+      return {}
+    }
+  }, [rawPerms])
+
+  const userRole = ((session?.user as any)?.role || '').toUpperCase()
+
+  const dynamicItems = React.useMemo(() => {
+    const items: Array<{ name: string; href: string; icon: any; badge?: string | number }> = []
+
+    // Grant Chef / Kitchen Display power to non-chefs (e.g. Salesperson granted Chef power)
+    if (userRole !== 'CHEF' && (customPerms['kds_screen'] || customPerms['cake_prep_stages'])) {
+      items.push({ name: "Kitchen Terminal (KDS)", href: "/chef", icon: Cake, badge: "Chef Access" })
+    }
+
+    // Grant Counter POS / Billing power to non-sales
+    if (userRole !== 'SALESPERSON' && userRole !== 'ADMIN' && customPerms['pos_orders']) {
+      items.push({ name: "POS Terminal", href: "/sales/pos", icon: Shop, badge: "Sales Access" })
+    }
+
+    // Grant Driver Dispatch / Delivery power
+    if (userRole !== 'DELIVERY' && userRole !== 'ADMIN' && customPerms['driver_dispatch']) {
+      items.push({ name: "Driver App", href: "/driver", icon: Car, badge: "Driver Access" })
+    }
+
+    // Grant Vendor tasks power
+    if (!userRole?.startsWith('VENDOR') && userRole !== 'ADMIN' && (customPerms['vendor_florist'] || customPerms['vendor_photo'] || customPerms['vendor_acrylic'])) {
+      items.push({ name: "Vendor Tasks", href: "/vendor", icon: Reserve, badge: "Vendor Access" })
+    }
+
+    return items
+  }, [userRole, customPerms])
 
   const displayName = session?.user?.name || config.user?.name || 'Staff'
   const displayRole = (session?.user as any)?.role || config.user?.role || 'Staff'
@@ -89,6 +128,47 @@ export function AppSidebar({ config }: AppSidebarProps) {
             })}
           </div>
         ))}
+
+        {/* Granted Capabilities based on Admin YES/NO Overrides */}
+        {dynamicItems.length > 0 && (
+          <div className="space-y-0.5 pt-3 border-t border-border/60">
+            <p className="px-3 text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <span>⭐ Granted Capabilities</span>
+            </p>
+            {dynamicItems.map((item) => {
+              const active = isActive(item.href)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-150 text-sm font-semibold",
+                    active
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="w-4 h-4 shrink-0 text-amber-500" color="currentColor" />
+                    <span>{item.name}</span>
+                  </div>
+                  {item.badge != null && (
+                    <span
+                      className={cn(
+                        "px-2 py-0.5 rounded-full text-[10px] font-black shrink-0",
+                        active
+                          ? "bg-white/20 text-white"
+                          : "bg-amber-500/15 text-amber-700 border border-amber-500/30"
+                      )}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              )
+            })}
+          </div>
+        )}
       </nav>
 
       {/* User Footer */}

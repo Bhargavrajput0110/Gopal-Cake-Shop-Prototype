@@ -8,12 +8,8 @@ export const GET = withApiHandler(async (ctx) => {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const branchId = ctx.branchId || ctx.req.nextUrl.searchParams.get('branchId')
-
   const activeDrivers = await db.user.findMany({
-    where: {
-      role: 'DELIVERY'
-    },
+    where: { role: 'DELIVERY' },
     select: {
       id: true,
       name: true,
@@ -24,7 +20,7 @@ export const GET = withApiHandler(async (ctx) => {
           deliveredOrders: {
             where: {
               status: 'DELIVERED',
-              updatedAt: { gte: new Date(new Date().setHours(0,0,0,0)) }
+              updatedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
             }
           }
         }
@@ -39,11 +35,7 @@ export const GET = withApiHandler(async (ctx) => {
             { status: 'ON_THE_WAY' }
           ]
         },
-        select: {
-          id: true,
-          status: true,
-          targetDate: true
-        }
+        select: { id: true, status: true, targetDate: true }
       }
     }
   })
@@ -52,11 +44,9 @@ export const GET = withApiHandler(async (ctx) => {
     const activeDeliveries = driver.deliveredOrders.length
     const deliveredToday = driver._count.deliveredOrders
     const now = new Date()
-    
     const lateDeliveries = driver.deliveredOrders.filter(
       d => new Date(d.targetDate).getTime() < now.getTime()
     ).length
-
     const isOverloaded = activeDeliveries > 5 || lateDeliveries > 0
 
     return {
@@ -67,9 +57,32 @@ export const GET = withApiHandler(async (ctx) => {
       activeCount: activeDeliveries,
       deliveredToday,
       lateCount: lateDeliveries,
-      isOverloaded
+      isOverloaded,
+      isSelf: false,
     }
   })
+
+  // Admin can self-assign: inject themselves at the TOP of the driver list.
+  // Sales / Manager callers NEVER see the admin here — only the admin sees themselves.
+  if (appRole === 'ADMIN' && user?.id) {
+    const adminUser = await db.user.findUnique({
+      where: { id: user.id },
+      select: { id: true, name: true, phone: true, branch: { select: { name: true } } }
+    })
+    if (adminUser) {
+      workload.unshift({
+        driverId: adminUser.id,
+        name: adminUser.name ?? 'Admin',
+        phone: adminUser.phone ?? '',
+        branch: adminUser.branch?.name ?? 'Admin',
+        activeCount: 0,
+        deliveredToday: 0,
+        lateCount: 0,
+        isOverloaded: false,
+        isSelf: true,
+      })
+    }
+  }
 
   return NextResponse.json(workload)
 })

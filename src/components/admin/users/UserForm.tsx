@@ -434,13 +434,23 @@ export function UserForm({
 
       {/* ── Capabilities preview ──────────────────────────────── */}
       <div className="space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
-          What this role can access
-        </h3>
+        <div className="flex items-center justify-between border-b border-border pb-2">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Role Capabilities & Custom Access (YES / NO)
+          </h3>
+          <span className="text-[11px] text-primary font-semibold hidden sm:inline">
+            Click YES or NO to customize permissions
+          </span>
+        </div>
         <RoleCapabilities
           role={role}
           assignedBranchName={assignedBranchLabel}
           deliveryScope={formData.deliveryScope}
+          customPermissions={formData.customPermissions}
+          onCustomPermissionsChange={(updatedJson) =>
+            setFormData((prev) => ({ ...prev, customPermissions: updatedJson }))
+          }
+          editable={true}
         />
       </div>
 

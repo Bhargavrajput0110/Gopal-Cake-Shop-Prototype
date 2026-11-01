@@ -11,6 +11,38 @@ export const {
   signOut,
 } = NextAuth({
   ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = (user as any).role;
+        token.branchId = (user as any).branchId;
+        token.deliveryScope = (user as any).deliveryScope;
+        token.customPermissions = (user as any).customPermissions;
+      }
+
+      // Re-read live permissions from DB in Node runtime
+      if (token.id) {
+        try {
+          const fresh = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true, branchId: true, deliveryScope: true, customPermissions: true, status: true },
+          });
+          if (fresh && fresh.status !== 'SUSPENDED') {
+            token.role = fresh.role;
+            token.branchId = fresh.branchId;
+            token.deliveryScope = fresh.deliveryScope;
+            token.customPermissions = fresh.customPermissions;
+          }
+        } catch {
+          // DB unreachable — keep existing token values, don't break auth
+        }
+      }
+
+      return token;
+    },
+  },
   providers: [
     CredentialsProvider({
       name: "PIN",
@@ -61,6 +93,7 @@ export const {
             role: user.role,
             branchId: user.branchId,
             deliveryScope: user.deliveryScope,
+            customPermissions: user.customPermissions,
           } as any;
         }
 

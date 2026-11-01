@@ -316,28 +316,82 @@ interface RoleCapabilitiesProps {
   role: Role;
   assignedBranchName?: string | null;
   deliveryScope?: string | null;
+  customPermissions?: string | null;
+  onCustomPermissionsChange?: (updatedJson: string) => void;
+  editable?: boolean;
 }
 
-export function RoleCapabilities({ role, assignedBranchName, deliveryScope }: RoleCapabilitiesProps) {
+export function RoleCapabilities({
+  role,
+  assignedBranchName,
+  deliveryScope,
+  customPermissions,
+  onCustomPermissionsChange,
+  editable = true,
+}: RoleCapabilitiesProps) {
   const roleInfo = ROLE_DETAILS[role] || ROLE_DETAILS.SALESPERSON;
   const [activeTab, setActiveTab] = React.useState<string>("all");
+
+  const overrides: Record<string, boolean> = React.useMemo(() => {
+    if (!customPermissions) return {};
+    try {
+      return typeof customPermissions === "string" ? JSON.parse(customPermissions) : customPermissions;
+    } catch {
+      return {};
+    }
+  }, [customPermissions]);
+
+  const handleToggle = (id: string, value: boolean) => {
+    if (!onCustomPermissionsChange) return;
+    const nextOverrides = { ...overrides, [id]: value };
+    onCustomPermissionsChange(JSON.stringify(nextOverrides));
+  };
+
+  const handleGrantAll = () => {
+    if (!onCustomPermissionsChange) return;
+    const nextOverrides: Record<string, boolean> = {};
+    PERMISSIONS_LIST.forEach((p) => {
+      nextOverrides[p.id] = true;
+    });
+    onCustomPermissionsChange(JSON.stringify(nextOverrides));
+  };
+
+  const handleRevokeAll = () => {
+    if (!onCustomPermissionsChange) return;
+    const nextOverrides: Record<string, boolean> = {};
+    PERMISSIONS_LIST.forEach((p) => {
+      nextOverrides[p.id] = false;
+    });
+    onCustomPermissionsChange(JSON.stringify(nextOverrides));
+  };
+
+  const handleResetDefaults = () => {
+    if (!onCustomPermissionsChange) return;
+    onCustomPermissionsChange("");
+  };
 
   const filteredItems = React.useMemo(() => {
     if (activeTab === "all") return PERMISSIONS_LIST;
     return PERMISSIONS_LIST.filter((p) => p.category === activeTab);
   }, [activeTab]);
 
-  // Count granted vs denied
+  // Count granted vs denied with custom overrides considered
   const stats = React.useMemo(() => {
     let granted = 0;
     let denied = 0;
+    let customCount = 0;
     for (const item of PERMISSIONS_LIST) {
-      const { scope } = item.evaluator(role);
-      if (scope === "none") denied++;
-      else granted++;
+      const defaultAllowed = item.evaluator(role).scope !== "none";
+      const overrideVal = overrides[item.id];
+      const isAllowed = overrideVal !== undefined ? overrideVal : defaultAllowed;
+      if (overrideVal !== undefined && overrideVal !== defaultAllowed) {
+        customCount++;
+      }
+      if (isAllowed) granted++;
+      else denied++;
     }
-    return { granted, denied };
-  }, [role]);
+    return { granted, denied, customCount };
+  }, [role, overrides]);
 
   const isGlobalDelivery =
     role === "DELIVERY" &&
@@ -361,12 +415,17 @@ export function RoleCapabilities({ role, assignedBranchName, deliveryScope }: Ro
           </div>
 
           <div className="flex items-center gap-2 text-xs font-semibold">
-            <span className="text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-              {stats.granted} Allowed
+            <span className="text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20 font-bold">
+              {stats.granted} Allowed (YES)
             </span>
-            <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border">
-              {stats.denied} Denied
+            <span className="text-rose-600 bg-rose-500/10 px-2.5 py-1 rounded-md border border-rose-500/20 font-bold">
+              {stats.denied} Denied (NO)
             </span>
+            {stats.customCount > 0 && (
+              <span className="text-amber-600 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/30 font-bold">
+                ⚡ {stats.customCount} Custom Overrides
+              </span>
+            )}
           </div>
         </div>
 
@@ -394,6 +453,40 @@ export function RoleCapabilities({ role, assignedBranchName, deliveryScope }: Ro
             </span>
           </div>
         </div>
+
+        {/* Quick Override Controls */}
+        {editable && onCustomPermissionsChange && (
+          <div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              Admin Access Controls:
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleGrantAll}
+                className="px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-md border border-emerald-500/30 transition-colors cursor-pointer"
+              >
+                Grant All (YES)
+              </button>
+              <button
+                type="button"
+                onClick={handleRevokeAll}
+                className="px-2.5 py-1 text-[11px] font-bold text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 rounded-md border border-rose-500/30 transition-colors cursor-pointer"
+              >
+                Revoke All (NO)
+              </button>
+              {stats.customCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleResetDefaults}
+                  className="px-2.5 py-1 text-[11px] font-bold text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 rounded-md border border-amber-500/30 transition-colors cursor-pointer"
+                >
+                  Reset to Role Defaults
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Category Filters ────────────────────────────────────────── */}
@@ -417,29 +510,36 @@ export function RoleCapabilities({ role, assignedBranchName, deliveryScope }: Ro
       {/* ── Permissions Grid ────────────────────────────────────────── */}
       <div className="space-y-2">
         {filteredItems.map((item) => {
-          const evalResult = item.evaluator(role);
-          const isAllowed = evalResult.scope !== "none";
+          const defaultEval = item.evaluator(role);
+          const defaultAllowed = defaultEval.scope !== "none";
+          const overrideVal = overrides[item.id];
+          const isEffectiveAllowed = overrideVal !== undefined ? overrideVal : defaultAllowed;
+          const isOverridden = overrideVal !== undefined && overrideVal !== defaultAllowed;
           const IconComponent = item.icon;
 
           return (
             <div
               key={item.id}
               className={`flex items-start justify-between gap-3 p-3 rounded-xl border transition-all ${
-                isAllowed
-                  ? "bg-card border-border hover:border-primary/40 shadow-xs"
-                  : "bg-muted/20 border-border/60 opacity-60 hover:opacity-80"
+                isEffectiveAllowed
+                  ? isOverridden
+                    ? "bg-emerald-500/[0.04] border-emerald-500/40 shadow-xs"
+                    : "bg-card border-border hover:border-primary/40 shadow-xs"
+                  : isOverridden
+                  ? "bg-rose-500/[0.04] border-rose-500/40"
+                  : "bg-muted/20 border-border/60 opacity-70 hover:opacity-90"
               }`}
             >
               {/* Left icon & texts */}
               <div className="flex items-start gap-3 min-w-0 flex-1">
                 <div
                   className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                    evalResult.scope === "global"
-                      ? "bg-emerald-500/10 text-emerald-600"
-                      : evalResult.scope === "branch"
-                      ? "bg-blue-500/10 text-blue-600"
-                      : evalResult.scope === "task"
-                      ? "bg-amber-500/10 text-amber-600"
+                    isEffectiveAllowed
+                      ? defaultEval.scope === "global"
+                        ? "bg-emerald-500/10 text-emerald-600"
+                        : defaultEval.scope === "branch"
+                        ? "bg-blue-500/10 text-blue-600"
+                        : "bg-amber-500/10 text-amber-600"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
@@ -447,44 +547,83 @@ export function RoleCapabilities({ role, assignedBranchName, deliveryScope }: Ro
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-xs font-bold text-foreground leading-snug">
                       {item.title}
                     </p>
+                    {isOverridden && (
+                      <span
+                        className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded border ${
+                          isEffectiveAllowed
+                            ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
+                            : "bg-rose-500/15 text-rose-700 border-rose-500/30"
+                        }`}
+                      >
+                        {isEffectiveAllowed ? "⚡ Admin Granted" : "⛔ Admin Revoked"}
+                      </span>
+                    )}
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
                     {item.description}
                   </p>
-                  {evalResult.details && (
-                    <p className="text-[10px] text-primary/80 font-medium mt-0.5">
-                      ↳ {evalResult.details}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] text-muted-foreground font-medium">
+                      Role Default: <strong className="text-foreground">{defaultEval.label}</strong>
+                    </span>
+                    {defaultEval.details && (
+                      <span className="text-[10px] text-primary/80 font-medium">
+                        ↳ {defaultEval.details}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Right badge pill */}
+              {/* Right interactive YES / NO toggle button */}
               <div className="shrink-0 flex items-center pl-2">
-                {evalResult.scope === "global" ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 rounded-md">
-                    <TickCircle className="w-3.5 h-3.5 shrink-0" variant="Bold" />
-                    {evalResult.label}
-                  </span>
-                ) : evalResult.scope === "branch" ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-500/15 border border-blue-500/30 px-2.5 py-1 rounded-md">
-                    <TickCircle className="w-3.5 h-3.5 shrink-0" variant="Bold" />
-                    {evalResult.label}
-                  </span>
-                ) : evalResult.scope === "task" ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-md">
-                    <TickCircle className="w-3.5 h-3.5 shrink-0" variant="Bold" />
-                    {evalResult.label}
-                  </span>
+                {editable && onCustomPermissionsChange ? (
+                  <div className="flex items-center gap-1 bg-muted/80 p-1 rounded-xl border border-border shadow-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleToggle(item.id, true)}
+                      className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        isEffectiveAllowed
+                          ? "bg-emerald-600 text-white shadow-xs font-black ring-1 ring-emerald-500"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/80"
+                      }`}
+                      title={`Grant "${item.title}" to this user`}
+                    >
+                      <TickCircle className="w-3.5 h-3.5" variant={isEffectiveAllowed ? "Bold" : "Linear"} />
+                      YES
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggle(item.id, false)}
+                      className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        !isEffectiveAllowed
+                          ? "bg-rose-600 text-white shadow-xs font-black ring-1 ring-rose-500"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/80"
+                      }`}
+                      title={`Revoke "${item.title}" from this user`}
+                    >
+                      <CloseCircle className="w-3.5 h-3.5" variant={!isEffectiveAllowed ? "Bold" : "Linear"} />
+                      NO
+                    </button>
+                  </div>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/60 border border-border px-2 py-1 rounded-md">
-                    <CloseCircle className="w-3.5 h-3.5 shrink-0 opacity-50" />
-                    {evalResult.label}
-                  </span>
+                  <div>
+                    {isEffectiveAllowed ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 rounded-md">
+                        <TickCircle className="w-3.5 h-3.5 shrink-0" variant="Bold" />
+                        YES (Allowed)
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-md">
+                        <CloseCircle className="w-3.5 h-3.5 shrink-0" />
+                        NO (Denied)
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

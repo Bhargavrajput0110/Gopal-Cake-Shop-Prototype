@@ -271,7 +271,9 @@ export const GET = withApiHandler(async (ctx) => {
           paidAmount: summary.paidAmount,
           pendingBalance: summary.outstandingAmount,
           financialStatus: summary.paymentStatus,
-          formattedAddress: order.deliveryAddress || null,
+          pickupLocation: order.branch?.name ? `${order.branch.name} Kitchen` : 'Main Kitchen / Store',
+          dropoffLocation: order.deliveryAddress || order.customer?.address || 'Customer Delivery Address',
+          formattedAddress: order.deliveryAddress || order.customer?.address || null,
           distanceKm: order.deliveryDistanceKm || null,
           extraFeeToCustomer: 0, // ₹0 extra charged to customer for transfers
           googleMapsUrl: (order.deliveryLatitude && order.deliveryLongitude) ? `https://www.google.com/maps/dir/?api=1&destination=${order.deliveryLatitude},${order.deliveryLongitude}` : null,

@@ -1,18 +1,29 @@
 "use client";
 
-import { Clock, TruckFast, Danger, TickCircle, TaskSquare, Reserve, Flash, Box, Message, ExportSquare, ArrowLeft, User } from "iconsax-react";
+import { Clock, TruckFast, Danger, TickCircle, TaskSquare, Reserve, Flash, Box, Message, ExportSquare, ArrowLeft, User, Cake } from "iconsax-react";
 import { useOrders } from "@/context/OrderContext";
 import { motion } from "framer-motion";
 import { BackButton } from "@/components/ui/BackButton";
 import NumberTicker from "@/components/magicui/NumberTicker";
 import { toBranchId, BRANCHES, BranchId, toBranchShortName } from "@/lib/branches";
 import { checkOrderVendorSla } from "@/lib/vendorSla";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 
 export default function SalesOverviewPage() {
   const { orders, updateIngredientRequestStatus } = useOrders();
   const { data: session } = useSession();
+
+  const rawPerms = (session?.user as any)?.customPermissions;
+  const customPerms: Record<string, boolean> = useMemo(() => {
+    if (!rawPerms) return {};
+    try {
+      return typeof rawPerms === 'string' ? JSON.parse(rawPerms) : rawPerms;
+    } catch {
+      return {};
+    }
+  }, [rawPerms]);
+  const hasChefPower = customPerms['kds_screen'] === true || customPerms['cake_prep_stages'] === true;
 
   const activeBranch = toBranchId(session?.user?.branchId || "khanderao");
   const branchOrders = orders.filter(o => toBranchId(o.branch) === activeBranch);
@@ -55,15 +66,52 @@ export default function SalesOverviewPage() {
           <h2 className="text-4xl md:text-5xl font-black tracking-tight font-display text-[var(--foreground)] leading-[1.1]">Sales Overview</h2>
           <p className="font-editorial italic text-[var(--muted-foreground)] text-lg mt-2">Real-time operational status of your artisan branch.</p>
         </div>
-        <div className="flex gap-4 w-full md:w-auto">
+        <div className="flex gap-4 w-full md:w-auto flex-wrap">
           <a href="/sales/orders" className="px-6 py-3 bg-[var(--muted)] hover:bg-[var(--border)] text-[var(--muted-foreground)] rounded-full font-ui text-[10px] uppercase tracking-[0.2em] font-bold transition-colors border border-[var(--border)]">
             Orders List
           </a>
+          {hasChefPower && (
+            <a href="/chef" className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-full font-ui text-[10px] uppercase tracking-[0.2em] font-extrabold shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2">
+              <Cake className="w-4 h-4" variant="Bold" /> Kitchen KDS
+            </a>
+          )}
           <a href="/sales/pos" className="px-6 py-3 btn-primary rounded-full font-ui text-[10px] uppercase tracking-[0.2em] font-bold shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2">
             Launch POS <ExportSquare className="w-4 h-4" />
           </a>
         </div>
       </motion.div>
+
+      {/* Granted Chef Capability Banner */}
+      {hasChefPower && (
+        <motion.div variants={itemVariants} className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-500/30 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-600 flex items-center justify-center text-2xl shrink-0 border border-amber-500/30">
+              👨‍🍳
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-ui text-xs font-black uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                  Chef & Kitchen Display System (KDS) Authority Active
+                </span>
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-200 uppercase border border-amber-500/30">
+                  Admin Granted
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                Admin has given you full kitchen authority to accept incoming tickets, track prep timers, and advance cake stages.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+            <a 
+              href="/chef"
+              className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 w-full sm:w-auto cursor-pointer"
+            >
+              Open Kitchen Display Terminal →
+            </a>
+          </div>
+        </motion.div>
+      )}
 
       {/* High-Urgency Vendor SLA Breach Banner */}
       {vendorSlaBreaches > 0 && (

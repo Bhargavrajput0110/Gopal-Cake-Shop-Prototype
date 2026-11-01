@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { QualityControlChecklist } from "@/components/chef/QualityControlChecklist"
 import { useQuery } from "@tanstack/react-query"
 import { OrdersApiClient } from "@/lib/api/orders.api"
-import { Receipt21, CloseSquare, Call, Clock, Location, Bag, Image as ImageIcon } from "iconsax-react"
+import { Receipt21, CloseSquare, Call, Clock, Location, Bag, Image as ImageIcon, User, TruckFast, Shop } from "iconsax-react"
 import { ChefHat, ZoomIn, CheckCircle, X, Sparkles } from "lucide-react"
 import { ReceiptStub } from "@/app/sales/pos/components/ReceiptStub"
 import { Badge } from "@/components/ui/badge"
@@ -162,6 +162,74 @@ export function OrderDetailsDialog({ orderId, isOpen, onClose, onOpenQuote }: Or
                     <p className="text-[11px] text-muted-foreground font-semibold flex items-center sm:justify-end gap-1">
                       <Clock className="w-3.5 h-3.5 text-primary" /> Target: {formatTargetTime(order.targetDate)}
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 1.1 Assigned Staff & Stage Responsibilities */}
+              {order && (
+                <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3.5 space-y-2">
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-200/70">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                      Team & Stage Assignments
+                    </span>
+                    <span className="text-xs font-bold text-slate-700">
+                      Current Stage: <strong className="text-primary uppercase">{order.status.replace(/_/g, ' ')}</strong>
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                    {/* Sales Person */}
+                    <div className="bg-white border border-slate-200 rounded-lg p-2.5 flex items-start gap-2 shadow-2xs">
+                      <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <User size={14} variant="Bold" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block leading-tight">
+                          Sales / Originator
+                        </span>
+                        <p className="text-xs font-black text-slate-900 mt-0.5 truncate">
+                          {(order as any).createdByName || (order as any).createdBy || 'Sales Staff'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Baker / Chef */}
+                    <div className="bg-white border border-slate-200 rounded-lg p-2.5 flex items-start gap-2 shadow-2xs">
+                      <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+                        <ChefHat className="w-3.5 h-3.5 text-amber-700" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block leading-tight">
+                          Assigned Baker / Chef
+                        </span>
+                        <p className="text-xs font-black text-slate-900 mt-0.5 truncate">
+                          {(order as any).assignedChefName || (order as any).chef?.name || 'Waiting for Chef'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Driver */}
+                    <div className="bg-white border border-slate-200 rounded-lg p-2.5 flex items-start gap-2 shadow-2xs">
+                      <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <TruckFast size={14} variant="Bold" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block leading-tight">
+                          Delivery Driver
+                        </span>
+                        <p className="text-xs font-black text-slate-900 mt-0.5 truncate">
+                          {order.deliveryType === 'PICKUP' 
+                            ? 'Store Pickup' 
+                            : ((order as any).assignedDriverName || (order as any).driver?.name || 'Unassigned')}
+                        </p>
+                        {(order as any).deliveryAssignedByName && order.deliveryType !== 'PICKUP' && (
+                          <p className="text-[10px] text-slate-500 font-semibold mt-0.5 truncate">
+                            Assigned by: {(order as any).deliveryAssignedByName}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

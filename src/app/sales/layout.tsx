@@ -1,65 +1,100 @@
 "use client"
 
 import { AppSidebar, AppTopbar, SALES_NAV_CONFIG } from "@/components/navigation"
-import { ClipboardText, Monitor, Location, Convert3DCube, Shop, Routing } from "iconsax-react"
+import { ClipboardText, Monitor, Location, Convert3DCube, Shop, Routing, Cake, TruckFast, Reserve } from "iconsax-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useMemo } from "react"
+import { useSession } from "next-auth/react"
 
 import { SessionProvider } from "next-auth/react"
 import { PushNotificationManager } from "@/components/notifications/PushNotificationManager"
 import { WarningSiren } from "@/components/notifications/WarningSiren"
 
-export default function SalesLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const pathname = usePathname();
+function SalesLayoutInner({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const { data: session } = useSession()
 
-  const bottomNavItems = [
-    { name: "Overview", href: "/sales", icon: Shop, exact: true },
-    { name: "Orders", href: "/sales/orders", icon: ClipboardText },
-    { name: "POS", href: "/sales/pos", icon: Monitor },
-    { name: "Delivery", href: "/sales/delivery", icon: Location },
-    { name: "Vendors", href: "/sales/vendors", icon: Routing },
-    { name: "Transfers", href: "/sales/transfers", icon: Convert3DCube },
-  ];
+  const customPerms = useMemo(() => {
+    const raw = (session?.user as any)?.customPermissions
+    if (!raw) return {} as Record<string, boolean>
+    try { return typeof raw === "string" ? JSON.parse(raw) : raw } catch { return {} as Record<string, boolean> }
+  }, [(session?.user as any)?.customPermissions])
+
+  const hasKds = customPerms["kds_screen"] === true || customPerms["cake_prep_stages"] === true
+  const hasDriver = customPerms["driver_dispatch"] === true
+  const hasVendor = customPerms["vendor_florist"] === true || customPerms["vendor_photo"] === true || customPerms["vendor_acrylic"] === true
+
+  const bottomNavItems = useMemo(() => {
+    const items: { name: string; href: string; icon: any; exact?: boolean; granted?: boolean }[] = [
+      { name: "Overview", href: "/sales", icon: Shop, exact: true },
+      { name: "Orders", href: "/sales/orders", icon: ClipboardText },
+      { name: "POS", href: "/sales/pos", icon: Monitor },
+      { name: "Delivery", href: "/sales/delivery", icon: Location },
+      { name: "Vendors", href: "/sales/vendors", icon: Routing },
+      { name: "Transfers", href: "/sales/transfers", icon: Convert3DCube },
+    ]
+    // Inject granted capability tabs (after POS, before Delivery)
+    const extraItems: typeof items = []
+    if (hasKds)    extraItems.push({ name: "Kitchen", href: "/chef",   icon: Cake,      granted: true })
+    if (hasDriver) extraItems.push({ name: "Driver",  href: "/driver", icon: TruckFast, granted: true })
+    if (hasVendor) extraItems.push({ name: "Vendor",  href: "/vendor", icon: Reserve,   granted: true })
+    if (extraItems.length > 0) items.splice(2, 0, ...extraItems)
+    return items
+  }, [hasKds, hasDriver, hasVendor])
 
   return (
-    <SessionProvider>
+    <div className="min-h-screen mesh-bg pb-16 md:pb-0">
+      <AppSidebar config={SALES_NAV_CONFIG} />
+      <div className="md:pl-64 flex flex-col min-h-screen">
+        <AppTopbar config={SALES_NAV_CONFIG} searchPlaceholder="Global search... (Try order #108922)" />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--border)] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-[100] pb-safe">
+        <div className="flex items-center justify-around p-2">
+          {bottomNavItems.map((item) => {
+            const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href)
+            const Icon = item.icon
+            return (
+              <Link key={item.name} href={item.href} className="flex flex-col items-center gap-1 p-1 relative">
+                <div className={`p-1.5 rounded-full transition-colors ${
+                  item.granted
+                    ? isActive ? "bg-amber-500/20 text-amber-600" : "text-amber-500"
+                    : isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                }`}>
+                  <Icon className="w-6 h-6" variant={isActive ? "Bold" : "Linear"} color="currentColor" />
+                </div>
+                <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                  item.granted
+                    ? isActive ? "text-amber-600" : "text-amber-500"
+                    : isActive ? "text-primary" : "text-muted-foreground"
+                }`}>
+                  {item.name}
+                </span>
+                {item.granted && (
+                  <span className="absolute -top-0.5 right-0 w-2 h-2 rounded-full bg-amber-500 border-2 border-white" />
+                )}
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+    </div>
+  )
+}
+
+export default function SalesLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SessionProvider refetchInterval={30} refetchOnWindowFocus={true}>
       <PushNotificationManager />
       <WarningSiren />
-      <div className="min-h-screen mesh-bg pb-16 md:pb-0">
-        <AppSidebar config={SALES_NAV_CONFIG} />
-        <div className="md:pl-64 flex flex-col min-h-screen">
-          <AppTopbar config={SALES_NAV_CONFIG} searchPlaceholder="Global search... (Try order #108922)" />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
-            <div className="max-w-7xl mx-auto">
-              {children}
-            </div>
-          </main>
-        </div>
-
-        {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--border)] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-[100] pb-safe">
-          <div className="flex items-center justify-around p-2">
-            {bottomNavItems.map((item: any) => {
-              const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-              const Icon = item.icon;
-              return (
-                <Link key={item.name} href={item.href} className="flex flex-col items-center gap-1 p-1">
-                  <div className={`p-1.5 rounded-full transition-colors ${isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
-                    <Icon className="w-6 h-6" variant={isActive ? "Bold" : "Linear"} color="currentColor" />
-                  </div>
-                  <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
-                    {item.name}
-                  </span>
-                </Link>
-              )
-            })}
-          </div>
-        </nav>
-      </div>
+      <SalesLayoutInner>{children}</SalesLayoutInner>
     </SessionProvider>
   )
 }

@@ -44,6 +44,7 @@ export const ADMIN_NAV_CONFIG: AppConfig = {
         { name: "Reviews",       href: "/admin/reviews",        icon: Star1 },
         { name: "Notifications", href: "/admin/notifications",  icon: Notification },
         { name: "Analytics",     href: "/admin/analytics",      icon: Chart },
+        { name: "Accounts & Ledger", href: "/admin/accounts",   icon: Card },
         { name: "Settings",      href: "/admin/settings",       icon: Setting2 },
       ],
     },

@@ -5,7 +5,8 @@ import { useSession } from "next-auth/react";
 import { useOrders, Order, IngredientRequest } from "@/context/OrderContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { BackButton } from "@/components/ui/BackButton";
-import { Reserve, Warning2, TickCircle, Clock, CloseSquare, Danger, Bag, Refresh2 } from "iconsax-react";
+import { Reserve, Warning2, TickCircle, Clock, CloseSquare, Danger, Bag, Refresh2, User, TruckFast, Location, Call } from "iconsax-react";
+import { ChefHat } from "lucide-react";
 import { toBranchId, BRANCHES, BranchId, toBranchShortName } from "@/lib/branches";
 import { formatTime, formatDate, formatDayLabel, matchesDayFilter } from "@/lib/formatTime";
 import { isPieceOrNonWeightItem } from "@/lib/itemUtils";
@@ -433,6 +434,60 @@ export default function ChefDashboardPage() {
         {/* Ticket Body (Items) */}
         <div className="flex-1 p-4 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-10">
           
+          {/* Staff Responsibilities & Stage Strip */}
+          <div className="mb-3 p-2.5 bg-gray-50 border border-gray-200 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {(order.createdByName || order.createdBy) && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 font-bold border border-blue-200 text-[10px]">
+                  <User size={11} variant="Bold" /> Sales: {order.createdByName || order.createdBy}
+                </span>
+              )}
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold border text-[10px] ${
+                (order.assignedChefName || order.assignedChef)
+                  ? 'bg-amber-50 text-amber-900 border-amber-300'
+                  : 'bg-gray-100 text-gray-600 border-dashed border-gray-300'
+              }`}>
+                <ChefHat className="w-3 h-3" /> Baker: {order.assignedChefName || order.assignedChef || (order.status === 'WAITING_FOR_CHEF' ? 'Unassigned' : 'Kitchen Staff')}
+              </span>
+              {order.orderType === 'delivery' && (
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold border text-[10px] ${
+                  order.assignedDriverName
+                    ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                    : 'bg-rose-50 text-rose-700 border-rose-200'
+                }`}>
+                  <TruckFast size={11} variant="Bold" />
+                  {order.assignedDriverName ? `Driver: ${order.assignedDriverName}` : 'Driver: Unassigned'}
+                  {order.deliveryAssignedByName && <span className="text-[9px] opacity-75 font-normal">(by {order.deliveryAssignedByName})</span>}
+                </span>
+              )}
+            </div>
+            {order.customerName && (
+              <span className="text-[11px] font-bold text-gray-700">
+                Customer: <strong>{order.customerName}</strong>
+              </span>
+            )}
+          </div>
+
+          {/* Customer Delivery Address (for Delivery orders) */}
+          {order.orderType === 'delivery' && (order.deliveryAddress || (order as any).delivery?.address) && (
+            <div className="mb-3 p-2.5 bg-emerald-50 border-2 border-emerald-300 rounded-xl flex items-start gap-2 text-emerald-950">
+              <Location className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-emerald-800">Delivery Destination</span>
+                  {order.customerPhone && (
+                    <a href={`tel:${order.customerPhone}`} className="text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-1">
+                      <Call className="w-3 h-3" /> {order.customerPhone}
+                    </a>
+                  )}
+                </div>
+                <p className="text-xs font-bold text-gray-900 mt-0.5 break-words">
+                  {order.deliveryAddress || (order as any).delivery?.address}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Inter-Branch Transfer Origin Indicator */}
           {(order as any).transferHistory && (order as any).transferHistory.length > 0 && (
             <div className="mb-3 p-2.5 bg-amber-50 border-2 border-amber-300 rounded-xl flex items-center justify-between text-amber-900">
@@ -556,8 +611,41 @@ export default function ChefDashboardPage() {
               </button>
             </>
           ) : (
-            <div className="flex-1 py-3 text-center text-emerald-700 font-black text-sm uppercase tracking-widest">
-              Awaiting Dispatch / Pickup
+            <div className="flex-1 py-3 px-2 bg-emerald-50 rounded-xl border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                <span className="font-black text-emerald-800 uppercase tracking-wider text-[11px]">
+                  Cake Ready
+                </span>
+                {(order.assignedChefName || order.assignedChef) && (
+                  <span className="text-emerald-700 font-bold text-[11px]">
+                    • Baked by {order.assignedChefName || order.assignedChef}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {order.orderType === 'delivery' ? (
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 ${
+                    order.assignedDriverName
+                      ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                      : 'bg-amber-100 text-amber-800 border border-amber-300'
+                  }`}>
+                    <TruckFast size={11} variant="Bold" />
+                    {order.assignedDriverName ? (
+                      <>
+                        Driver: {order.assignedDriverName}
+                        {order.deliveryAssignedByName && <span className="text-[9px] opacity-75 font-normal"> (by {order.deliveryAssignedByName})</span>}
+                      </>
+                    ) : (
+                      'Needs Driver Assignment'
+                    )}
+                  </span>
+                ) : (
+                  <span className="bg-emerald-100 text-emerald-800 font-black text-[10px] uppercase px-2 py-0.5 rounded border border-emerald-200">
+                    🛍️ Ready for Counter Pickup
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </div>

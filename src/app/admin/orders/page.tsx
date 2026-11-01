@@ -116,11 +116,17 @@ const columns: ColumnDef<Order>[] = [
   },
   {
     accessorKey: "customerName",
-    header: "Customer",
+    header: "Customer & Address",
     cell: ({ row }) => (
       <div>
         <div className="font-medium text-sm">{row.original.customerName}</div>
         <div className="text-xs text-muted-foreground">{row.original.customerPhone}</div>
+        {row.original.deliveryAddress && (
+          <div className="text-[11px] text-emerald-800 font-medium flex items-center gap-1 mt-0.5 max-w-[200px] truncate" title={row.original.deliveryAddress}>
+            <Car className="w-3 h-3 shrink-0 text-emerald-600" />
+            <span className="truncate">{row.original.deliveryAddress}</span>
+          </div>
+        )}
       </div>
     ),
   },
@@ -138,6 +144,36 @@ const columns: ColumnDef<Order>[] = [
         )}
       </div>
     ),
+  },
+  {
+    id: "assignedStaff",
+    header: "Assigned Team",
+    cell: ({ row }) => {
+      const o = row.original;
+      return (
+        <div className="flex flex-col gap-1 text-[11px] max-w-[150px]">
+          {o.assignedDriverName && (
+            <span className="text-indigo-700 font-bold flex items-center gap-1 truncate" title={`Driver: ${o.assignedDriverName}`}>
+              <TruckFast className="w-3 h-3 shrink-0" /> {o.assignedDriverName}
+            </span>
+          )}
+          {o.assignedChefName && (
+            <span className="text-amber-800 font-bold flex items-center gap-1 truncate" title={`Chef: ${o.assignedChefName}`}>
+              <ChefHat className="w-3 h-3 shrink-0" /> {o.assignedChefName}
+            </span>
+          )}
+          {o.createdByName && (
+            <span className="text-blue-700 font-medium flex items-center gap-1 truncate" title={`Sales: ${o.createdByName}`}>
+              <User className="w-3 h-3 shrink-0" /> {o.createdByName}
+            </span>
+          )}
+          {!o.assignedDriverName && !o.assignedChefName && !o.createdByName && (
+            <span className="text-muted-foreground text-xs">—</span>
+          )}
+        </div>
+      );
+    },
+    size: 140,
   },
   {
     accessorKey: "branch",
@@ -725,6 +761,54 @@ export default function LiveOrdersPage() {
                               </div>
                             </div>
 
+                            {/* 6.1 Delivery Address (if Delivery) */}
+                            {isDeliveryOrder && (order.deliveryAddress || (order as any).delivery?.address) && (
+                              <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-xl p-2.5 flex items-start gap-2 shadow-2xs">
+                                <Car size={15} color="#059669" variant="Bold" className="shrink-0 mt-0.5" />
+                                <div className="min-w-0 flex-1">
+                                  <span className="text-[8px] font-black uppercase tracking-wider text-emerald-700 block leading-tight">
+                                    DELIVERY ADDRESS
+                                  </span>
+                                  <p className="text-xs font-bold text-slate-900 leading-snug mt-0.5 break-words">
+                                    {order.deliveryAddress || (order as any).delivery?.address}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 6.2 Staff & Stage Responsibility Strip */}
+                            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 space-y-1.5 shadow-2xs text-[11px]">
+                              <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-200/60">
+                                <span>Responsible Team</span>
+                                <span className="text-amber-700 font-extrabold">{col.label}</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 items-center">
+                                {(order.createdByName || order.createdBy) && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold border border-blue-200 text-[10px]">
+                                    <User size={11} variant="Bold" /> Sales: {order.createdByName || order.createdBy}
+                                  </span>
+                                )}
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold border text-[10px] ${
+                                  (order.assignedChefName || order.assignedChef)
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                    : 'bg-amber-50/50 text-amber-600 border-dashed border-amber-300'
+                                }`}>
+                                  <ChefHat className="w-3 h-3" /> Chef: {order.assignedChefName || order.assignedChef || 'Waiting for Chef'}
+                                </span>
+                                {isDeliveryOrder && (
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold border text-[10px] ${
+                                    order.assignedDriverName
+                                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                      : 'bg-rose-50 text-rose-700 border-rose-200'
+                                  }`}>
+                                    <TruckFast size={11} variant="Bold" />
+                                    {order.assignedDriverName ? `Driver: ${order.assignedDriverName}` : 'Driver: Unassigned'}
+                                    {order.deliveryAssignedByName && <span className="text-[9px] opacity-75 font-normal">(by {order.deliveryAssignedByName})</span>}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
                             {/* 7. Kitchen Production Actions (Chef Workflow Controls) */}
                             <div
                               className="pt-2 border-t border-slate-100 flex items-center gap-1.5"
@@ -1027,6 +1111,77 @@ export default function LiveOrdersPage() {
                               <span className="text-[9px] text-emerald-700 font-semibold mt-0.5">
                                 {formatTimeAgo(order.createdAt)}
                               </span>
+                            </div>
+                          </div>
+
+                          {/* 7.1 Delivery Address Box */}
+                          {isDeliveryOrder && (order.deliveryAddress || (order as any).delivery?.address) && (
+                            <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-xl p-2.5 flex items-start gap-2 shadow-2xs">
+                              <Car size={15} color="#059669" variant="Bold" className="shrink-0 mt-0.5" />
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[8px] font-black uppercase tracking-wider text-emerald-700 block leading-tight">
+                                  DELIVERY ADDRESS
+                                </span>
+                                <p className="text-xs font-bold text-slate-900 leading-snug mt-0.5 break-words">
+                                  {order.deliveryAddress || (order as any).delivery?.address}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 7.2 Staff & Stage Responsibility Strip */}
+                          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 space-y-1.5 shadow-2xs text-[11px]">
+                            <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-200/60">
+                              <span>Responsible Team & Stage</span>
+                              <span className="text-primary font-extrabold">{col.label}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 items-center">
+                              {/* Sales Staff */}
+                              {(order.createdByName || order.createdBy) && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold border border-blue-200 text-[10px]">
+                                  <User size={11} variant="Bold" /> Sales: {order.createdByName || order.createdBy}
+                                </span>
+                              )}
+
+                              {/* Chef / Baker */}
+                              {(order.assignedChefName || order.assignedChef || ['WAITING_FOR_CHEF', 'CHEF_ACCEPTED', 'MAKING', 'DECORATING', 'READY_FOR_PICKUP'].includes(order.status)) && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold border text-[10px] ${
+                                  (order.assignedChefName || order.assignedChef)
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                    : 'bg-amber-50/50 text-amber-600 border-dashed border-amber-300'
+                                }`}>
+                                  <ChefHat className="w-3 h-3" /> Chef: {order.assignedChefName || order.assignedChef || 'Waiting for Chef'}
+                                </span>
+                              )}
+
+                              {/* Driver */}
+                              {isDeliveryOrder && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold border text-[10px] ${
+                                  order.assignedDriverName
+                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                    : 'bg-rose-50 text-rose-700 border-rose-200'
+                                }`}>
+                                  <TruckFast size={11} variant="Bold" />
+                                  {order.assignedDriverName ? (
+                                    <>
+                                      Driver: {order.assignedDriverName}
+                                      {order.deliveryAssignedByName && (
+                                        <span className="text-[9px] opacity-75 font-normal">
+                                          (by {order.deliveryAssignedByName})
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    'Driver: Unassigned'
+                                  )}
+                                </span>
+                              )}
+
+                              {!isDeliveryOrder && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold border border-slate-200 text-[10px]">
+                                  <Shop size={11} variant="Bold" /> Store Pickup
+                                </span>
+                              )}
                             </div>
                           </div>
 

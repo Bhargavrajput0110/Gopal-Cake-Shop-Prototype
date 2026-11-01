@@ -8,7 +8,7 @@ export default function SupplierLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SessionProvider>
+    <SessionProvider refetchInterval={30} refetchOnWindowFocus={true}>
       {children}
     </SessionProvider>
   );

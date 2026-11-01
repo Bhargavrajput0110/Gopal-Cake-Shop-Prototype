@@ -82,7 +82,8 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
         user = { 
           id: session.user.id, 
           email: session.user.email || null,
-          deliveryScope: (session.user as any).deliveryScope || null
+          deliveryScope: (session.user as any).deliveryScope || null,
+          customPermissions: (session.user as any).customPermissions || null
         }
         appRole = ((session.user as any).role as string)?.toUpperCase() as Role
         branchId = (session.user as any).branchId ? toBranchId((session.user as any).branchId) : null
@@ -124,6 +125,7 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
                 branchId = prismaUser.branchId;
               }
               (user as any).deliveryScope = prismaUser.deliveryScope;
+              (user as any).customPermissions = prismaUser.customPermissions;
               (user as any).name = prismaUser.name;
               (user as any).phone = prismaUser.phone;
               user.id = prismaUser.id;
@@ -172,7 +174,7 @@ export function withApiHandler(handler: ApiHandler, isPublic: boolean = false, r
         // We evaluate purely on the server. If they need a branch context for this route,
         // it must be extracted from params or body, but by default we check general access.
         // For branch-scoped operations (like editing a specific order), the Service layer must re-verify context.
-        if (!hasPermission(appRole, branchId, requiredPermission)) {
+        if (!hasPermission(appRole, branchId, requiredPermission, undefined, (user as any)?.customPermissions)) {
            LoggerService.warn(`RBAC Denied: Missing ${requiredPermission}`, { requestId, role: appRole })
            LoggerService.security('RBAC_DENIED', {
              requestId,

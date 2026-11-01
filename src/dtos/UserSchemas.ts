@@ -8,12 +8,14 @@ export const InviteUserSchema = z.object({
   role: z.nativeEnum(Role),
   branchId: z.string().nullable().optional(),
   deliveryScope: z.string().nullable().optional(),
+  customPermissions: z.string().nullable().optional(),
 })
 
 export const UpdateUserRoleSchema = z.object({
   role: z.nativeEnum(Role),
   branchId: z.string().nullable().optional(),
   deliveryScope: z.string().nullable().optional(),
+  customPermissions: z.string().nullable().optional(),
 })
 
 export const UpdateUserStatusSchema = z.object({
@@ -33,6 +35,7 @@ export type UserResponseDTO = {
   status: AccountStatus
   branchId: string | null
   deliveryScope?: string | null
+  customPermissions?: string | null
   createdAt: string
   lastLoginAt: string | null
 }

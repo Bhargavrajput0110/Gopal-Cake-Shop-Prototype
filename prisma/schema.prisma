@@ -26,6 +26,7 @@ model User {
   status                 AccountStatus           @default(INVITED)
   suspendedAt            DateTime?
   deliveryScope          String?
+  customPermissions      String?
   auditLogs              AuditLog[]
   requestedTransfers     BranchTransfer[]        @relation("TransferRequestedBy")
   respondedTransfers     BranchTransfer[]        @relation("TransferRespondedBy")
@@ -47,6 +48,7 @@ model User {
   timelineEvents         Timeline[]
   branch                 Branch?                 @relation("StaffBranch", fields: [branchId], references: [id])
   vendorTasks            VendorTask[]            @relation("VendorTasks")
+  retailerLedgers        RetailerLedgerEntry[]   @relation("RetailerLedgerCreatedBy")
 }
 
 model Customer {
@@ -790,3 +792,57 @@ enum LedgerEntryType {
   WAIVER
   WRITE_OFF
 }
+
+enum RetailerTransactionType {
+  BILLING
+  PAYMENT
+  RETURN
+  ADJUSTMENT
+}
+
+model Retailer {
+  id              String                @id @default(cuid())
+  name            String
+  shopName        String?
+  phone           String?
+  email           String?
+  address         String?
+  city            String?               @default("Surat")
+  partyType       String                @default("VENDOR")
+  category        String?               @default("Raw Ingredients")
+  openingBalance  Decimal               @default(0)
+  currentBalance  Decimal               @default(0)
+  creditLimit     Decimal?
+  notes           String?
+  isActive        Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  ledgerEntries   RetailerLedgerEntry[]
+
+  @@index([name])
+  @@index([phone])
+  @@index([partyType])
+}
+
+model RetailerLedgerEntry {
+  id              String                  @id @default(cuid())
+  retailerId      String
+  date            DateTime                @default(now())
+  type            RetailerTransactionType
+  amount          Decimal
+  paymentMethod   PaymentMethod?          @default(CASH)
+  referenceNo     String?
+  description     String?
+  balanceAfter    Decimal?
+  createdById     String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  retailer        Retailer                @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+  createdBy       User?                   @relation("RetailerLedgerCreatedBy", fields: [createdById], references: [id])
+
+  @@index([retailerId])
+  @@index([date])
+  @@index([type])
+}
+

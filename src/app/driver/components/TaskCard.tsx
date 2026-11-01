@@ -171,16 +171,55 @@ export function TaskCard({ task: item, onAction }: TaskCardProps) {
           </div>
           <div className="pl-1"><div className="w-0.5 h-4 bg-border/60 ml-0.5"></div></div>
           <div className="flex items-start gap-4">
-             <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></div>
-             <div>
-                <span className="text-[9px] uppercase tracking-widest text-foreground/50 font-bold">Dropoff To</span>
-                <p className="font-serif font-bold text-lg leading-tight">{item.dropoffLocation}</p>
+             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 mt-2 shrink-0 shadow-xs"></div>
+             <div className="flex-1 min-w-0">
+                <span className="text-[9px] uppercase tracking-widest text-foreground/50 font-bold block">
+                  {isCustomerDelivery ? 'Deliver to Customer' : 'Dropoff To'}
+                </span>
+                
                 {isCustomerDelivery && item.customerName && (
-                  <>
-                    <p className="text-sm font-bold text-foreground/70 mt-1">{item.customerName}</p>
-                    {item.distanceKm && <p className="text-xs text-foreground/50 mt-0.5">Distance: {item.distanceKm.toFixed(1)} km</p>}
-                  </>
+                  <p className="font-serif font-black text-lg text-slate-900 leading-tight mt-0.5">
+                    {item.customerName}
+                  </p>
                 )}
+
+                {/* Customer Full Delivery Address */}
+                {(item.formattedAddress || item.dropoffLocation) && (
+                  <div className="mt-1.5 p-2.5 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-emerald-950">
+                    <div className="flex items-start gap-1.5">
+                      <Location className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 block leading-tight">
+                          Customer Address
+                        </span>
+                        <p className="font-bold text-xs sm:text-sm text-slate-900 leading-snug mt-0.5 break-words">
+                          {item.formattedAddress || item.dropoffLocation}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!item.formattedAddress && !isCustomerDelivery && (
+                  <p className="font-serif font-bold text-lg leading-tight mt-0.5">{item.dropoffLocation}</p>
+                )}
+
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  {item.distanceKm != null && item.distanceKm > 0 && (
+                    <span className="bg-slate-100 text-slate-700 font-bold text-[11px] px-2 py-0.5 rounded-md border border-slate-200">
+                      📍 {item.distanceKm.toFixed(1)} km away
+                    </span>
+                  )}
+                  {item.customerPhone && (
+                    <a
+                      href={`tel:${item.customerPhone}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md flex items-center gap-1"
+                    >
+                      <Call className="w-3 h-3" /> {item.customerPhone}
+                    </a>
+                  )}
+                </div>
              </div>
           </div>
         </div>

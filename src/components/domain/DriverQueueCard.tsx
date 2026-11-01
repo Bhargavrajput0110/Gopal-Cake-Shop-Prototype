@@ -76,7 +76,7 @@ export function DriverQueueCard({ job, actions }: DriverQueueCardProps) {
         <Location className="w-6 h-6 text-muted-foreground shrink-0 mt-0.5" />
         <div className="flex-1">
           <p className="font-medium leading-snug">{job.formattedAddress || "Store Pickup"}</p>
-          {job.coordinates && (
+          {job.coordinates ? (
             <a 
               href={`https://www.google.com/maps/dir/?api=1&destination=${job.coordinates.lat},${job.coordinates.lng}`}
               target="_blank"
@@ -86,7 +86,17 @@ export function DriverQueueCard({ job, actions }: DriverQueueCardProps) {
               <Location className="w-5 h-5 mr-2" />
               Navigate (Google Maps)
             </a>
-          )}
+          ) : job.formattedAddress && job.formattedAddress !== "Store Pickup" ? (
+            <a 
+              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.formattedAddress)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center justify-center w-full min-h-[48px] bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 transition-colors"
+            >
+              <Location className="w-5 h-5 mr-2" />
+              Navigate (Google Maps)
+            </a>
+          ) : null}
         </div>
       </div>
 
