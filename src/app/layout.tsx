@@ -7,7 +7,6 @@ import { CartProvider } from "@/context/CartContext";
 import { OrderProvider } from "@/context/OrderContext";
 import { CustomerAuthProvider } from "@/context/CustomerAuthContext";
 import { Preloader } from "@/components/layout/Preloader";
-import { CustomCursor } from "@/components/layout/CustomCursor";
 import { GlobalScrollDisabler } from "@/components/layout/GlobalScrollDisabler";
 import { Noise } from "@/components/layout/Noise";
 import { PWARegistration } from "@/components/PWARegistration";
@@ -143,7 +142,6 @@ export default function RootLayout({
         <PWARegistration />
         <Noise />
         <Preloader />
-        <CustomCursor />
         {/* Google Analytics 4 — loads after interactive, never blocks render */}
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <>
