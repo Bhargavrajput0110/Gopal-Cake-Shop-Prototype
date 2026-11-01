@@ -21,12 +21,21 @@ export default async function QuotePage({ params }: { params: any }) {
     }
   });
 
-  if (!order || (order.type !== 'QUOTE' && order.status !== 'QUOTE_DRAFT' && order.status !== 'QUOTE_SENT')) {
+  if (!order || order.status === 'CANCELLED') {
     notFound();
   }
 
-  // Determine if it's already paid
-  const isPaid = order.status !== 'QUOTE_DRAFT' && order.status !== 'QUOTE_SENT';
+  // Determine if it's already paid by checking verified ledger payments
+  const successfulPayments = await prisma.ledgerEntry.findMany({
+    where: {
+      orderId: order.id,
+      type: 'PAYMENT',
+      status: 'SUCCESS'
+    }
+  });
+  const totalPaid = successfulPayments.reduce((acc, p) => acc + Number(p.amount), 0);
+  const totalAmount = Number(order.totalAmount);
+  const isPaid = (totalPaid >= totalAmount && totalAmount > 0) || order.status === 'COMPLETED';
 
   // Format data for the client component
   const quoteData = {

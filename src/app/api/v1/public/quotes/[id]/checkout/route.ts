@@ -17,12 +17,24 @@ export async function POST(
       include: { items: true, branch: true, customer: true }
     });
 
-    if (!order) {
-      return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
+    if (!order || order.status === OrderStatus.CANCELLED) {
+      return NextResponse.json({ error: 'Quote not found or has been cancelled' }, { status: 404 });
     }
 
-    if (order.status !== OrderStatus.QUOTE_DRAFT && order.status !== OrderStatus.QUOTE_SENT) {
-      return NextResponse.json({ error: 'Quote has already been processed or expired' }, { status: 400 });
+    // Determine actual payable amount
+    const successfulPayments = await prisma.ledgerEntry.findMany({
+      where: {
+        orderId: order.id,
+        type: 'PAYMENT',
+        status: 'SUCCESS'
+      }
+    });
+    const totalPaid = successfulPayments.reduce((acc, p) => acc + Number(p.amount), 0);
+    const totalAmount = Number(order.totalAmount);
+    const payableAmount = Math.max(0, totalAmount - totalPaid);
+
+    if (payableAmount <= 0 && totalAmount > 0) {
+      return NextResponse.json({ error: 'Order has already been paid in full' }, { status: 400 });
     }
 
     // 2. Update delivery address if provided
@@ -56,7 +68,7 @@ export async function POST(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: Math.round(Number(order.totalAmount) * 100), // paise
+        amount: Math.round(payableAmount * 100), // paise
         currency: 'INR',
         accept_partial: false,
         description: `Custom Quote #${order.orderNumber} - Gopal Cake Shop`,

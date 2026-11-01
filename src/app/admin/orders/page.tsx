@@ -541,13 +541,24 @@ export default function LiveOrdersPage() {
                               </button>
                             )}
                             {order.status === "QUOTE_SENT" && (
-                              <button
-                                onClick={(e) => handleCardAction(e, order.id, "approve")}
-                                disabled={isOrderLoading}
-                                className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
-                              >
-                                {isOrderLoading ? "Updating…" : "Approve → Kitchen"}
-                              </button>
+                              <div className="flex-1 flex gap-1">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setQuoteDialogOrderId(order.id)
+                                  }}
+                                  className="flex-1 text-center py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                                >
+                                  Edit Price
+                                </button>
+                                <button
+                                  onClick={(e) => handleCardAction(e, order.id, "approve")}
+                                  disabled={isOrderLoading}
+                                  className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                                >
+                                  {isOrderLoading ? "…" : "Approve → Kitchen"}
+                                </button>
+                              </div>
                             )}
                             {(order.status === "NEW" || order.status === "DRAFT" || order.status === "QUOTE_APPROVED") && (
                               <button

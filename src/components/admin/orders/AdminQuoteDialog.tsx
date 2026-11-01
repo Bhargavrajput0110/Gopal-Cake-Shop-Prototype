@@ -44,7 +44,7 @@ export function AdminQuoteDialog({ orderId, isOpen, onClose, onSuccess }: AdminQ
   const cakeItem = order.items?.[0]
   const referenceImage = order.cakeImage || cakeItem?.referenceImages?.[0] || null
 
-  const handleSendQuote = async () => {
+  const handleSendAndApprove = async () => {
     if (priceNum <= 0) {
       alert("Please enter a valid quote price greater than ₹0.")
       return
@@ -57,25 +57,31 @@ export function AdminQuoteDialog({ orderId, isOpen, onClose, onSuccess }: AdminQ
         discount: selectedDiscount,
         pendingBalance: finalTotal - (order.advancePaid || 0)
       })
+      // 1. Trigger automated WhatsApp quote message with payment link via Meta Cloud API
       await updateOrderStatus(order.id, "QUOTE_SENT", false, "Admin", {
         discount: selectedDiscount,
         basePrice: priceNum
       })
+      // 2. Auto-approve to kitchen so chef immediately gets the baking ticket
+      await updateOrderStatus(order.id, "WAITING_FOR_CHEF", false, "Admin", {
+        discount: selectedDiscount,
+        basePrice: priceNum
+      })
       await refetchOrders()
-      setFeedbackMsg(`Automated WhatsApp quote of ₹${finalTotal} sent to ${order.customerPhone || order.customerName}!`)
+      setFeedbackMsg(`Quote of ₹${finalTotal} sent to customer via WhatsApp & auto-approved to Kitchen! 🎂`)
       setTimeout(() => {
         onSuccess?.()
         onClose()
       }, 1200)
     } catch (e: any) {
       console.error(e)
-      alert(e.message || "Failed to send quote.")
+      alert(e.message || "Failed to send quote and approve.")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleApproveToKitchen = async () => {
+  const handleApproveOnly = async () => {
     if (priceNum <= 0 && (!order.grandTotal || order.grandTotal <= 0)) {
       alert("Please enter a valid price greater than ₹0 before approving to kitchen.")
       return
@@ -94,7 +100,7 @@ export function AdminQuoteDialog({ orderId, isOpen, onClose, onSuccess }: AdminQ
         basePrice: priceNum > 0 ? priceNum : effectiveTotal
       })
       await refetchOrders()
-      setFeedbackMsg(`Order #${order.orderNumber || order.id.slice(-6)} approved and sent to kitchen for ₹${effectiveTotal}!`)
+      setFeedbackMsg(`Order #${order.orderNumber || order.id.slice(-6)} approved and sent to kitchen for ₹${effectiveTotal}! 🎂`)
       setTimeout(() => {
         onSuccess?.()
         onClose()
@@ -272,26 +278,26 @@ export function AdminQuoteDialog({ orderId, isOpen, onClose, onSuccess }: AdminQ
 
         {/* Footer Actions */}
         <div className="p-4 border-t border-border bg-secondary/10 flex flex-col sm:flex-row items-center gap-2">
-          {/* Action 1: Send WhatsApp Quote Link */}
+          {/* Action 1: Send WhatsApp Quote Link & Auto-Approve to Kitchen */}
           <button
             type="button"
             disabled={isSubmitting || priceNum <= 0}
-            onClick={handleSendQuote}
-            className="w-full sm:flex-1 py-2.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+            onClick={handleSendAndApprove}
+            className="w-full sm:flex-1 py-2.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
           >
             <Send className="w-3.5 h-3.5" />
-            {isSubmitting ? "Sending…" : `Send Quote Link (₹${finalTotal})`}
+            {isSubmitting ? "Processing…" : `Send Quote & Approve to Kitchen (₹${finalTotal})`}
           </button>
 
-          {/* Action 2: Approve & Send to Kitchen */}
+          {/* Action 2: Approve Directly to Kitchen */}
           <button
             type="button"
             disabled={isSubmitting || (priceNum <= 0 && (!order.grandTotal || order.grandTotal <= 0))}
-            onClick={handleApproveToKitchen}
-            className="w-full sm:flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+            onClick={handleApproveOnly}
+            className="w-full sm:w-auto py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
           >
             <ChefHat className="w-3.5 h-3.5" />
-            {isSubmitting ? "Approving…" : "Approve → Kitchen"}
+            {isSubmitting ? "Approving…" : "Approve Kitchen Only"}
           </button>
 
           {/* Fallback to Sales Desk */}

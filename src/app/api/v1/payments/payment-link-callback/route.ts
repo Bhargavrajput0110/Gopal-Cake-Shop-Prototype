@@ -53,52 +53,61 @@ export async function GET(req: Request) {
           });
         }
 
-        // 4. Update order status from DRAFT or QUOTE_SENT to NEW since payment succeeded
-        if (payment.order.status === 'DRAFT' || payment.order.status === 'QUOTE_SENT') {
-          const isQuote = payment.order.status === 'QUOTE_SENT';
-          
-          await prisma.$transaction(async (tx) => {
-            // Update order status
-            await tx.order.update({
-              where: { id: orderId },
-              data: { status: 'NEW' }
-            });
-            
-            // If it was a quote, update order items to WAITING_FOR_CHEF
-            if (isQuote) {
-              await tx.orderItem.updateMany({
-                where: { orderId },
-                data: { status: 'WAITING_FOR_CHEF' }
-              });
-              
-              // Also update child items
-              const parentItems = await tx.orderItem.findMany({ where: { orderId }, select: { id: true } });
-              const parentIds = parentItems.map(p => p.id);
-              if (parentIds.length > 0) {
-                await tx.orderItem.updateMany({
-                  where: { parentItemId: { in: parentIds } },
-                  data: { status: 'WAITING_FOR_CHEF' }
-                });
-              }
+        // 4. Update order status and type based on current stage
+        const currentStatus = payment.order.status;
+        const isQuote = currentStatus === 'QUOTE_SENT' || currentStatus === 'QUOTE_DRAFT' || payment.order.type === 'QUOTE';
+        
+        await prisma.$transaction(async (tx) => {
+          let targetStatus = currentStatus;
+          if (currentStatus === 'DRAFT') {
+            targetStatus = 'NEW';
+          } else if (currentStatus === 'QUOTE_SENT' || currentStatus === 'QUOTE_DRAFT') {
+            targetStatus = 'WAITING_FOR_CHEF';
+          }
+
+          // Update order status and type
+          await tx.order.update({
+            where: { id: orderId },
+            data: { 
+              status: targetStatus as any,
+              type: 'ORDER'
             }
-            
-            await tx.timeline.create({
-              data: {
-                orderId,
-                action: isQuote ? 'QUOTE_CONVERTED' : 'PAYMENT_RECEIVED',
-                status: 'NEW',
-                nextState: 'NEW',
-                note: `Online payment received via Razorpay, order moved to NEW.`,
-              }
-            });
           });
           
-          // Emit socket event to notify Sales Desk
-          const io = (global as any).io;
-          if (io) {
-            io.to(`branch_${payment.order.branchId}`).emit('order_created');
-            io.to('admin_global').emit('order_created');
+          // If quote, ensure items are WAITING_FOR_CHEF if not already in production
+          if (isQuote && targetStatus === 'WAITING_FOR_CHEF') {
+            await tx.orderItem.updateMany({
+              where: { orderId },
+              data: { status: 'WAITING_FOR_CHEF' }
+            });
+            
+            // Also update child items
+            const parentItems = await tx.orderItem.findMany({ where: { orderId }, select: { id: true } });
+            const parentIds = parentItems.map(p => p.id);
+            if (parentIds.length > 0) {
+              await tx.orderItem.updateMany({
+                where: { parentItemId: { in: parentIds } },
+                data: { status: 'WAITING_FOR_CHEF' }
+              });
+            }
           }
+          
+          await tx.timeline.create({
+            data: {
+              orderId,
+              action: isQuote ? 'QUOTE_CONVERTED' : 'PAYMENT_RECEIVED',
+              status: targetStatus as any,
+              nextState: targetStatus as any,
+              note: `Online payment of ₹${payment.amount} received via Razorpay (${razorpayPaymentId}).`,
+            }
+          });
+        });
+        
+        // Emit socket event to notify Sales Desk and Kitchen
+        const io = (global as any).io;
+        if (io) {
+          io.to(`branch_${payment.order.branchId}`).emit('order_created');
+          io.to('admin_global').emit('order_created');
         }
       } else {
         // Fallback: just mark by gateway ID if payment record not found
