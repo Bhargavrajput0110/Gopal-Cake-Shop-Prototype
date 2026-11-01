@@ -196,6 +196,7 @@ export default function LiveOrdersPage() {
   const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null)
+  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null)
 
   // 1-Tap Admin Action handler
   const handleCardAction = async (e: React.MouseEvent, orderId: string, actionVerb: string) => {
@@ -480,6 +481,17 @@ export default function LiveOrdersPage() {
                   <AnimatePresence initial={false}>
                     {colOrders.map((order) => {
                       const isOrderLoading = loadingOrderId === order.id
+                      const firstItem = order.items?.[0]
+                      const rawCardImages = [
+                        ...(order.cakeImage ? [order.cakeImage] : []),
+                        ...(order.items?.flatMap((i: any) => [...(i.referenceImages || []), ...(i.printImages || []), ...(i.image ? [i.image] : [])]) || [])
+                      ].filter(Boolean) as string[]
+                      const cardImages = Array.from(new Set(rawCardImages))
+                      const cardPhoto = cardImages[0] || null
+                      const cakeFlavor = firstItem?.flavor
+                      const cakeWeight = firstItem?.weight
+                      const cakeMessage = firstItem?.messageOnCake
+
                       return (
                         <motion.div
                           key={order.id}
@@ -508,6 +520,52 @@ export default function LiveOrdersPage() {
                           <p className="text-xs text-muted-foreground truncate">
                             {order.items?.map((i: any) => `${i.name}${i.weight ? ` (${i.weight})` : ""}`).join(", ")}
                           </p>
+
+                          {/* 🎂 Cake Media, Flavour & Customization Strip (Visible like Chef KDS) */}
+                          {(cardPhoto || cakeFlavor || cakeWeight || cakeMessage) && (
+                            <div className="mt-2.5 pt-2 border-t border-border/50 flex items-start gap-2.5">
+                              {cardPhoto ? (
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setZoomImageUrl(cardPhoto)
+                                  }}
+                                  className="w-12 h-12 rounded-lg border border-border/80 shrink-0 overflow-hidden bg-secondary/30 relative group cursor-pointer shadow-2xs"
+                                  title="Click to zoom cake reference photo"
+                                >
+                                  <img src={cardPhoto} alt="Cake reference" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                  <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[8px] font-black uppercase transition-opacity">
+                                    Zoom
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="w-12 h-12 rounded-lg border border-dashed border-border/60 shrink-0 bg-secondary/20 flex flex-col items-center justify-center text-muted-foreground/60 text-[9px]">
+                                  <span className="text-lg">🎂</span>
+                                </div>
+                              )}
+
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <div className="flex flex-wrap items-center gap-1">
+                                  {cakeWeight && (
+                                    <span className="px-1.5 py-0.5 bg-secondary text-foreground rounded text-[10px] font-bold">
+                                      ⚖️ {cakeWeight}
+                                    </span>
+                                  )}
+                                  {cakeFlavor && cakeFlavor !== 'Regular' && (
+                                    <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-900 border border-amber-500/20 rounded text-[10px] font-black truncate max-w-[130px]">
+                                      🍰 {cakeFlavor}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {cakeMessage && (
+                                  <p className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded truncate" title={cakeMessage}>
+                                    🎂 &quot;{cakeMessage}&quot;
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           <div className="mt-3 pt-2.5 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <OrderTypeIcon type={order.orderType} />
@@ -848,7 +906,26 @@ export default function LiveOrdersPage() {
         orderId={selectedOrderId} 
         isOpen={!!selectedOrderId} 
         onClose={() => setSelectedOrderId(null)} 
+        onOpenQuote={(id) => setQuoteDialogOrderId(id)}
       />
+
+      {/* Fullscreen Photo Lightbox */}
+      {zoomImageUrl && (
+        <div 
+          onClick={() => setZoomImageUrl(null)}
+          className="fixed inset-0 bg-black/85 backdrop-blur-md z-[10000] flex items-center justify-center p-4 cursor-pointer animate-in fade-in"
+        >
+          <div className="relative max-w-2xl max-h-[85vh] bg-black rounded-2xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setZoomImageUrl(null)}
+              className="absolute top-3 right-3 p-2 bg-black/60 text-white rounded-full hover:bg-black/90 transition-colors z-10 cursor-pointer"
+            >
+              <CloseCircle className="w-5 h-5" />
+            </button>
+            <img src={zoomImageUrl} alt="Cake Enlarged" className="w-full h-full object-contain max-h-[85vh]" />
+          </div>
+        </div>
+      )}
 
       <AdminQuoteDialog
         orderId={quoteDialogOrderId}
