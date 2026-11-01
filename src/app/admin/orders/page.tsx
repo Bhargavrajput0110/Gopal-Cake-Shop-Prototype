@@ -20,8 +20,16 @@ import {
   TruckFast,
   Refresh2,
   Calendar,
-  Buildings2
+  Buildings2,
+  User,
+  Card,
+  Cake,
+  ClipboardText,
+  DocumentText,
+  Gallery,
+  Gift
 } from "iconsax-react"
+import { ChefHat, MoreVertical } from "lucide-react"
 import { ReceiptStub } from "@/app/sales/pos/components/ReceiptStub"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
@@ -204,6 +212,39 @@ export default function LiveOrdersPage() {
     setLoadingOrderId(orderId)
     try {
       await transitionOrderAction(orderId, actionVerb)
+    } finally {
+      setLoadingOrderId(null)
+    }
+  }
+
+  // Quick Balance Collection handler
+  const handleCollectPayment = async (e: React.MouseEvent, order: Order) => {
+    e.stopPropagation()
+    const amountToCollect = order.pendingBalance || order.grandTotal || 0
+    if (amountToCollect <= 0) {
+      alert("No outstanding balance to collect.")
+      return
+    }
+    const confirmed = window.confirm(`Collect ₹${amountToCollect.toLocaleString('en-IN')} cash payment for order #${(order as any).orderNumber || order.id}?`)
+    if (!confirmed) return
+
+    setLoadingOrderId(order.id)
+    try {
+      const res = await fetch(`/api/v1/orders/${order.id}/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amountToCollect, method: 'CASH' })
+      })
+      const data = await res.json()
+      if (!data.success) {
+        alert(data.error || "Failed to record payment")
+        return
+      }
+      await refetchOrders()
+      alert(`Payment of ₹${amountToCollect} collected successfully!`)
+    } catch (err) {
+      console.error(err)
+      alert("Error recording payment")
     } finally {
       setLoadingOrderId(null)
     }
@@ -467,7 +508,7 @@ export default function LiveOrdersPage() {
             return (
               <div
                 key={col.label}
-                className="flex-none w-72 bg-secondary/30 rounded-xl border border-border/50 flex flex-col h-full"
+                className="flex-none w-80 sm:w-[340px] bg-secondary/30 rounded-2xl border border-border/50 flex flex-col h-full"
               >
                 <div className="p-4 border-b border-border/50 shrink-0 flex items-center justify-between">
                   <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
@@ -490,7 +531,26 @@ export default function LiveOrdersPage() {
                       const cardPhoto = cardImages[0] || null
                       const cakeFlavor = firstItem?.flavor
                       const cakeWeight = firstItem?.weight
-                      const cakeMessage = firstItem?.messageOnCake
+                      const cakeMessage = order.items?.map((i: any) => i.messageOnCake).filter(Boolean).join(" / ") || (order as any).messageOnCake || null
+                      const customizationNote = order.items?.find((i: any) => i.notes)?.notes || (order as any).notes || (order as any).customerNotes || null
+
+                      const isDeliveryOrder = order.orderType === 'delivery' || (order as any).deliveryType === 'DELIVERY'
+                      const rawDeliveryInstructions = order.customerInstructions || (order as any).deliveryInstructions
+                      const deliveryInstructions = (isDeliveryOrder && rawDeliveryInstructions && rawDeliveryInstructions.trim().toLowerCase() !== customizationNote?.trim().toLowerCase()) ? rawDeliveryInstructions : null
+
+                      const cakeTitle = firstItem ? `${firstItem.qty > 1 ? `${firstItem.qty}x ` : ""}${firstItem.name || (firstItem as any).productName || "Custom Cake"}` : "Cake"
+
+                      const dueDateTime = new Date(order.timeTarget)
+                      const isValidDueTime = !isNaN(dueDateTime.getTime())
+                      const formattedDueTime = isValidDueTime
+                        ? dueDateTime.toLocaleString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true
+                          })
+                        : formatTimeTarget(order.timeTarget) || "Pending Schedule"
 
                       return (
                         <motion.div
@@ -500,213 +560,458 @@ export default function LiveOrdersPage() {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95 }}
                           onClick={() => setSelectedOrderId(order.id)}
-                          className="bg-card border border-border p-3.5 rounded-xl shadow-sm hover:border-primary/50 transition-all cursor-pointer group"
+                          className="bg-white rounded-2xl shadow-xs overflow-hidden flex flex-col group transition-all duration-300 relative border border-slate-200/90 hover:border-[#C5A059]/60 hover:shadow-md p-3.5 space-y-2.5 cursor-pointer text-slate-900"
                         >
-                          <div className="flex items-start justify-between mb-2">
+                          {/* 1. Header: Order Number + Badges (Matching Sales Mockup) */}
+                          <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
                             <div>
-                              <span className="font-bold text-foreground text-xs">{order.orderNumber || order.id}</span>
-                              {order.isSurprise && (
-                                <Badge variant="secondary" className="ml-1.5 text-[9px]">Surprise</Badge>
-                              )}
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block leading-none">ORDER</span>
+                              <h3 className="text-xl sm:text-2xl font-serif font-black text-slate-900 tracking-tight leading-none mt-1">
+                                {order.orderNumber || order.id}
+                              </h3>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {/* Status Badge */}
+                              <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs border ${
+                                order.status === 'WAITING_FOR_CHEF' 
+                                  ? 'bg-[#FFF4E5] text-[#B45309] border-[#FCD34D]/80' 
+                                  : ['MAKING', 'DECORATING', 'CHEF_ACCEPTED'].includes(order.status)
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                  : ['READY_FOR_PICKUP'].includes(order.status)
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : ['COMPLETED', 'DELIVERED'].includes(order.status)
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : order.status === 'CANCELLED'
+                                  ? 'bg-rose-50 text-rose-600 border-rose-200'
+                                  : 'bg-[#C5A059]/10 text-[#3E2723] border-[#C5A059]/30'
+                              }`}>
+                                {['WAITING_FOR_CHEF', 'MAKING', 'DECORATING', 'CHEF_ACCEPTED'].includes(order.status) && (
+                                  <ChefHat className="w-3.5 h-3.5 text-[#B45309]" />
+                                )}
+                                {['READY_FOR_PICKUP', 'COMPLETED', 'DELIVERED'].includes(order.status) && (
+                                  <TickCircle size={13} color="#059669" variant="Bold" />
+                                )}
+                                {STATUS_CONFIG[order.status]?.label ?? order.status.replace(/_/g, " ")}
+                              </span>
+
+                              {/* Fulfillment type badge */}
+                              <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs border ${
+                                order.orderType === 'delivery'
+                                  ? 'bg-[#EEF2FF] text-[#4338CA] border-[#C7D2FE]'
+                                  : 'bg-[#EBF5FF] text-[#1D4ED8] border-[#BFDBFE]'
+                              }`}>
+                                {order.orderType === 'delivery' ? (
+                                  <TruckFast size={14} color="#4338CA" variant="Bold" />
+                                ) : (
+                                  <Shop size={14} color="#1D4ED8" variant="Bold" />
+                                )}
+                                {order.orderType === 'delivery' ? 'DELIVERY' : 'PICKUP'}
+                              </span>
+
                               {order.priorityLevel === "high" && (
-                                <Badge variant="destructive" className="ml-1.5 text-[9px]">Urgent</Badge>
+                                <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                                  Urgent
+                                </span>
                               )}
                             </div>
-                            <Badge variant={STATUS_CONFIG[order.status]?.variant ?? "secondary"}>
-                              {STATUS_CONFIG[order.status]?.label ?? order.status}
-                            </Badge>
                           </div>
-                          <p className="font-semibold text-sm text-foreground truncate">{order.customerName}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {order.items?.map((i: any) => `${i.name}${i.weight ? ` (${i.weight})` : ""}`).join(", ")}
-                          </p>
 
-                          {/* 🎂 Cake Media, Flavour & Customization Strip (Visible like Chef KDS) */}
-                          {(cardPhoto || cakeFlavor || cakeWeight || cakeMessage) && (
-                            <div className="mt-2.5 pt-2 border-t border-border/50 flex items-start gap-2.5">
-                              {cardPhoto ? (
-                                <div
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setZoomImageUrl(cardPhoto)
-                                  }}
-                                  className="w-12 h-12 rounded-lg border border-border/80 shrink-0 overflow-hidden bg-secondary/30 relative group cursor-pointer shadow-2xs"
-                                  title="Click to zoom cake reference photo"
-                                >
-                                  <img src={cardPhoto} alt="Cake reference" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                                  <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[8px] font-black uppercase transition-opacity">
-                                    Zoom
+                          {/* 2. Product Box: Thumbnail + Title + Weight + Flavour Pill */}
+                          <div className="bg-white rounded-xl border border-slate-200/90 p-2.5 flex items-center gap-3 shadow-2xs hover:border-slate-300 transition-all">
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (cardPhoto) setZoomImageUrl(cardPhoto)
+                              }}
+                              className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden relative shrink-0 border border-slate-200 cursor-pointer group/thumb bg-slate-900 shadow-2xs"
+                              title="Click to zoom cake photo"
+                            >
+                              <img
+                                src={cardPhoto || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=400"}
+                                alt={cakeTitle}
+                                className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute inset-0 bg-black/10 group-hover/thumb:bg-black/25 transition-colors" />
+                              {cakeWeight && (
+                                <span className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-xs text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                                  {cakeWeight}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight truncate leading-tight">
+                                {cakeTitle}
+                              </h4>
+                              {cakeWeight && (
+                                <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                                  {cakeWeight}
+                                </p>
+                              )}
+                              {cakeFlavor && (
+                                <div className="mt-1">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#FAF0E6] text-[#78350F] text-[11px] font-bold border border-[#F3E5D8]">
+                                    {cakeFlavor}
                                   </span>
                                 </div>
-                              ) : (
-                                <div className="w-12 h-12 rounded-lg border border-dashed border-border/60 shrink-0 bg-secondary/20 flex flex-col items-center justify-center text-muted-foreground/60 text-[9px]">
-                                  <span className="text-lg">🎂</span>
+                              )}
+                              {cardImages.length > 0 && (
+                                <div className="flex gap-1 mt-1.5 flex-wrap items-center">
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Ref:</span>
+                                  {cardImages.slice(0, 3).map((img, rIdx) => (
+                                    <button
+                                      key={`ref-${rIdx}`}
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setZoomImageUrl(img); }}
+                                      className="w-6 h-6 rounded-md overflow-hidden border border-blue-300 hover:border-blue-500 transition-all shadow-2xs shrink-0 cursor-pointer"
+                                    >
+                                      <img src={img} alt={`Ref ${rIdx + 1}`} className="w-full h-full object-cover" />
+                                    </button>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setZoomImageUrl(cardImages[0]); }}
+                                    className="text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded hover:bg-blue-100 cursor-pointer"
+                                  >
+                                    {cardImages.length} Photo{cardImages.length > 1 ? "s" : ""}
+                                  </button>
                                 </div>
                               )}
+                            </div>
+                          </div>
 
-                              <div className="flex-1 min-w-0 space-y-1">
-                                <div className="flex flex-wrap items-center gap-1">
-                                  {cakeWeight && (
-                                    <span className="px-1.5 py-0.5 bg-secondary text-foreground rounded text-[10px] font-bold">
-                                      ⚖️ {cakeWeight}
-                                    </span>
-                                  )}
-                                  {cakeFlavor && cakeFlavor !== 'Regular' && (
-                                    <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-900 border border-amber-500/20 rounded text-[10px] font-black truncate max-w-[130px]">
-                                      🍰 {cakeFlavor}
-                                    </span>
-                                  )}
-                                </div>
-
-                                {cakeMessage && (
-                                  <p className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded truncate" title={cakeMessage}>
-                                    🎂 &quot;{cakeMessage}&quot;
-                                  </p>
-                                )}
+                          {/* 3. MESSAGE ON CAKE (Matching Sales Rose/Pink Box) */}
+                          {cakeMessage && (
+                            <div className="bg-[#FFF5F6] border border-[#FED4DA] rounded-xl px-3 py-2 flex items-center gap-2.5 shadow-2xs">
+                              <Cake size={20} color="#E11D48" variant="Bold" className="shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-rose-500 block leading-tight">
+                                  MESSAGE ON CAKE
+                                </span>
+                                <p className="text-sm sm:text-base font-black text-slate-900 tracking-tight mt-0.5 break-words leading-snug">
+                                  &ldquo;{cakeMessage}&rdquo;
+                                </p>
                               </div>
                             </div>
                           )}
-                          <div className="mt-3 pt-2.5 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <OrderTypeIcon type={order.orderType} />
-                              <span className="font-medium">{order.branch}</span>
+
+                          {/* 4. CAKE CUSTOMIZATION NOTE (Matching Sales Amber Box + BOLD RED Text) */}
+                          {customizationNote && (
+                            <div className="bg-[#FEFCE8] border border-[#FEF08A] rounded-xl px-3 py-2 flex items-center gap-2.5 shadow-2xs">
+                              <ClipboardText size={20} color="#D97706" variant="Bold" className="shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 block leading-tight">
+                                  CAKE CUSTOMIZATION NOTE
+                                </span>
+                                <p className="text-xs sm:text-sm font-black text-[#DC2626] tracking-tight mt-0.5 leading-snug break-words">
+                                  &ldquo;{customizationNote}&rdquo;
+                                </p>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1 font-bold text-foreground">
-                              <Clock className="w-3 h-3" />
-                              {formatTimeTarget(order.timeTarget)}
+                          )}
+
+                          {/* 5. DELIVERY INSTRUCTIONS (Matching Sales Ice Blue Box) */}
+                          {deliveryInstructions && (
+                            <div className="bg-[#F0F9FF] border border-[#BAE6FD] rounded-xl px-3 py-2 flex items-center gap-2.5 shadow-2xs">
+                              <DocumentText size={20} color="#0284C7" variant="Bold" className="shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-blue-600 block leading-tight">
+                                  DELIVERY INSTRUCTIONS
+                                </span>
+                                <p className="text-xs font-black text-slate-900 tracking-tight mt-0.5 leading-snug break-words">
+                                  &ldquo;{deliveryInstructions}&rdquo;
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-muted-foreground">{formatTimeAgo(order.createdAt)}</span>
-                            <span className="font-black text-sm text-primary">₹{order.grandTotal?.toFixed(0)}</span>
+                          )}
+
+                          {/* 6. Customer & Payment (2-Column Grid) */}
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* Customer Box */}
+                            <div className="bg-slate-50/90 border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2 shadow-2xs min-w-0">
+                              <div className="w-8 h-8 rounded-full bg-slate-200/80 flex items-center justify-center shrink-0">
+                                <User size={15} color="#475569" variant="Bold" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block leading-tight">
+                                  CUSTOMER
+                                </span>
+                                <p className="text-xs font-black text-slate-900 truncate leading-tight mt-0.5">
+                                  {order.customerName}
+                                </p>
+                                {order.customerPhone && (
+                                  <a
+                                    href={`tel:${order.customerPhone}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[11px] font-black text-blue-600 hover:underline flex items-center gap-0.5 mt-0.5 tracking-wide truncate"
+                                  >
+                                    {order.customerPhone}
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Payment Box */}
+                            <div className="bg-slate-50/90 border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2 shadow-2xs min-w-0">
+                              <div className="w-8 h-8 rounded-full bg-slate-200/80 flex items-center justify-center shrink-0">
+                                <Card size={15} color="#475569" variant="Bold" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block leading-tight">
+                                  PAYMENT
+                                </span>
+                                <p className="text-xs sm:text-sm font-black text-slate-900 leading-tight mt-0.5 truncate">
+                                  Total: ₹{(order.grandTotal || 0).toLocaleString("en-IN")}
+                                </p>
+                                <div className="mt-0.5">
+                                  {order.status === "QUOTE_DRAFT" ? (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-800">
+                                      Quote Req.
+                                    </span>
+                                  ) : order.status === "QUOTE_SENT" ? (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-purple-100 text-purple-800 truncate max-w-full">
+                                      Due: ₹{(order.pendingBalance ?? order.grandTotal).toLocaleString("en-IN")}
+                                    </span>
+                                  ) : order.pendingBalance > 0 ? (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-700">
+                                      Due: ₹{order.pendingBalance.toLocaleString("en-IN")}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800">
+                                      <TickCircle size={10} color="#047857" variant="Bold" /> Paid Full
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           </div>
 
-                          {/* ── 1-Tap Universal Admin Actions ── */}
+                          {/* 7. DUE TIME (Mint Green Box) */}
+                          <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl px-3 py-2 flex items-center justify-between gap-2 shadow-2xs">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-7 h-7 rounded-full bg-emerald-100/90 text-emerald-800 flex items-center justify-center shrink-0">
+                                <Clock size={16} color="#047857" variant="Bold" />
+                              </div>
+                              <div className="min-w-0">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-800 block leading-tight">
+                                  DUE TIME
+                                </span>
+                                <p className="text-xs sm:text-sm font-black text-emerald-950 tracking-tight mt-0.5 whitespace-nowrap">
+                                  {formattedDueTime}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end shrink-0">
+                              <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-100/80 text-emerald-900">
+                                {order.branch}
+                              </span>
+                              <span className="text-[9px] text-emerald-700 font-semibold mt-0.5">
+                                {formatTimeAgo(order.createdAt)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 8. 1-Tap Universal Admin Action Bar */}
                           <div
-                            className="mt-2.5 pt-2 border-t border-border/50 flex items-center gap-1.5"
+                            className="pt-2 border-t border-slate-100 flex items-center gap-1.5"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {/* SALES ACTIONS */}
+                            {/* WORKFLOW BUTTONS */}
                             {order.status === "QUOTE_DRAFT" && (
                               <button
+                                type="button"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   setQuoteDialogOrderId(order.id)
                                 }}
-                                className="flex-1 text-center py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                                className="flex-1 py-2.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs cursor-pointer text-center"
                               >
                                 Set Price & Approve &rarr;
                               </button>
                             )}
+
                             {order.status === "QUOTE_SENT" && (
                               <div className="flex-1 flex gap-1">
                                 <button
+                                  type="button"
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     setQuoteDialogOrderId(order.id)
                                   }}
-                                  className="flex-1 text-center py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+                                  className="flex-1 py-2 px-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs cursor-pointer text-center"
                                 >
                                   Edit Price
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={(e) => handleCardAction(e, order.id, "approve")}
                                   disabled={isOrderLoading}
-                                  className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                                  className="flex-1 py-2 px-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer text-center"
                                 >
-                                  {isOrderLoading ? "…" : "Approve → Kitchen"}
+                                  {isOrderLoading ? "…" : "Approve Kitchen"}
                                 </button>
                               </div>
                             )}
+
                             {(order.status === "NEW" || order.status === "DRAFT" || order.status === "QUOTE_APPROVED") && (
                               <button
+                                type="button"
                                 onClick={(e) => handleCardAction(e, order.id, "approve")}
                                 disabled={isOrderLoading}
-                                className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                                className="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer text-center"
                               >
                                 {isOrderLoading ? "Updating…" : "Send to Kitchen"}
                               </button>
                             )}
 
-                            {/* CHEF / KITCHEN ACTIONS */}
                             {order.status === "WAITING_FOR_CHEF" && (
-                              <button
-                                onClick={(e) => handleCardAction(e, order.id, "chef-accept")}
-                                disabled={isOrderLoading}
-                                className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
-                              >
-                                {isOrderLoading ? "Updating…" : "Accept Ticket"}
-                              </button>
+                              <div className="flex-1 flex gap-1.5">
+                                {order.pendingBalance > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleCollectPayment(e, order)}
+                                    disabled={isOrderLoading}
+                                    className="flex-1 py-2.5 px-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-xs transition-transform active:scale-95 flex items-center justify-center gap-1 cursor-pointer"
+                                    title="Collect balance payment"
+                                  >
+                                    <Card size={14} variant="Bold" /> Collect ₹{order.pendingBalance.toLocaleString("en-IN")}
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCardAction(e, order.id, "chef-accept")}
+                                  disabled={isOrderLoading}
+                                  className={`py-2.5 px-3 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1 ${
+                                    order.pendingBalance > 0 ? "bg-[#3E2723] hover:bg-[#2c1c19] text-[#C5A059] flex-1" : "bg-amber-500 hover:bg-amber-600 flex-1"
+                                  }`}
+                                >
+                                  <ChefHat className="w-3.5 h-3.5" />
+                                  {isOrderLoading ? "…" : "Accept Ticket"}
+                                </button>
+                              </div>
                             )}
+
                             {order.status === "CHEF_ACCEPTED" && (
                               <button
+                                type="button"
                                 onClick={(e) => handleCardAction(e, order.id, "start-making")}
                                 disabled={isOrderLoading}
-                                className="flex-1 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                                className="flex-1 py-2.5 px-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer text-center"
                               >
                                 {isOrderLoading ? "Updating…" : "Start Baking"}
                               </button>
                             )}
+
                             {order.status === "MAKING" && (
                               <button
+                                type="button"
                                 onClick={(e) => handleCardAction(e, order.id, "start-decorating")}
                                 disabled={isOrderLoading}
-                                className="flex-1 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                                className="flex-1 py-2.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer text-center"
                               >
                                 {isOrderLoading ? "Updating…" : "Start Decorating"}
                               </button>
                             )}
+
                             {order.status === "DECORATING" && (
                               <button
+                                type="button"
                                 onClick={(e) => handleCardAction(e, order.id, "ready")}
                                 disabled={isOrderLoading}
-                                className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                                className="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer text-center"
                               >
                                 {isOrderLoading ? "Updating…" : "Mark Ready"}
                               </button>
                             )}
 
-                            {/* DISPATCH / DELIVERY / HANDOVER ACTIONS */}
                             {(order.status === "READY_FOR_PICKUP" || order.status === "PENDING_ASSIGNMENT") && (
                               <>
                                 {order.orderType === "delivery" ? (
                                   <button
+                                    type="button"
                                     onClick={() => setReassignOrderId(order.id)}
-                                    className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1 cursor-pointer"
+                                    className="flex-1 py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1 cursor-pointer"
                                   >
                                     <TruckFast className="w-3.5 h-3.5" /> Assign Driver
                                   </button>
                                 ) : (
                                   <button
+                                    type="button"
                                     onClick={(e) => handleCardAction(e, order.id, "complete")}
                                     disabled={isOrderLoading}
-                                    className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1 disabled:opacity-50 cursor-pointer"
+                                    className="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1 disabled:opacity-50 cursor-pointer"
                                   >
-                                    <TickCircle className="w-3.5 h-3.5" /> Handover / Complete
+                                    <TickCircle className="w-3.5 h-3.5" /> Handover / Done
                                   </button>
                                 )}
                               </>
                             )}
+
                             {(order.status === "ASSIGNED_TO_DRIVER" || order.status === "PICKED_UP" || order.status === "ON_THE_WAY") && (
                               <button
+                                type="button"
                                 onClick={(e) => handleCardAction(e, order.id, "deliver")}
                                 disabled={isOrderLoading}
-                                className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1 disabled:opacity-50 cursor-pointer"
+                                className="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1 disabled:opacity-50 cursor-pointer"
                               >
                                 <TickCircle className="w-3.5 h-3.5" /> Mark Delivered
                               </button>
                             )}
 
-                            {/* Bill / Receipt Print Icon */}
+                            {/* Quick Call Button */}
+                            {order.customerPhone && (
+                              <a
+                                href={`tel:${order.customerPhone}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-2.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors flex items-center justify-center shadow-2xs shrink-0"
+                                title={`Call ${order.customerPhone}`}
+                              >
+                                <Call size={18} color="#2563EB" variant="Bold" />
+                              </a>
+                            )}
+
+                            {/* Quick WhatsApp Button */}
+                            {order.customerPhone && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  const cleanPhone = order.customerPhone.replace(/\D/g, "")
+                                  const waUrl = `https://wa.me/91${cleanPhone}?text=Hi%20${encodeURIComponent(order.customerName.split(' ')[0])},%20regarding%20your%20Gopal%20Cakes%20order%20${encodeURIComponent(order.orderNumber || order.id)}:`
+                                  window.open(waUrl, "_blank")
+                                }}
+                                className="p-2.5 bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 rounded-xl hover:bg-[#25D366]/20 transition-colors flex items-center justify-center shadow-2xs shrink-0 cursor-pointer"
+                                title="WhatsApp Customer"
+                              >
+                                <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 fill-[#128C7E]"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                              </button>
+                            )}
+
+                            {/* Print Bill Button */}
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 setReceiptOrderId(order.id)
                               }}
                               title="Print / View Bill"
-                              className="p-1.5 bg-secondary/80 hover:bg-secondary text-foreground rounded-lg border border-border transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                              className="p-2.5 bg-secondary/80 hover:bg-secondary text-foreground rounded-xl border border-border transition-colors cursor-pointer shrink-0 flex items-center justify-center shadow-2xs"
                             >
-                              <Receipt21 className="w-3.5 h-3.5" />
+                              <Receipt21 className="w-4 h-4 text-slate-700" />
+                            </button>
+
+                            {/* More / Details Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedOrderId(order.id)
+                              }}
+                              title="Order Details"
+                              className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition-colors cursor-pointer shrink-0 flex items-center justify-center shadow-2xs"
+                            >
+                              <MoreVertical className="w-4 h-4 text-slate-600" />
                             </button>
                           </div>
                         </motion.div>
@@ -722,7 +1027,7 @@ export default function LiveOrdersPage() {
           })}
 
           {/* Delivered column */}
-          <div className="flex-none w-72 bg-secondary/30 rounded-xl border border-border/50 flex flex-col h-full">
+          <div className="flex-none w-80 sm:w-[340px] bg-secondary/30 rounded-2xl border border-border/50 flex flex-col h-full">
             <div className="p-4 border-b border-border/50 shrink-0 flex items-center justify-between">
               <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
                 Delivered / Done
