@@ -27,6 +27,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { OrderDetailsDialog } from "@/components/admin/orders/OrderDetailsDialog"
 import { ReassignDriverDialog } from "@/components/admin/orders/ReassignDriverDialog"
+import { AdminQuoteDialog } from "@/components/admin/orders/AdminQuoteDialog"
 import { BRANCHES, toBranchId, type BranchId } from "@/lib/branches"
 import { matchesDayFilter } from "@/lib/formatTime"
 import Link from "next/link"
@@ -190,6 +191,7 @@ export default function LiveOrdersPage() {
   const [selectedBranch, setSelectedBranch] = useState<BranchId | "all">("all")
   const [dateFilter, setDateFilter] = useState<'TODAY' | 'TOMORROW' | 'YESTERDAY' | 'ALL'>('TODAY')
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const [quoteDialogOrderId, setQuoteDialogOrderId] = useState<string | null>(null)
   const [reassignOrderId, setReassignOrderId] = useState<string | null>(null)
   const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -528,12 +530,15 @@ export default function LiveOrdersPage() {
                           >
                             {/* SALES ACTIONS */}
                             {order.status === "QUOTE_DRAFT" && (
-                              <Link
-                                href={`/sales/orders?search=${order.orderNumber || order.id}`}
-                                className="flex-1 text-center py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs"
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setQuoteDialogOrderId(order.id)
+                                }}
+                                className="flex-1 text-center py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
                               >
                                 Set Price & Approve &rarr;
-                              </Link>
+                              </button>
                             )}
                             {order.status === "QUOTE_SENT" && (
                               <button
@@ -625,9 +630,12 @@ export default function LiveOrdersPage() {
 
                             {/* Bill / Receipt Print Icon */}
                             <button
-                              onClick={() => setReceiptOrderId(order.id)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setReceiptOrderId(order.id)
+                              }}
                               title="Print / View Bill"
-                              className="p-1.5 border border-border hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                              className="p-1.5 bg-secondary/80 hover:bg-secondary text-foreground rounded-lg border border-border transition-colors cursor-pointer shrink-0 flex items-center justify-center"
                             >
                               <Receipt21 className="w-3.5 h-3.5" />
                             </button>
@@ -829,6 +837,12 @@ export default function LiveOrdersPage() {
         orderId={selectedOrderId} 
         isOpen={!!selectedOrderId} 
         onClose={() => setSelectedOrderId(null)} 
+      />
+
+      <AdminQuoteDialog
+        orderId={quoteDialogOrderId}
+        isOpen={!!quoteDialogOrderId}
+        onClose={() => setQuoteDialogOrderId(null)}
       />
 
       {reassignOrderId && (

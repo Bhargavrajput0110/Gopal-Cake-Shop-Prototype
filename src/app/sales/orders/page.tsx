@@ -410,34 +410,43 @@ function SalesDashboardContent() {
         </button>
       </div>
 
-      {serverOrders.filter(o => o.status === "QUOTE_DRAFT").length > 0 && filter !== "Pending Verification" && (
-        <div 
-          onClick={() => {
-            setFilter("Pending Verification");
-            setPage(1);
-            const p = new URLSearchParams(searchParams.toString());
-            p.set("status", "Pending Verification");
-            p.set("page", "1");
-            window.history.replaceState(null, "", `${pathname}?${p.toString()}`);
-          }}
-          className="bg-amber-500/10 border-2 border-amber-500/40 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-500/20 transition-all shadow-sm"
-        >
-          <div className="flex items-center gap-3">
-            <span className="p-2 bg-amber-500 text-white rounded-xl font-bold text-base shrink-0">🎂</span>
-            <div>
-              <p className="font-black text-amber-950 text-xs sm:text-sm">
-                {serverOrders.filter(o => o.status === "QUOTE_DRAFT").length} Custom Cake Quote{serverOrders.filter(o => o.status === "QUOTE_DRAFT").length > 1 ? "s" : ""} Waiting for Price Approval!
-              </p>
-              <p className="text-[11px] text-amber-800/80 mt-0.5 font-medium">
-                Customer submitted a custom cake inquiry. Click here to review, enter price, and send quote.
-              </p>
+      {(() => {
+        const pendingQuotesCount = (contextOrders || []).filter(o => 
+          o.status === "QUOTE_DRAFT" && 
+          (effectiveBranch === "all" || toBranchId(o.branch) === effectiveBranch)
+        ).length;
+
+        if (pendingQuotesCount === 0 || filter === "Pending Verification") return null;
+
+        return (
+          <div 
+            onClick={() => {
+              setFilter("Pending Verification");
+              setPage(1);
+              const p = new URLSearchParams(searchParams.toString());
+              p.set("status", "Pending Verification");
+              p.set("page", "1");
+              window.history.replaceState(null, "", `${pathname}?${p.toString()}`);
+            }}
+            className="bg-amber-500/10 border-2 border-amber-500/40 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-500/20 transition-all shadow-sm"
+          >
+            <div className="flex items-center gap-3">
+              <span className="p-2 bg-amber-500 text-white rounded-xl font-bold text-base shrink-0">🎂</span>
+              <div>
+                <p className="font-black text-amber-950 text-xs sm:text-sm">
+                  {pendingQuotesCount} Custom Cake Quote{pendingQuotesCount > 1 ? "s" : ""} Waiting for Price Approval!
+                </p>
+                <p className="text-[11px] text-amber-800/80 mt-0.5 font-medium">
+                  Customer submitted a custom cake inquiry. Click here to review, enter price, and send quote.
+                </p>
+              </div>
             </div>
+            <span className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg shrink-0 transition-colors shadow-xs">
+              Review Quotes &rarr;
+            </span>
           </div>
-          <span className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg shrink-0 transition-colors shadow-xs">
-            Review Quotes &rarr;
-          </span>
-        </div>
-      )}
+        );
+      })()}
 
       <SalesFilterBar 
         status={filter}
