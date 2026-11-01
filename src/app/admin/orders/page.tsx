@@ -500,7 +500,7 @@ export default function LiveOrdersPage() {
 
       {/* ── Board View ─────────────────────────────────────────────────── */}
       {view === "board" && (
-        <div className="flex gap-4 overflow-x-auto pb-4" style={{ maxHeight: "calc(100vh - 15rem)" }}>
+        <div className="flex gap-4 overflow-x-auto pb-28 items-start min-h-[calc(100vh-12rem)]">
           {BOARD_COLUMNS.map((col) => {
             const colOrders = filteredOrders
               .filter((o) => col.statuses.includes(o.status))
@@ -508,9 +508,9 @@ export default function LiveOrdersPage() {
             return (
               <div
                 key={col.label}
-                className="flex-none w-80 sm:w-[340px] bg-secondary/30 rounded-2xl border border-border/50 flex flex-col h-full"
+                className="flex-none w-80 sm:w-[340px] bg-secondary/30 rounded-2xl border border-border/50 flex flex-col"
               >
-                <div className="p-4 border-b border-border/50 shrink-0 flex items-center justify-between">
+                <div className="p-4 border-b border-border/50 shrink-0 flex items-center justify-between sticky top-0 bg-secondary/95 backdrop-blur-md rounded-t-2xl z-10">
                   <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
                     {col.label}
                     <span className="bg-background text-muted-foreground text-xs px-2 py-0.5 rounded-full font-bold border border-border">
@@ -518,7 +518,7 @@ export default function LiveOrdersPage() {
                     </span>
                   </h3>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                <div className="p-3 space-y-3 pb-6">
                   <AnimatePresence initial={false}>
                     {colOrders.map((order) => {
                       const isOrderLoading = loadingOrderId === order.id
@@ -1271,8 +1271,8 @@ export default function LiveOrdersPage() {
           })}
 
           {/* Delivered column */}
-          <div className="flex-none w-80 sm:w-[340px] bg-secondary/30 rounded-2xl border border-border/50 flex flex-col h-full">
-            <div className="p-4 border-b border-border/50 shrink-0 flex items-center justify-between">
+          <div className="flex-none w-80 sm:w-[340px] bg-secondary/30 rounded-2xl border border-border/50 flex flex-col">
+            <div className="p-4 border-b border-border/50 shrink-0 flex items-center justify-between sticky top-0 bg-secondary/95 backdrop-blur-md rounded-t-2xl z-10">
               <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
                 Delivered / Done
                 <span className="bg-background text-muted-foreground text-xs px-2 py-0.5 rounded-full font-bold border border-border">
@@ -1280,7 +1280,7 @@ export default function LiveOrdersPage() {
                 </span>
               </h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            <div className="p-3 space-y-3 pb-6">
               {archivedOrders.slice(0, 15).map((order) => (
                 <div
                   key={order.id}
