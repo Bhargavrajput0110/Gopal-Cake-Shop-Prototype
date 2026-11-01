@@ -581,17 +581,10 @@ export default function LiveOrdersPage() {
                                 <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs border ${
                                   order.status === 'WAITING_FOR_CHEF' 
                                     ? 'bg-[#FFF4E5] text-[#B45309] border-[#FCD34D]/80' 
-                                    : order.status === 'CHEF_ACCEPTED'
-                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                    : order.status === 'MAKING'
-                                    ? 'bg-orange-50 text-orange-800 border-orange-200'
-                                    : 'bg-purple-50 text-purple-800 border-purple-200'
+                                    : 'bg-amber-50 text-amber-800 border-amber-200'
                                 }`}>
                                   <ChefHat className="w-3.5 h-3.5 text-[#B45309]" />
-                                  {order.status === 'WAITING_FOR_CHEF' ? 'WAITING FOR CHEF' :
-                                   order.status === 'CHEF_ACCEPTED' ? 'CHEF ACCEPTED' :
-                                   order.status === 'MAKING' ? 'BAKING' :
-                                   order.status === 'DECORATING' ? 'DECORATING' : order.status}
+                                  {order.status === 'WAITING_FOR_CHEF' ? 'WAITING FOR CHEF' : 'IN PRODUCTION'}
                                 </span>
 
                                 {order.priorityLevel === "high" && (
@@ -749,29 +742,7 @@ export default function LiveOrdersPage() {
                                 </button>
                               )}
 
-                              {order.status === "CHEF_ACCEPTED" && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleCardAction(e, order.id, "start-making")}
-                                  disabled={isOrderLoading}
-                                  className="flex-1 py-3 px-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                                >
-                                  {isOrderLoading ? "Updating…" : "Start Baking"}
-                                </button>
-                              )}
-
-                              {order.status === "MAKING" && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleCardAction(e, order.id, "start-decorating")}
-                                  disabled={isOrderLoading}
-                                  className="flex-1 py-3 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                                >
-                                  {isOrderLoading ? "Updating…" : "Start Decorating"}
-                                </button>
-                              )}
-
-                              {order.status === "DECORATING" && (
+                              {["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(order.status) && (
                                 <button
                                   type="button"
                                   onClick={(e) => handleCardAction(e, order.id, "ready")}
@@ -1139,35 +1110,14 @@ export default function LiveOrdersPage() {
                               </div>
                             )}
 
-                            {order.status === "CHEF_ACCEPTED" && (
-                              <button
-                                type="button"
-                                onClick={(e) => handleCardAction(e, order.id, "start-making")}
-                                disabled={isOrderLoading}
-                                className="flex-1 py-2.5 px-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer text-center"
-                              >
-                                {isOrderLoading ? "Updating…" : "Start Baking"}
-                              </button>
-                            )}
-
-                            {order.status === "MAKING" && (
-                              <button
-                                type="button"
-                                onClick={(e) => handleCardAction(e, order.id, "start-decorating")}
-                                disabled={isOrderLoading}
-                                className="flex-1 py-2.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer text-center"
-                              >
-                                {isOrderLoading ? "Updating…" : "Start Decorating"}
-                              </button>
-                            )}
-
-                            {order.status === "DECORATING" && (
+                            {["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(order.status) && (
                               <button
                                 type="button"
                                 onClick={(e) => handleCardAction(e, order.id, "ready")}
                                 disabled={isOrderLoading}
-                                className="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer text-center"
+                                className="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs disabled:opacity-50 cursor-pointer text-center flex items-center justify-center gap-1"
                               >
+                                <TickCircle className="w-3.5 h-3.5" />
                                 {isOrderLoading ? "Updating…" : "Mark Ready"}
                               </button>
                             )}

@@ -225,29 +225,7 @@ export function OrderDetailsDialog({ orderId, isOpen, onClose, onOpenQuote }: Or
                       </button>
                     )}
 
-                    {order.status === "CHEF_ACCEPTED" && (
-                      <button
-                        disabled={isActionLoading}
-                        onClick={() => handleChefAction("start-making", "Baking started! Cake is in production. 🍰")}
-                        className="flex-1 py-2.5 px-4 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        {isActionLoading ? "Processing…" : "Start Baking (Making)"}
-                      </button>
-                    )}
-
-                    {order.status === "MAKING" && (
-                      <button
-                        disabled={isActionLoading}
-                        onClick={() => handleChefAction("start-decorating", "Decorating started! Cake icing and detailing in progress. 🎨")}
-                        className="flex-1 py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        {isActionLoading ? "Processing…" : "Start Decorating & Icing"}
-                      </button>
-                    )}
-
-                    {order.status === "DECORATING" && (
+                    {["CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(order.status) && (
                       <button
                         disabled={isActionLoading}
                         onClick={() => handleChefAction("ready", "Order marked Ready for Pickup! Customer notified via WhatsApp. 📦")}
