@@ -552,6 +552,250 @@ export default function LiveOrdersPage() {
                           })
                         : formatTimeTarget(order.timeTarget) || "Pending Schedule"
 
+                      const isKitchenCol = col.label === "In Kitchen" || ["WAITING_FOR_CHEF", "CHEF_ACCEPTED", "MAKING", "DECORATING"].includes(order.status)
+
+                      if (isKitchenCol) {
+                        return (
+                          <motion.div
+                            key={order.id}
+                            layout
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={() => setSelectedOrderId(order.id)}
+                            className="bg-white rounded-2xl shadow-xs overflow-hidden flex flex-col group transition-all duration-300 relative border border-amber-200/90 hover:border-amber-400 hover:shadow-md p-3.5 space-y-2.5 cursor-pointer text-slate-900"
+                          >
+                            {/* 1. Chef Kitchen Ticket Header */}
+                            <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-amber-100/80">
+                              <div>
+                                <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest block leading-none">KITCHEN TICKET</span>
+                                <h3 className="text-xl sm:text-2xl font-serif font-black text-slate-900 tracking-tight leading-none mt-1">
+                                  {order.orderNumber || order.id}
+                                </h3>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs border ${
+                                  order.status === 'WAITING_FOR_CHEF' 
+                                    ? 'bg-[#FFF4E5] text-[#B45309] border-[#FCD34D]/80' 
+                                    : order.status === 'CHEF_ACCEPTED'
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                    : order.status === 'MAKING'
+                                    ? 'bg-orange-50 text-orange-800 border-orange-200'
+                                    : 'bg-purple-50 text-purple-800 border-purple-200'
+                                }`}>
+                                  <ChefHat className="w-3.5 h-3.5 text-[#B45309]" />
+                                  {order.status === 'WAITING_FOR_CHEF' ? 'WAITING FOR CHEF' :
+                                   order.status === 'CHEF_ACCEPTED' ? 'CHEF ACCEPTED' :
+                                   order.status === 'MAKING' ? 'BAKING' :
+                                   order.status === 'DECORATING' ? 'DECORATING' : order.status}
+                                </span>
+
+                                {order.priorityLevel === "high" && (
+                                  <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider animate-pulse">
+                                    Urgent
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 2. Cake Production Info (What the chef bakes) */}
+                            <div className="bg-slate-50/70 rounded-xl border border-slate-200/90 p-2.5 flex items-center gap-3 shadow-2xs hover:border-slate-300 transition-all">
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (cardPhoto) setZoomImageUrl(cardPhoto)
+                                }}
+                                className="w-18 h-18 sm:w-20 sm:h-20 rounded-xl overflow-hidden relative shrink-0 border border-slate-200 cursor-pointer group/thumb bg-slate-900 shadow-2xs"
+                                title="Tap to zoom cake photo"
+                              >
+                                <img
+                                  src={cardPhoto || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=400"}
+                                  alt={cakeTitle}
+                                  className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
+                                />
+                                <div className="absolute inset-0 bg-black/10 group-hover/thumb:bg-black/25 transition-colors" />
+                                {cakeWeight && (
+                                  <span className="absolute bottom-1 right-1 bg-black/85 backdrop-blur-xs text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                                    {cakeWeight}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-tight truncate leading-tight">
+                                  {cakeTitle}
+                                </h4>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                  {cakeWeight && (
+                                    <span className="bg-slate-200/80 text-slate-900 text-[11px] font-extrabold px-2 py-0.5 rounded-md">
+                                      ⚖️ {cakeWeight}
+                                    </span>
+                                  )}
+                                  {cakeFlavor && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#FAF0E6] text-[#78350F] text-[11px] font-black border border-[#F3E5D8]">
+                                      🍰 {cakeFlavor}
+                                    </span>
+                                  )}
+                                </div>
+                                {(firstItem as any)?.shape && (
+                                  <p className="text-[11px] font-bold text-slate-500 mt-1">
+                                    Shape: <span className="text-slate-900 font-extrabold">{(firstItem as any).shape}</span>
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 3. Customer Reference Design Photos (Critical for Kitchen Decorator) */}
+                            {cardImages.length > 0 && (
+                              <div className="p-2.5 bg-blue-50/40 rounded-xl border border-blue-200/70 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[9px] font-black uppercase tracking-wider text-blue-900 flex items-center gap-1">
+                                    <Gallery className="w-3.5 h-3.5 text-blue-600" /> Reference Design Photos ({cardImages.length})
+                                  </span>
+                                  <span className="text-[9px] font-black text-blue-600">Tap photo to zoom</span>
+                                </div>
+                                <div className="flex gap-2 overflow-x-auto pb-1">
+                                  {cardImages.map((img, rIdx) => (
+                                    <div
+                                      key={`k-ref-${rIdx}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setZoomImageUrl(img)
+                                      }}
+                                      className="w-14 h-14 rounded-lg overflow-hidden border-2 border-blue-300 hover:border-blue-600 transition-all shadow-2xs shrink-0 cursor-pointer relative group/ref"
+                                      title="Click to view reference photo full screen"
+                                    >
+                                      <img src={img} alt={`Ref ${rIdx + 1}`} className="w-full h-full object-cover group-hover/ref:scale-110 transition-transform" />
+                                      <div className="absolute inset-0 bg-black/10 group-hover/ref:bg-transparent transition-colors" />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 4. 🎂 WRITE ON CAKE (Prominent Pink Box for Chef) */}
+                            {cakeMessage && (
+                              <div className="bg-rose-50 border-2 border-rose-300 rounded-xl p-3 flex items-start gap-2.5 shadow-2xs">
+                                <Cake size={22} color="#E11D48" variant="Bold" className="shrink-0 mt-0.5" />
+                                <div className="min-w-0 flex-1">
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-rose-600 block leading-tight">
+                                    WRITE ON CAKE
+                                  </span>
+                                  <p className="font-mono font-black text-rose-950 text-base sm:text-lg mt-0.5 break-words leading-snug">
+                                    &ldquo;{cakeMessage}&rdquo;
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 5. 📋 KITCHEN INSTRUCTIONS / CUSTOMIZATION NOTE (Bold Amber Box with Red Text) */}
+                            {customizationNote && (
+                              <div className="bg-[#FEFCE8] border-2 border-[#FEF08A] rounded-xl p-3 flex items-start gap-2.5 shadow-2xs">
+                                <ClipboardText size={22} color="#D97706" variant="Bold" className="shrink-0 mt-0.5" />
+                                <div className="min-w-0 flex-1">
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-700 block leading-tight">
+                                    KITCHEN INSTRUCTIONS
+                                  </span>
+                                  <p className="text-sm font-black text-[#DC2626] mt-0.5 break-words leading-snug">
+                                    &ldquo;{customizationNote}&rdquo;
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 6. READY BY (DUE TIME) */}
+                            <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl px-3 py-2 flex items-center justify-between gap-2 shadow-2xs">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                                  <Clock size={16} color="#047857" variant="Bold" />
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="text-[8px] font-black uppercase tracking-wider text-emerald-800 block leading-none">
+                                    READY BY (DUE TIME)
+                                  </span>
+                                  <p className="text-xs sm:text-sm font-black text-emerald-950 tracking-tight mt-0.5 whitespace-nowrap">
+                                    {formattedDueTime}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end shrink-0">
+                                <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-100/90 text-emerald-900">
+                                  {order.branch}
+                                </span>
+                                <span className="text-[9px] text-emerald-700 font-semibold mt-0.5">
+                                  {formatTimeAgo(order.createdAt)}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* 7. Kitchen Production Actions (Chef Workflow Controls) */}
+                            <div
+                              className="pt-2 border-t border-slate-100 flex items-center gap-1.5"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {order.status === "WAITING_FOR_CHEF" && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCardAction(e, order.id, "chef-accept")}
+                                  disabled={isOrderLoading}
+                                  className="flex-1 py-3 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <ChefHat className="w-4 h-4" />
+                                  {isOrderLoading ? "Updating…" : "Accept Ticket"}
+                                </button>
+                              )}
+
+                              {order.status === "CHEF_ACCEPTED" && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCardAction(e, order.id, "start-making")}
+                                  disabled={isOrderLoading}
+                                  className="flex-1 py-3 px-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  {isOrderLoading ? "Updating…" : "Start Baking"}
+                                </button>
+                              )}
+
+                              {order.status === "MAKING" && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCardAction(e, order.id, "start-decorating")}
+                                  disabled={isOrderLoading}
+                                  className="flex-1 py-3 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  {isOrderLoading ? "Updating…" : "Start Decorating"}
+                                </button>
+                              )}
+
+                              {order.status === "DECORATING" && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCardAction(e, order.id, "ready")}
+                                  disabled={isOrderLoading}
+                                  className="flex-1 py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <TickCircle className="w-4 h-4" />
+                                  {isOrderLoading ? "Updating…" : "Mark Cake Ready"}
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedOrderId(order.id)
+                                }}
+                                title="View Production Recipe & QC"
+                                className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition-colors cursor-pointer shrink-0 flex items-center justify-center shadow-2xs"
+                              >
+                                <MoreVertical className="w-4 h-4 text-slate-700" />
+                              </button>
+                            </div>
+                          </motion.div>
+                        )
+                      }
+
                       return (
                         <motion.div
                           key={order.id}
