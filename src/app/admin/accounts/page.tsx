@@ -43,6 +43,17 @@ import {
 import { format, parseISO, subDays, addDays, subMonths, addMonths } from "date-fns";
 import { BackButton } from "@/components/ui/BackButton";
 import { NotificationToast, ToastVariant } from "@/components/ui/NotificationToast";
+import {
+  Receipt as LucideReceipt,
+  Wallet as LucideWallet,
+  TrendingUp,
+  TrendingDown,
+  Store as LucideStore,
+  Calendar as LucideCalendar,
+  CreditCard as LucideCard,
+  Trash2,
+  RefreshCw,
+} from "lucide-react";
 
 type Retailer = {
   id: string;
@@ -587,26 +598,26 @@ export default function AdminAccountsPage() {
       )}
 
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 dark:border-white/10 pb-5">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 border-b border-zinc-200 dark:border-white/10 pb-4 sm:pb-5">
+        <div className="flex items-start gap-2.5 sm:gap-3">
           <BackButton />
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <Receipt21 size={24} variant="Bold" />
+              <span className="p-1.5 sm:p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0 flex items-center justify-center">
+                <LucideReceipt className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-400" />
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight font-serif text-zinc-900 dark:text-white">
-                Accounts, Purchases & Retailer Ledger
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight font-serif text-zinc-900 dark:text-white truncate">
+                Accounts & Ledger
               </h1>
             </div>
-            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              Raw ingredients supplier purchases (money we pay) & retailer wholesale accounts (money they pay us)
+            <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-1 sm:line-clamp-none">
+              Raw ingredient suppliers (we pay) & retailer wholesale accounts (they pay us)
             </p>
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Action Controls - Mobile Grid */}
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full md:w-auto">
           <button
             onClick={() => {
               setEntryForm((prev) => ({
@@ -618,10 +629,10 @@ export default function AdminAccountsPage() {
               }));
               setShowAddEntryModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold text-sm shadow-md shadow-amber-600/20 active:scale-95 transition-all"
+            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-amber-600/20 active:scale-95 transition-all cursor-pointer"
           >
-            <Add size={18} />
-            <span>{isSupplierMode ? "+ Record Supplier Bill / Payment" : "+ Add Retailer Entry"}</span>
+            <Add size={16} className="shrink-0" />
+            <span className="truncate">{isSupplierMode ? "+ Record Bill" : "+ Add Entry"}</span>
           </button>
 
           <button
@@ -643,94 +654,94 @@ export default function AdminAccountsPage() {
               setRetailerModalError(null);
               setShowRetailerModal(true);
             }}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-white/10 hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-800 dark:text-zinc-200 font-medium text-sm transition-all"
+            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-zinc-300 dark:border-white/10 hover:bg-zinc-100 dark:hover:bg-white/5 bg-white dark:bg-[#1A1918] text-zinc-800 dark:text-zinc-200 font-bold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer"
           >
-            <Shop size={18} />
-            <span>{isSupplierMode ? "+ Register New Supplier" : "+ New Retailer"}</span>
-          </button>
-
-          <button
-            onClick={() => window.print()}
-            className="p-2.5 rounded-xl border border-zinc-300 dark:border-white/10 hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-600 dark:text-zinc-300 transition-all"
-            title="Print Statement"
-          >
-            <Printer size={18} />
+            <Shop size={16} className="shrink-0" />
+            <span className="truncate">{isSupplierMode ? "+ New Supplier" : "+ New Retailer"}</span>
           </button>
         </div>
       </div>
 
-      {/* Primary Account Type Segmented Switch: Suppliers vs Retailers */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-2 rounded-2xl bg-zinc-100 dark:bg-[#1A1918] border border-zinc-200 dark:border-white/10">
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white dark:bg-[#242220] border border-zinc-200 dark:border-white/10 shadow-sm">
+      {/* Primary Account Type Switcher: 100% Mobile Safe Grid */}
+      <div className="w-full bg-zinc-100 dark:bg-[#1A1918] p-1.5 rounded-2xl border border-zinc-200 dark:border-white/10 space-y-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
           <button
             onClick={() => setAccountType("VENDOR")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-center cursor-pointer ${
               accountType === "VENDOR"
                 ? "bg-amber-600 text-white shadow-sm"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                : "bg-white dark:bg-[#242220] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50"
             }`}
           >
-            <Box size={16} />
-            <span>Raw Ingredient Suppliers (We Pay Them)</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/20 text-white font-mono">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Box size={15} className="shrink-0" />
+              <span className="truncate">Suppliers (We Pay)</span>
+            </div>
+            <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono shrink-0 ${
+              accountType === "VENDOR" ? "bg-black/20 text-white" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+            }`}>
               Payables
             </span>
           </button>
 
           <button
             onClick={() => setAccountType("RETAILER")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-center cursor-pointer ${
               accountType === "RETAILER"
                 ? "bg-blue-600 text-white shadow-sm"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                : "bg-white dark:bg-[#242220] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50"
             }`}
           >
-            <Shop size={16} />
-            <span>Retailers & B2B Shops (They Pay Us)</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/20 text-white font-mono">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Shop size={15} className="shrink-0" />
+              <span className="truncate">Retailers (They Pay)</span>
+            </div>
+            <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono shrink-0 ${
+              accountType === "RETAILER" ? "bg-black/20 text-white" : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+            }`}>
               Receivables
             </span>
           </button>
 
           <button
             onClick={() => setAccountType("ALL")}
-            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+            className={`col-span-2 sm:col-span-1 py-1.5 sm:py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer ${
               accountType === "ALL"
-                ? "bg-zinc-800 text-white"
-                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm"
+                : "bg-white dark:bg-[#242220] text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50"
             }`}
           >
-            All Accounts
+            <span>All Combined</span>
           </button>
         </div>
 
-        <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium px-2">
+        <div className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-medium px-1.5 pt-0.5">
           {accountType === "VENDOR"
-            ? "Showing raw material purchases (Dairy, Flour, Chocolate, Boxes) & money we have to pay to suppliers"
+            ? "🛒 Raw material suppliers (Dairy, Flour, Chocolate, Boxes) & money Gopal Cake Shop owes."
             : accountType === "RETAILER"
-            ? "Showing cakes & bakes dispatched to retail stores & money they owe to Gopal Cake Shop"
-            : "Showing all combined supplier purchases, client sales, and cashflow"}
+            ? "🏪 Retailers & cafes buying wholesale cakes & money they owe Gopal Cake Shop."
+            : "📊 Combined view of all suppliers, wholesale retailers, and cashflow."}
         </div>
       </div>
 
-      {/* Top Level Financial KPI Cards (Context-Aware) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top Level Financial KPI Cards (2x2 Grid on Mobile, 4 Cols on Desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Card 1: Balance Payable / Receivable */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-5 rounded-2xl bg-white dark:bg-[#1A1918] border border-amber-500/20 shadow-sm relative overflow-hidden"
+          className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-[#1A1918] border border-amber-500/20 shadow-sm relative overflow-hidden flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-              {isSupplierMode ? "Money We Owe (Payables)" : "Market Due to Us (Receivables)"}
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 truncate">
+              {isSupplierMode ? "We Owe" : "Due to Us"}
             </span>
-            <span className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Wallet size={20} variant="Bold" />
-            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0 flex items-center justify-center">
+              <LucideWallet className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
+          <div className="mt-2 sm:mt-3">
+            <div className="text-lg sm:text-2xl md:text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
               ₹
               {Number(
                 isSupplierMode
@@ -738,15 +749,10 @@ export default function AdminAccountsPage() {
                   : logbookData?.summary.totalReceivableFromRetailers || 0
               ).toLocaleString("en-IN")}
             </div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
-              <span>
-                {isSupplierMode
-                  ? `Money Gopal Cake Shop has to pay to ${logbookData?.summary.vendorCount || retailersList.length} raw material suppliers`
-                  : `Money to be collected from ${logbookData?.summary.retailerCount || retailersList.length} retail stores`}
-              </span>
+            <div className="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+              {isSupplierMode ? "Payable to suppliers" : "Receivable from shops"}
             </div>
           </div>
-          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
         </motion.div>
 
         {/* Card 2: Period Bills (Purchases or Sales) */}
@@ -754,30 +760,24 @@ export default function AdminAccountsPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="p-5 rounded-2xl bg-white dark:bg-[#1A1918] border border-zinc-200 dark:border-white/10 shadow-sm"
+          className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-[#1A1918] border border-zinc-200 dark:border-white/10 shadow-sm flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-zinc-600 dark:text-zinc-400 truncate">
               {isSupplierMode
-                ? activeTab === "monthly"
-                  ? "Month Raw Material Purchases"
-                  : "Today's Raw Materials Received"
-                : activeTab === "monthly"
-                ? "This Month's Cake Sales"
-                : "Today's Cakes Billed"}
+                ? activeTab === "monthly" ? "Month Purchases" : "Today Bills"
+                : activeTab === "monthly" ? "Month Sales" : "Today Billed"}
             </span>
-            <span className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <MoneySend size={20} variant="Bold" />
-            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+            </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
+          <div className="mt-2 sm:mt-3">
+            <div className="text-lg sm:text-2xl md:text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
               ₹{Number(logbookData?.summary.totalBilled || 0).toLocaleString("en-IN")}
             </div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              {isSupplierMode
-                ? "Dairy, flour, chocolate & box bills"
-                : "Fresh cakes, pastries & bakes dispatched"}
+            <div className="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+              {isSupplierMode ? "Raw material bills" : "Cake & pastry sales"}
             </div>
           </div>
         </motion.div>
@@ -787,30 +787,24 @@ export default function AdminAccountsPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-5 rounded-2xl bg-white dark:bg-[#1A1918] border border-emerald-500/20 shadow-sm"
+          className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-[#1A1918] border border-emerald-500/20 shadow-sm flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 truncate">
               {isSupplierMode
-                ? activeTab === "monthly"
-                  ? "Month Paid to Suppliers"
-                  : "Today's Paid to Suppliers"
-                : activeTab === "monthly"
-                ? "Month Collections"
-                : "Today's Collected"}
+                ? activeTab === "monthly" ? "Month Paid" : "Today Paid"
+                : activeTab === "monthly" ? "Collections" : "Collected"}
             </span>
-            <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <MoneyRecive size={20} variant="Bold" />
-            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0 flex items-center justify-center">
+              <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+          <div className="mt-2 sm:mt-3">
+            <div className="text-lg sm:text-2xl md:text-3xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
               ₹{Number(logbookData?.summary.totalPaid || 0).toLocaleString("en-IN")}
             </div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              {isSupplierMode
-                ? "Payments paid out to raw material suppliers"
-                : "Payments received via Cash & UPI"}
+            <div className="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+              {isSupplierMode ? "Payments cleared" : "Cash & UPI collected"}
             </div>
           </div>
         </motion.div>
@@ -820,77 +814,77 @@ export default function AdminAccountsPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="p-5 rounded-2xl bg-white dark:bg-[#1A1918] border border-zinc-200 dark:border-white/10 shadow-sm"
+          className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-[#1A1918] border border-zinc-200 dark:border-white/10 shadow-sm flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              {isSupplierMode ? "Active Suppliers" : "Active Retailers"}
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-zinc-600 dark:text-zinc-400 truncate">
+              {isSupplierMode ? "Suppliers" : "Retailers"}
             </span>
-            <span className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
-              <Shop size={20} variant="Bold" />
-            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0 flex items-center justify-center">
+              <LucideStore className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400 shrink-0" />
+            </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
+          <div className="mt-2 sm:mt-3">
+            <div className="text-lg sm:text-2xl md:text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
               {retailersList.length}
             </div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              {logbookData?.summary.entriesCount || 0} transactions logged in period
+            <div className="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+              {logbookData?.summary.entriesCount || 0} period entries
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/10 gap-2 overflow-x-auto pb-1">
-        <div className="flex items-center gap-2">
+      {/* Tab Navigation: Mobile Smooth Swipe with Integrated Refresh */}
+      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/10 gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => setActiveTab("daily")}
-            className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === "daily"
                 ? "bg-amber-600 text-white shadow-sm"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5"
             }`}
           >
-            <Calendar size={18} />
+            <LucideCalendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
             <span>Daily Logbook</span>
           </button>
 
           <button
             onClick={() => setActiveTab("monthly")}
-            className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === "monthly"
                 ? "bg-amber-600 text-white shadow-sm"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5"
             }`}
           >
-            <Receipt21 size={18} />
+            <LucideReceipt className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
             <span>Monthly Ledger</span>
           </button>
 
           <button
             onClick={() => setActiveTab("passbook")}
-            className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === "passbook"
                 ? "bg-amber-600 text-white shadow-sm"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5"
             }`}
           >
-            <Card size={18} />
-            <span>{isSupplierMode ? "Supplier Passbook / Khata" : "Retailer Passbook / Khata"}</span>
+            <LucideCard className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span>{isSupplierMode ? "Supplier Khata" : "Retailer Khata"}</span>
           </button>
 
           <button
             onClick={() => setActiveTab("retailers")}
-            className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === "retailers"
                 ? "bg-amber-600 text-white shadow-sm"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5"
             }`}
           >
-            <Shop size={18} />
+            <LucideStore className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
             <span>
-              {isSupplierMode ? `Suppliers Directory (${retailersList.length})` : `Retailers Directory (${retailersList.length})`}
+              {isSupplierMode ? `Suppliers (${retailersList.length})` : `Retailers (${retailersList.length})`}
             </span>
           </button>
         </div>
@@ -902,10 +896,10 @@ export default function AdminAccountsPage() {
             if (activeTab === "passbook") fetchPassbook(passbookRetailerId);
             else fetchLogbook();
           }}
-          className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
+          className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors shrink-0 cursor-pointer"
           title="Refresh Data"
         >
-          <Refresh size={18} className={loading ? "animate-spin" : ""} />
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-600" : ""}`} />
         </button>
       </div>
 
@@ -915,24 +909,25 @@ export default function AdminAccountsPage() {
       {activeTab === "daily" && (
         <div className="space-y-6">
           {/* Daily Controls Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-[#1A1918] border border-zinc-200 dark:border-white/10 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 sm:p-4 rounded-2xl bg-white dark:bg-[#1A1918] border border-zinc-200 dark:border-white/10 shadow-xs">
             {/* Date Navigator */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 w-full sm:w-auto">
               <button
                 onClick={() => {
                   const prev = subDays(parseISO(selectedDate), 1);
                   setSelectedDate(format(prev, "yyyy-MM-dd"));
                 }}
-                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-white/10 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-white/5 transition-all"
+                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-white/10 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-white/5 transition-all shrink-0 cursor-pointer"
+                title="Previous Day"
               >
-                ◀ Prev Day
+                ◀ Prev
               </button>
 
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-[#242220] border border-zinc-200 dark:border-white/10 text-sm font-bold text-zinc-900 dark:text-white"
+                className="flex-1 sm:flex-none px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-[#242220] border border-zinc-200 dark:border-white/10 text-xs sm:text-sm font-bold text-zinc-900 dark:text-white text-center"
               />
 
               <button
@@ -940,30 +935,31 @@ export default function AdminAccountsPage() {
                   const next = addDays(parseISO(selectedDate), 1);
                   setSelectedDate(format(next, "yyyy-MM-dd"));
                 }}
-                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-white/10 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-white/5 transition-all"
+                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-white/10 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-white/5 transition-all shrink-0 cursor-pointer"
+                title="Next Day"
               >
-                Next Day ▶
+                Next ▶
               </button>
 
               <button
                 onClick={() => setSelectedDate(format(new Date(), "yyyy-MM-dd"))}
-                className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-bold hover:bg-amber-500/20 transition-all"
+                className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-bold hover:bg-amber-500/20 transition-all shrink-0 cursor-pointer"
               >
                 Today
               </button>
             </div>
 
             {/* Type & Account Quick Filters */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 w-full sm:w-auto">
               <select
                 value={retailerFilter}
                 onChange={(e) => setRetailerFilter(e.target.value)}
-                className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-[#242220] border border-zinc-200 dark:border-white/10 text-xs font-medium text-zinc-800 dark:text-zinc-200"
+                className="px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-[#242220] border border-zinc-200 dark:border-white/10 text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate"
               >
                 <option value="all">{isSupplierMode ? "All Suppliers" : "All Retailers"}</option>
                 {retailersList.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.shopName || r.name} ({r.category || r.city})
+                    {r.shopName || r.name}
                   </option>
                 ))}
               </select>
@@ -971,41 +967,37 @@ export default function AdminAccountsPage() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-[#242220] border border-zinc-200 dark:border-white/10 text-xs font-medium text-zinc-800 dark:text-zinc-200"
+                className="px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-[#242220] border border-zinc-200 dark:border-white/10 text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate"
               >
-                <option value="all">All Entry Types</option>
-                <option value="BILLING">
-                  {isSupplierMode ? "📦 Raw Materials Purchased (Bill)" : "🛍️ Goods Billed (Debit)"}
-                </option>
-                <option value="PAYMENT">
-                  {isSupplierMode ? "💸 Paid to Supplier (Money Out)" : "💰 Payments Received (Credit)"}
-                </option>
-                <option value="RETURN">🔄 Returns & Credits</option>
+                <option value="all">All Types</option>
+                <option value="BILLING">{isSupplierMode ? "📦 Purchases" : "🛍️ Billed"}</option>
+                <option value="PAYMENT">{isSupplierMode ? "💸 Paid Out" : "💰 Received"}</option>
+                <option value="RETURN">🔄 Returns</option>
                 <option value="ADJUSTMENT">⚖️ Adjustments</option>
               </select>
             </div>
           </div>
 
-          {/* Daily Table */}
+          {/* Daily Transactions Container */}
           <div className="rounded-2xl bg-white dark:bg-[#1A1918] border border-zinc-200 dark:border-white/10 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-zinc-200 dark:border-white/10 flex items-center justify-between">
+            <div className="p-3 sm:p-4 border-b border-zinc-200 dark:border-white/10 flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+                <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">
                   {isSupplierMode ? "Supplier Transactions on" : "Retailer Transactions on"}{" "}
-                  {format(parseISO(selectedDate), "EEEE, dd MMMM yyyy")}
+                  {format(parseISO(selectedDate), "dd MMMM yyyy")}
                 </h2>
-                <p className="text-xs text-zinc-500">
+                <p className="text-[11px] sm:text-xs text-zinc-500">
                   {logbookData?.entries.length || 0} entries recorded
                 </p>
               </div>
             </div>
 
             {loading ? (
-              <div className="p-12 text-center text-zinc-400">Loading daily records...</div>
+              <div className="p-8 sm:p-12 text-center text-zinc-400">Loading daily records...</div>
             ) : !logbookData || logbookData.entries.length === 0 ? (
-              <div className="p-12 text-center space-y-3">
-                <Receipt21 size={48} className="mx-auto text-zinc-300 dark:text-zinc-600" />
-                <div className="text-base font-bold text-zinc-700 dark:text-zinc-300">
+              <div className="p-8 sm:p-12 text-center space-y-3">
+                <LucideReceipt className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-zinc-300 dark:text-zinc-600" />
+                <div className="text-sm sm:text-base font-bold text-zinc-700 dark:text-zinc-300">
                   No logbook entries for {format(parseISO(selectedDate), "dd MMM yyyy")}
                 </div>
                 <p className="text-xs text-zinc-500 max-w-sm mx-auto">
@@ -1022,90 +1014,34 @@ export default function AdminAccountsPage() {
                     }));
                     setShowAddEntryModal(true);
                   }}
-                  className="px-4 py-2 rounded-xl bg-amber-600 text-white font-semibold text-xs shadow-sm hover:bg-amber-700 transition-all"
+                  className="px-4 py-2 rounded-xl bg-amber-600 text-white font-semibold text-xs shadow-sm hover:bg-amber-700 transition-all cursor-pointer"
                 >
                   + Record Entry for This Date
                 </button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-zinc-50 dark:bg-[#151413] text-zinc-500 dark:text-zinc-400 font-bold text-xs uppercase tracking-wider border-b border-zinc-200 dark:border-white/10">
-                    <tr>
-                      <th className="py-3 px-4">Time & Ref</th>
-                      <th className="py-3 px-4">{isSupplierMode ? "Supplier / Business" : "Retailer / Store"}</th>
-                      <th className="py-3 px-4">Type</th>
-                      <th className="py-3 px-4">Raw Materials / Particulars</th>
-                      <th className="py-3 px-4">Payment Method</th>
-                      <th className="py-3 px-4 text-right">Amount (₹)</th>
-                      <th className="py-3 px-4 text-right">{isSupplierMode ? "Balance We Owe" : "Balance Due"}</th>
-                      <th className="py-3 px-4 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-200 dark:divide-white/5">
-                    {logbookData.entries.map((entry) => (
-                      <tr key={entry.id} className="hover:bg-zinc-50/60 dark:hover:bg-white/[0.02] transition-colors">
-                        {/* Time & Ref */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <div className="font-semibold text-zinc-900 dark:text-white">
-                            {format(new Date(entry.date), "hh:mm a")}
-                          </div>
-                          {entry.referenceNo && (
-                            <div className="text-[11px] font-mono text-zinc-400">
-                              Ref: {entry.referenceNo}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Retailer / Supplier */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <div className="font-bold text-zinc-900 dark:text-white">
+              <>
+                {/* 1. Mobile Card List (block sm:hidden) */}
+                <div className="block sm:hidden divide-y divide-zinc-200 dark:divide-white/5 p-2 space-y-2">
+                  {logbookData.entries.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="p-3 rounded-xl bg-zinc-50/70 dark:bg-white/[0.02] border border-zinc-200/60 dark:border-white/5 space-y-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-xs text-zinc-900 dark:text-white truncate">
                             {entry.retailer.shopName || entry.retailer.name}
-                          </div>
-                          <div className="text-xs text-zinc-400">
-                            {entry.retailer.category || (entry.retailer.partyType === "VENDOR" ? "Raw Ingredients" : "Retail")}
-                          </div>
-                        </td>
-
-                        {/* Type Badge */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          {entry.type === "BILLING" ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                              {entry.retailer.partyType === "VENDOR" ? "📦 Purchase Bill" : "🛍️ Goods Billed"}
-                            </span>
-                          ) : entry.type === "PAYMENT" ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                              {entry.retailer.partyType === "VENDOR" ? "💸 Paid to Supplier" : "💰 Payment Received"}
-                            </span>
-                          ) : entry.type === "RETURN" ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                              🔄 Return
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                              ⚖️ Adjustment
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Description */}
-                        <td className="py-3.5 px-4 max-w-xs">
-                          <div className="text-xs text-zinc-700 dark:text-zinc-300 font-medium line-clamp-2">
-                            {entry.description || "—"}
-                          </div>
-                        </td>
-
-                        {/* Method */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-zinc-100 dark:bg-[#242220] text-zinc-700 dark:text-zinc-300">
-                            {entry.paymentMethod}
+                          </h4>
+                          <span className="text-[10px] text-zinc-400">
+                            {format(new Date(entry.date), "hh:mm a")} {entry.referenceNo ? `• Ref: ${entry.referenceNo}` : ""}
                           </span>
-                        </td>
+                        </div>
 
-                        {/* Amount */}
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        {/* Amount Badge */}
+                        <div className="text-right shrink-0">
                           <div
-                            className={`font-black text-base ${
+                            className={`font-black text-sm ${
                               entry.type === "BILLING"
                                 ? "text-blue-600 dark:text-blue-400"
                                 : entry.type === "PAYMENT"
@@ -1113,45 +1049,164 @@ export default function AdminAccountsPage() {
                                 : "text-amber-600 dark:text-amber-400"
                             }`}
                           >
-                            {entry.type === "PAYMENT" ? "-" : "+"}₹
-                            {Number(entry.amount).toLocaleString("en-IN")}
+                            {entry.type === "PAYMENT" ? "-" : "+"}₹{Number(entry.amount).toLocaleString("en-IN")}
                           </div>
-                        </td>
+                          <span className="text-[9px] text-zinc-400 block font-mono">
+                            Bal: ₹{Number(entry.balanceAfter ?? entry.retailer.currentBalance).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                      </div>
 
-                        {/* Balance After */}
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          <div className="font-bold text-xs text-zinc-600 dark:text-zinc-300">
-                            ₹{Number(entry.balanceAfter ?? entry.retailer.currentBalance).toLocaleString("en-IN")}
-                          </div>
-                        </td>
+                      {/* Type and Description */}
+                      <div className="flex items-center justify-between gap-2 text-[11px]">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                          entry.type === "BILLING"
+                            ? "bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20"
+                            : entry.type === "PAYMENT"
+                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
+                            : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
+                        }`}>
+                          {entry.type === "BILLING" ? (entry.retailer.partyType === "VENDOR" ? "📦 Purchase" : "🛍️ Billed") : entry.type === "PAYMENT" ? (entry.retailer.partyType === "VENDOR" ? "💸 Paid" : "💰 Received") : entry.type}
+                        </span>
 
-                        {/* Actions */}
-                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => {
-                                setPassbookRetailerId(entry.retailer.id);
-                                setActiveTab("passbook");
-                              }}
-                              className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-600 hover:bg-amber-500/10 transition-all"
-                              title="View Passbook"
-                            >
-                              <Card size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteEntry(entry.id)}
-                              className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-500/10 transition-all"
-                              title="Delete Entry"
-                            >
-                              <Trash size={16} />
-                            </button>
-                          </div>
-                        </td>
+                        <span className="text-zinc-600 dark:text-zinc-400 truncate flex-1 text-right text-[11px]">
+                          {entry.description || entry.paymentMethod}
+                        </span>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-2 pt-1 border-t border-zinc-200/50 dark:border-white/5">
+                        <button
+                          onClick={() => {
+                            setPassbookRetailerId(entry.retailer.id);
+                            setActiveTab("passbook");
+                          }}
+                          className="px-2 py-1 rounded-lg text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                        >
+                          <LucideCard className="w-3 h-3" /> Passbook
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEntry(entry.id)}
+                          className="px-2 py-1 rounded-lg text-[10px] font-bold text-rose-600 hover:bg-rose-500/10 transition-all flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 2. Desktop Data Table (hidden sm:block) */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-zinc-50 dark:bg-[#151413] text-zinc-500 dark:text-zinc-400 font-bold text-xs uppercase tracking-wider border-b border-zinc-200 dark:border-white/10">
+                      <tr>
+                        <th className="py-3 px-4">Time & Ref</th>
+                        <th className="py-3 px-4">{isSupplierMode ? "Supplier / Business" : "Retailer / Store"}</th>
+                        <th className="py-3 px-4">Type</th>
+                        <th className="py-3 px-4">Raw Materials / Particulars</th>
+                        <th className="py-3 px-4">Payment Method</th>
+                        <th className="py-3 px-4 text-right">Amount (₹)</th>
+                        <th className="py-3 px-4 text-right">{isSupplierMode ? "Balance We Owe" : "Balance Due"}</th>
+                        <th className="py-3 px-4 text-center">Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-200 dark:divide-white/5">
+                      {logbookData.entries.map((entry) => (
+                        <tr key={entry.id} className="hover:bg-zinc-50/60 dark:hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <div className="font-semibold text-zinc-900 dark:text-white">
+                              {format(new Date(entry.date), "hh:mm a")}
+                            </div>
+                            {entry.referenceNo && (
+                              <div className="text-[11px] font-mono text-zinc-400">
+                                Ref: {entry.referenceNo}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <div className="font-bold text-zinc-900 dark:text-white">
+                              {entry.retailer.shopName || entry.retailer.name}
+                            </div>
+                            <div className="text-xs text-zinc-400">
+                              {entry.retailer.category || (entry.retailer.partyType === "VENDOR" ? "Raw Ingredients" : "Retail")}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            {entry.type === "BILLING" ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                {entry.retailer.partyType === "VENDOR" ? "📦 Purchase Bill" : "🛍️ Goods Billed"}
+                              </span>
+                            ) : entry.type === "PAYMENT" ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                {entry.retailer.partyType === "VENDOR" ? "💸 Paid to Supplier" : "💰 Payment Received"}
+                              </span>
+                            ) : entry.type === "RETURN" ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                🔄 Return
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                ⚖️ Adjustment
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 max-w-xs">
+                            <div className="text-xs text-zinc-700 dark:text-zinc-300 font-medium line-clamp-2">
+                              {entry.description || "—"}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-zinc-100 dark:bg-[#242220] text-zinc-700 dark:text-zinc-300">
+                              {entry.paymentMethod}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div
+                              className={`font-black text-base ${
+                                entry.type === "BILLING"
+                                  ? "text-blue-600 dark:text-blue-400"
+                                  : entry.type === "PAYMENT"
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : "text-amber-600 dark:text-amber-400"
+                              }`}
+                            >
+                              {entry.type === "PAYMENT" ? "-" : "+"}₹
+                              {Number(entry.amount).toLocaleString("en-IN")}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div className="font-bold text-xs text-zinc-600 dark:text-zinc-300">
+                              ₹{Number(entry.balanceAfter ?? entry.retailer.currentBalance).toLocaleString("en-IN")}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setPassbookRetailerId(entry.retailer.id);
+                                  setActiveTab("passbook");
+                                }}
+                                className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-600 hover:bg-amber-500/10 transition-all cursor-pointer"
+                                title="View Passbook"
+                              >
+                                <LucideCard className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteEntry(entry.id)}
+                                className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-500/10 transition-all cursor-pointer"
+                                title="Delete Entry"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>

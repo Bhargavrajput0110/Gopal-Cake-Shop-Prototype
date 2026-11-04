@@ -29,7 +29,7 @@ import {
   Gallery,
   Gift
 } from "iconsax-react"
-import { ChefHat, MoreVertical } from "lucide-react"
+import { ChefHat, MoreVertical, RotateCw, Layers } from "lucide-react"
 import { ReceiptStub } from "@/app/sales/pos/components/ReceiptStub"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
@@ -241,6 +241,7 @@ export default function LiveOrdersPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null)
   const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null)
+  const [activeMobileStage, setActiveMobileStage] = useState<string>("ALL")
 
   // 1-Tap Admin Action handler
   const handleCardAction = async (e: React.MouseEvent, orderId: string, actionVerb: string) => {
@@ -394,44 +395,57 @@ export default function LiveOrdersPage() {
     <div className="space-y-3.5">
       <PageHeader
         title="Live Orders"
-        description={`${filteredOrders.length} orders displayed (${activeOrders.length} active) — real-time from Supabase`}
+        description={`${filteredOrders.length} orders displayed (${activeOrders.length} active) — real-time`}
         actions={
-          <div className="flex items-center gap-4">
-            <div className="flex bg-secondary p-1 rounded-lg">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              title="Refresh Live Orders"
+              className={cn(
+                "p-2 rounded-xl border border-border bg-card hover:bg-secondary text-foreground transition-all cursor-pointer shadow-2xs flex items-center gap-1.5 text-xs font-semibold",
+                isRefreshing && "text-primary"
+              )}
+            >
+              <RotateCw className={cn("w-3.5 h-3.5 shrink-0", isRefreshing && "animate-spin text-primary")} />
+              <span className="hidden xs:inline">Refresh</span>
+            </button>
+
+            <div className="flex bg-secondary/80 p-1 rounded-xl border border-border/40">
               <button
                 onClick={() => setView("board")}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-                  view === "board" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  "flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                  view === "board" ? "bg-background shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Element4 className="w-4 h-4" /> Board
+                <Element4 size={14} className="shrink-0" /> Board
               </button>
               <button
                 onClick={() => setView("list")}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-                  view === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  "flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                  view === "list" ? "bg-background shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <TextalignJustifycenter className="w-4 h-4" /> List
+                <TextalignJustifycenter size={14} className="shrink-0" /> List
               </button>
             </div>
           </div>
         }
       />
 
-      {/* ── Branch & Date Filters Toolbar ────────────────────────────────── */}
-      <div className="bg-card border border-border p-3 rounded-2xl shadow-xs space-y-2.5">
-        {/* Branch Filters */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1 mr-1">
-            <Buildings2 className="w-3.5 h-3.5 text-primary" /> Branch:
+      {/* ── Branch & Date Filters Toolbar (Mobile Optimized) ─────────────── */}
+      <div className="bg-card border border-border p-2.5 sm:p-3 rounded-2xl shadow-xs space-y-2">
+        {/* Branch Filters - Single Smooth Horizontal Scroll on Phone */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
+          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1 shrink-0 mr-0.5">
+            <Buildings2 size={13} className="text-primary shrink-0" /> Branch:
           </span>
           <button
             onClick={() => setSelectedBranch("all")}
             className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer",
+              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer",
               selectedBranch === "all"
                 ? "bg-primary text-primary-foreground shadow-xs"
                 : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -439,7 +453,7 @@ export default function LiveOrdersPage() {
           >
             <span>All Branches</span>
             <span className={cn(
-              "px-1.5 py-0.5 rounded-full text-[10px]",
+              "px-1.5 py-0.2 rounded-full text-[10px]",
               selectedBranch === "all" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
             )}>
               {branchCounts.all ?? 0}
@@ -453,7 +467,7 @@ export default function LiveOrdersPage() {
                 key={b.id}
                 onClick={() => setSelectedBranch(b.id)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer",
+                  "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer",
                   active
                     ? "bg-primary text-primary-foreground shadow-xs"
                     : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -461,7 +475,7 @@ export default function LiveOrdersPage() {
               >
                 <span>{b.shortName}</span>
                 <span className={cn(
-                  "px-1.5 py-0.5 rounded-full text-[10px]",
+                  "px-1.5 py-0.2 rounded-full text-[10px]",
                   active ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
                 )}>
                   {count}
@@ -471,15 +485,15 @@ export default function LiveOrdersPage() {
           })}
         </div>
 
-        {/* Date Filters + Live Refresh */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-border/50">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1 mr-1">
-              <Calendar className="w-3.5 h-3.5 text-amber-500" /> Date:
+        {/* Date Filters - Single Smooth Horizontal Scroll on Phone */}
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/40">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
+            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1 shrink-0 mr-0.5">
+              <Calendar size={13} className="text-amber-500 shrink-0" /> Date:
             </span>
             {(
               [
-                { id: "TODAY", label: "Daily (Today)", count: dateCounts.TODAY },
+                { id: "TODAY", label: "Today", count: dateCounts.TODAY },
                 { id: "TOMORROW", label: "Tomorrow", count: dateCounts.TOMORROW },
                 { id: "YESTERDAY", label: "Yesterday", count: dateCounts.YESTERDAY },
                 { id: "ALL", label: "All Dates", count: dateCounts.ALL },
@@ -491,7 +505,7 @@ export default function LiveOrdersPage() {
                   key={df.id}
                   onClick={() => setDateFilter(df.id)}
                   className={cn(
-                    "px-3 py-1 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer",
+                    "px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shrink-0 cursor-pointer",
                     active
                       ? df.id === "TODAY"
                         ? "bg-amber-500 text-white shadow-xs"
@@ -505,7 +519,7 @@ export default function LiveOrdersPage() {
                 >
                   <span>{df.label}</span>
                   <span className={cn(
-                    "px-1.5 py-0.5 rounded-full text-[10px]",
+                    "px-1.5 py-0.2 rounded-full text-[9px] font-mono",
                     active ? "bg-black/20 text-white" : "bg-muted text-muted-foreground"
                   )}>
                     {df.count}
@@ -515,29 +529,81 @@ export default function LiveOrdersPage() {
             })}
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground hidden sm:inline">
-              Filtered: <strong>{filteredOrders.length}</strong> orders
-            </span>
-            <button
-              onClick={handleManualRefresh}
-              disabled={isRefreshing}
-              title="Refresh Live Orders"
-              className={cn(
-                "p-1.5 rounded-lg border border-border bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer",
-                isRefreshing && "animate-spin text-primary"
-              )}
-            >
-              <Refresh2 className="w-4 h-4" />
-            </button>
+          <div className="text-[11px] text-muted-foreground font-semibold shrink-0 hidden sm:inline">
+            Filtered: <strong>{filteredOrders.length}</strong> orders
           </div>
         </div>
       </div>
 
+      {/* ── Mobile Stage Selector Tabs (Phone only, avoids endless 2000px dragging) ── */}
+      {view === "board" && (
+        <div className="flex sm:hidden items-center gap-1.5 overflow-x-auto no-scrollbar py-1 -mx-1 px-1">
+          <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground shrink-0 flex items-center gap-1 mr-0.5">
+            <Layers className="w-3.5 h-3.5 text-primary shrink-0" /> Stage:
+          </span>
+          <button
+            onClick={() => setActiveMobileStage("ALL")}
+            className={cn(
+              "px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 transition-all cursor-pointer",
+              activeMobileStage === "ALL"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "bg-secondary/70 text-muted-foreground hover:text-foreground"
+            )}
+          >
+            All Columns ({filteredOrders.length})
+          </button>
+          {BOARD_COLUMNS.map((col) => {
+            const count = filteredOrders.filter((o) => col.statuses.includes(o.status)).length
+            const active = activeMobileStage === col.label
+            const shortLabel = col.label
+              .replace("Quotes & Inquiries", "Quotes")
+              .replace("New & Draft", "New")
+              .replace("Out for Delivery", "Out")
+            return (
+              <button
+                key={col.label}
+                onClick={() => setActiveMobileStage(col.label)}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 transition-all flex items-center gap-1 cursor-pointer",
+                  active
+                    ? "bg-amber-600 text-white shadow-xs"
+                    : "bg-secondary/70 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <span>{shortLabel}</span>
+                <span className={cn(
+                  "px-1.5 py-0.2 rounded-full text-[9px] font-mono",
+                  active ? "bg-black/20 text-white" : "bg-muted text-muted-foreground"
+                )}>
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+          <button
+            onClick={() => setActiveMobileStage("Delivered / Done")}
+            className={cn(
+              "px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 transition-all flex items-center gap-1 cursor-pointer",
+              activeMobileStage === "Delivered / Done"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "bg-secondary/70 text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <span>Done</span>
+            <span className={cn(
+              "px-1.5 py-0.2 rounded-full text-[9px] font-mono",
+              activeMobileStage === "Delivered / Done" ? "bg-black/20 text-white" : "bg-muted text-muted-foreground"
+            )}>
+              {archivedOrders.length}
+            </span>
+          </button>
+        </div>
+      )}
+
       {/* ── Board View ─────────────────────────────────────────────────── */}
       {view === "board" && (
         <div
-          className="flex gap-4 overflow-x-auto pb-4 items-start"
+          className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory pb-4 items-start -mx-2 px-2 sm:mx-0 sm:px-0"
           style={{ height: "calc(100vh - 17rem)", maxHeight: "calc(100vh - 17rem)" }}
         >
           {BOARD_COLUMNS.map((col) => {
@@ -547,7 +613,11 @@ export default function LiveOrdersPage() {
             return (
               <div
                 key={col.label}
-                className="flex-none w-80 sm:w-[340px] bg-secondary/30 rounded-2xl border border-border/50 flex flex-col h-full overflow-hidden"
+                className={cn(
+                  "bg-secondary/30 rounded-2xl border border-border/50 flex-col h-full overflow-hidden shrink-0 snap-center transition-all",
+                  activeMobileStage !== "ALL" && activeMobileStage !== col.label ? "hidden sm:flex" : "flex",
+                  activeMobileStage !== "ALL" ? "w-full sm:w-[340px]" : "w-[88vw] sm:w-[340px]"
+                )}
               >
                 <div className="p-3.5 border-b border-border/50 shrink-0 flex items-center justify-between bg-secondary/50">
                   <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
@@ -1381,7 +1451,13 @@ export default function LiveOrdersPage() {
           })}
 
           {/* Delivered column */}
-          <div className="flex-none w-80 sm:w-[340px] bg-secondary/30 rounded-2xl border border-border/50 flex flex-col h-full overflow-hidden">
+          <div
+            className={cn(
+              "bg-secondary/30 rounded-2xl border border-border/50 flex-col h-full overflow-hidden shrink-0 snap-center transition-all",
+              activeMobileStage !== "ALL" && activeMobileStage !== "Delivered / Done" ? "hidden sm:flex" : "flex",
+              activeMobileStage !== "ALL" ? "w-full sm:w-[340px]" : "w-[88vw] sm:w-[340px]"
+            )}
+          >
             <div className="p-3.5 border-b border-border/50 shrink-0 flex items-center justify-between bg-secondary/50">
               <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
                 Delivered / Done
@@ -1390,26 +1466,33 @@ export default function LiveOrdersPage() {
                 </span>
               </h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-3 pb-6">
-              {archivedOrders.slice(0, 15).map((order) => (
-                <div
-                  key={order.id}
-                  onClick={() => setSelectedOrderId(order.id)}
-                  className="bg-card border border-border/40 p-3 rounded-xl opacity-80 text-xs hover:border-primary/40 hover:opacity-100 transition-all cursor-pointer"
-                >
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold">{order.orderNumber || order.id}</span>
-                    <Badge variant={STATUS_CONFIG[order.status]?.variant ?? "secondary"}>
-                      {STATUS_CONFIG[order.status]?.label}
-                    </Badge>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2.5 pb-6">
+              {archivedOrders.slice(0, 25).map((order) => {
+                const firstItem = order.items?.[0]
+                const itemSummary = firstItem ? `${firstItem.qty > 1 ? `${firstItem.qty}x ` : ""}${firstItem.name || "Custom Cake"}` : "Cake"
+                return (
+                  <div
+                    key={order.id}
+                    onClick={() => setSelectedOrderId(order.id)}
+                    className="bg-card border border-border/60 p-3 rounded-xl text-xs hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer space-y-1.5"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-black text-slate-900 dark:text-white">{order.orderNumber || order.id}</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                        {STATUS_CONFIG[order.status]?.label ?? "Delivered"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-foreground truncate">{order.customerName}</p>
+                      <span className="font-black text-primary text-xs">₹{order.grandTotal?.toFixed(0)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/40">
+                      <span className="truncate max-w-[160px]">{itemSummary}</span>
+                      <span className="uppercase font-semibold tracking-wider">{order.branch}</span>
+                    </div>
                   </div>
-                  <p className="font-medium text-foreground truncate">{order.customerName}</p>
-                  <div className="flex justify-between items-center text-muted-foreground mt-1">
-                    <span>{order.branch}</span>
-                    <span className="font-bold text-foreground">₹{order.grandTotal?.toFixed(0)}</span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
               {archivedOrders.length === 0 && (
                 <div className="py-8 text-center text-muted-foreground text-sm opacity-50">No delivered orders</div>
               )}

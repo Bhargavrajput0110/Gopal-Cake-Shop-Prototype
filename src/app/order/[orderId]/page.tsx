@@ -135,7 +135,7 @@ export default function OrderStatusPage() {
       if (res.ok && data.success) {
         setOrder(data.order);
       } else {
-        alert("Payment failed: " + (data.error?.message || "Unknown error"));
+        alert("Payment failed: " + (typeof data.error === 'string' ? data.error : data.error?.message || "Unknown error"));
       }
     } catch (err) {
       console.error(err);

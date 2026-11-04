@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 const RequestTransferSchema = z.object({
   orderId: z.string().min(1),
+  fromBranchId: z.string().optional(),
   toBranchId: z.string().min(1),
   reason: z.string().optional(),
   notes: z.string().optional(),
@@ -52,14 +53,28 @@ export const GET = withApiHandler(async ({ req, appRole, branchId }) => {
 
 // POST: Request a new branch transfer
 export const POST = withApiHandler(async ({ req, user, branchId }) => {
-  if (!branchId || !user?.id) throw new Error('Branch and user context required');
+  if (!user?.id) throw new Error('User context required');
   
   const body = await req.json();
   const parsed = RequestTransferSchema.parse(body);
 
+  // If branchId is null in user context (e.g. ADMIN), determine from request body or look up order's current branch
+  let effectiveFromBranchId: string | undefined = branchId || parsed.fromBranchId || undefined;
+  if (!effectiveFromBranchId) {
+    const targetOrder = await prisma.order.findUnique({
+      where: { id: parsed.orderId },
+      select: { branchId: true }
+    });
+    effectiveFromBranchId = targetOrder?.branchId || undefined;
+  }
+
+  if (!effectiveFromBranchId) {
+    throw new Error('Source branch (fromBranchId) could not be determined for transfer');
+  }
+
   const transfer = await BranchTransferService.requestTransfer({
     orderId: parsed.orderId,
-    fromBranchId: branchId,
+    fromBranchId: effectiveFromBranchId,
     toBranchId: parsed.toBranchId,
     requestedBy: user.id,
     reason: parsed.reason,

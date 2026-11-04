@@ -79,8 +79,26 @@ export const STATE_MACHINE: TransitionConfig[] = [
   // Pickup Flow
   { action: 'complete', current: 'READY_FOR_PICKUP', next: 'COMPLETED', roles: ['SALESPERSON', 'MANAGER', 'ADMIN', 'CHEF'], allowedDeliveryTypes: ['PICKUP'] },
   
-  // Cancellation Flow
-  { action: 'cancel', current: ['NEW', 'WAITING_FOR_CHEF', 'READY_FOR_PICKUP'], next: 'CANCELLED', roles: ['SALESPERSON', 'MANAGER', 'ADMIN'], requireReason: true },
+  // Cancellation Flow - Allows Admin, Manager, and Salesperson to cancel with mandatory reason logging
+  {
+    action: 'cancel',
+    current: [
+      'QUOTE_DRAFT',
+      'QUOTE_SENT',
+      'QUOTE_APPROVED',
+      'DRAFT',
+      'NEW',
+      'WAITING_FOR_CHEF',
+      'CHEF_ACCEPTED',
+      'MAKING',
+      'DECORATING',
+      'READY_FOR_PICKUP',
+      'PENDING_ASSIGNMENT'
+    ],
+    next: 'CANCELLED',
+    roles: ['SALESPERSON', 'MANAGER', 'ADMIN'],
+    requireReason: true
+  },
 ]
 
 export class OrderStateMachine {
