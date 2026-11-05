@@ -87,6 +87,8 @@ model Branch {
   orders            Order[]          @relation("BranchOrders")
   settings          Settings[]       @relation("BranchSettings")
   staff             User[]           @relation("StaffBranch")
+  inventoryBatches  InventoryBatch[] @relation("BranchInventoryBatches")
+  inventoryUnits    InventoryUnit[]  @relation("BranchInventoryUnits")
 }
 
 model Order {
@@ -248,6 +250,7 @@ model Product {
   isCustomizable   Boolean          @default(false)
   requiredVendors  Role[]
   orderItems       OrderItem[]
+  inventoryUnits   InventoryUnit[]
   category         Category?        @relation(fields: [categoryId], references: [id])
   history          ProductHistory[]
 }
@@ -845,4 +848,80 @@ model RetailerLedgerEntry {
   @@index([date])
   @@index([type])
 }
+
+enum InventoryCategory {
+  FRESH_BAKES
+  HOT_BAKES
+  BOUQUETS
+  SIGNATURE_ADDONS
+}
+
+enum InventoryUnitStatus {
+  IN_STOCK
+  SOLD
+  DAMAGED
+  EXPIRED
+  TRANSFERRED
+}
+
+model InventoryBatch {
+  id              String            @id @default(cuid())
+  branchId        String
+  category        InventoryCategory
+  batchDate       DateTime          @default(now())
+  title           String?
+  notes           String?
+  createdById     String?
+  openingQty      Int               @default(0)
+  soldQty         Int               @default(0)
+  damagedQty      Int               @default(0)
+  closingQty      Int               @default(0)
+  isClosed        Boolean           @default(false)
+  closedAt        DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  branch          Branch            @relation("BranchInventoryBatches", fields: [branchId], references: [id])
+  units           InventoryUnit[]
+
+  @@index([branchId])
+  @@index([batchDate])
+  @@index([category])
+}
+
+model InventoryUnit {
+  id              String              @id @default(cuid())
+  barcode         String              @unique
+  batchId         String
+  productId       String?
+  branchId        String
+  itemTitle       String
+  category        InventoryCategory
+  variantWeight   String?             @default("500g")
+  flavor          String?
+  sellingPrice    Decimal             @default(0)
+  status          InventoryUnitStatus @default(IN_STOCK)
+  
+  // Sold details
+  soldAt          DateTime?
+  soldOrderId     String?
+  soldPrice       Decimal?
+  
+  // Wastage / Damage details
+  damagedAt       DateTime?
+  damageReason    String?
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  batch           InventoryBatch      @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  product         Product?            @relation(fields: [productId], references: [id])
+  branch          Branch              @relation("BranchInventoryUnits", fields: [branchId], references: [id])
+
+  @@index([barcode])
+  @@index([branchId, status])
+  @@index([category])
+  @@index([batchId])
+}
+
 
