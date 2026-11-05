@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import Image from 'next/image';
 import { NotificationToast } from '@/components/ui/NotificationToast';
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
-import { GalleryAdd } from "iconsax-react";
+import { GalleryAdd, ArrowLeft } from "iconsax-react";
 
 export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake = false, editingCartItem, isPOSMode = false }: { product: any, onClose?: () => void, isCustom?: boolean, isPhotoCake?: boolean, editingCartItem?: any, isPOSMode?: boolean }) {
   const { addItem, updateItemConfig, setIsCartOpen } = useCart();
@@ -266,6 +266,17 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
     >
       {/* 1. FIXED TOP HEADER CAKE PHOTO (Static at top, never scrolls away) */}
       <div className="relative w-full h-[120px] md:h-[180px] shrink-0 bg-black/95 flex items-center justify-center overflow-hidden">
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-3 left-3 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-xs font-bold border border-white/20 transition-all shadow-lg active:scale-95"
+            aria-label="Back / Close"
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </button>
+        )}
         {(product.thumbnail || product.imageUrl || product.image) ? (
           <>
             <Image src={product.thumbnail || product.imageUrl || product.image} alt={product.name} fill className="object-cover opacity-25 blur-md scale-110" />
