@@ -1750,29 +1750,33 @@ export default function InventoryPage() {
                       <Printer size={15} />
                       <span>Print Labels ({batch.units.length})</span>
                     </button>
-                    {/* Modify Batch Button */}
-                    <button
-                      onClick={() => setEditTarget({
-                        type: "BATCH",
-                        id: batch.id,
-                        title: batch.title,
-                        qty: batch.closingQty,
-                        bestBeforeDate: batch.bestBeforeDate ? new Date(batch.bestBeforeDate).toISOString().split("T")[0] : "",
-                        notes: batch.notes || ""
-                      })}
-                      className="p-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground"
-                      title="Edit Batch"
-                    >
-                      <Edit2 size={15} />
-                    </button>
-                    {/* Delete Batch Button */}
-                    <button
-                      onClick={() => handleDeleteItem("BATCH", batch.id, batch.title)}
-                      className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600"
-                      title="Delete Batch"
-                    >
-                      <Trash size={15} />
-                    </button>
+                    {/* Modify Batch Button (Permission Gated) */}
+                    {canEditDelete && (
+                      <button
+                        onClick={() => setEditTarget({
+                          type: "BATCH",
+                          id: batch.id,
+                          title: batch.title,
+                          qty: batch.closingQty,
+                          bestBeforeDate: batch.bestBeforeDate ? new Date(batch.bestBeforeDate).toISOString().split("T")[0] : "",
+                          notes: batch.notes || ""
+                        })}
+                        className="p-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground"
+                        title="Edit Batch"
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                    )}
+                    {/* Delete Batch Button (Permission Gated) */}
+                    {canEditDelete && (
+                      <button
+                        onClick={() => handleDeleteItem("BATCH", batch.id, batch.title)}
+                        className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600"
+                        title="Delete Batch"
+                      >
+                        <Trash size={15} />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1975,26 +1979,30 @@ export default function InventoryPage() {
                       }`}>
                         {expired ? "⛔ EXPIRED" : `${remaining} Left`}
                       </span>
-                      <button
-                        onClick={() => setEditTarget({
-                          type: "BATCH",
-                          id: batch.id,
-                          title: batch.title,
-                          qty: batch.closingQty,
-                          bestBeforeDate: batch.bestBeforeDate ? new Date(batch.bestBeforeDate).toISOString().split("T")[0] : ""
-                        })}
-                        className="p-1 hover:text-foreground text-muted-foreground"
-                        title="Edit Batch"
-                      >
-                        <Edit2 size={15} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem("BATCH", batch.id, batch.title)}
-                        className="p-1 hover:text-rose-600 text-muted-foreground"
-                        title="Delete Batch"
-                      >
-                        <Trash size={15} />
-                      </button>
+                      {canEditDelete && (
+                        <>
+                          <button
+                            onClick={() => setEditTarget({
+                              type: "BATCH",
+                              id: batch.id,
+                              title: batch.title,
+                              qty: batch.closingQty,
+                              bestBeforeDate: batch.bestBeforeDate ? new Date(batch.bestBeforeDate).toISOString().split("T")[0] : ""
+                            })}
+                            className="p-1 hover:text-foreground text-muted-foreground"
+                            title="Edit Batch"
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem("BATCH", batch.id, batch.title)}
+                            className="p-1 hover:text-rose-600 text-muted-foreground"
+                            title="Delete Batch"
+                          >
+                            <Trash size={15} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -2107,29 +2115,33 @@ export default function InventoryPage() {
                     </div>
 
                     <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setEditTarget({
-                          type: "BROWNIE",
-                          id: tray.id,
-                          title: tray.title,
-                          flavor: tray.flavor || "",
-                          qty: tray.totalPieces,
-                          price: Number(tray.piecePrice),
-                          status: tray.status,
-                          bestBeforeDate: tray.bestBeforeDate ? new Date(tray.bestBeforeDate).toISOString().split("T")[0] : ""
-                        })}
-                        className="p-1 hover:text-foreground text-muted-foreground"
-                        title="Edit Tray"
-                      >
-                        <Edit2 size={15} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem("BROWNIE", tray.id, tray.title)}
-                        className="p-1 hover:text-rose-600 text-muted-foreground"
-                        title="Delete Tray"
-                      >
-                        <Trash size={15} />
-                      </button>
+                      {canEditDelete && (
+                        <>
+                          <button
+                            onClick={() => setEditTarget({
+                              type: "BROWNIE",
+                              id: tray.id,
+                              title: tray.title,
+                              flavor: tray.flavor || "",
+                              qty: tray.totalPieces,
+                              price: Number(tray.piecePrice),
+                              status: tray.status,
+                              bestBeforeDate: tray.bestBeforeDate ? new Date(tray.bestBeforeDate).toISOString().split("T")[0] : ""
+                            })}
+                            className="p-1 hover:text-foreground text-muted-foreground"
+                            title="Edit Tray"
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem("BROWNIE", tray.id, tray.title)}
+                            className="p-1 hover:text-rose-600 text-muted-foreground"
+                            title="Delete Tray"
+                          >
+                            <Trash size={15} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -2245,28 +2257,32 @@ export default function InventoryPage() {
                     </div>
 
                     <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setEditTarget({
-                          type: "PREP",
-                          id: item.id,
-                          title: item.name,
-                          qty: Number(item.currentStock),
-                          flavor: item.flavor || "",
-                          unit: item.unit,
-                          bestBeforeDate: item.bestBeforeDate ? new Date(item.bestBeforeDate).toISOString().split("T")[0] : ""
-                        })}
-                        className="p-1 hover:text-foreground text-muted-foreground"
-                        title="Edit Item"
-                      >
-                        <Edit2 size={15} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem("PREP", item.id, item.name)}
-                        className="p-1 hover:text-rose-600 text-muted-foreground"
-                        title="Delete Item"
-                      >
-                        <Trash size={15} />
-                      </button>
+                      {canEditDelete && (
+                        <>
+                          <button
+                            onClick={() => setEditTarget({
+                              type: "PREP",
+                              id: item.id,
+                              title: item.name,
+                              qty: Number(item.currentStock),
+                              flavor: item.flavor || "",
+                              unit: item.unit,
+                              bestBeforeDate: item.bestBeforeDate ? new Date(item.bestBeforeDate).toISOString().split("T")[0] : ""
+                            })}
+                            className="p-1 hover:text-foreground text-muted-foreground"
+                            title="Edit Item"
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem("PREP", item.id, item.name)}
+                            className="p-1 hover:text-rose-600 text-muted-foreground"
+                            title="Delete Item"
+                          >
+                            <Trash size={15} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -2372,28 +2388,32 @@ export default function InventoryPage() {
                     </div>
 
                     <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setEditTarget({
-                          type: "RAW",
-                          id: item.id,
-                          title: item.name,
-                          qty: Number(item.currentStock),
-                          unit: item.unit,
-                          price: Number(item.costPerUnit),
-                          bestBeforeDate: item.bestBeforeDate ? new Date(item.bestBeforeDate).toISOString().split("T")[0] : ""
-                        })}
-                        className="p-1 hover:text-foreground text-muted-foreground"
-                        title="Edit Item"
-                      >
-                        <Edit2 size={15} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem("RAW", item.id, item.name)}
-                        className="p-1 hover:text-rose-600 text-muted-foreground"
-                        title="Delete Item"
-                      >
-                        <Trash size={15} />
-                      </button>
+                      {canEditDelete && (
+                        <>
+                          <button
+                            onClick={() => setEditTarget({
+                              type: "RAW",
+                              id: item.id,
+                              title: item.name,
+                              qty: Number(item.currentStock),
+                              unit: item.unit,
+                              price: Number(item.costPerUnit),
+                              bestBeforeDate: item.bestBeforeDate ? new Date(item.bestBeforeDate).toISOString().split("T")[0] : ""
+                            })}
+                            className="p-1 hover:text-foreground text-muted-foreground"
+                            title="Edit Item"
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem("RAW", item.id, item.name)}
+                            className="p-1 hover:text-rose-600 text-muted-foreground"
+                            title="Delete Item"
+                          >
+                            <Trash size={15} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 

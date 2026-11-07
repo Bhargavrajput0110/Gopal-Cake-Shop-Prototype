@@ -219,7 +219,12 @@ export default auth(function proxy(req: NextRequest) {
       customPerms['inv_brownie_trays'] === true ||
       customPerms['inv_kitchen_prep'] === true ||
       customPerms['inv_raw_ingredients'] === true ||
-      customPerms['inv_eod_closing'] === true;
+      customPerms['inv_eod_closing'] === true ||
+      customPerms['inv_spoilage_damage'] === true ||
+      customPerms['inv_dead_stock'] === true ||
+      customPerms['inv_financials'] === true ||
+      customPerms['inv_ca_monthly_report'] === true ||
+      customPerms['inv_edit_delete'] === true;
     if (pathname.startsWith('/admin/inventory')) {
       if (!hasInventoryAccess) {
         return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));

@@ -100,6 +100,10 @@ export async function GET(req: NextRequest) {
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       whereBatch.batchDate = { gte: sevenDaysAgo, lte: endOfToday };
     } else if (dateFilter === 'DEAD_STOCK') {
+      const canSeeDeadStock = role === 'ADMIN' || role === 'MANAGER' || customPerms['inv_dead_stock'] === true || customPerms['inventory_management'] === true;
+      if (!canSeeDeadStock) {
+        return NextResponse.json({ success: false, error: "Forbidden: You do not have permission to view dead stock registers." }, { status: 403 });
+      }
       whereBatch.units = {
         some: {
           OR: [
@@ -217,15 +221,17 @@ export async function GET(req: NextRequest) {
       reasonMap[reason].lossAmount += loss;
     }
 
+    // Role-based Revenue & Financials (Strictly ADMIN or inv_financials)
+    const isAdmin = role === 'ADMIN';
+    const canSeeFinancials = isAdmin || customPerms['inv_financials'] === true;
+    const canSeeDeadStock = isAdmin || role === 'MANAGER' || customPerms['inv_dead_stock'] === true || customPerms['inventory_management'] === true;
+
     const wastageBreakdown = Object.entries(reasonMap).map(([reason, data]) => ({
       reason,
       count: data.count,
-      lossAmount: data.lossAmount,
+      lossAmount: canSeeFinancials ? data.lossAmount : 0,
       percentage: wastageUnits.length > 0 ? Math.round((data.count / wastageUnits.length) * 100) : 0
     })).sort((a, b) => b.count - a.count);
-
-    // Role-based Revenue & Discount Metrics (Strictly ADMIN only)
-    const isAdmin = role === 'ADMIN';
 
     let revenueStats: {
       totalRevenue: number;
@@ -235,7 +241,6 @@ export async function GET(req: NextRequest) {
       soldUnitsCount: number;
     } | null = null;
 
-    const canSeeFinancials = isAdmin || customPerms['inv_financials'] === true;
     if (canSeeFinancials) {
       const soldDateRange = 
         dateFilter === 'TODAY' ? { soldAt: { gte: startOfToday, lte: endOfToday } } :
@@ -339,9 +344,9 @@ export async function GET(req: NextRequest) {
         totalSoldToday,
         totalExpired,
         totalDamaged,
-        totalWastageLoss,
-        totalDeadStock,
-        deadStockLockedCapital
+        totalWastageLoss: canSeeFinancials ? totalWastageLoss : 0,
+        totalDeadStock: canSeeDeadStock ? totalDeadStock : 0,
+        deadStockLockedCapital: (canSeeFinancials && canSeeDeadStock) ? deadStockLockedCapital : 0
       },
       dailyMovementRegister,
       wastageBreakdown,
@@ -386,11 +391,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Forbidden: Inventory access denied." }, { status: 403 });
     }
 
-    const canDelete = role === 'ADMIN' || customPerms['inv_edit_delete'] === true;
-    if (!canDelete) {
-      return NextResponse.json({ success: false, error: "Forbidden: You do not have permission to delete inventory items." }, { status: 403 });
-    }
-
     const body = await req.json();
     let { 
       branchId, 
@@ -403,6 +403,21 @@ export async function POST(req: NextRequest) {
       bestBeforeDate,
       shelfLifeDays = 2 
     } = body;
+
+    const isHotBake = !isBarcodeTracked || category === 'HOT_BAKES';
+    const canInward = role === 'ADMIN' || 
+      role === 'MANAGER' || 
+      customPerms['inventory_management'] === true ||
+      (isHotBake ? (customPerms['inv_hot_bakes'] === true || customPerms['inv_inward'] === true) : customPerms['inv_inward'] === true);
+
+    if (!canInward) {
+      return NextResponse.json({ 
+        success: false, 
+        error: isHotBake 
+          ? "Forbidden: You do not have permission to inward hot bakes / puffs." 
+          : "Forbidden: You do not have permission to inward morning inventory batches." 
+      }, { status: 403 });
+    }
 
     // Enforce branch for SALESPERSON
     if (role === 'SALESPERSON') {
