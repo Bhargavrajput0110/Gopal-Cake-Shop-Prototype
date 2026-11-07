@@ -1,13 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
+
+// ── Shared auth helper ──────────────────────────────────────────────────────
+async function getSessionAndPerms() {
+  const session = await auth();
+  if (!session?.user) return { session: null, role: '', customPerms: {}, allowed: false };
+
+  const role = ((session.user as any)?.role || '').toUpperCase() as string;
+  const rawPerms = (session.user as any)?.customPermissions;
+  let customPerms: Record<string, boolean> = {};
+  if (rawPerms) {
+    try {
+      customPerms = typeof rawPerms === 'string' ? JSON.parse(rawPerms) : rawPerms;
+    } catch (e) {}
+  }
+
+  const allowed =
+    role === 'ADMIN' ||
+    role === 'MANAGER' ||
+    customPerms['inventory_management'] === true ||
+    customPerms['inv_brownie_trays'] === true;
+
+  return { session, role, customPerms, allowed };
+}
+
+function effectiveBranchId(requestedId: string | null, role: string, session: any): string | null {
+  if (role === 'SALESPERSON') {
+    return (session.user as any)?.branchId || null;
+  }
+  return requestedId;
+}
+// ───────────────────────────────────────────────────────────────────────────
 
 // GET: Fetch brownie trays by branch & date filter
 export async function GET(req: NextRequest) {
   try {
+    const { session, role, allowed } = await getSessionAndPerms();
+    if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!allowed) return NextResponse.json({ success: false, error: 'Forbidden: Brownie Tray access not permitted.' }, { status: 403 });
+
     const { searchParams } = new URL(req.url);
-    const branchId = searchParams.get('branchId');
-    const status = searchParams.get('status'); // CUT_INTO_PIECES, UNOPENED, COMPLETED, ALL
+    const rawBranchId = searchParams.get('branchId');
+    const status = searchParams.get('status');
     const dateFilter = searchParams.get('dateFilter') || 'ALL';
+
+    // Branch isolation for SALESPERSON
+    const branchId = effectiveBranchId(rawBranchId, role, session);
 
     const where: any = {};
     if (branchId && branchId !== 'ALL') {
@@ -59,7 +98,7 @@ export async function GET(req: NextRequest) {
       }
     });
   } catch (err: any) {
-    console.error("GET /api/v1/admin/inventory/brownies error:", err);
+    console.error('GET /api/v1/admin/inventory/brownies error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
@@ -67,15 +106,20 @@ export async function GET(req: NextRequest) {
 // POST: Inward tray, Cut tray into pieces, or sell piece
 export async function POST(req: NextRequest) {
   try {
+    const { session, role, allowed } = await getSessionAndPerms();
+    if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!allowed) return NextResponse.json({ success: false, error: 'Forbidden: Brownie Tray access not permitted.' }, { status: 403 });
+
     const body = await req.json();
     const { action = 'INWARD_TRAY' } = body;
 
     // 1. INWARD NEW TRAY FROM WARASIYA FACTORY
     if (action === 'INWARD_TRAY') {
-      const { branchId, title = 'Walnut Choco Brownie Tray', flavor = 'Walnut Dark Choco', piecePrice = 80, initialPieces = 50, cutNow = true, cutBy, bestBeforeDate, shelfLifeDays = 4 } = body;
+      const { branchId: rawBrId, title = 'Walnut Choco Brownie Tray', flavor = 'Walnut Dark Choco', piecePrice = 80, initialPieces = 50, cutNow = true, cutBy, bestBeforeDate, shelfLifeDays = 4 } = body;
+      const branchId = effectiveBranchId(rawBrId, role, session);
 
       if (!branchId || branchId === 'ALL') {
-        return NextResponse.json({ success: false, error: "Please select an outlet branch for this tray" }, { status: 400 });
+        return NextResponse.json({ success: false, error: 'Please select an outlet branch for this tray' }, { status: 400 });
       }
 
       const branch = await prisma.branch.findUnique({ where: { id: branchId } });
@@ -117,10 +161,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2. CUT TRAY (Staff specifies exact pieces cut from tray)
+    // 2. CUT TRAY
     if (action === 'CUT_TRAY') {
       const { id, pieces = 50, cutBy } = body;
-      if (!id) return NextResponse.json({ success: false, error: "Tray ID required" }, { status: 400 });
+      if (!id) return NextResponse.json({ success: false, error: 'Tray ID required' }, { status: 400 });
 
       const tray = await prisma.brownieTray.update({
         where: { id },
@@ -139,13 +183,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. SELL PIECE (POS or Counter sale: deducts pieces from active tray)
+    // 3. SELL PIECE
     if (action === 'SELL_PIECE') {
-      const { branchId, trayId, quantity = 1 } = body;
+      const { branchId: rawBrId, trayId, quantity = 1 } = body;
+      const branchId = effectiveBranchId(rawBrId, role, session);
 
       let tray;
       if (trayId) {
         tray = await prisma.brownieTray.findUnique({ where: { id: trayId } });
+        // Branch check for SALESPERSON
+        if (tray && role === 'SALESPERSON' && branchId && tray.branchId !== branchId) {
+          return NextResponse.json({ success: false, error: 'Forbidden: Tray belongs to a different branch.' }, { status: 403 });
+        }
       } else if (branchId) {
         tray = await prisma.brownieTray.findFirst({
           where: {
@@ -158,10 +207,9 @@ export async function POST(req: NextRequest) {
       }
 
       if (!tray) {
-        return NextResponse.json({ success: false, error: "No active cut brownie tray available at this branch" }, { status: 404 });
+        return NextResponse.json({ success: false, error: 'No active cut brownie tray available at this branch' }, { status: 404 });
       }
 
-      // Check Expiry
       const now = new Date();
       if (tray.bestBeforeDate && new Date(tray.bestBeforeDate) < now) {
         return NextResponse.json({
@@ -190,20 +238,29 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
   } catch (err: any) {
-    console.error("POST /api/v1/admin/inventory/brownies error:", err);
+    console.error('POST /api/v1/admin/inventory/brownies error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
 
-// PUT: Modify an existing Brownie Tray
+// PUT: Modify an existing Brownie Tray (requires edit permission)
 export async function PUT(req: NextRequest) {
   try {
+    const { session, role, customPerms, allowed } = await getSessionAndPerms();
+    if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!allowed) return NextResponse.json({ success: false, error: 'Forbidden: Brownie Tray access not permitted.' }, { status: 403 });
+
+    const canEdit = role === 'ADMIN' || role === 'MANAGER' || customPerms['inv_edit_delete'] === true;
+    if (!canEdit) {
+      return NextResponse.json({ success: false, error: 'Forbidden: Modify permission (inv_edit_delete) required.' }, { status: 403 });
+    }
+
     const body = await req.json();
     const { id, title, flavor, totalPieces, piecePrice, status, bestBeforeDate } = body;
 
-    if (!id) return NextResponse.json({ success: false, error: "Tray ID required" }, { status: 400 });
+    if (!id) return NextResponse.json({ success: false, error: 'Tray ID required' }, { status: 400 });
 
     const dataToUpdate: any = {};
     if (title !== undefined) dataToUpdate.title = title;
@@ -220,30 +277,35 @@ export async function PUT(req: NextRequest) {
       data: dataToUpdate
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Brownie tray updated successfully",
-      tray: updated
-    });
+    return NextResponse.json({ success: true, message: 'Brownie tray updated successfully', tray: updated });
   } catch (err: any) {
-    console.error("PUT /api/v1/admin/inventory/brownies error:", err);
+    console.error('PUT /api/v1/admin/inventory/brownies error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
 
-// DELETE: Delete a brownie tray
+// DELETE: Delete a brownie tray (requires edit/delete permission)
 export async function DELETE(req: NextRequest) {
   try {
+    const { session, role, customPerms, allowed } = await getSessionAndPerms();
+    if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!allowed) return NextResponse.json({ success: false, error: 'Forbidden: Brownie Tray access not permitted.' }, { status: 403 });
+
+    const canDelete = role === 'ADMIN' || customPerms['inv_edit_delete'] === true;
+    if (!canDelete) {
+      return NextResponse.json({ success: false, error: 'Forbidden: Delete permission (inv_edit_delete) required.' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
-    if (!id) return NextResponse.json({ success: false, error: "Tray ID required" }, { status: 400 });
+    if (!id) return NextResponse.json({ success: false, error: 'Tray ID required' }, { status: 400 });
 
     await prisma.brownieTray.delete({ where: { id } });
 
-    return NextResponse.json({ success: true, message: "Brownie tray deleted successfully" });
+    return NextResponse.json({ success: true, message: 'Brownie tray deleted successfully' });
   } catch (err: any) {
-    console.error("DELETE /api/v1/admin/inventory/brownies error:", err);
+    console.error('DELETE /api/v1/admin/inventory/brownies error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

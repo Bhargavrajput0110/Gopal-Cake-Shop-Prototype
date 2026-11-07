@@ -15,8 +15,12 @@ export async function GET(req: NextRequest) {
       } catch (e) {}
     }
 
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const canAccessMonthlyReport = role === 'ADMIN' || customPerms['inv_ca_monthly_report'] === true;
-    if (!session?.user || !canAccessMonthlyReport) {
+    if (!canAccessMonthlyReport) {
       return NextResponse.json({ 
         success: false, 
         error: "Forbidden: Monthly Tax & Financial Statements for CA are strictly confidential and restricted by Rishi Bhai." 

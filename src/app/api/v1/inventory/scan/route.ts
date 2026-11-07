@@ -1,18 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { InventoryUnitStatus } from '@prisma/client';
+import { auth } from '@/auth';
 
 // POST: Scan barcode at sales counter to lookup or deduct item
 export async function POST(req: NextRequest) {
   try {
+    // ── AUTH GUARD ─────────────────────────────────────────────────────────
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const role = (session.user as any)?.role?.toUpperCase() as string;
+    const rawPerms = (session.user as any)?.customPermissions;
+    let customPerms: Record<string, boolean> = {};
+    if (rawPerms) {
+      try {
+        customPerms = typeof rawPerms === 'string' ? JSON.parse(rawPerms) : rawPerms;
+      } catch (e) {}
+    }
+
+    // Any user who can access inventory (inc. salesperson) can scan barcodes.
+    const canScan =
+      role === 'ADMIN' ||
+      role === 'MANAGER' ||
+      role === 'SALESPERSON' ||
+      customPerms['inventory_management'] === true ||
+      customPerms['inv_view'] === true ||
+      customPerms['inv_inward'] === true ||
+      customPerms['inv_hot_bakes'] === true ||
+      customPerms['inv_brownie_trays'] === true ||
+      customPerms['inv_kitchen_prep'] === true ||
+      customPerms['inv_raw_ingredients'] === true ||
+      customPerms['inv_eod_closing'] === true;
+
+    if (!canScan) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: You do not have permission to scan inventory barcodes.' },
+        { status: 403 }
+      );
+    }
+
+    // WASTAGE action requires explicit spoilage permission
     const body = await req.json();
-    const { barcode, action = 'LOOKUP', orderId, cashierName } = body;
+    const { barcode, action = 'LOOKUP', orderId } = body;
+
+    if (action === 'WASTAGE') {
+      const canMarkWastage =
+        role === 'ADMIN' ||
+        role === 'MANAGER' ||
+        customPerms['inv_spoilage_damage'] === true ||
+        customPerms['inventory_management'] === true;
+      if (!canMarkWastage) {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden: You do not have permission to mark items as wastage.' },
+          { status: 403 }
+        );
+      }
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
     if (!barcode) {
-      return NextResponse.json({ success: false, error: "Barcode is required" }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Barcode is required' }, { status: 400 });
     }
 
     const trimmedBarcode = barcode.trim();
+
+    // Branch isolation for SALESPERSON: they can only scan their own branch's items
+    const userBranchId = (session.user as any)?.branchId;
 
     const unit = await prisma.inventoryUnit.findUnique({
       where: { barcode: trimmedBarcode },
@@ -29,6 +85,14 @@ export async function POST(req: NextRequest) {
         notFound: true,
         error: `Barcode "${trimmedBarcode}" not found in inventory`
       }, { status: 404 });
+    }
+
+    // Branch check: SALESPERSON can only interact with their assigned branch
+    if (role === 'SALESPERSON' && userBranchId && unit.branchId !== userBranchId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Forbidden: This item belongs to a different branch.'
+      }, { status: 403 });
     }
 
     const now = new Date();
@@ -106,7 +170,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: "Item marked as sold and deducted from counter inventory",
+        message: 'Item marked as sold and deducted from counter inventory',
         unit: updated
       });
     }
@@ -119,7 +183,7 @@ export async function POST(req: NextRequest) {
         data: {
           status: InventoryUnitStatus.DAMAGED,
           damagedAt: new Date(),
-          damageReason: reason || "Expired / Damaged"
+          damageReason: reason || 'Expired / Damaged'
         }
       });
 
@@ -133,14 +197,14 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: "Item marked as wastage",
+        message: 'Item marked as wastage',
         unit: updated
       });
     }
 
-    return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
   } catch (error: any) {
-    console.error("POST /api/v1/inventory/scan error:", error);
+    console.error('POST /api/v1/inventory/scan error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

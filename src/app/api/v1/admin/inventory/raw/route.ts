@@ -1,11 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
+
+// ── Shared auth helper ──────────────────────────────────────────────────────
+async function getSessionAndPerms() {
+  const session = await auth();
+  if (!session?.user) return { session: null, role: '', customPerms: {} as Record<string, boolean>, allowed: false };
+
+  const role = ((session.user as any)?.role || '').toUpperCase() as string;
+  const rawPerms = (session.user as any)?.customPermissions;
+  let customPerms: Record<string, boolean> = {};
+  if (rawPerms) {
+    try {
+      customPerms = typeof rawPerms === 'string' ? JSON.parse(rawPerms) : rawPerms;
+    } catch (e) {}
+  }
+
+  // Raw Ingredients tab is ADMIN-sensitive (pantry cost visibility)
+  const allowed =
+    role === 'ADMIN' ||
+    role === 'MANAGER' ||
+    customPerms['inventory_management'] === true ||
+    customPerms['inv_raw_ingredients'] === true;
+
+  return { session, role, customPerms, allowed };
+}
+
+function effectiveBranchId(requestedId: string | null | undefined, role: string, session: any): string | null {
+  if (role === 'SALESPERSON') {
+    return (session.user as any)?.branchId || null;
+  }
+  return requestedId || null;
+}
+// ───────────────────────────────────────────────────────────────────────────
 
 // GET all raw ingredients with branch filtering
 export async function GET(req: NextRequest) {
   try {
+    const { session, role, allowed } = await getSessionAndPerms();
+    if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!allowed) return NextResponse.json({ success: false, error: 'Forbidden: Raw Ingredients access not permitted.' }, { status: 403 });
+
     const { searchParams } = new URL(req.url);
-    const branchId = searchParams.get('branchId');
+    const rawBranchId = searchParams.get('branchId');
+    const branchId = effectiveBranchId(rawBranchId, role, session);
 
     const where: any = {};
     if (branchId && branchId !== 'ALL') {
@@ -41,7 +79,7 @@ export async function GET(req: NextRequest) {
       }
     });
   } catch (err: any) {
-    console.error("GET /api/v1/admin/inventory/raw error:", err);
+    console.error('GET /api/v1/admin/inventory/raw error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
@@ -49,21 +87,30 @@ export async function GET(req: NextRequest) {
 // POST: Add or adjust raw ingredient stock with branch association
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { name, category, currentStock, unit, minAlertLevel, costPerUnit, branchId, notes, bestBeforeDate, shelfLifeDays, action = 'CREATE_OR_UPDATE' } = body;
+    const { session, role, customPerms, allowed } = await getSessionAndPerms();
+    if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!allowed) return NextResponse.json({ success: false, error: 'Forbidden: Raw Ingredients access not permitted.' }, { status: 403 });
 
-    if (!name) {
-      return NextResponse.json({ success: false, error: "Ingredient name is required" }, { status: 400 });
-    }
+    const body = await req.json();
+    const { name, category, currentStock, unit, minAlertLevel, costPerUnit, branchId: rawBranchId, notes, bestBeforeDate, shelfLifeDays, action = 'CREATE_OR_UPDATE' } = body;
+
+    const branchId = effectiveBranchId(rawBranchId, role, session);
 
     if (action === 'ADJUST_STOCK') {
       const { id, adjustmentQty, operation = 'ADD' } = body;
+      if (!id) return NextResponse.json({ success: false, error: 'Ingredient ID required' }, { status: 400 });
+
       const existing = await prisma.rawIngredient.findUnique({ where: { id } });
       if (!existing) {
-        return NextResponse.json({ success: false, error: "Ingredient not found" }, { status: 404 });
+        return NextResponse.json({ success: false, error: 'Ingredient not found' }, { status: 404 });
       }
 
-      const newQty = operation === 'ADD' 
+      // Branch isolation for SALESPERSON
+      if (role === 'SALESPERSON' && branchId && existing.branchId && existing.branchId !== branchId) {
+        return NextResponse.json({ success: false, error: 'Forbidden: Ingredient belongs to a different branch.' }, { status: 403 });
+      }
+
+      const newQty = operation === 'ADD'
         ? Number(existing.currentStock) + Number(adjustmentQty)
         : Math.max(0, Number(existing.currentStock) - Number(adjustmentQty));
 
@@ -79,6 +126,16 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Create / Update: requires edit permission
+    const canEdit = role === 'ADMIN' || role === 'MANAGER' || customPerms['inv_edit_delete'] === true;
+    if (!canEdit) {
+      return NextResponse.json({ success: false, error: 'Forbidden: Modify permission (inv_edit_delete) required to add/update raw ingredients.' }, { status: 403 });
+    }
+
+    if (!name) {
+      return NextResponse.json({ success: false, error: 'Ingredient name is required' }, { status: 400 });
+    }
+
     let computedBestBefore: Date | null = null;
     if (bestBeforeDate) {
       computedBestBefore = new Date(bestBeforeDate);
@@ -90,7 +147,7 @@ export async function POST(req: NextRequest) {
 
     // Upsert by name + branchId
     const existing = await prisma.rawIngredient.findFirst({
-      where: { 
+      where: {
         name: { equals: name.trim(), mode: 'insensitive' },
         ...(branchId ? { branchId } : {})
       }
@@ -115,9 +172,9 @@ export async function POST(req: NextRequest) {
       ingredient = await prisma.rawIngredient.create({
         data: {
           name: name.trim(),
-          category: category || "Dairy",
+          category: category || 'Dairy',
           currentStock: Number(currentStock) || 0,
-          unit: unit || "kg",
+          unit: unit || 'kg',
           minAlertLevel: Number(minAlertLevel) || 5,
           costPerUnit: Number(costPerUnit) || 0,
           branchId: branchId || null,
@@ -133,7 +190,7 @@ export async function POST(req: NextRequest) {
       ingredient
     });
   } catch (err: any) {
-    console.error("POST /api/v1/admin/inventory/raw error:", err);
+    console.error('POST /api/v1/admin/inventory/raw error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
@@ -141,10 +198,19 @@ export async function POST(req: NextRequest) {
 // PUT: Modify an existing raw ingredient
 export async function PUT(req: NextRequest) {
   try {
+    const { session, role, customPerms, allowed } = await getSessionAndPerms();
+    if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!allowed) return NextResponse.json({ success: false, error: 'Forbidden: Raw Ingredients access not permitted.' }, { status: 403 });
+
+    const canEdit = role === 'ADMIN' || role === 'MANAGER' || customPerms['inv_edit_delete'] === true;
+    if (!canEdit) {
+      return NextResponse.json({ success: false, error: 'Forbidden: Modify permission (inv_edit_delete) required.' }, { status: 403 });
+    }
+
     const body = await req.json();
     const { id, name, category, currentStock, unit, minAlertLevel, costPerUnit, bestBeforeDate } = body;
 
-    if (!id) return NextResponse.json({ success: false, error: "Ingredient ID required" }, { status: 400 });
+    if (!id) return NextResponse.json({ success: false, error: 'Ingredient ID required' }, { status: 400 });
 
     const dataToUpdate: any = {};
     if (name !== undefined) dataToUpdate.name = name.trim();
@@ -162,13 +228,9 @@ export async function PUT(req: NextRequest) {
       data: dataToUpdate
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Raw ingredient updated successfully",
-      ingredient: updated
-    });
+    return NextResponse.json({ success: true, message: 'Raw ingredient updated successfully', ingredient: updated });
   } catch (err: any) {
-    console.error("PUT /api/v1/admin/inventory/raw error:", err);
+    console.error('PUT /api/v1/admin/inventory/raw error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
@@ -176,16 +238,25 @@ export async function PUT(req: NextRequest) {
 // DELETE: Delete a raw ingredient
 export async function DELETE(req: NextRequest) {
   try {
+    const { session, role, customPerms, allowed } = await getSessionAndPerms();
+    if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (!allowed) return NextResponse.json({ success: false, error: 'Forbidden: Raw Ingredients access not permitted.' }, { status: 403 });
+
+    const canDelete = role === 'ADMIN' || customPerms['inv_edit_delete'] === true;
+    if (!canDelete) {
+      return NextResponse.json({ success: false, error: 'Forbidden: Delete permission (inv_edit_delete) required.' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
-    if (!id) return NextResponse.json({ success: false, error: "Ingredient ID required" }, { status: 400 });
+    if (!id) return NextResponse.json({ success: false, error: 'Ingredient ID required' }, { status: 400 });
 
     await prisma.rawIngredient.delete({ where: { id } });
 
-    return NextResponse.json({ success: true, message: "Raw ingredient deleted successfully" });
+    return NextResponse.json({ success: true, message: 'Raw ingredient deleted successfully' });
   } catch (err: any) {
-    console.error("DELETE /api/v1/admin/inventory/raw error:", err);
+    console.error('DELETE /api/v1/admin/inventory/raw error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
