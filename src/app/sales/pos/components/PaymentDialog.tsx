@@ -237,37 +237,52 @@ export function PaymentDialog({ onClose, onSuccess, activeBranch = 'uma' }: Paym
         customerId: 'walk-in',
         customerName: customer.name.trim(),
         customerPhone: customer.phone.trim(),
-        items: cart.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          weight: (() => {
-            if (isPieceOrNonWeightItem(item)) return 0;
-            const w = item.variant || item.weight || "1kg";
-            if (typeof w === 'number') return w;
-            const str = String(w).toLowerCase();
-            if (str.includes('kg')) return parseFloat(str) || 1;
-            if (str.includes('g')) return (parseFloat(str) || 1000) / 1000;
-            return parseFloat(str) || 1;
-          })(),
-          flavor: (() => {
-            if (isPieceOrNonWeightItem(item)) return undefined;
-            if (item.flavor === 'Regular' || !item.flavor) return undefined;
-            return item.flavor || undefined;
-          })(),
-          messageOnCake: item.messageOnCake,
-          overridePrice: item.price,
-          frontendPrice: item.price,
-          designId: item.designId || (item.productId.startsWith('custom-') ? item.productId : undefined),
-          designName: item.designName || ((item.productId.startsWith('custom-') || item.productId.startsWith('b2b-')) ? item.name : undefined),
-          designCode: item.designCode,
-          designImageUrl: item.designImageUrl,
-          shape: item.shape,
-          notes: item.notes,
-          boxCount: item.boxCount,
-          referenceImages: item.referenceImages,
-          printImage: item.printImage,
-          requiredVendors: item.requiredVendors,
-        })),
+        items: cart.map(item => {
+          const itemBasePrice = Number(item.basePrice || item.price);
+          const itemSellingPrice = Number(item.price);
+          const isDiscounted = itemBasePrice > itemSellingPrice;
+          const discountGiven = isDiscounted ? (itemBasePrice - itemSellingPrice) : 0;
+
+          let itemNotes = item.notes || '';
+          if (isDiscounted && !itemNotes.includes('[MRP:')) {
+            itemNotes = [itemNotes, `[MRP:₹${itemBasePrice}]`, `[DISC:-₹${discountGiven}]`].filter(Boolean).join(' ');
+          }
+
+          return {
+            productId: item.productId,
+            quantity: item.quantity,
+            weight: (() => {
+              if (isPieceOrNonWeightItem(item)) return 0;
+              const w = item.variant || item.weight || "1kg";
+              if (typeof w === 'number') return w;
+              const str = String(w).toLowerCase();
+              if (str.includes('kg')) return parseFloat(str) || 1;
+              if (str.includes('g')) return (parseFloat(str) || 1000) / 1000;
+              return parseFloat(str) || 1;
+            })(),
+            flavor: (() => {
+              if (isPieceOrNonWeightItem(item)) return undefined;
+              if (item.flavor === 'Regular' || !item.flavor) return undefined;
+              return item.flavor || undefined;
+            })(),
+            messageOnCake: item.messageOnCake,
+            overridePrice: itemSellingPrice,
+            frontendPrice: itemSellingPrice,
+            basePrice: itemBasePrice,
+            designId: item.designId || (item.productId.startsWith('custom-') ? item.productId : undefined),
+            designName: item.designName || ((item.productId.startsWith('custom-') || item.productId.startsWith('b2b-')) ? item.name : undefined),
+            designCode: item.designCode,
+            designImageUrl: item.designImageUrl,
+            shape: item.shape,
+            notes: itemNotes,
+            barcode: (item as any).barcode || (item.notes && item.notes.match(/(?:\[BARCODE:|Barcode:\s*)([A-Z0-9-]+)/i)?.[1]) || undefined,
+            inventoryUnitId: (item as any).inventoryUnitId,
+            boxCount: item.boxCount,
+            referenceImages: item.referenceImages,
+            printImage: item.printImage,
+            requiredVendors: item.requiredVendors,
+          };
+        }),
         payments: [
           {
             method,

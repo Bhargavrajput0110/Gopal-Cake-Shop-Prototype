@@ -33,6 +33,9 @@ export interface CheckoutItem {
   flavor?: string
   messageOnCake?: string
   overridePrice?: number // Only valid if context.canOverridePrice is true
+  frontendPrice?: number
+  barcode?: string
+  inventoryUnitId?: string
   
   // Custom Production Additions
   designId?: string
@@ -176,17 +179,37 @@ export class StorefrontEngine {
       
       const isRealProduct = !!product;
 
-      // MOCK product for designs, custom cakes, and B2B wholesale items
-      if (!product && (design || item.designId || item.productId === 'custom-cake-studio' || item.productId.startsWith('custom-') || item.productId.startsWith('b2b-'))) {
+      // MOCK product for designs, custom cakes, B2B wholesale items, inventory barcode items, brownies, and hot bakes
+      const isBarcodeOrCounterItem = Boolean(
+        item.productId?.startsWith('barcode-') ||
+        (item as any).barcode ||
+        (item.notes && item.notes.includes('BARCODE:')) ||
+        (item.productId?.length === 25 && item.productId?.startsWith('cmw')) ||
+        item.productId === 'brownie-piece' ||
+        item.productId?.startsWith('hot-bake-') ||
+        (item as any).isHotBake
+      );
+
+      if (!product && (design || item.designId || item.productId === 'custom-cake-studio' || item.productId.startsWith('custom-') || item.productId.startsWith('b2b-') || isBarcodeOrCounterItem)) {
          let autoRequiredVendors = (item as any).requiredVendors || []
          if (design?.isPhotoCake && !autoRequiredVendors.includes('VENDOR_PHOTO')) {
             autoRequiredVendors.push('VENDOR_PHOTO')
          }
          
+         const defaultItemName = item.productId === 'brownie-piece'
+           ? 'Walnut Brownie Piece'
+           : item.productId?.startsWith('hot-bake-')
+           ? ((item as any).name || 'Fresh Hot Bake Puff')
+           : isBarcodeOrCounterItem
+           ? ((item as any).name || 'Counter Fresh Cake')
+           : item.productId.startsWith('b2b-')
+           ? 'B2B Wholesale Item'
+           : 'Custom Cake';
+
          product = {
             id: item.productId,
-            name: design?.name || item.designName || (item.productId.startsWith('b2b-') ? 'B2B Wholesale Item' : 'Custom Cake'),
-            basePrice: item.overridePrice || design?.basePrice || 0,
+            name: design?.name || item.designName || defaultItemName,
+            basePrice: item.overridePrice || item.frontendPrice || design?.basePrice || 0,
             weightConfig: design?.weightConfig || null,
             availableForSale: true,
             isArchived: false,
@@ -555,6 +578,109 @@ export class StorefrontEngine {
             orderId: newOrder.id
           }))
         })
+      }
+
+      // Deduct scanned Inventory Barcode Units and mark as SOLD
+      for (const item of payload.items) {
+        let barcodeText: string | null = (item as any).barcode || null;
+        if (!barcodeText && item.productId && item.productId.startsWith('barcode-')) {
+          barcodeText = item.productId.replace('barcode-', '');
+        }
+        if (!barcodeText && item.notes) {
+          const match = item.notes.match(/(?:\[BARCODE:|Barcode:\s*)([A-Z0-9-]+)/i);
+          if (match) barcodeText = match[1];
+        }
+
+        if (barcodeText) {
+          const unit = await tx.inventoryUnit.findUnique({
+            where: { barcode: barcodeText.trim() }
+          });
+
+          if (unit) {
+            const now = new Date();
+            const isExpired = unit.status === 'EXPIRED' || Boolean(unit.bestBeforeDate && new Date(unit.bestBeforeDate) < now);
+            if (isExpired) {
+              throw new Error(`Cannot sell expired item "${unit.itemTitle}" (Barcode: ${unit.barcode}). Best before date was ${unit.bestBeforeDate ? new Date(unit.bestBeforeDate).toLocaleDateString() : 'past'}.`);
+            }
+
+            if (unit.status === 'IN_STOCK') {
+              await tx.inventoryUnit.update({
+                where: { id: unit.id },
+                data: {
+                  status: 'SOLD',
+                  soldAt: new Date(),
+                  soldOrderId: newOrder.id,
+                  soldPrice: item.overridePrice || (item as any).frontendPrice || Number(unit.sellingPrice)
+                }
+              });
+
+              await tx.inventoryBatch.update({
+                where: { id: unit.batchId },
+                data: {
+                  soldQty: { increment: 1 },
+                  closingQty: { decrement: 1 }
+                }
+              });
+
+              console.log(`[StorefrontEngine] Successfully deducted inventory barcode "${barcodeText}" for order #${newOrder.orderNumber}`);
+            }
+          }
+        }
+
+        // 2. Brownie Piece Deduction (from active BrownieTray at this branch)
+        const isBrownie = item.productId === 'brownie-piece' || 
+          item.productId.includes('brownie') || 
+          (item.notes && item.notes.toLowerCase().includes('brownie'));
+
+        if (isBrownie && !barcodeText) {
+          const activeTray = await tx.brownieTray.findFirst({
+            where: {
+              branchId: newOrder.branchId,
+              status: 'CUT_INTO_PIECES',
+            },
+            orderBy: { createdAt: 'asc' }
+          });
+
+          if (activeTray && activeTray.soldPieces < activeTray.totalPieces) {
+            const newSold = activeTray.soldPieces + item.quantity;
+            const isCompleted = newSold >= activeTray.totalPieces;
+            await tx.brownieTray.update({
+              where: { id: activeTray.id },
+              data: {
+                soldPieces: newSold,
+                status: isCompleted ? 'COMPLETED' : 'CUT_INTO_PIECES',
+                completedAt: isCompleted ? new Date() : null
+              }
+            });
+            console.log(`[StorefrontEngine] Deducted ${item.quantity} brownie piece(s) from Tray #${activeTray.trayCode}. Remaining: ${Math.max(0, activeTray.totalPieces - newSold)}`);
+          }
+        }
+
+        // 3. Hot Bakes / Puffs Deduction (Quantity-based, no barcodes)
+        const isHotBake = item.productId.startsWith('hot-bake-') ||
+          (item.notes && (item.notes.toLowerCase().includes('puff') || item.notes.toLowerCase().includes('pattie')));
+
+        if (isHotBake && !barcodeText) {
+          const activeBatch = await tx.inventoryBatch.findFirst({
+            where: {
+              branchId: newOrder.branchId,
+              category: 'HOT_BAKES',
+              closingQty: { gt: 0 }
+            },
+            orderBy: { createdAt: 'asc' }
+          });
+
+          if (activeBatch) {
+            await tx.inventoryBatch.update({
+              where: { id: activeBatch.id },
+              data: {
+                soldQty: { increment: item.quantity },
+                closingQty: { decrement: item.quantity }
+              }
+            });
+            console.log(`[StorefrontEngine] Deducted ${item.quantity} Hot Bake puff(s) from Batch #${activeBatch.id}`);
+          }
+        }
       }
 
       // Update Coupon Usage

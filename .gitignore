@@ -61,3 +61,16 @@ node_modules/
 
 .vercel
 .env*
+
+# Scratch & temporary testing files
+/scratch/
+check.ts
+count.ts
+count_orders.ts
+fix_all_icons.js
+fix_icons.js
+*.docx
+detailed_simulation_report.md
+simulation_report.md
+uma_detailed_report.md
+/scripts/

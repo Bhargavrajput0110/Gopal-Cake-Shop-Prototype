@@ -15,6 +15,15 @@ import {
   Chart,
   Box,
   Setting2,
+  ScanBarcode,
+  Printer,
+  Layer,
+  Category,
+  Timer1,
+  Danger,
+  Edit2,
+  Flash,
+  ArchiveBook,
   TickCircle,
   CloseCircle,
   ShieldSecurity,
@@ -25,7 +34,7 @@ export type PermissionScopeType = "global" | "branch" | "task" | "none";
 
 export interface PermissionItem {
   id: string;
-  category: "orders" | "kitchen" | "logistics" | "vendors" | "management";
+  category: "orders" | "kitchen" | "logistics" | "vendors" | "management" | "inventory";
   title: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -301,10 +310,181 @@ export const PERMISSIONS_LIST: PermissionItem[] = [
       return { scope: "none", label: "Strictly Restricted" };
     },
   },
+  {
+    id: "inventory_management",
+    category: "inventory",
+    title: "Live Bakery Inventory & Stock Tracking (Master Access)",
+    description: "Master access switch for inventory portal. Automatically includes counter viewing, basic inwarding & shift closing within assigned branch.",
+    icon: ScanBarcode,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "Full Multi-Branch & Financials" };
+      if (role === "MANAGER") return { scope: "branch", label: "Branch Stock & Shift Close" };
+      if (role === "SALESPERSON") return { scope: "none", label: "Restricted by Default", details: "Toggle YES to grant assigned branch inventory" };
+      return { scope: "none", label: "No Access" };
+    },
+  },
+  {
+    id: "inv_view",
+    category: "inventory",
+    title: "Finished Cakes & Live Counter Stock Display",
+    description: "Access Live Inventory portal, view display chiller cakes, flavor variants, and live counter availability.",
+    icon: Box,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "Full Multi-Branch Stock" };
+      if (role === "MANAGER") return { scope: "branch", label: "Branch Counter Stock" };
+      if (role === "CHEF") return { scope: "branch", label: "Display Stock Reference" };
+      if (role === "SALESPERSON") return { scope: "none", label: "Restricted by Default", details: "Toggle YES to allow viewing counter inventory" };
+      return { scope: "none", label: "No Access" };
+    },
+  },
+  {
+    id: "inv_inward",
+    category: "inventory",
+    title: "Morning Cake Inward & Thermal Barcode Printing",
+    description: "Inward freshly baked counter cakes, bouquets & add-ons, generate unique serial barcodes, and print thermal adhesive labels.",
+    icon: Printer,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "Full Inward & Printing" };
+      if (role === "MANAGER") return { scope: "branch", label: "Branch Morning Inward" };
+      if (role === "CHEF") return { scope: "branch", label: "Bake Dispatch Inward" };
+      if (role === "SALESPERSON") return { scope: "none", label: "Restricted by Default", details: "Toggle YES if salesperson inwards morning dispatch" };
+      return { scope: "none", label: "No Access" };
+    },
+  },
+  {
+    id: "inv_hot_bakes",
+    category: "inventory",
+    title: "Hot Bakes, Puffs & Patties Management",
+    description: "Manage morning oven hot bakes, quantity-based puffs & patties (non-barcoded batch counters).",
+    icon: Shop,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "All Outlets & Kitchens" };
+      if (role === "MANAGER") return { scope: "branch", label: "Branch Hot Bakes Counter" };
+      if (role === "CHEF") return { scope: "branch", label: "Oven Batch Inward" };
+      if (role === "SALESPERSON") return { scope: "none", label: "Restricted by Default", details: "Toggle YES if salesperson manages puff batch counts" };
+      return { scope: "none", label: "No Access" };
+    },
+  },
+  {
+    id: "inv_brownie_trays",
+    category: "inventory",
+    title: "Brownie Trays & Slicing Log",
+    description: "Log whole brownie slab deliveries, track cut piece counts (16/24/32), and monitor shelf life.",
+    icon: Cake,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "All Brownie Trays" };
+      if (role === "MANAGER") return { scope: "branch", label: "Branch Brownie Slices" };
+      if (role === "CHEF") return { scope: "branch", label: "Kitchen Tray Slicing" };
+      if (role === "SALESPERSON") return { scope: "none", label: "Restricted by Default", details: "Toggle YES if salesperson manages brownie counter" };
+      return { scope: "none", label: "No Access" };
+    },
+  },
+  {
+    id: "inv_kitchen_prep",
+    category: "inventory",
+    title: "Kitchen Prep Stocks (Sponges & Creams)",
+    description: "Track chocolate/vanilla sponge bases, whipped cream, chocolate ganache, and minimum prep stock alerts.",
+    icon: Layer,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "Central Factory & All Preps" };
+      if (role === "CHEF") return { scope: "branch", label: "Kitchen Prep Authority" };
+      if (role === "MANAGER") return { scope: "branch", label: "View Kitchen Preps" };
+      return { scope: "none", label: "Strictly Restricted to Kitchen" };
+    },
+  },
+  {
+    id: "inv_raw_ingredients",
+    category: "inventory",
+    title: "Raw Ingredients & Pantry Thresholds",
+    description: "Monitor flour, dairy, cocoa powder, butter slabs, and minimum re-order inventory alert levels.",
+    icon: Category,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "Full Factory & Store Stock" };
+      if (role === "CHEF") return { scope: "branch", label: "Bakery Pantry Stock" };
+      if (role === "MANAGER") return { scope: "branch", label: "Branch Pantry Stock" };
+      return { scope: "none", label: "Strictly Restricted" };
+    },
+  },
+  {
+    id: "inv_eod_closing",
+    category: "inventory",
+    title: "End-of-Day (EOD) Store Closing Wizard",
+    description: "Reconcile counter leftovers (discard / staff meal / rollover), verify chiller displays, and record register cash shift.",
+    icon: Timer1,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "Full Closing Authority" };
+      if (role === "MANAGER") return { scope: "branch", label: "Night Shift Reconciliation" };
+      if (role === "SALESPERSON") return { scope: "none", label: "Restricted by Default", details: "Toggle YES to allow counter staff to run EOD closing" };
+      return { scope: "none", label: "No Access" };
+    },
+  },
+  {
+    id: "inv_spoilage_damage",
+    category: "inventory",
+    title: "Report Spoilage, Melting & Damaged Items",
+    description: "Mark damaged, melted, or expired display cakes with reason tags and monitor wastage loss.",
+    icon: Danger,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "Full Wastage Auditing" };
+      if (role === "MANAGER") return { scope: "branch", label: "Branch Damage Reporting" };
+      if (role === "CHEF") return { scope: "branch", label: "Kitchen Wastage Log" };
+      if (role === "SALESPERSON") return { scope: "none", label: "Restricted by Default", details: "Toggle YES to let sales report melted/damaged cakes" };
+      return { scope: "none", label: "No Access" };
+    },
+  },
+  {
+    id: "inv_edit_delete",
+    category: "inventory",
+    title: "Modify Details & Delete Inventory Items",
+    description: "Edit cake prices, weights, flavors, best before dates, or permanently delete incorrect stock entries.",
+    icon: Edit2,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "Full Edit & Delete Authority" };
+      if (role === "MANAGER") return { scope: "none", label: "Restricted by Default", details: "Toggle YES to allow correcting price/stock errors" };
+      return { scope: "none", label: "Strictly Restricted to prevent accidental deletion" };
+    },
+  },
+  {
+    id: "inv_dead_stock",
+    category: "inventory",
+    title: "Dead Stock & Daily Movement Register",
+    description: "Audit slow-moving cakes older than 48 hours, locked capital, and daily formula movement ledger.",
+    icon: Flash,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "Full Dead Stock & Movement" };
+      if (role === "MANAGER") return { scope: "branch", label: "Branch Movement Register" };
+      if (role === "SALESPERSON") return { scope: "none", label: "Restricted by Default", details: "Toggle YES to view slow-moving cakes" };
+      return { scope: "none", label: "No Access" };
+    },
+  },
+  {
+    id: "inv_financials",
+    category: "inventory",
+    title: "Revenue Realization & Counter Discounts (Confidential)",
+    description: "View total sale revenue realized on inventory items, counter discount deductions, and profit realization rate.",
+    icon: Chart,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "Confidential Store Financials" };
+      if (role === "MANAGER") return { scope: "none", label: "Restricted by Default", details: "Toggle YES only if manager has revenue visibility" };
+      return { scope: "none", label: "Strictly Confidential (Admin Only)" };
+    },
+  },
+  {
+    id: "inv_ca_monthly_report",
+    category: "inventory",
+    title: "Monthly CA Tax & Valuation Statement (Confidential)",
+    description: "Generate and export official monthly inventory valuation, scrap loss write-offs, and certified audit statement for CA.",
+    icon: ArchiveBook,
+    evaluator: (role) => {
+      if (role === "ADMIN") return { scope: "global", label: "Official Tax & CA Audit Statement" };
+      return { scope: "none", label: "Strictly Confidential (Rishi Bhai / Admin Only)" };
+    },
+  },
 ];
 
 const CATEGORY_TABS = [
   { id: "all", label: "All Permissions" },
+  { id: "inventory", label: "Bakery Inventory" },
   { id: "orders", label: "Orders & POS" },
   { id: "kitchen", label: "Kitchen (KDS)" },
   { id: "logistics", label: "Logistics" },

@@ -86,6 +86,7 @@ const PROTECTED_PREFIXES = [
   '/vendor',
   '/supplier',
   '/api/v1/chef',
+  '/api/v1/admin',
   '/api/v1/orders',
   '/api/v1/customers',
   '/api/admin',
@@ -208,7 +209,22 @@ export default auth(function proxy(req: NextRequest) {
       } catch (e) {}
     }
     
-    if (pathname.startsWith('/admin') && role !== 'ADMIN' && !customPerms['settings_users']) {
+    // Inventory access: Allowed if ADMIN, MANAGER, or explicitly granted any inventory capability
+    const hasInventoryAccess = role === 'ADMIN' || 
+      role === 'MANAGER' || 
+      customPerms['inventory_management'] === true ||
+      customPerms['inv_view'] === true ||
+      customPerms['inv_inward'] === true ||
+      customPerms['inv_hot_bakes'] === true ||
+      customPerms['inv_brownie_trays'] === true ||
+      customPerms['inv_kitchen_prep'] === true ||
+      customPerms['inv_raw_ingredients'] === true ||
+      customPerms['inv_eod_closing'] === true;
+    if (pathname.startsWith('/admin/inventory')) {
+      if (!hasInventoryAccess) {
+        return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
+      }
+    } else if (pathname.startsWith('/admin') && role !== 'ADMIN' && !customPerms['settings_users']) {
       return NextResponse.redirect(new URL(roleHomePath(role), baseOrigin));
     }
     

@@ -1,7 +1,8 @@
 // POS ProductGrid - Verified Custom Cake & No Fixed Price Tag
 import * as React from "react"
-import { SearchNormal1 } from "iconsax-react"
+import { SearchNormal1, Flash } from "iconsax-react"
 import { QuickBuyForm } from "@/components/menu/QuickBuyForm"
+import { useCart } from "@/context/CartContext"
 
 type Product = {
   id: string
@@ -35,9 +36,65 @@ interface ProductGridProps {
 }
 
 export function ProductGrid({ products, categories = [], designs = [], isLoading }: ProductGridProps) {
+  const { addItem } = useCart()
   const [search, setSearch] = React.useState("")
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null)
   const [selectedProduct, setSelectedProduct] = React.useState<any>(null)
+  const [addedNotice, setAddedNotice] = React.useState<string | null>(null)
+
+  const quickCounterItems = [
+    {
+      id: "hot-bake-veg-puff",
+      name: "Veg Puff",
+      price: 30,
+      icon: "🥐",
+      category: "Hot Bakes",
+      variant: "Piece",
+      notes: "[HOT_BAKE:Veg Puff]"
+    },
+    {
+      id: "hot-bake-paneer-puff",
+      name: "Paneer Puff",
+      price: 45,
+      icon: "🥐",
+      category: "Hot Bakes",
+      variant: "Piece",
+      notes: "[HOT_BAKE:Paneer Puff]"
+    },
+    {
+      id: "brownie-piece",
+      name: "Walnut Brownie Slice",
+      price: 80,
+      icon: "🍫",
+      category: "Brownie Tray",
+      variant: "Piece",
+      notes: "[BROWNIE_TRAY_PIECE]"
+    },
+    {
+      id: "hot-bake-cheese-garlic-bread",
+      name: "Cheese Garlic Bread",
+      price: 60,
+      icon: "🥖",
+      category: "Hot Bakes",
+      variant: "Piece",
+      notes: "[HOT_BAKE:Cheese Garlic Bread]"
+    }
+  ]
+
+  const handleQuickAdd = (item: typeof quickCounterItems[0]) => {
+    addItem({
+      productId: item.id,
+      name: item.name,
+      price: item.price,
+      basePrice: item.price,
+      quantity: 1,
+      weight: 0.15,
+      variant: item.variant,
+      notes: item.notes
+    })
+    setAddedNotice(`✓ Added 1x ${item.name} (₹${item.price})`)
+    setTimeout(() => setAddedNotice(null), 2500)
+  }
   
   const filteredProducts = React.useMemo(() => {
     const s = search.toLowerCase()
@@ -158,8 +215,52 @@ export function ProductGrid({ products, categories = [], designs = [], isLoading
             <div className="w-8 h-8 border-4 border-[var(--brand-deep-rose)] border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-8">
             
+            {/* Quick Instant Counter Sale Ribbon */}
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50/70 border border-amber-200/90 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                    <Flash size={14} variant="Bold" />
+                  </div>
+                  <div>
+                    <h3 className="font-ui text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-2">
+                      Instant Counter Bakes (1-Tap Add)
+                    </h3>
+                    <p className="text-[10px] text-amber-800/80 font-medium">No barcode needed • Direct counter billing • Auto-deducts inventory</p>
+                  </div>
+                </div>
+                {addedNotice && (
+                  <span className="px-3 py-1 rounded-full bg-emerald-600 text-white font-bold text-[11px] animate-in fade-in zoom-in duration-150 shadow-sm">
+                    {addedNotice}
+                  </span>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {quickCounterItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleQuickAdd(item)}
+                    className="flex items-center justify-between p-3 bg-white border border-amber-200 hover:border-amber-500 hover:shadow-md rounded-xl transition-all active:scale-95 group text-left"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-2xl group-hover:scale-110 transition-transform">{item.icon}</span>
+                      <div className="min-w-0">
+                        <p className="font-bold text-xs text-foreground truncate">{item.name}</p>
+                        <p className="text-[11px] text-amber-700 font-black">₹{item.price}</p>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 group-hover:bg-amber-500 text-amber-900 group-hover:text-white font-black text-[10px] transition-colors shadow-xs">
+                      + Add
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Custom Services Section */}
             <div>
               <h3 className="font-ui text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-4 flex items-center gap-2">

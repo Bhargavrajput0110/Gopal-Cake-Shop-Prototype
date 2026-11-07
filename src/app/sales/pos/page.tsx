@@ -12,16 +12,19 @@ import { ReceiptStub } from "./components/ReceiptStub"
 import { RetailerBulkOrderModal } from "./components/RetailerBulkOrderModal"
 import { useCart } from "@/context/CartContext"
 import { BRANCHES, toBranchId, type BranchId } from "@/lib/branches"
-import { TickCircle, ArrowLeft, Reserve, Box, Shop } from "iconsax-react"
+import { TickCircle, ArrowLeft, Reserve, Box, Shop, ScanBarcode } from "iconsax-react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
+import { BarcodeScannerModal } from "./components/BarcodeScannerModal"
 
 export default function POSPage() {
-  const { items: cart, subtotal, clearCart } = useCart()
+  const { items: cart, subtotal, clearCart, addItem } = useCart()
   const [isPaymentOpen, setIsPaymentOpen] = React.useState(false)
   const [isMobileCartOpen, setIsMobileCartOpen] = React.useState(false)
   const [successOrder, setSuccessOrder] = React.useState<string | null>(null)
   const [isBulkModalOpen, setIsBulkModalOpen] = React.useState(false)
+  const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = React.useState(false)
+  const [scannedAlert, setScannedAlert] = React.useState<string | null>(null)
   
   const { data: session } = useSession()
   
@@ -161,7 +164,17 @@ export default function POSPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 relative z-50">
+        <div className="flex items-center gap-3 relative z-50">
+          {/* CAMERA BARCODE SCANNER BUTTON */}
+          <button
+            onClick={() => setIsBarcodeScannerOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[var(--brand-deep-rose)] hover:bg-[var(--brand-deep-rose)]/90 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-[var(--brand-deep-rose)]/25 transition-all active:scale-95 shrink-0"
+          >
+            <ScanBarcode size={18} variant="Bold" />
+            <span className="hidden sm:inline">Scan Cake Barcode</span>
+            <span className="sm:hidden">Scan</span>
+          </button>
+
           {/* WARASIYA OUTLET EXCLUSIVE BULK ORDERS BUTTON */}
           {canonicalBranch === 'varasiya' && (
             <motion.button
@@ -276,6 +289,50 @@ export default function POSPage() {
       {isBulkModalOpen && (
         <RetailerBulkOrderModal onClose={() => setIsBulkModalOpen(false)} />
       )}
+
+      {/* Toast Alert for Barcode Scan */}
+      {scannedAlert && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-wider shadow-2xl flex items-center gap-2 animate-in slide-in-from-top duration-200">
+          <TickCircle size={18} variant="Bold" />
+          <span>{scannedAlert}</span>
+        </div>
+      )}
+
+      {/* Camera Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        isOpen={isBarcodeScannerOpen}
+        onClose={() => setIsBarcodeScannerOpen(false)}
+        onScanSuccess={(scannedUnit) => {
+          const weightNum = (() => {
+            const str = String(scannedUnit.variantWeight || '').toLowerCase();
+            if (str.includes('kg')) return parseFloat(str) || 1;
+            if (str.includes('g')) return (parseFloat(str) || 500) / 1000;
+            return 0.5;
+          })();
+
+          const barcodeTag = scannedUnit.barcode;
+
+          addItem({
+            productId: `barcode-${barcodeTag}`,
+            name: scannedUnit.itemTitle,
+            price: Number(scannedUnit.sellingPrice),
+            basePrice: Number(scannedUnit.sellingPrice),
+            quantity: 1,
+            weight: weightNum,
+            variant: scannedUnit.variantWeight || "500g",
+            flavor: scannedUnit.flavor || undefined,
+            image: scannedUnit.thumbnail || undefined,
+            notes: `[BARCODE:${barcodeTag}]`,
+            barcode: barcodeTag,
+            inventoryUnitId: scannedUnit.id,
+          } as any);
+
+          setIsBarcodeScannerOpen(false);
+          setIsMobileCartOpen(true);
+          setScannedAlert(`✓ Scanned & Added: ${scannedUnit.itemTitle} (${scannedUnit.variantWeight || "500g"}) - ₹${scannedUnit.sellingPrice}`);
+          setTimeout(() => setScannedAlert(null), 4000);
+        }}
+      />
     </div>
   )
 }

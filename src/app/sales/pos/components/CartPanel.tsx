@@ -113,10 +113,16 @@ export function CartPanel({ onCheckout, onSuccess }: CartPanelProps) {
                 <div className="flex-1 min-w-0">
                   <p className="font-display font-bold text-base md:text-lg text-foreground truncate">{item.name}</p>
                   <p className="text-muted-foreground font-ui text-[9px] uppercase tracking-widest font-black truncate">
-                    {!isPieceOrNonWeightItem(item) && item.weight && item.weight > 0 ? `${item.weight}kg ` : ''}
+                    {item.variant ? `${item.variant} ` : (!isPieceOrNonWeightItem(item) && item.weight && item.weight > 0 ? `${item.weight}kg ` : '')}
                     {item.flavor && item.flavor !== 'Regular' ? `• ${item.flavor} ` : ''}
                     {item.shape ? `• ${item.shape}` : ''}
                   </p>
+                  {(item.notes && (item.notes.includes('BARCODE:') || item.notes.includes('Barcode:'))) && (
+                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono font-bold">
+                      <span>🏷️</span>
+                      <span>{item.notes.match(/(?:\[BARCODE:|Barcode:\s*)([A-Z0-9-]+)/i)?.[1] || item.notes}</span>
+                    </span>
+                  )}
                   {item.designName && (
                     <p className="text-[var(--brand-deep-rose)] font-ui text-[9px] uppercase tracking-widest font-black mt-0.5 truncate">
                       Design: {item.designName}

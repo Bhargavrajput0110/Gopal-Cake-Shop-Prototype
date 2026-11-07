@@ -49,6 +49,14 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
         };
       });
 
+      const itemDiscountsTotal = (order.items || []).reduce((acc: number, it: any) => {
+        const mrpMatch = it.notes?.match(/\[MRP:\s*₹?([0-9.]+)\]/i);
+        const discMatch = it.notes?.match(/\[DISC:\s*-?₹?([0-9.]+)\]/i);
+        const originalMrp = mrpMatch ? parseFloat(mrpMatch[1]) : null;
+        const discountPerUnit = discMatch ? parseFloat(discMatch[1]) : (originalMrp && originalMrp > Number(it.price) ? (originalMrp - Number(it.price)) : 0);
+        return acc + (discountPerUnit * Number(it.quantity || it.qty || 1));
+      }, 0);
+
       const invoiceData = {
         orderId: order.orderNumber || order.id,
         customerName: order.customer?.name || order.customerName || 'Valued Customer',
@@ -57,7 +65,7 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
         items: invoiceItems,
         subtotal: Number(order.subtotal || order.totalAmount || 0),
         deliveryCharge: Number(order.deliveryCharge || 0),
-        discount: Number(order.discount || 0),
+        discount: Number(order.discount || 0) + itemDiscountsTotal,
         grandTotal: Number(order.totalAmount || order.grandTotal || 0),
         createdAt: order.createdAt
       };
@@ -75,6 +83,17 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
   const subtotal = parseNumber(order.subtotal);
   const deliveryCharge = parseNumber(order.deliveryCharge);
   const discount = parseNumber(order.discount);
+  
+  // Calculate item-level counter discounts given by sales
+  const itemDiscountsTotal = (order.items || []).reduce((acc: number, it: any) => {
+    const mrpMatch = it.notes?.match(/\[MRP:\s*₹?([0-9.]+)\]/i);
+    const discMatch = it.notes?.match(/\[DISC:\s*-?₹?([0-9.]+)\]/i);
+    const originalMrp = mrpMatch ? parseFloat(mrpMatch[1]) : null;
+    const discountPerUnit = discMatch ? parseFloat(discMatch[1]) : (originalMrp && originalMrp > Number(it.price) ? (originalMrp - Number(it.price)) : 0);
+    return acc + (discountPerUnit * parseNumber(it.quantity || 1));
+  }, 0);
+
+  const totalDiscountSavings = discount + itemDiscountsTotal;
   const totalAmount = parseNumber(order.totalAmount || order.grandTotal);
   const tax = Math.max(0, totalAmount - subtotal - deliveryCharge + discount);
   const paidAmount = parseNumber(order.paidAmount || order.advancePaid);
@@ -221,30 +240,50 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
             <span>Item & Specifications</span>
             <span>Amount</span>
           </div>
-          {(order.items?.filter((item: any) => !item.parentItemId) || []).map((item: any, idx: number) => (
-            <div key={item.id || idx} className="mb-2.5 pb-2 border-b border-gray-100 last:border-b-0 font-mono">
-              <div className="flex justify-between font-bold text-gray-900 text-[12px]">
-                <span>{item.quantity}x {item.productName || item.name}</span>
-                <span>₹{(parseNumber(item.price) * parseNumber(item.quantity)).toFixed(2)}</span>
-              </div>
-              <div className="pl-3 text-[10px] text-gray-600 space-y-0.5 mt-0.5">
-                {!isPieceOrNonWeightItem(item) && formatItemWeight(item) && (
-                  <div>Weight: <span className="font-bold">{formatItemWeight(item)}</span> {item.flavor && item.flavor !== 'Regular' ? `| Flavor: ${item.flavor}` : ''}</div>
-                )}
-                {isPieceOrNonWeightItem(item) && item.flavor && item.flavor !== 'Regular' && (
-                  <div>Flavor: <span className="font-bold">{item.flavor}</span></div>
-                )}
-                {item.designName && (
-                  <div>Design: <span className="italic">{item.designName}</span> {item.designCode ? `(${item.designCode})` : ''}</div>
-                )}
-                {item.messageOnCake && (
-                  <div className="italic text-[#3E2723] font-serif bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/50 mt-1 inline-block">
-                    "{item.messageOnCake}"
+          {(order.items?.filter((item: any) => !item.parentItemId) || []).map((item: any, idx: number) => {
+            const mrpMatch = item.notes?.match(/\[MRP:\s*₹?([0-9.]+)\]/i);
+            const discMatch = item.notes?.match(/\[DISC:\s*-?₹?([0-9.]+)\]/i);
+            const originalMrp = mrpMatch ? parseFloat(mrpMatch[1]) : null;
+            const discountPerUnit = discMatch ? parseFloat(discMatch[1]) : (originalMrp && originalMrp > Number(item.price) ? (originalMrp - Number(item.price)) : 0);
+            const hasItemDiscount = Boolean(originalMrp && discountPerUnit && discountPerUnit > 0);
+
+            return (
+              <div key={item.id || idx} className="mb-2.5 pb-2 border-b border-gray-100 last:border-b-0 font-mono">
+                <div className="flex justify-between font-bold text-gray-900 text-[12px]">
+                  <span>{item.quantity}x {item.productName || item.name}</span>
+                  <span>₹{(parseNumber(item.price) * parseNumber(item.quantity)).toFixed(2)}</span>
+                </div>
+
+                {/* Counter Discount Transparency: Original MRP & Discount Given */}
+                {hasItemDiscount && originalMrp && (
+                  <div className="flex items-center gap-2 text-[10px] pl-3 mt-0.5">
+                    <span className="line-through text-gray-400">MRP ₹{originalMrp.toFixed(2)}</span>
+                    <span className="text-emerald-700 font-bold bg-emerald-50 px-1 rounded border border-emerald-200">
+                      Disc: -₹{(discountPerUnit * parseNumber(item.quantity)).toFixed(2)}
+                    </span>
+                    <span className="text-gray-500 font-medium">(@ ₹{parseNumber(item.price).toFixed(2)})</span>
                   </div>
                 )}
+
+                <div className="pl-3 text-[10px] text-gray-600 space-y-0.5 mt-0.5">
+                  {!isPieceOrNonWeightItem(item) && formatItemWeight(item) && (
+                    <div>Weight: <span className="font-bold">{formatItemWeight(item)}</span> {item.flavor && item.flavor !== 'Regular' ? `| Flavor: ${item.flavor}` : ''}</div>
+                  )}
+                  {isPieceOrNonWeightItem(item) && item.flavor && item.flavor !== 'Regular' && (
+                    <div>Flavor: <span className="font-bold">{item.flavor}</span></div>
+                  )}
+                  {item.designName && (
+                    <div>Design: <span className="italic">{item.designName}</span> {item.designCode ? `(${item.designCode})` : ''}</div>
+                  )}
+                  {item.messageOnCake && (
+                    <div className="italic text-[#3E2723] font-serif bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/50 mt-1 inline-block">
+                      "{item.messageOnCake}"
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Financial Breakdown */}
@@ -259,10 +298,10 @@ export function ReceiptStub({ orderId, onClose }: ReceiptStubProps) {
               <span>₹{deliveryCharge.toFixed(2)}</span>
             </div>
           )}
-          {discount > 0 && (
+          {totalDiscountSavings > 0 && (
             <div className="flex justify-between text-emerald-700 font-bold">
-              <span>Discount Savings</span>
-              <span>-₹{discount.toFixed(2)}</span>
+              <span>Total Discount Savings</span>
+              <span>-₹{totalDiscountSavings.toFixed(2)}</span>
             </div>
           )}
           {tax > 0 && (

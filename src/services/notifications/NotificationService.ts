@@ -111,6 +111,24 @@ export class NotificationService {
       }
     }
 
+    // Suppress customer WhatsApp notification if order is only Hot Bakes / Puffs (counter walk-in quick snack)
+    if (orderId && effectiveRules.some((r) => r.recipientRole === 'CUSTOMER' && r.channel === 'WHATSAPP')) {
+      const orderItems = await prisma.orderItem.findMany({
+        where: { orderId },
+        select: { productName: true }
+      });
+      if (orderItems.length > 0) {
+        const isHotBakeOnly = orderItems.every(i => {
+          const name = (i.productName || '').toLowerCase();
+          return name.includes('puff') || name.includes('pattie') || name.includes('hot bake');
+        });
+        if (isHotBakeOnly) {
+          LoggerService.info(`[NotificationService] Suppressing customer WhatsApp for counter Hot Bakes / Puff order ${orderId}`);
+          effectiveRules = effectiveRules.filter((r) => !(r.recipientRole === 'CUSTOMER' && r.channel === 'WHATSAPP'));
+        }
+      }
+    }
+
     const errors: Error[] = [];
 
     for (const rule of effectiveRules) {

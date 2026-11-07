@@ -32,6 +32,8 @@ export const PosCheckoutItemSchema = z.object({
   // Frontend might pass price for reference, but backend MUST recalculate
   frontendPrice: z.number().optional(), 
   isCustom: z.boolean().optional(),
+  barcode: z.string().optional(),
+  inventoryUnitId: z.string().optional(),
 })
 
 export const PosCheckoutPaymentSchema = z.object({

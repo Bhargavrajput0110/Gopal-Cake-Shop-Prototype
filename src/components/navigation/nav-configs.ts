@@ -3,7 +3,7 @@
  * Each config drives AppSidebar, MobileNav, and AppTopbar — no duplication.
  */
 
-import { Category, Bag, Profile2User, Shop, Setting2, Box, Tag, People, TruckFast, Notification, Chart, Clock, Star1, ClipboardText, Car, Card, AddCircle, Activity, Reserve, BoxTick, ArrowSwapHorizontal, Gallery, Coffee, Cake, Lovely } from "iconsax-react"
+import { Category, Bag, Profile2User, Shop, Setting2, Box, Tag, People, TruckFast, Notification, Chart, Clock, Star1, ClipboardText, Car, Card, AddCircle, Activity, Reserve, BoxTick, ArrowSwapHorizontal, Gallery, Coffee, Cake, Lovely, ScanBarcode } from "iconsax-react"
 import type { AppConfig } from "./navigation.types"
 
 import { signOut } from "next-auth/react"
@@ -42,6 +42,7 @@ export const ADMIN_NAV_CONFIG: AppConfig = {
         { name: "Drivers",       href: "/admin/drivers",        icon: TruckFast },
         { name: "Media",         href: "/admin/media",          icon: Gallery },
         { name: "Reviews",       href: "/admin/reviews",        icon: Star1 },
+        { name: "Inventory & Barcode", href: "/admin/inventory", icon: ScanBarcode },
         { name: "Notifications", href: "/admin/notifications",  icon: Notification },
         { name: "Analytics",     href: "/admin/analytics",      icon: Chart },
         { name: "Accounts & Ledger", href: "/admin/accounts",   icon: Card },
@@ -63,6 +64,7 @@ export const SALES_NAV_CONFIG: AppConfig = {
         { name: "Command Center",        href: "/sales",          icon: Activity },
         { name: "Orders",                href: "/sales/orders",   icon: ClipboardText },
         { name: "POS Terminal",          href: "/sales/pos",      icon: Shop },
+        { name: "Live Inventory",        href: "/admin/inventory", icon: ScanBarcode },
         { name: "Delivery Assignment",   href: "/sales/delivery", icon: Car },
         { name: "Vendor Dispatch",       href: "/sales/vendors",  icon: TruckFast },
         { name: "Payments",              href: "/sales/payments", icon: Card },
