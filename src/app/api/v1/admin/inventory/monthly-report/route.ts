@@ -30,7 +30,19 @@ export async function GET(req: NextRequest) {
 
     const monthParam = searchParams.get('month'); // 1-12
     const yearParam = searchParams.get('year'); // e.g. 2026
-    const branchId = searchParams.get('branchId') || 'ALL';
+    let branchId = searchParams.get('branchId') || 'ALL';
+
+    // Branch Isolation: strictly lock SALESPERSON to their assigned branch
+    if (role === 'SALESPERSON') {
+      const userBranchId = (session.user as any)?.branchId;
+      if (!userBranchId) {
+        return NextResponse.json({ success: false, error: "Forbidden: No branch assigned to your salesperson account." }, { status: 403 });
+      }
+      branchId = userBranchId;
+    } else if (role !== 'ADMIN' && branchId === 'ALL') {
+      const userBranchId = (session.user as any)?.branchId;
+      if (userBranchId) branchId = userBranchId;
+    }
 
     const now = new Date();
     const month = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;

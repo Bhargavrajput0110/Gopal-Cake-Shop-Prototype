@@ -603,6 +603,14 @@ export class StorefrontEngine {
               throw new Error(`Cannot sell expired item "${unit.itemTitle}" (Barcode: ${unit.barcode}). Best before date was ${unit.bestBeforeDate ? new Date(unit.bestBeforeDate).toLocaleDateString() : 'past'}.`);
             }
 
+            if (unit.status === 'SOLD') {
+              throw new Error(`Double Scan Alert: Item "${unit.itemTitle}" (Barcode: ${unit.barcode}) was already sold in order #${unit.soldOrderId || 'prior checkout'}.`);
+            }
+
+            if (unit.status === 'DAMAGED') {
+              throw new Error(`Cannot sell damaged item "${unit.itemTitle}" (Barcode: ${unit.barcode}). Reason: ${unit.damageReason || 'Marked Damaged'}.`);
+            }
+
             if (unit.status === 'IN_STOCK') {
               await tx.inventoryUnit.update({
                 where: { id: unit.id },
@@ -641,18 +649,25 @@ export class StorefrontEngine {
             orderBy: { createdAt: 'asc' }
           });
 
-          if (activeTray && activeTray.soldPieces < activeTray.totalPieces) {
-            const newSold = activeTray.soldPieces + item.quantity;
-            const isCompleted = newSold >= activeTray.totalPieces;
-            await tx.brownieTray.update({
-              where: { id: activeTray.id },
-              data: {
-                soldPieces: newSold,
-                status: isCompleted ? 'COMPLETED' : 'CUT_INTO_PIECES',
-                completedAt: isCompleted ? new Date() : null
-              }
-            });
-            console.log(`[StorefrontEngine] Deducted ${item.quantity} brownie piece(s) from Tray #${activeTray.trayCode}. Remaining: ${Math.max(0, activeTray.totalPieces - newSold)}`);
+          if (activeTray) {
+            const now = new Date();
+            if (activeTray.bestBeforeDate && new Date(activeTray.bestBeforeDate) < now) {
+              throw new Error(`Cannot sell from expired brownie tray #${activeTray.trayCode}. Best before was ${new Date(activeTray.bestBeforeDate).toLocaleDateString()}.`);
+            }
+
+            if (activeTray.soldPieces < activeTray.totalPieces) {
+              const newSold = activeTray.soldPieces + item.quantity;
+              const isCompleted = newSold >= activeTray.totalPieces;
+              await tx.brownieTray.update({
+                where: { id: activeTray.id },
+                data: {
+                  soldPieces: newSold,
+                  status: isCompleted ? 'COMPLETED' : 'CUT_INTO_PIECES',
+                  completedAt: isCompleted ? new Date() : null
+                }
+              });
+              console.log(`[StorefrontEngine] Deducted ${item.quantity} brownie piece(s) from Tray #${activeTray.trayCode}. Remaining: ${Math.max(0, activeTray.totalPieces - newSold)}`);
+            }
           }
         }
 
@@ -671,6 +686,11 @@ export class StorefrontEngine {
           });
 
           if (activeBatch) {
+            const now = new Date();
+            if (activeBatch.bestBeforeDate && new Date(activeBatch.bestBeforeDate) < now) {
+              throw new Error(`Cannot sell expired hot bakes from batch "${activeBatch.title || activeBatch.id}". Best before was ${new Date(activeBatch.bestBeforeDate).toLocaleDateString()}.`);
+            }
+
             await tx.inventoryBatch.update({
               where: { id: activeBatch.id },
               data: {

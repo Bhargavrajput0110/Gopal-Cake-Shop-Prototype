@@ -30,12 +30,21 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
     const body = await req.json();
-    const { 
+    let { 
       branchId, 
       dispositions = [], 
       cashReconciliation, 
       closingNotes 
     } = body;
+
+    // Branch Isolation: strictly lock SALESPERSON to their assigned branch
+    if (role === 'SALESPERSON') {
+      const userBranchId = (session.user as any)?.branchId;
+      if (!userBranchId) {
+        return NextResponse.json({ success: false, error: "Forbidden: No branch is assigned to your salesperson account." }, { status: 403 });
+      }
+      branchId = userBranchId;
+    }
 
     if (!branchId) {
       return NextResponse.json({ success: false, error: "branchId is required" }, { status: 400 });
@@ -54,7 +63,12 @@ export async function POST(req: NextRequest) {
         });
         if (!batch) continue;
 
-        const remainingQty = Number(disp.remainingQty) || 0;
+        // Security check: batch must belong to the closing branch
+        if (batch.branchId !== branchId) {
+          continue; // Prevent cross-branch manipulation
+        }
+
+        const remainingQty = Math.max(0, Number(disp.remainingQty) || 0);
         const action = disp.action || 'ROLLOVER'; // 'DISCARD' | 'STAFF_MEAL' | 'ROLLOVER'
         const reason = disp.reason || (action === 'STAFF_MEAL' ? 'Staff Consumed' : 'Unsold at closing');
 
@@ -97,8 +111,8 @@ export async function POST(req: NextRequest) {
       // 3. Record Cash Reconciliation Ledger Entry if provided
       let ledgerEntry = null;
       if (cashReconciliation && (cashReconciliation.physicalCash !== undefined || cashReconciliation.systemCash !== undefined)) {
-        const sysCash = Number(cashReconciliation.systemCash) || 0;
-        const phyCash = Number(cashReconciliation.physicalCash) || 0;
+        const sysCash = Math.max(0, Number(cashReconciliation.systemCash) || 0);
+        const phyCash = Math.max(0, Number(cashReconciliation.physicalCash) || 0);
         const variance = phyCash - sysCash;
 
         ledgerEntry = await tx.ledgerEntry.create({

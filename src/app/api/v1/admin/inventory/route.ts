@@ -447,7 +447,7 @@ export async function POST(req: NextRequest) {
 
     // 1. Hot Bakes (Puffs) - Quantity based counter stock (No barcodes)
     if (!isBarcodeTracked) {
-      const qty = Number(openingQty) || 1;
+      const qty = Math.min(500, Math.max(1, Number(openingQty) || 1));
       const batch = await prisma.inventoryBatch.create({
         data: {
           branchId,
@@ -477,7 +477,10 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const totalQty = items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 1), 0);
+    const totalQty = items.reduce((sum: number, it: any) => sum + Math.min(100, Math.max(1, Number(it.quantity) || 1)), 0);
+    if (totalQty > 500) {
+      return NextResponse.json({ success: false, error: "Maximum batch limit is 500 units per inward" }, { status: 400 });
+    }
 
     const batch = await prisma.inventoryBatch.create({
       data: {
@@ -502,8 +505,8 @@ export async function POST(req: NextRequest) {
     let sequence = 1;
 
     for (const it of items) {
-      const qty = Number(it.quantity) || 1;
-      const price = Number(it.sellingPrice) || 0;
+      const qty = Math.min(100, Math.max(1, Number(it.quantity) || 1));
+      const price = Math.max(0, Number(it.sellingPrice) || 0);
       const weight = it.variantWeight || "500g";
       const flavor = it.flavor || null;
       const itemTitle = it.itemTitle || "Bakery Item";
@@ -622,12 +625,22 @@ export async function PUT(req: NextRequest) {
 
     // Modify single unit
     if (unitId) {
+      const existing = await prisma.inventoryUnit.findUnique({ where: { id: unitId } });
+      if (!existing) {
+        return NextResponse.json({ success: false, error: "Unit not found" }, { status: 404 });
+      }
+
+      // Security: Already sold items cannot have price, status, or details modified
+      if (existing.status === 'SOLD' && (status !== undefined || sellingPrice !== undefined)) {
+        return NextResponse.json({ success: false, error: "Forbidden: Sold items cannot be marked as damaged or have prices modified." }, { status: 400 });
+      }
+
       const dataToUpdate: any = {};
       if (itemTitle !== undefined) dataToUpdate.itemTitle = itemTitle;
       if (flavor !== undefined) dataToUpdate.flavor = flavor;
       if (variantWeight !== undefined) dataToUpdate.variantWeight = variantWeight;
-      if (sellingPrice !== undefined) dataToUpdate.sellingPrice = Number(sellingPrice);
-      if (soldPrice !== undefined) dataToUpdate.soldPrice = soldPrice !== null ? Number(soldPrice) : null;
+      if (sellingPrice !== undefined) dataToUpdate.sellingPrice = Math.max(0, Number(sellingPrice));
+      if (soldPrice !== undefined) dataToUpdate.soldPrice = soldPrice !== null ? Math.max(0, Number(soldPrice)) : null;
       if (status !== undefined) {
         dataToUpdate.status = status;
         if (status === 'DAMAGED' || status === 'EXPIRED') {
@@ -643,6 +656,17 @@ export async function PUT(req: NextRequest) {
         where: { id: unitId },
         data: dataToUpdate
       });
+
+      // Synchronize parent batch count when status changes from IN_STOCK to DAMAGED or EXPIRED
+      if (existing.status === 'IN_STOCK' && (status === 'DAMAGED' || status === 'EXPIRED')) {
+        await prisma.inventoryBatch.update({
+          where: { id: existing.batchId },
+          data: {
+            damagedQty: { increment: 1 },
+            closingQty: { decrement: 1 }
+          }
+        }).catch(() => null);
+      }
 
       return NextResponse.json({
         success: true,
