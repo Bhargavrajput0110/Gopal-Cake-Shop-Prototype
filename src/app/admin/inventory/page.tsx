@@ -147,6 +147,16 @@ export default function InventoryPage() {
   const canCaReport = hasPerm("inv_ca_monthly_report", ["ADMIN"]);
 
   const [activeTab, setActiveTab] = useState<"FINISHED_GOODS" | "HOT_BAKES" | "BROWNIE_TRAYS" | "PREP_STOCKS" | "RAW_INGREDIENTS">("FINISHED_GOODS");
+
+  // Automatically select first permitted tab if Finished Cakes is restricted
+  useEffect(() => {
+    if (!canViewFinished) {
+      if (canHotBakes) setActiveTab("HOT_BAKES");
+      else if (canBrownies) setActiveTab("BROWNIE_TRAYS");
+      else if (canPrep) setActiveTab("PREP_STOCKS");
+      else if (canRaw) setActiveTab("RAW_INGREDIENTS");
+    }
+  }, [canViewFinished, canHotBakes, canBrownies, canPrep, canRaw]);
   
   // Day-wise filter states
   const [dateFilter, setDateFilter] = useState<"TODAY" | "YESTERDAY" | "LAST_7_DAYS" | "DEAD_STOCK" | "ALL" | "CUSTOM">("TODAY");
@@ -1075,9 +1085,9 @@ export default function InventoryPage() {
     document.body.removeChild(link);
   };
 
-  // Render Barcode SVG via JsBarcode
+  // Render Barcode SVG via JsBarcode with retry for resilient DOM rendering
   const renderBarcodeSvg = (elementId: string, text: string) => {
-    setTimeout(() => {
+    const tryRender = (attempts = 0) => {
       const el = document.getElementById(elementId);
       if (el) {
         try {
@@ -1092,8 +1102,11 @@ export default function InventoryPage() {
         } catch (e) {
           console.error("JsBarcode error:", e);
         }
+      } else if (attempts < 6) {
+        setTimeout(() => tryRender(attempts + 1), 60);
       }
-    }, 50);
+    };
+    setTimeout(() => tryRender(0), 40);
   };
 
   useEffect(() => {
@@ -1144,7 +1157,19 @@ export default function InventoryPage() {
     return r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q);
   });
 
-  const hasAnyInventoryAccess = canViewFinished || canHotBakes || canBrownies || canPrep || canRaw || canEod;
+  const hasAnyInventoryAccess = 
+    canViewFinished || 
+    canInward || 
+    canHotBakes || 
+    canBrownies || 
+    canPrep || 
+    canRaw || 
+    canEod || 
+    canReportDamage || 
+    canEditDelete || 
+    canDeadStock || 
+    canFinancials || 
+    canCaReport;
 
   if (!loading && !hasAnyInventoryAccess) {
     return (
@@ -1173,6 +1198,40 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto pb-16 px-2 sm:px-4">
+      {/* Thermal Barcode & CA Audit Statement Print Styles */}
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #thermal-stickers-container, #thermal-stickers-container *,
+          #ca-report-print-container, #ca-report-print-container * {
+            visibility: visible;
+          }
+          #thermal-stickers-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 8px;
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+            background: white !important;
+          }
+          #ca-report-print-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 16px;
+            background: white !important;
+            color: black !important;
+          }
+        }
+      `}</style>
       {/* 0. Page-Level Navigation Bar (Always Visible on Mobile & Desktop) */}
       <div className="flex items-center justify-between gap-2.5 bg-card border border-border/80 p-2.5 sm:px-4 rounded-2xl shadow-xs">
         <div className="flex items-center gap-2">
@@ -3434,7 +3493,7 @@ export default function InventoryPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-2 border border-border/50 rounded-2xl bg-secondary/10">
+            <div id="thermal-stickers-container" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-2 border border-border/50 rounded-2xl bg-secondary/10">
               {printUnits.map((u) => (
                 <div
                   key={u.id}

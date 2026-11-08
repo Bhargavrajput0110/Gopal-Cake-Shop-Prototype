@@ -196,14 +196,14 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ success: false, error: 'Forbidden: Tray belongs to a different branch.' }, { status: 403 });
         }
       } else if (branchId) {
-        tray = await prisma.brownieTray.findFirst({
+        const candidateTrays = await prisma.brownieTray.findMany({
           where: {
             branchId,
-            status: 'CUT_INTO_PIECES',
-            totalPieces: { gt: prisma.brownieTray.fields.soldPieces }
+            status: 'CUT_INTO_PIECES'
           },
           orderBy: { createdAt: 'asc' }
         });
+        tray = candidateTrays.find((t) => t.soldPieces < t.totalPieces);
       }
 
       if (!tray) {

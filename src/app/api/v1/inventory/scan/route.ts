@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Barcode is required' }, { status: 400 });
     }
 
-    const trimmedBarcode = barcode.trim();
+    const trimmedBarcode = barcode.trim().toUpperCase();
 
     // Branch isolation for SALESPERSON: they can only scan their own branch's items
     const userBranchId = (session.user as any)?.branchId;

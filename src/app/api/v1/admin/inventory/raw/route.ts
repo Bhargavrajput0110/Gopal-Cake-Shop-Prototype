@@ -110,9 +110,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Forbidden: Ingredient belongs to a different branch.' }, { status: 403 });
       }
 
+      const validAdjustment = Math.abs(Number(adjustmentQty)) || 0;
       const newQty = operation === 'ADD'
-        ? Number(existing.currentStock) + Number(adjustmentQty)
-        : Math.max(0, Number(existing.currentStock) - Number(adjustmentQty));
+        ? Number(existing.currentStock) + validAdjustment
+        : Math.max(0, Number(existing.currentStock) - validAdjustment);
 
       const updated = await prisma.rawIngredient.update({
         where: { id },

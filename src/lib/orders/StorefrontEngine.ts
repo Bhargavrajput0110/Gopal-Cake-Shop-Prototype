@@ -593,7 +593,7 @@ export class StorefrontEngine {
 
         if (barcodeText) {
           const unit = await tx.inventoryUnit.findUnique({
-            where: { barcode: barcodeText.trim() }
+            where: { barcode: barcodeText.trim().toUpperCase() }
           });
 
           if (unit) {
