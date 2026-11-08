@@ -484,13 +484,22 @@ export const PERMISSIONS_LIST: PermissionItem[] = [
 
 const CATEGORY_TABS = [
   { id: "all", label: "All Permissions" },
-  { id: "inventory", label: "Bakery Inventory" },
-  { id: "orders", label: "Orders & POS" },
-  { id: "kitchen", label: "Kitchen (KDS)" },
-  { id: "logistics", label: "Logistics" },
-  { id: "vendors", label: "Vendor Add-ons" },
-  { id: "management", label: "Management" },
+  { id: "inventory", label: "🎂 Bakery Inventory (13)" },
+  { id: "orders", label: "🛒 Orders & POS" },
+  { id: "kitchen", label: "👨‍🍳 Kitchen (KDS)" },
+  { id: "logistics", label: "🚚 Logistics" },
+  { id: "vendors", label: "🌸 Vendor Add-ons" },
+  { id: "management", label: "⚙️ Management" },
 ] as const;
+
+const CATEGORY_HEADERS: Record<string, { label: string; icon: string; count: number }> = {
+  inventory: { label: "Bakery Inventory Access (13 Features)", icon: "🎂", count: 13 },
+  orders: { label: "Orders & POS Counter", icon: "🛒", count: 3 },
+  kitchen: { label: "Kitchen & KDS Screens", icon: "👨‍🍳", count: 2 },
+  logistics: { label: "Logistics & Delivery Riders", icon: "🚚", count: 2 },
+  vendors: { label: "Vendor Supplies & Add-ons", icon: "🌸", count: 3 },
+  management: { label: "Store Management & Settings", icon: "⚙️", count: 4 },
+};
 
 interface RoleCapabilitiesProps {
   role: Role;
@@ -689,7 +698,7 @@ export function RoleCapabilities({
 
       {/* ── Permissions Grid ────────────────────────────────────────── */}
       <div className="space-y-2">
-        {filteredItems.map((item) => {
+        {filteredItems.map((item, index) => {
           const defaultEval = item.evaluator(role);
           const defaultAllowed = defaultEval.scope !== "none";
           const overrideVal = overrides[item.id];
@@ -697,116 +706,132 @@ export function RoleCapabilities({
           const isOverridden = overrideVal !== undefined && overrideVal !== defaultAllowed;
           const IconComponent = item.icon;
 
+          const prevItem = index > 0 ? filteredItems[index - 1] : null;
+          const showCatHeader = activeTab === "all" && (!prevItem || prevItem.category !== item.category);
+          const catInfo = CATEGORY_HEADERS[item.category];
+
           return (
-            <div
-              key={item.id}
-              className={`flex items-start justify-between gap-3 p-3 rounded-xl border transition-all ${
-                isEffectiveAllowed
-                  ? isOverridden
-                    ? "bg-emerald-500/[0.04] border-emerald-500/40 shadow-xs"
-                    : "bg-card border-border hover:border-primary/40 shadow-xs"
-                  : isOverridden
-                  ? "bg-rose-500/[0.04] border-rose-500/40"
-                  : "bg-muted/20 border-border/60 opacity-70 hover:opacity-90"
-              }`}
-            >
-              {/* Left icon & texts */}
-              <div className="flex items-start gap-3 min-w-0 flex-1">
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                    isEffectiveAllowed
-                      ? defaultEval.scope === "global"
-                        ? "bg-emerald-500/10 text-emerald-600"
-                        : defaultEval.scope === "branch"
-                        ? "bg-blue-500/10 text-blue-600"
-                        : "bg-amber-500/10 text-amber-600"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  <IconComponent className="w-4 h-4 shrink-0" />
+            <React.Fragment key={item.id}>
+              {showCatHeader && catInfo && (
+                <div className="pt-4 pb-1.5 flex items-center justify-between border-b border-border/60 text-xs font-black uppercase tracking-wider text-muted-foreground">
+                  <span className="flex items-center gap-1.5 text-foreground font-black">
+                    <span className="text-sm">{catInfo.icon}</span>
+                    <span>{catInfo.label}</span>
+                  </span>
+                  <span className="text-[10px] font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                    {catInfo.count} controls
+                  </span>
                 </div>
+              )}
+              <div
+                className={`flex items-start justify-between gap-3 p-3 rounded-xl border transition-all ${
+                  isEffectiveAllowed
+                    ? isOverridden
+                      ? "bg-emerald-500/[0.04] border-emerald-500/40 shadow-xs"
+                      : "bg-card border-border hover:border-primary/40 shadow-xs"
+                    : isOverridden
+                    ? "bg-rose-500/[0.04] border-rose-500/40"
+                    : "bg-muted/20 border-border/60 opacity-70 hover:opacity-90"
+                }`}
+              >
+                {/* Left icon & texts */}
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                      isEffectiveAllowed
+                        ? defaultEval.scope === "global"
+                          ? "bg-emerald-500/10 text-emerald-600"
+                          : defaultEval.scope === "branch"
+                          ? "bg-blue-500/10 text-blue-600"
+                          : "bg-amber-500/10 text-amber-600"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <IconComponent className="w-4 h-4 shrink-0" />
+                  </div>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-xs font-bold text-foreground leading-snug">
-                      {item.title}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-xs font-bold text-foreground leading-snug">
+                        {item.title}
+                      </p>
+                      {isOverridden && (
+                        <span
+                          className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded border ${
+                            isEffectiveAllowed
+                              ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
+                              : "bg-rose-500/15 text-rose-700 border-rose-500/30"
+                          }`}
+                        >
+                          {isEffectiveAllowed ? "⚡ Admin Granted" : "⛔ Admin Revoked"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                      {item.description}
                     </p>
-                    {isOverridden && (
-                      <span
-                        className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded border ${
-                          isEffectiveAllowed
-                            ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
-                            : "bg-rose-500/15 text-rose-700 border-rose-500/30"
-                        }`}
-                      >
-                        {isEffectiveAllowed ? "⚡ Admin Granted" : "⛔ Admin Revoked"}
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">
+                        Role Default: <strong className="text-foreground">{defaultEval.label}</strong>
                       </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                    {item.description}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] text-muted-foreground font-medium">
-                      Role Default: <strong className="text-foreground">{defaultEval.label}</strong>
-                    </span>
-                    {defaultEval.details && (
-                      <span className="text-[10px] text-primary/80 font-medium">
-                        ↳ {defaultEval.details}
-                      </span>
-                    )}
+                      {defaultEval.details && (
+                        <span className="text-[10px] text-primary/80 font-medium">
+                          ↳ {defaultEval.details}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Right interactive YES / NO toggle button */}
-              <div className="shrink-0 flex items-center pl-2">
-                {editable && onCustomPermissionsChange ? (
-                  <div className="flex items-center gap-1 bg-muted/80 p-1 rounded-xl border border-border shadow-xs">
-                    <button
-                      type="button"
-                      onClick={() => handleToggle(item.id, true)}
-                      className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                        isEffectiveAllowed
-                          ? "bg-emerald-600 text-white shadow-xs font-black ring-1 ring-emerald-500"
-                          : "text-muted-foreground hover:text-foreground hover:bg-background/80"
-                      }`}
-                      title={`Grant "${item.title}" to this user`}
-                    >
-                      <TickCircle className="w-3.5 h-3.5" variant={isEffectiveAllowed ? "Bold" : "Linear"} />
-                      YES
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleToggle(item.id, false)}
-                      className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                        !isEffectiveAllowed
-                          ? "bg-rose-600 text-white shadow-xs font-black ring-1 ring-rose-500"
-                          : "text-muted-foreground hover:text-foreground hover:bg-background/80"
-                      }`}
-                      title={`Revoke "${item.title}" from this user`}
-                    >
-                      <CloseCircle className="w-3.5 h-3.5" variant={!isEffectiveAllowed ? "Bold" : "Linear"} />
-                      NO
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    {isEffectiveAllowed ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 rounded-md">
-                        <TickCircle className="w-3.5 h-3.5 shrink-0" variant="Bold" />
-                        YES (Allowed)
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-md">
-                        <CloseCircle className="w-3.5 h-3.5 shrink-0" />
-                        NO (Denied)
-                      </span>
-                    )}
-                  </div>
-                )}
+                {/* Right interactive YES / NO toggle button */}
+                <div className="shrink-0 flex items-center pl-2">
+                  {editable && onCustomPermissionsChange ? (
+                    <div className="flex items-center gap-1 bg-muted/80 p-0.5 sm:p-1 rounded-xl border border-border shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => handleToggle(item.id, true)}
+                        className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          isEffectiveAllowed
+                            ? "bg-emerald-600 text-white shadow-xs font-black ring-1 ring-emerald-500"
+                            : "text-muted-foreground hover:text-foreground hover:bg-background/80"
+                        }`}
+                        title={`Grant "${item.title}" to this user`}
+                      >
+                        <TickCircle className="w-3.5 h-3.5" variant={isEffectiveAllowed ? "Bold" : "Linear"} />
+                        YES
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggle(item.id, false)}
+                        className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          !isEffectiveAllowed
+                            ? "bg-rose-600 text-white shadow-xs font-black ring-1 ring-rose-500"
+                            : "text-muted-foreground hover:text-foreground hover:bg-background/80"
+                        }`}
+                        title={`Revoke "${item.title}" from this user`}
+                      >
+                        <CloseCircle className="w-3.5 h-3.5" variant={!isEffectiveAllowed ? "Bold" : "Linear"} />
+                        NO
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      {isEffectiveAllowed ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 rounded-md">
+                          <TickCircle className="w-3.5 h-3.5 shrink-0" variant="Bold" />
+                          YES (Allowed)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-md">
+                          <CloseCircle className="w-3.5 h-3.5 shrink-0" />
+                          NO (Denied)
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </React.Fragment>
           );
         })}
       </div>

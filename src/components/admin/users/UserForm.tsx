@@ -454,12 +454,12 @@ export function UserForm({
         />
       </div>
 
-      {/* ── Submit ──────────────────────────────────────────────── */}
-      <div className="pt-2">
+      {/* ── Submit (Sticky Footer for Mobile & Desktop Convenience) ── */}
+      <div className="sticky bottom-0 bg-card/95 backdrop-blur-md pt-3 pb-3 border-t border-border -mx-4 sm:-mx-6 px-4 sm:px-6 mt-4 shadow-xl z-20">
         <button
           type="submit"
           disabled={isSaving}
-          className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer"
+          className="w-full py-3 bg-[var(--brand-deep-rose,#c2185b)] text-white hover:bg-[var(--brand-deep-rose,#c2185b)]/90 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.99] disabled:opacity-50 cursor-pointer"
         >
           {isSaving ? (
             "Processing…"

@@ -19,7 +19,7 @@ export default function AdminLayout({
         {!isPOSPage && <AppSidebar config={ADMIN_NAV_CONFIG} />}
         <div className={isPOSPage ? 'flex flex-col min-h-screen' : 'md:pl-64 flex flex-col min-h-screen'}>
           {!isPOSPage && <AppTopbar config={ADMIN_NAV_CONFIG} searchPlaceholder="Search orders, products, customers..." />}
-          <main className={isPOSPage ? 'flex-1 overflow-hidden' : 'flex-1 p-4 sm:p-6 lg:p-8'}>
+          <main className={isPOSPage ? 'flex-1 overflow-hidden' : 'flex-1 p-2 sm:p-6 lg:p-8'}>
             {children}
           </main>
         </div>

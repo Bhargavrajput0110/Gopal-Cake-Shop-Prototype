@@ -85,9 +85,7 @@ export const MANAGER_NAV_CONFIG: AppConfig = {
     {
       items: [
         { name: "Branch Dashboard", href: "/manager",            icon: Category },
-        { name: "Kitchen Queue",    href: "/manager/kitchen",    icon: Reserve, badge: 5 },
-        { name: "Local Inventory",  href: "/manager/inventory",  icon: BoxTick },
-        { name: "Delivery Boys",    href: "/manager/riders",     icon: Car },
+        { name: "Bakery Inventory", href: "/admin/inventory",    icon: ScanBarcode },
       ],
     },
   ],
