@@ -3,10 +3,62 @@ import { MediaService, MediaAsset, UploadOptions } from './MediaService'
 
 // Configure cloudinary with environment variables
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 })
+
+/**
+ * Extracts the Cloudinary public_id from a full CDN URL.
+ * Supports versioned URLs, unversioned URLs, and URLs with transformation segments.
+ * Strips the file extension as required by the Cloudinary Destroy API.
+ */
+export function extractCloudinaryPublicId(url: string): string | null {
+  if (!url || typeof url !== 'string') return null
+  if (!url.includes('cloudinary.com')) return null
+
+  try {
+    const uploadIndex = url.indexOf('/upload/')
+    if (uploadIndex === -1) return null
+
+    // Get everything after '/upload/'
+    const afterUpload = url.slice(uploadIndex + '/upload/'.length)
+
+    // Split path into segments
+    const segments = afterUpload.split('/')
+    let startIdx = 0
+
+    // Skip transformation segments and version segment (e.g. v1794636080)
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i]
+      // Version segment: starts with 'v' followed by digits only
+      if (/^v\d+$/.test(seg)) {
+        startIdx = i + 1
+        break
+      }
+      // Common transformations: contains comma (e.g. "w_400,c_fill") or common transformation flags
+      if (seg.includes(',') || /^[a-z]{1,3}_[a-zA-Z0-9_-]+$/.test(seg)) {
+        startIdx = i + 1
+      }
+    }
+
+    const remainingSegments = segments.slice(startIdx)
+    if (remainingSegments.length === 0) return null
+
+    let publicIdWithExt = remainingSegments.join('/')
+    // Remove query params or hash if any
+    publicIdWithExt = publicIdWithExt.split('?')[0].split('#')[0]
+
+    // Remove file extension (e.g., .jpg, .png, .webp)
+    const lastDotIndex = publicIdWithExt.lastIndexOf('.')
+    if (lastDotIndex > 0) {
+      return publicIdWithExt.slice(0, lastDotIndex)
+    }
+    return publicIdWithExt
+  } catch {
+    return null
+  }
+}
 
 export class CloudinaryMediaProvider implements MediaService {
   /**
@@ -69,11 +121,21 @@ export class CloudinaryMediaProvider implements MediaService {
    */
   async delete(assetId: string): Promise<boolean> {
     try {
-      const result = await cloudinary.uploader.destroy(assetId)
-      return result.result === 'ok'
+      const result = await cloudinary.uploader.destroy(assetId, { invalidate: true })
+      return result.result === 'ok' || result.result === 'not found'
     } catch (error: any) {
-      throw new Error(`Cloudinary delete failed: ${error.message || error}`)
+      console.error(`Cloudinary delete failed for ${assetId}:`, error?.message || error)
+      return false
     }
+  }
+
+  /**
+   * Deletes a file from Cloudinary by its full URL.
+   */
+  async deleteByUrl(url: string): Promise<boolean> {
+    const publicId = extractCloudinaryPublicId(url)
+    if (!publicId) return false
+    return this.delete(publicId)
   }
 
   /**
