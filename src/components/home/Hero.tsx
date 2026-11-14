@@ -28,8 +28,8 @@ export function Hero() {
         <div className="absolute left-0 top-0 bottom-0 w-full md:w-[40%]">
           <video
             key="hero-video-1"
-            src="https://res.cloudinary.com/dlxiy6aiq/video/upload/v1788199517/AQM9Inm1bmMqgSvwXR7hyWhekGAxwHeGAdfcJl2VK11H-REpvhuerjjmqXEewNu8bNeTQT6UfVFi5ydfrNne_p5H2k2M9tym2VKIGdQ_qtxv59.mp4"
-            poster="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1200&q=80"
+            src="https://res.cloudinary.com/slprqeid/video/upload/v1794636080/AQM68PFgCFMDtFENr9Jg5RC4a0wuMkXGSyACAGWEmHgIFraGMOj0Ohh9uJGR_i3PJEB0hx2hbijSJqgpvkkqDBT8i4XySe3eF0oHFGM.mp4"
+            poster="https://res.cloudinary.com/slprqeid/video/upload/so_0/v1794636080/AQM68PFgCFMDtFENr9Jg5RC4a0wuMkXGSyACAGWEmHgIFraGMOj0Ohh9uJGR_i3PJEB0hx2hbijSJqgpvkkqDBT8i4XySe3eF0oHFGM.jpg"
             autoPlay
             loop
             muted
@@ -44,8 +44,8 @@ export function Hero() {
         <div className="absolute left-[30%] top-0 bottom-0 w-[40%] hidden md:block">
           <video
             key="hero-video-2"
-            src="https://res.cloudinary.com/dlxiy6aiq/video/upload/v1788199841/AQOHIt8uZ1_bH9jYzCiwBjGg4ptZXXI6m4kTonsE2CxvPYMCqNMj4YoMzDkEd2gffHdQZj8yPTR1ViT30oNyTIh3Zw2xK9SUtDFZqJo_xu8ojk.mp4"
-            poster="https://images.unsplash.com/photo-1535141192574-5d4897c12636?w=1200&q=80"
+            src="https://res.cloudinary.com/slprqeid/video/upload/v1794635889/AQPNN56h_Qv3XeTl2TFdXzcCebpuh9Hww-rrYlC7fgILXqZ6sKR2ClwO-5GJoWlEeL9duvJhr1okUKIr7vUaTpHFgyFYv5MTN9-YgQo.mp4"
+            poster="https://res.cloudinary.com/slprqeid/video/upload/so_0/v1794635889/AQPNN56h_Qv3XeTl2TFdXzcCebpuh9Hww-rrYlC7fgILXqZ6sKR2ClwO-5GJoWlEeL9duvJhr1okUKIr7vUaTpHFgyFYv5MTN9-YgQo.jpg"
             autoPlay
             loop
             muted
@@ -64,8 +64,8 @@ export function Hero() {
         <div className="absolute left-[60%] top-0 bottom-0 w-[40%] hidden md:block">
           <video
             key="hero-video-3"
-            src="https://res.cloudinary.com/dlxiy6aiq/video/upload/v1788200368/AQMloeSiiyrth-BpVCvrNtbiPKKhPh1_2q7v4eUzmZ7IUMs782jtizsW0WHITJap8etK4uYEIdLdr016Onbm1KsGEEOBragRV6LLFhA_1_dzohnj.mp4"
-            poster="https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?w=1200&q=80"
+            src="https://res.cloudinary.com/slprqeid/video/upload/v1794635840/AQNF2L_tRssFYWmIr-3qNiVPOM5BDUnl4wMwqW3vZCgFSWrZBpxpFjWAXcB5we7Hxo6AJJgZwWTvs62yZlqHy9EYHSEmWxCssFD4634_1.mp4"
+            poster="https://res.cloudinary.com/slprqeid/video/upload/so_0/v1794635840/AQNF2L_tRssFYWmIr-3qNiVPOM5BDUnl4wMwqW3vZCgFSWrZBpxpFjWAXcB5we7Hxo6AJJgZwWTvs62yZlqHy9EYHSEmWxCssFD4634_1.jpg"
             autoPlay
             loop
             muted
