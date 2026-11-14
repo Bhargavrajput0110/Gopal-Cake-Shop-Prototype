@@ -2,13 +2,21 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { ArrowRight2 } from "iconsax-react";
 
 const FLOATING_WORDS = ["Artisanal", "Handcrafted", "Eggless", "Premium", "Fresh Daily"];
 
+const HERO_VIDEOS = [
+  "https://res.cloudinary.com/slprqeid/video/upload/v1794636080/AQM68PFgCFMDtFENr9Jg5RC4a0wuMkXGSyACAGWEmHgIFraGMOj0Ohh9uJGR_i3PJEB0hx2hbijSJqgpvkkqDBT8i4XySe3eF0oHFGM.mp4",
+  "https://res.cloudinary.com/slprqeid/video/upload/v1794635889/AQPNN56h_Qv3XeTl2TFdXzcCebpuh9Hww-rrYlC7fgILXqZ6sKR2ClwO-5GJoWlEeL9duvJhr1okUKIr7vUaTpHFgyFYv5MTN9-YgQo.mp4",
+  "https://res.cloudinary.com/slprqeid/video/upload/v1794635840/AQNF2L_tRssFYWmIr-3qNiVPOM5BDUnl4wMwqW3vZCgFSWrZBpxpFjWAXcB5we7Hxo6AJJgZwWTvs62yZlqHy9EYHSEmWxCssFD4634_1.mp4",
+];
+
 export function Hero() {
   const ref = useRef<HTMLElement>(null);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([null, null, null]);
+
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
@@ -17,6 +25,40 @@ export function Hero() {
   const textY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const overlayOpacity = useTransform(scrollYProgress, [0, 0.8], [0.35, 0.7]);
 
+  // Force-play all videos on mount — bypasses browser autoplay restrictions
+  useEffect(() => {
+    const tryPlay = () => {
+      videoRefs.current.forEach((v) => {
+        if (v && v.paused) {
+          v.muted = true;
+          v.play().catch(() => {
+            // silent — will retry on next user interaction
+          });
+        }
+      });
+    };
+
+    // Attempt immediately
+    tryPlay();
+
+    // Retry on first user gesture (mobile tap / scroll)
+    const onGesture = () => {
+      tryPlay();
+      window.removeEventListener("touchstart", onGesture);
+      window.removeEventListener("scroll", onGesture);
+      window.removeEventListener("click", onGesture);
+    };
+    window.addEventListener("touchstart", onGesture, { passive: true });
+    window.addEventListener("scroll", onGesture, { passive: true });
+    window.addEventListener("click", onGesture, { passive: true });
+
+    return () => {
+      window.removeEventListener("touchstart", onGesture);
+      window.removeEventListener("scroll", onGesture);
+      window.removeEventListener("click", onGesture);
+    };
+  }, []);
+
   return (
     <section
       ref={ref}
@@ -24,58 +66,55 @@ export function Hero() {
     >
       {/* ── Video BG (Blended 3 Reels Panorama) ── */}
       <div className="absolute inset-0 z-0 bg-black">
-        {/* Reel 1 (Left - Mobile & Desktop) */}
+        {/* Reel 1 (Left — visible on mobile & desktop) */}
         <div className="absolute left-0 top-0 bottom-0 w-full md:w-[40%]">
           <video
-            key="hero-video-1"
-            src="https://res.cloudinary.com/slprqeid/video/upload/v1794636080/AQM68PFgCFMDtFENr9Jg5RC4a0wuMkXGSyACAGWEmHgIFraGMOj0Ohh9uJGR_i3PJEB0hx2hbijSJqgpvkkqDBT8i4XySe3eF0oHFGM.mp4"
-            poster="https://res.cloudinary.com/slprqeid/video/upload/so_0/v1794636080/AQM68PFgCFMDtFENr9Jg5RC4a0wuMkXGSyACAGWEmHgIFraGMOj0Ohh9uJGR_i3PJEB0hx2hbijSJqgpvkkqDBT8i4XySe3eF0oHFGM.jpg"
+            ref={(el) => { videoRefs.current[0] = el; }}
+            src={HERO_VIDEOS[0]}
             autoPlay
             loop
             muted
             playsInline
-            preload="auto"
+            preload="metadata"
             className="absolute inset-0 w-full h-full object-cover scale-105"
             style={{ willChange: "transform" }}
           />
         </div>
 
-        {/* Reel 2 (Center - Desktop only) */}
+        {/* Reel 2 (Center — desktop only) */}
         <div className="absolute left-[30%] top-0 bottom-0 w-[40%] hidden md:block">
           <video
-            key="hero-video-2"
-            src="https://res.cloudinary.com/slprqeid/video/upload/v1794635889/AQPNN56h_Qv3XeTl2TFdXzcCebpuh9Hww-rrYlC7fgILXqZ6sKR2ClwO-5GJoWlEeL9duvJhr1okUKIr7vUaTpHFgyFYv5MTN9-YgQo.mp4"
-            poster="https://res.cloudinary.com/slprqeid/video/upload/so_0/v1794635889/AQPNN56h_Qv3XeTl2TFdXzcCebpuh9Hww-rrYlC7fgILXqZ6sKR2ClwO-5GJoWlEeL9duvJhr1okUKIr7vUaTpHFgyFYv5MTN9-YgQo.jpg"
+            ref={(el) => { videoRefs.current[1] = el; }}
+            src={HERO_VIDEOS[1]}
             autoPlay
             loop
             muted
             playsInline
-            preload="auto"
+            preload="metadata"
             className="absolute inset-0 w-full h-full object-cover scale-105"
-            style={{ 
+            style={{
               willChange: "transform",
               maskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
-              WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)"
+              WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
             }}
           />
         </div>
 
-        {/* Reel 3 (Right - Desktop only) */}
+        {/* Reel 3 (Right — desktop only) */}
         <div className="absolute left-[60%] top-0 bottom-0 w-[40%] hidden md:block">
           <video
-            key="hero-video-3"
-            src="https://res.cloudinary.com/slprqeid/video/upload/v1794635840/AQNF2L_tRssFYWmIr-3qNiVPOM5BDUnl4wMwqW3vZCgFSWrZBpxpFjWAXcB5we7Hxo6AJJgZwWTvs62yZlqHy9EYHSEmWxCssFD4634_1.mp4"
-            poster="https://res.cloudinary.com/slprqeid/video/upload/so_0/v1794635840/AQNF2L_tRssFYWmIr-3qNiVPOM5BDUnl4wMwqW3vZCgFSWrZBpxpFjWAXcB5we7Hxo6AJJgZwWTvs62yZlqHy9EYHSEmWxCssFD4634_1.jpg"
+            ref={(el) => { videoRefs.current[2] = el; }}
+            src={HERO_VIDEOS[2]}
             autoPlay
             loop
             muted
             playsInline
-            preload="auto"
+            preload="metadata"
             className="absolute inset-0 w-full h-full object-cover scale-105"
-            style={{ 
+            style={{
               willChange: "transform",
               maskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
-              WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)"
+              WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
             }}
           />
         </div>
