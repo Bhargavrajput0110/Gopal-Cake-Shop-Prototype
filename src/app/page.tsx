@@ -2,6 +2,7 @@ import { Hero } from "@/components/home/Hero";
 import { Categories } from "@/components/home/Categories";
 import { QualityDescription } from "@/components/home/QualityDescription";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
+import { CakeReelsSection } from "@/components/home/CakeReelsSection";
 import { TrustStrip } from "@/components/home/TrustStrip";
 import { ShelfCakes } from "@/components/home/ShelfCakes";
 import { BouquetSection } from "@/components/home/BouquetSection";
@@ -138,6 +139,9 @@ export default function Home() {
       <div id="signature-cakes" className="scroll-mt-24">
         <FeaturedProducts />
       </div>
+
+      {/* Behind the Bake — Trending Video Reels Showcase */}
+      <CakeReelsSection />
 
       {/* Florals & Bouquets (Upsell / Cross-sell) */}
       <div id="fresh-florals" className="py-24 bg-background text-center flex flex-col items-center justify-center border-y border-border/40 px-4">
