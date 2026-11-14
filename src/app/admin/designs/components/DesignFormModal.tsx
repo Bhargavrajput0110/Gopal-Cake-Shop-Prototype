@@ -335,7 +335,7 @@ export function DesignFormModal({ isOpen, onClose, initialData }: any) {
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         className="flex-1 px-3 py-1 bg-background border border-input rounded-md text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                             e.preventDefault();
                             handleCreateCategory();
                           }

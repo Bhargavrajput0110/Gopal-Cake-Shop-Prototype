@@ -16,7 +16,7 @@ export class OutboxEventBus implements EventBus {
     payload: any,
     actorId?: string
   ): Promise<void> {
-    const eventId = `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const eventId = `evt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
     
     await tx.outbox.create({
       data: {

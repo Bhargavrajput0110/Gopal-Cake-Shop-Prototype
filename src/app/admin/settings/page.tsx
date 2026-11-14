@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ArrowLeft, BoxSearch, Car, Warning2, CardTick, Setting2, Danger, MagicStar, TruckFast, GlobalSearch, Moneys, Add } from "iconsax-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { DashboardSection } from "@/components/ui/dashboard-widgets";
@@ -12,6 +12,65 @@ import { SettingsForm, type SettingsFormData } from "@/components/admin/settings
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Button } from "@/components/ui/button";
+
+// Standalone Setting Toggle Component (Declared outside render to preserve state & avoid unmounting)
+function SettingToggle({ title, description, settingKey, val, icon: Icon, destructive = false, onToggle }: any) {
+  const isActive = val === "true";
+  
+  return (
+    <div className={`p-6 rounded-[1.5rem] border backdrop-blur-sm transition-all flex items-center justify-between gap-4 ${isActive ? (destructive ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200') : 'bg-white/60 border-[var(--border)]'}`}>
+      <div className="flex items-center gap-4">
+        <div className={`p-3 rounded-xl flex-shrink-0 ${isActive ? (destructive ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600') : 'bg-[var(--muted)] text-[var(--muted-foreground)]'}`}>
+          <Icon className="w-6 h-6" />
+        </div>
+        <div>
+          <h4 className="font-bold text-[var(--foreground)] text-lg">{title}</h4>
+          <p className="text-sm text-[var(--muted-foreground)]">{description}</p>
+        </div>
+      </div>
+      <button 
+        type="button"
+        onClick={() => onToggle(settingKey, val, description)}
+        className={`w-14 h-8 rounded-full p-1 transition-colors relative flex-shrink-0 cursor-pointer ${isActive ? (destructive ? 'bg-rose-500' : 'bg-emerald-500') : 'bg-gray-300'}`}
+      >
+        <div className={`w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ${isActive ? 'translate-x-6' : 'translate-x-0'}`}></div>
+      </button>
+    </div>
+  );
+}
+
+// Standalone Setting Input Component (Declared outside render to preserve state & avoid unmounting)
+function SettingInput({ title, description, settingKey, currentVal, type = "number", prefix, suffix, icon: Icon, onBlur }: any) {
+  const [localVal, setLocalVal] = useState(currentVal);
+  useEffect(() => {
+    setLocalVal(currentVal);
+  }, [currentVal]);
+  
+  return (
+    <div className="p-6 rounded-[1.5rem] border border-[var(--border)] bg-white/60 backdrop-blur-sm flex items-center justify-between gap-4">
+      <div className="flex items-center gap-4">
+        <div className="p-3 rounded-xl bg-[var(--muted)] text-[var(--muted-foreground)] flex-shrink-0">
+          <Icon className="w-6 h-6" />
+        </div>
+        <div>
+          <h4 className="font-bold text-[var(--foreground)] text-lg">{title}</h4>
+          <p className="text-sm text-[var(--muted-foreground)]">{description}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {prefix && <span className="font-bold text-[var(--muted-foreground)]">{prefix}</span>}
+        <input 
+          type={type}
+          value={localVal}
+          onChange={(e) => setLocalVal(e.target.value)}
+          onBlur={() => onBlur(settingKey, localVal, description)}
+          className="w-24 p-2 text-center font-bold text-lg border border-[var(--border)] rounded-xl bg-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+        />
+        {suffix && <span className="font-bold text-[var(--muted-foreground)]">{suffix}</span>}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminSettings() {
   const { settings, isLoading, createSetting, updateSetting, deleteSetting } = useSettings();
@@ -103,61 +162,6 @@ export default function AdminSettings() {
     }
   };
 
-  // Component Building Blocks
-  const SettingToggle = ({ title, description, settingKey, icon: Icon, destructive = false }: any) => {
-    const val = getSetting(settingKey, "false");
-    const isActive = val === "true";
-    
-    return (
-      <div className={`p-6 rounded-[1.5rem] border backdrop-blur-sm transition-all flex items-center justify-between gap-4 ${isActive ? (destructive ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200') : 'bg-white/60 border-[var(--border)]'}`}>
-        <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-xl flex-shrink-0 ${isActive ? (destructive ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600') : 'bg-[var(--muted)] text-[var(--muted-foreground)]'}`}>
-            <Icon className="w-6 h-6" />
-          </div>
-          <div>
-            <h4 className="font-bold text-[var(--foreground)] text-lg">{title}</h4>
-            <p className="text-sm text-[var(--muted-foreground)]">{description}</p>
-          </div>
-        </div>
-        <button 
-          onClick={() => handleToggle(settingKey, val, description)}
-          className={`w-14 h-8 rounded-full p-1 transition-colors relative flex-shrink-0 ${isActive ? (destructive ? 'bg-rose-500' : 'bg-emerald-500') : 'bg-gray-300'}`}
-        >
-          <div className={`w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ${isActive ? 'translate-x-6' : 'translate-x-0'}`}></div>
-        </button>
-      </div>
-    )
-  }
-
-  const SettingInput = ({ title, description, settingKey, fallback, type = "number", prefix, suffix, icon: Icon }: any) => {
-    const [localVal, setLocalVal] = useState(getSetting(settingKey, fallback));
-    
-    return (
-      <div className="p-6 rounded-[1.5rem] border border-[var(--border)] bg-white/60 backdrop-blur-sm flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-[var(--muted)] text-[var(--muted-foreground)] flex-shrink-0">
-            <Icon className="w-6 h-6" />
-          </div>
-          <div>
-            <h4 className="font-bold text-[var(--foreground)] text-lg">{title}</h4>
-            <p className="text-sm text-[var(--muted-foreground)]">{description}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {prefix && <span className="font-bold text-[var(--muted-foreground)]">{prefix}</span>}
-          <input 
-            type={type}
-            value={localVal}
-            onChange={(e) => setLocalVal(e.target.value)}
-            onBlur={() => handleInputBlur(settingKey, localVal, description)}
-            className="w-24 p-2 text-center font-bold text-lg border border-[var(--border)] rounded-xl bg-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-          />
-          {suffix && <span className="font-bold text-[var(--muted-foreground)]">{suffix}</span>}
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6 pb-16 min-h-screen bg-[var(--background)] relative">
       <div className="absolute inset-0 z-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, #000 1.5px, transparent 1.5px)', backgroundSize: '24px 24px' }}></div>
@@ -202,6 +206,8 @@ export default function AdminSettings() {
                     title="Maintenance Mode" 
                     description="Instantly stop accepting all new online orders." 
                     settingKey="maintenance_mode" 
+                    val={getSetting("maintenance_mode", "false")}
+                    onToggle={handleToggle}
                     icon={Warning2} 
                     destructive={true}
                   />
@@ -209,18 +215,24 @@ export default function AdminSettings() {
                     title="Auto-Assign Drivers" 
                     description="Automatically dispatch available drivers when order is Ready." 
                     settingKey="auto_assign_drivers" 
+                    val={getSetting("auto_assign_drivers", "false")}
+                    onToggle={handleToggle}
                     icon={Car} 
                   />
                   <SettingToggle 
                     title="Mango Fusion Active" 
                     description="Enable the Summer Exclusive Mango Flavours menu." 
                     settingKey="mango_fusion_active" 
+                    val={getSetting("mango_fusion_active", "false")}
+                    onToggle={handleToggle}
                     icon={MagicStar} 
                   />
                   <SettingToggle 
                     title="Strawberry Fusion Active" 
                     description="Enable the Winter Exclusive Strawberry Flavours menu." 
                     settingKey="strawberry_fusion_active" 
+                    val={getSetting("strawberry_fusion_active", "false")}
+                    onToggle={handleToggle}
                     icon={MagicStar} 
                   />
                 </div>
@@ -234,7 +246,8 @@ export default function AdminSettings() {
                   title="Max Delivery Radius"
                   description="Maximum distance allowed for home delivery."
                   settingKey="delivery_radius_km"
-                  fallback="10"
+                  currentVal={getSetting("delivery_radius_km", "10")}
+                  onBlur={handleInputBlur}
                   suffix="km"
                   icon={GlobalSearch}
                 />
@@ -242,7 +255,8 @@ export default function AdminSettings() {
                   title="Flat Delivery Fee"
                   description="Base delivery charge applied to orders under the threshold."
                   settingKey="flat_delivery_fee"
-                  fallback="50"
+                  currentVal={getSetting("flat_delivery_fee", "50")}
+                  onBlur={handleInputBlur}
                   prefix="₹"
                   icon={Moneys}
                 />
@@ -250,7 +264,8 @@ export default function AdminSettings() {
                   title="Free Delivery Threshold"
                   description="Orders above this amount get free delivery."
                   settingKey="free_delivery_threshold"
-                  fallback="1500"
+                  currentVal={getSetting("free_delivery_threshold", "1500")}
+                  onBlur={handleInputBlur}
                   prefix="₹"
                   icon={CardTick}
                 />
@@ -264,13 +279,16 @@ export default function AdminSettings() {
                   title="Accept Cash on Delivery" 
                   description="Allow customers to pay upon delivery." 
                   settingKey="accept_cod" 
+                  val={getSetting("accept_cod", "false")}
+                  onToggle={handleToggle}
                   icon={Moneys} 
                 />
                 <SettingInput
                   title="Advance Payment Percentage"
                   description="Percentage of grand total required upfront for custom orders."
                   settingKey="advance_payment_percentage"
-                  fallback="50"
+                  currentVal={getSetting("advance_payment_percentage", "50")}
+                  onBlur={handleInputBlur}
                   suffix="%"
                   icon={Danger}
                 />

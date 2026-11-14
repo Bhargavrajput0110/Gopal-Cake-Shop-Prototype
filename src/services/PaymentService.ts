@@ -90,7 +90,7 @@ export class PaymentService {
         })
 
         await eventBus.publish({
-          eventId: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          eventId: `evt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
           eventType: 'PAYMENT_COMPLETED',
           eventVersion: '1.0',
           occurredAt: new Date(),
@@ -115,7 +115,7 @@ export class PaymentService {
         })
 
         await eventBus.publish({
-          eventId: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          eventId: `evt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
           eventType: 'PAYMENT_FAILED',
           eventVersion: '1.0',
           occurredAt: new Date(),

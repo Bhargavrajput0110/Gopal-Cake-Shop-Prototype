@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
-import { SearchNormal1, CloseSquare, ArrowSwapHorizontal, ArchiveBook, Send, TruckFast, Warning2 } from "iconsax-react";
+import { SearchNormal1, CloseSquare, ArrowSwapHorizontal, ArchiveBook, Send, TruckFast, Warning2, Calendar } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BackButton } from "@/components/ui/BackButton";
 import { toBranchShortName, toBranchId } from "@/lib/branches";
@@ -96,6 +96,14 @@ export default function AdminBranchTransferPage() {
   const [activeTab, setActiveTab] = useState<"local" | "outgoing" | "incoming">("local");
   const [search, setSearch] = useState("");
   const [selectedBranch, setSelectedBranch] = useState<string>("khanderao");
+  const [dateFilter, setDateFilter] = useState<"TODAY" | "TOMORROW" | "PICK_DATE">("TODAY");
+  const [pickedDate, setPickedDate] = useState<string>(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  });
 
   // Fetch orders directly via SWR so newly created orders always appear
   const { data: ordersData, mutate: mutateOrders, isLoading: ordersLoading } = useSWR(
@@ -128,7 +136,51 @@ export default function AdminBranchTransferPage() {
     TRANSFERABLE_STATUSES.includes(o.status) && !activeTransferOrderIds.has(o.id)
   );
 
-  const filteredActiveOrders = localOrders.filter((o: any) => matchesOrderQuery(o, search));
+  // Date helper & calculations
+  const getOrderDateStr = (order: any): string => {
+    const val = order.targetDate || order.timeTarget || order.pickupTime;
+    if (!val) return "";
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  const todayStr = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+
+  const tomorrowStr = (() => {
+    const d = new Date(Date.now() + 86400000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+
+  const todayCount = localOrders.filter((o: any) => {
+    const dStr = getOrderDateStr(o);
+    return dStr === todayStr || (!dStr && o.status !== "COMPLETED");
+  }).length;
+
+  const tomorrowCount = localOrders.filter((o: any) => getOrderDateStr(o) === tomorrowStr).length;
+  const pickedDateCount = localOrders.filter((o: any) => getOrderDateStr(o) === pickedDate).length;
+
+  const dateFilteredOrders = localOrders.filter((o: any) => {
+    const dStr = getOrderDateStr(o);
+    if (dateFilter === "TODAY") {
+      return dStr === todayStr || (!dStr && o.status !== "COMPLETED");
+    }
+    if (dateFilter === "TOMORROW") {
+      return dStr === tomorrowStr;
+    }
+    if (dateFilter === "PICK_DATE") {
+      return dStr === pickedDate;
+    }
+    return true;
+  });
+
+  const filteredActiveOrders = dateFilteredOrders.filter((o: any) => matchesOrderQuery(o, search));
   const filteredOutgoing = outgoingTransfers.filter((t: any) => matchesTransferQuery(t, search));
   const filteredIncoming = incomingTransfers.filter((t: any) => matchesTransferQuery(t, search));
 
@@ -182,7 +234,7 @@ export default function AdminBranchTransferPage() {
           className={`flex shrink-0 items-center gap-2 px-5 py-2.5 rounded-t-xl font-bold transition-all ${activeTab === "local" ? "bg-white border border-b-0 border-[#C5A059]/30 text-[#3E2723] shadow-[0_-2px_10px_rgba(0,0,0,0.02)] relative after:absolute after:-bottom-[1px] after:left-0 after:right-0 after:h-[2px] after:bg-white z-10" : "bg-secondary/50 text-muted-foreground hover:bg-secondary"}`}
         >
           <Send className="w-4 h-4" /> Transfer an Order
-          {localOrders.length > 0 && <span className="bg-[#3E2723] text-white px-1.5 py-0.5 rounded-full text-[10px] ml-1">{localOrders.length}</span>}
+          {dateFilteredOrders.length > 0 && <span className="bg-[#3E2723] text-white px-1.5 py-0.5 rounded-full text-[10px] ml-1">{dateFilteredOrders.length}</span>}
         </button>
         <button
           onClick={() => setActiveTab("outgoing")}
@@ -199,6 +251,80 @@ export default function AdminBranchTransferPage() {
           {incomingTransfers?.length > 0 && <span className="bg-[#C5A059] text-white px-1.5 py-0.5 rounded-full text-[10px] ml-1">{incomingTransfers.length}</span>}
         </button>
       </div>
+
+      {/* Date Filter Bar for Transfer an Order */}
+      {activeTab === "local" && (
+        <div className="flex flex-wrap items-center gap-2 bg-[#FFF8F0]/80 p-2.5 rounded-2xl border border-[#C5A059]/30 shadow-xs">
+          <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#3E2723]/70 mr-1">
+            <Calendar size={15} className="text-[#C5A059]" />
+            <span>Delivery Date:</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setDateFilter("TODAY")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              dateFilter === "TODAY"
+                ? "bg-[#3E2723] text-white shadow-sm"
+                : "bg-white text-[#3E2723]/80 hover:bg-[#C5A059]/10 border border-[#C5A059]/30"
+            }`}
+          >
+            <span>Today</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+              dateFilter === "TODAY" ? "bg-amber-400 text-[#3E2723] font-black" : "bg-black/10 text-gray-700 font-bold"
+            }`}>
+              {todayCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setDateFilter("TOMORROW")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              dateFilter === "TOMORROW"
+                ? "bg-[#3E2723] text-white shadow-sm"
+                : "bg-white text-[#3E2723]/80 hover:bg-[#C5A059]/10 border border-[#C5A059]/30"
+            }`}
+          >
+            <span>Tomorrow</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+              dateFilter === "TOMORROW" ? "bg-amber-400 text-[#3E2723] font-black" : "bg-black/10 text-gray-700 font-bold"
+            }`}>
+              {tomorrowCount}
+            </span>
+          </button>
+
+          <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border transition-all ${
+            dateFilter === "PICK_DATE"
+              ? "bg-[#3E2723] text-white border-[#3E2723] shadow-sm"
+              : "bg-white text-[#3E2723]/80 hover:bg-[#C5A059]/10 border-[#C5A059]/30"
+          }`}>
+            <button
+              type="button"
+              onClick={() => setDateFilter("PICK_DATE")}
+              className="text-xs font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <span>Pick a date:</span>
+            </button>
+            <input
+              type="date"
+              value={pickedDate}
+              onChange={(e) => {
+                setPickedDate(e.target.value);
+                setDateFilter("PICK_DATE");
+              }}
+              className={`text-xs font-bold bg-transparent outline-none cursor-pointer ${
+                dateFilter === "PICK_DATE" ? "text-white [color-scheme:dark]" : "text-[#3E2723]"
+              }`}
+            />
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+              dateFilter === "PICK_DATE" ? "bg-amber-400 text-[#3E2723] font-black" : "bg-black/10 text-gray-700 font-bold"
+            }`}>
+              {pickedDateCount}
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="relative shrink-0 -mt-4 z-0">
         <SearchNormal1 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -244,8 +370,12 @@ export default function AdminBranchTransferPage() {
           (activeTab === "incoming" && filteredIncoming.length === 0)) && (
           <div className="flex flex-col items-center justify-center h-48 bg-white/50 border border-dashed border-[#C5A059]/30 rounded-xl">
             <ArrowSwapHorizontal className="w-8 h-8 text-[#C5A059]/40 mb-2" />
-            <p className="text-muted-foreground font-bold text-sm uppercase tracking-widest">
-              {search ? `No matching ${activeTab} orders for "${search}"` : `No ${activeTab} records found`}
+            <p className="text-muted-foreground font-bold text-sm uppercase tracking-widest text-center px-4">
+              {search
+                ? `No matching ${activeTab} orders for "${search}"`
+                : activeTab === "local"
+                ? `No transferable orders found for ${dateFilter === "TODAY" ? "Today" : dateFilter === "TOMORROW" ? "Tomorrow" : pickedDate}`
+                : `No ${activeTab} records found`}
             </p>
             {activeTab === "local" && !search && (
               <p className="text-muted-foreground text-xs mt-1 text-center px-8">
