@@ -13,6 +13,18 @@ interface CloudinaryUploaderProps {
   existingImages?: string[];
 }
 
+/**
+ * Automatically injects Cloudinary modern performance transformations:
+ * - f_auto: Delivers AVIF or WebP depending on browser support (60-80% smaller).
+ * - q_auto: Intelligent compression matching human visual perception without blur.
+ * - c_limit,w_1200: Caps max width at 1200px (retina-ready) so raw 4000px smartphone photos don't bloat the site.
+ */
+export function optimizeCloudinaryUrl(url: string, maxWidth = 1200): string {
+  if (!url || typeof url !== 'string' || !url.includes('/upload/')) return url;
+  if (url.includes('f_auto') || url.includes('q_auto')) return url;
+  return url.replace('/upload/', `/upload/f_auto,q_auto,c_limit,w_${maxWidth}/`);
+}
+
 export default function CloudinaryUploader({
   onUploadSuccess,
   maxFiles = 5,
@@ -27,7 +39,7 @@ export default function CloudinaryUploader({
   const [loadingText, setLoadingText] = useState("Preparing image...");
 
   useEffect(() => {
-    setPreviewUrls(existingImages);
+    setPreviewUrls(existingImages.map(url => optimizeCloudinaryUrl(url, 1200)));
   }, [JSON.stringify(existingImages)]);
 
   useEffect(() => {
@@ -91,7 +103,8 @@ export default function CloudinaryUploader({
 
         const data = await res.json();
         if (data.secure_url) {
-          newUrls.push(data.secure_url);
+          const optimized = optimizeCloudinaryUrl(data.secure_url, 1200);
+          newUrls.push(optimized);
         } else {
           console.error("Cloudinary upload error:", data);
           setErrorMsg(data.error?.message || "Failed to upload an image.");
