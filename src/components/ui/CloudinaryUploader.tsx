@@ -61,10 +61,10 @@ export default function CloudinaryUploader({
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-    
+
     setErrorMsg(null);
     const files = Array.from(e.target.files);
-    
+
     if (previewUrls.length + files.length > maxFiles) {
       setErrorMsg(`You can only upload up to ${maxFiles} images here.`);
       return;
@@ -135,22 +135,22 @@ export default function CloudinaryUploader({
     <div className="w-full space-y-3">
       {/* Upload Zone */}
       {previewUrls.length < maxFiles && (
-        <div 
+        <div
           onClick={() => fileInputRef.current?.click()}
           className={`relative border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-secondary/30 hover:bg-secondary/70 min-h-[140px] ${isUploading ? 'pointer-events-none border-primary/40 bg-primary/5' : ''}`}
         >
-          <input 
-            type="file" 
+          <input
+            type="file"
             ref={fileInputRef}
-            className="hidden" 
+            className="hidden"
             multiple={maxFiles > 1}
             accept="image/*"
             onChange={handleFileChange}
           />
-          
+
           <AnimatePresence mode="wait">
             {isUploading ? (
-              <motion.div 
+              <motion.div
                 key="uploading"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -164,7 +164,7 @@ export default function CloudinaryUploader({
                   </div>
                 </div>
                 <div className="flex flex-col items-center justify-center min-h-[40px]">
-                  <motion.p 
+                  <motion.p
                     key={loadingText}
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -177,7 +177,7 @@ export default function CloudinaryUploader({
                 </div>
               </motion.div>
             ) : (
-              <motion.div 
+              <motion.div
                 key="idle"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -207,11 +207,11 @@ export default function CloudinaryUploader({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {previewUrls.map((url, i) => (
             <div key={i} className="relative group aspect-square rounded-xl overflow-hidden bg-secondary border border-border">
-              <Image 
-                src={url} 
-                alt={`Preview ${i+1}`} 
-                fill 
-                className="object-cover" 
+              <Image
+                src={url}
+                alt={`Preview ${i + 1}`}
+                fill
+                className="object-cover"
                 sizes="(max-width: 768px) 50vw, 33vw"
               />
               <button

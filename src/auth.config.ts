@@ -1,5 +1,8 @@
 if (typeof process !== 'undefined') {
   process.env.AUTH_TRUST_HOST = 'true';
+  if (!process.env.AUTH_SECRET && process.env.NEXTAUTH_SECRET) {
+    process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET;
+  }
 }
 
 import type { NextAuthConfig } from "next-auth";
@@ -9,18 +12,6 @@ export const authConfig = {
   providers: [],
   pages: {
     signIn: "/login",
-  },
-  useSecureCookies: process.env.NODE_ENV === "production",
-  cookies: {
-    sessionToken: {
-      name: process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-      },
-    },
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
@@ -38,18 +29,21 @@ export const authConfig = {
       // On first sign-in, seed token from credential authorize()
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role;
-        token.branchId = (user as any).branchId;
-        token.deliveryScope = (user as any).deliveryScope;
-        token.customPermissions = (user as any).customPermissions;
+        token.role = (user as any).role ? String((user as any).role).toUpperCase() : token.role;
+        token.branchId = (user as any).branchId ?? token.branchId;
+        token.deliveryScope = (user as any).deliveryScope ?? token.deliveryScope;
+        token.customPermissions = (user as any).customPermissions ?? token.customPermissions;
       }
 
       return token;
     },
     async session({ session, token }) {
       if (token) {
+        if (!session.user) {
+          session.user = {} as any;
+        }
         session.user.id = token.id as string;
-        (session.user as any).role = token.role;
+        (session.user as any).role = token.role ? String(token.role).toUpperCase() : undefined;
         (session.user as any).branchId = token.branchId;
         (session.user as any).deliveryScope = token.deliveryScope;
         (session.user as any).customPermissions = token.customPermissions;
@@ -61,5 +55,5 @@ export const authConfig = {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || "fallback_secret_for_development_and_staging_only_1234567890",
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "fallback_secret_for_development_and_staging_only_1234567890",
 } satisfies NextAuthConfig;

@@ -91,7 +91,7 @@ function SalesLayoutInner({ children }: { children: React.ReactNode }) {
 
 export default function SalesLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider refetchInterval={30} refetchOnWindowFocus={true}>
+    <SessionProvider refetchInterval={300} refetchOnWindowFocus={false}>
       <PushNotificationManager />
       <WarningSiren />
       <SalesLayoutInner>{children}</SalesLayoutInner>

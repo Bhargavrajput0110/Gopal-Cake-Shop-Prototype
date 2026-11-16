@@ -16,10 +16,10 @@ export const {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role;
-        token.branchId = (user as any).branchId;
-        token.deliveryScope = (user as any).deliveryScope;
-        token.customPermissions = (user as any).customPermissions;
+        token.role = (user as any).role ? String((user as any).role).toUpperCase() : token.role;
+        token.branchId = (user as any).branchId ?? token.branchId;
+        token.deliveryScope = (user as any).deliveryScope ?? token.deliveryScope;
+        token.customPermissions = (user as any).customPermissions ?? token.customPermissions;
       }
 
       // Re-read live permissions from DB in Node runtime
@@ -30,7 +30,7 @@ export const {
             select: { role: true, branchId: true, deliveryScope: true, customPermissions: true, status: true },
           });
           if (fresh && fresh.status !== 'SUSPENDED') {
-            token.role = fresh.role;
+            token.role = fresh.role ? String(fresh.role).toUpperCase() : token.role;
             token.branchId = fresh.branchId;
             token.deliveryScope = fresh.deliveryScope;
             token.customPermissions = fresh.customPermissions;
@@ -41,6 +41,19 @@ export const {
       }
 
       return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        if (!session.user) {
+          session.user = {} as any;
+        }
+        session.user.id = token.id as string;
+        (session.user as any).role = token.role ? String(token.role).toUpperCase() : undefined;
+        (session.user as any).branchId = token.branchId;
+        (session.user as any).deliveryScope = token.deliveryScope;
+        (session.user as any).customPermissions = token.customPermissions;
+      }
+      return session;
     },
   },
   providers: [

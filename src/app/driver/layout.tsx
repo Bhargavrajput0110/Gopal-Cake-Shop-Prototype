@@ -12,7 +12,7 @@ export default function DriverLayout({
   children: React.ReactNode
 }) {
   return (
-    <SessionProvider refetchInterval={30} refetchOnWindowFocus={true}>
+    <SessionProvider refetchInterval={300} refetchOnWindowFocus={false}>
       <WarningSiren />
       <div className="h-screen flex flex-col bg-background">
         <AppTopbar config={DELIVERY_NAV_CONFIG} showSearch={false} />

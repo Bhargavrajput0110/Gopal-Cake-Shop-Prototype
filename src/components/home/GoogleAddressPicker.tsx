@@ -89,7 +89,7 @@ async function calculateRealRoadDistanceKm(lat1: number, lon1: number, lat2: num
         }
       }
     }
-  } catch (_e) {}
+  } catch (_e) { }
   return calculateEstimatedRoadDistanceKm(lat1, lon1, lat2, lon2);
 }
 
@@ -116,7 +116,7 @@ async function performSmartAddressSearch(query: string): Promise<any[]> {
         return apiData.results;
       }
     }
-  } catch (_e) {}
+  } catch (_e) { }
 
   return [];
 }
@@ -205,7 +205,7 @@ function PlacesAutocomplete({
 
       {showMenu && (
         <div className="absolute z-[300] w-full mt-1 bg-white border border-border/80 rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto divide-y divide-border/40">
-          
+
           {/* 1-Tap Option: Use exact typed text as location */}
           <button
             type="button"
@@ -376,7 +376,7 @@ export function GoogleAddressPicker(props: GoogleAddressPickerProps) {
             props.onAddressChange(data.display_name);
             foundAddr = true;
           }
-        } catch (_e) {}
+        } catch (_e) { }
       }
 
       if (!foundAddr) {
