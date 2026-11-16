@@ -141,7 +141,7 @@ export default function InventoryPage() {
   const canRaw = hasPerm("inv_raw_ingredients", ["ADMIN", "CHEF", "MANAGER"]);
   const canEod = hasPerm("inv_eod_closing", ["ADMIN", "MANAGER"]);
   const canReportDamage = hasPerm("inv_spoilage_damage", ["ADMIN", "MANAGER", "CHEF"]);
-  const canEditDelete = hasPerm("inv_edit_delete", ["ADMIN"]);
+  const canEditDelete = isAdmin || hasPerm("inv_edit_delete", ["ADMIN", "MANAGER", "CHEF"]);
   const canDeadStock = hasPerm("inv_dead_stock", ["ADMIN", "MANAGER"]);
   const canFinancials = hasPerm("inv_financials", ["ADMIN"]);
   const canCaReport = hasPerm("inv_ca_monthly_report", ["ADMIN"]);
@@ -2348,9 +2348,27 @@ export default function InventoryPage() {
                   <div className="p-3 bg-secondary/40 rounded-2xl flex items-center justify-between text-xs">
                     <div>
                       <span className="text-[10px] text-muted-foreground block">Available Stock</span>
-                      <span className={`font-black text-base ${isLow ? "text-rose-600" : "text-foreground"}`}>
-                        {Number(item.currentStock)} {item.unit}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-black text-base ${isLow ? "text-rose-600" : "text-foreground"}`}>
+                          {Number(item.currentStock)} {item.unit}
+                        </span>
+                        <button
+                          onClick={() => setEditTarget({
+                            type: "PREP",
+                            id: item.id,
+                            title: item.name,
+                            qty: Number(item.currentStock),
+                            flavor: item.flavor || "",
+                            unit: item.unit,
+                            bestBeforeDate: item.bestBeforeDate ? new Date(item.bestBeforeDate).toISOString().split("T")[0] : ""
+                          })}
+                          className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground text-[10px] font-bold transition-all flex items-center gap-1 active:scale-95 border border-primary/20"
+                          title="Click to directly edit available stock"
+                        >
+                          <Edit2 size={11} />
+                          <span>Edit</span>
+                        </button>
+                      </div>
                     </div>
                     <div className="text-right">
                       <span className="text-[10px] text-muted-foreground block">Min Alert Level</span>
@@ -2359,26 +2377,42 @@ export default function InventoryPage() {
                   </div>
 
                   {/* Chef Log Quick Deduct Buttons */}
-                  <div className="pt-2 border-t border-border/40 flex items-center justify-between">
+                  <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-1 flex-wrap">
                     <span className="text-[10px] text-muted-foreground font-bold">Chef Quick Log:</span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         onClick={() => handleChefLogDeduct(item.id, 1, "SUBTRACT")}
                         className="px-2.5 py-1 rounded-lg bg-secondary text-foreground text-xs font-bold hover:bg-rose-500/20 hover:text-rose-600 transition-colors"
+                        title="Deduct 1"
                       >
                         -1
                       </button>
                       <button
                         onClick={() => handleChefLogDeduct(item.id, 5, "SUBTRACT")}
                         className="px-2.5 py-1 rounded-lg bg-secondary text-foreground text-xs font-bold hover:bg-rose-500/20 hover:text-rose-600 transition-colors"
+                        title="Deduct 5"
                       >
                         -5
                       </button>
                       <button
                         onClick={() => handleChefLogDeduct(item.id, 10, "ADD")}
                         className="px-2.5 py-1 rounded-lg bg-secondary text-foreground text-xs font-bold hover:bg-emerald-500/20 hover:text-emerald-600 transition-colors"
+                        title="Add 10"
                       >
                         +10
+                      </button>
+                      <button
+                        onClick={() => {
+                          const val = prompt(`Enter quantity of ${item.name} used / added (in ${item.unit}):`, "1");
+                          if (val && !isNaN(Number(val)) && Number(val) > 0) {
+                            const isSubtract = confirm(`Product Used / Adjustment for ${item.name}:\n\nClick [OK] to DEDUCT (Used: -${val} ${item.unit})\nClick [Cancel] to ADD (Restocked: +${val} ${item.unit})`);
+                            handleChefLogDeduct(item.id, Number(val), isSubtract ? "SUBTRACT" : "ADD");
+                          }
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary hover:text-primary-foreground transition-all active:scale-95 border border-primary/20"
+                        title="Log exact custom amount used"
+                      >
+                        Custom ±
                       </button>
                     </div>
                   </div>
@@ -2479,9 +2513,27 @@ export default function InventoryPage() {
                   <div className="p-3 bg-secondary/40 rounded-2xl flex items-center justify-between text-xs">
                     <div>
                       <span className="text-[10px] text-muted-foreground block">Current Stock</span>
-                      <span className={`font-black text-base ${isLow ? "text-rose-600" : "text-foreground"}`}>
-                        {Number(item.currentStock)} {item.unit}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-black text-base ${isLow ? "text-rose-600" : "text-foreground"}`}>
+                          {Number(item.currentStock)} {item.unit}
+                        </span>
+                        <button
+                          onClick={() => setEditTarget({
+                            type: "RAW",
+                            id: item.id,
+                            title: item.name,
+                            qty: Number(item.currentStock),
+                            unit: item.unit,
+                            price: Number(item.costPerUnit),
+                            bestBeforeDate: item.bestBeforeDate ? new Date(item.bestBeforeDate).toISOString().split("T")[0] : ""
+                          })}
+                          className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground text-[10px] font-bold transition-all flex items-center gap-1 active:scale-95 border border-primary/20"
+                          title="Click to directly edit raw ingredient stock"
+                        >
+                          <Edit2 size={11} />
+                          <span>Edit</span>
+                        </button>
+                      </div>
                     </div>
                     <div className="text-right">
                       <span className="text-[10px] text-muted-foreground block">Reorder Alert</span>
@@ -2489,26 +2541,42 @@ export default function InventoryPage() {
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-border/40 flex items-center justify-between">
+                  <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-1 flex-wrap">
                     <span className="text-[10px] text-muted-foreground font-bold">Quick Adjust:</span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         onClick={() => handleQuickAdjustRaw(item.id, 5, "SUBTRACT")}
                         className="px-2 py-1 rounded-lg bg-secondary text-foreground text-[10px] font-bold hover:bg-rose-500/20 hover:text-rose-600"
+                        title="Deduct 5"
                       >
                         -5 {item.unit}
                       </button>
                       <button
                         onClick={() => handleQuickAdjustRaw(item.id, 10, "ADD")}
                         className="px-2 py-1 rounded-lg bg-secondary text-foreground text-[10px] font-bold hover:bg-emerald-500/20 hover:text-emerald-600"
+                        title="Add 10"
                       >
                         +10
                       </button>
                       <button
                         onClick={() => handleQuickAdjustRaw(item.id, 50, "ADD")}
                         className="px-2 py-1 rounded-lg bg-secondary text-foreground text-[10px] font-bold hover:bg-emerald-500/20 hover:text-emerald-600"
+                        title="Add 50"
                       >
                         +50
+                      </button>
+                      <button
+                        onClick={() => {
+                          const val = prompt(`Enter quantity of raw ingredient ${item.name} used / added (in ${item.unit}):`, "5");
+                          if (val && !isNaN(Number(val)) && Number(val) > 0) {
+                            const isSubtract = confirm(`Raw Ingredient Adjustment for ${item.name}:\n\nClick [OK] to DEDUCT (Used: -${val} ${item.unit})\nClick [Cancel] to ADD (Restocked: +${val} ${item.unit})`);
+                            handleQuickAdjustRaw(item.id, Number(val), isSubtract ? "SUBTRACT" : "ADD");
+                          }
+                        }}
+                        className="px-2 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary hover:text-primary-foreground transition-all active:scale-95 border border-primary/20"
+                        title="Adjust custom quantity"
+                      >
+                        Custom ±
                       </button>
                     </div>
                   </div>
