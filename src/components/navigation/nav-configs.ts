@@ -22,7 +22,7 @@ export const ADMIN_NAV_CONFIG: AppConfig = {
   appName: "Gopal Cake Shop",
   appSubtitle: "Admin Panel",
   rootHref: "/admin",
-  user: { name: "Gopal Bhai", role: "Owner · Admin", initials: "G" },
+  user: { name: "Rishi Bhai", role: "Admin", initials: "R" },
   
   nav: [
     {

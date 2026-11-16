@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logout } from "iconsax-react";
-import { signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { ADMIN_NAV_CONFIG } from "@/components/navigation/nav-configs";
 import { authSignOut } from "@/lib/authUtils";
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const displayName = session?.user?.name || "Rishi Bhai";
+  const displayRole = (session?.user as any)?.role || "Admin";
+  const displayInitials = displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "R";
   const navItems = ADMIN_NAV_CONFIG.nav[0].items;
 
   return (
@@ -58,11 +62,11 @@ export function AdminSidebar() {
       <div className="p-3 border-t border-border space-y-1">
         <div className="flex items-center gap-3 px-3 py-2 mb-1">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <span className="text-primary font-black text-xs">G</span>
+            <span className="text-primary font-black text-xs">{displayInitials}</span>
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-black text-foreground truncate">Gopal Bhai</p>
-            <p className="text-[10px] text-muted-foreground font-medium">Owner · Admin</p>
+            <p className="text-xs font-black text-foreground truncate">{displayName}</p>
+            <p className="text-[10px] text-muted-foreground font-medium">{displayRole}</p>
           </div>
         </div>
         <button 
