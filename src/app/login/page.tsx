@@ -23,6 +23,12 @@ export default async function LoginPage() {
     where: {
       role: { in: ['ADMIN', 'MANAGER', 'SALESPERSON', 'CHEF', 'DELIVERY', 'VENDOR_PHOTO', 'VENDOR_FLORIST', 'VENDOR_ACRYLIC'] },
       status: { not: 'SUSPENDED' }
+    },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      branchId: true
     }
   });
 

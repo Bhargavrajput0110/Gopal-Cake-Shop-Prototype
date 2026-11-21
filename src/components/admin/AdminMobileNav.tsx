@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { HambergerMenu, CloseSquare, Logout, Home2 } from "iconsax-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { signOut } from "next-auth/react";
+import { authSignOut } from "@/lib/authUtils";
 import { ADMIN_NAV_CONFIG } from "@/components/navigation/nav-configs";
 
 export function AdminMobileNav() {
@@ -73,8 +74,10 @@ export function AdminMobileNav() {
                 Back to Website
               </Link>
               <button 
-                onClick={() => { document.cookie = 'gopal_dummy_role=; path=/; max-age=0'; window.location.href='/login'; }}
-                className="flex items-center gap-3 p-3.5 rounded-xl font-bold text-rose-500 bg-rose-500/10 w-full hover:bg-rose-500/20 transition-colors"
+                onClick={async () => {
+                  await authSignOut("/login");
+                }}
+                className="flex items-center gap-3 p-3.5 rounded-xl font-bold text-rose-500 bg-rose-500/10 w-full hover:bg-rose-500/20 transition-colors cursor-pointer"
               >
                 <Logout className="w-5 h-5 shrink-0" />
                 Sign Out

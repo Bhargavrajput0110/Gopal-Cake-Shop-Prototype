@@ -79,7 +79,7 @@ export const MANAGER_NAV_CONFIG: AppConfig = {
   appName: "Gopal Bakery",
   appSubtitle: "Branch Manager",
   rootHref: "/manager",
-  user: { name: "Rahul Sharma", role: "Branch Manager", initials: "RS" },
+  user: { name: "Branch Manager", role: "Manager", initials: "BM" },
   
   nav: [
     {
@@ -96,7 +96,7 @@ export const CHEF_NAV_CONFIG: AppConfig = {
   appName: "Kitchen Display",
   appSubtitle: "Chef Station",
   rootHref: "/chef",
-  user: { name: "Chef Sanjeev", role: "Head Chef", initials: "CS" },
+  user: { name: "Kitchen Chef", role: "Chef", initials: "KC" },
   
   nav: [
     {
@@ -112,7 +112,7 @@ export const DELIVERY_NAV_CONFIG: AppConfig = {
   appName: "Driver App",
   appSubtitle: "Delivery Portal",
   rootHref: "/driver",
-  user: { name: "Amit Kumar", role: "Driver", initials: "AK" },
+  user: { name: "Delivery Driver", role: "Driver", initials: "DD" },
   
   nav: [
     {
@@ -128,7 +128,7 @@ export const VENDOR_NAV_CONFIG: AppConfig = {
   appName: "Vendor Portal",
   appSubtitle: "Tasks",
   rootHref: "/vendor",
-  user: { name: "PrintMagic Studio", role: "Vendor", initials: "PM" },
+  user: { name: "Vendor Partner", role: "Vendor", initials: "VP" },
   
   nav: [
     {

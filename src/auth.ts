@@ -16,20 +16,22 @@ export const {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.name = user.name;
         token.role = (user as any).role ? String((user as any).role).toUpperCase() : token.role;
         token.branchId = (user as any).branchId ?? token.branchId;
         token.deliveryScope = (user as any).deliveryScope ?? token.deliveryScope;
         token.customPermissions = (user as any).customPermissions ?? token.customPermissions;
       }
 
-      // Re-read live permissions from DB in Node runtime
-      if (token.id) {
+      // Re-read live permissions from DB in Node runtime only when refreshing (skip redundant call on initial login)
+      if (!user && token.id) {
         try {
           const fresh = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { role: true, branchId: true, deliveryScope: true, customPermissions: true, status: true },
+            select: { name: true, role: true, branchId: true, deliveryScope: true, customPermissions: true, status: true },
           });
           if (fresh && fresh.status !== 'SUSPENDED') {
+            token.name = fresh.name ?? token.name;
             token.role = fresh.role ? String(fresh.role).toUpperCase() : token.role;
             token.branchId = fresh.branchId;
             token.deliveryScope = fresh.deliveryScope;
@@ -48,6 +50,7 @@ export const {
           session.user = {} as any;
         }
         session.user.id = token.id as string;
+        session.user.name = (token.name as string) || session.user.name;
         (session.user as any).role = token.role ? String(token.role).toUpperCase() : undefined;
         (session.user as any).branchId = token.branchId;
         (session.user as any).deliveryScope = token.deliveryScope;
@@ -86,19 +89,17 @@ export const {
         }
         
         if (isValid) {
-          // Record successful login timestamp in DB
-          try {
-            await prisma.user.update({
-              where: { id: user.id },
-              data: {
-                lastLoginAt: new Date(),
-                lastActivityAt: new Date(),
-                ...(user.status === 'INVITED' ? { status: 'ACTIVE', activatedAt: new Date() } : {})
-              }
-            });
-          } catch (err) {
+          // Record successful login timestamp in DB asynchronously (non-blocking for instant login response)
+          prisma.user.update({
+            where: { id: user.id },
+            data: {
+              lastLoginAt: new Date(),
+              lastActivityAt: new Date(),
+              ...(user.status === 'INVITED' ? { status: 'ACTIVE', activatedAt: new Date() } : {})
+            }
+          }).catch((err) => {
             console.error('[Auth] Failed to update lastLoginAt:', err);
-          }
+          });
 
           return {
             id: user.id,

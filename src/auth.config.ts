@@ -29,6 +29,7 @@ export const authConfig = {
       // On first sign-in, seed token from credential authorize()
       if (user) {
         token.id = user.id;
+        token.name = user.name;
         token.role = (user as any).role ? String((user as any).role).toUpperCase() : token.role;
         token.branchId = (user as any).branchId ?? token.branchId;
         token.deliveryScope = (user as any).deliveryScope ?? token.deliveryScope;
@@ -43,6 +44,7 @@ export const authConfig = {
           session.user = {} as any;
         }
         session.user.id = token.id as string;
+        session.user.name = (token.name as string) || session.user.name;
         (session.user as any).role = token.role ? String(token.role).toUpperCase() : undefined;
         (session.user as any).branchId = token.branchId;
         (session.user as any).deliveryScope = token.deliveryScope;
