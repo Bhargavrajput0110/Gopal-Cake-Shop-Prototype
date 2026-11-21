@@ -67,6 +67,7 @@ function CustomPageContent() {
             isCustom={isActuallyCustom}
             isPhotoCake={(product as any).isPhotoCake}
             editingCartItem={editingCartItem}
+            isModal={false}
             onClose={() => {
               // Scroll to top or show success toast (handled by QuickBuyForm inherently pushing to cart)
             }} 

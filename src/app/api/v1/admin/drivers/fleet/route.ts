@@ -99,6 +99,7 @@ export const GET = withApiHandler(async (ctx) => {
     id: o.id,
     orderNumber: o.orderNumber,
     customerName: o.customer.name,
+    customerPhone: o.customer.phone || 'N/A',
     address: o.deliveryAddress || 'N/A',
     branch: o.branch.name,
     distance: o.deliveryDistanceKm || 0,

@@ -69,10 +69,7 @@ export default function POSPage() {
         const filtered = (Array.isArray(items) ? items : []).filter((c: any) => c.status === 'active');
         if (filtered.length > 0) return filtered;
       } catch (e) {
-        console.error("API failed for categories", e);
-        if (typeof window !== 'undefined') {
-          alert("Unable to load product categories. Please contact the manager.");
-        }
+        console.warn("API failed for categories, falling back to all products:", e);
         return [];
       }
     }

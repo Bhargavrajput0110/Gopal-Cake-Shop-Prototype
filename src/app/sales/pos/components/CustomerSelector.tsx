@@ -5,9 +5,40 @@ import { useQuery } from "@tanstack/react-query"
 import { fetchClient } from "@/lib/api/client"
 
 export function CustomerSelector() {
-  const { customerId, setCustomer } = useCart()
+  const { customerId, setCustomer, addItem } = useCart()
   const [search, setSearch] = React.useState("")
   const [isOpen, setIsOpen] = React.useState(false)
+  const [isRepeating, setIsRepeating] = React.useState(false)
+
+  const handleRepeatLastOrder = async (cust: any) => {
+    if (!cust) return;
+    try {
+      setIsRepeating(true);
+      const q = cust.phone || cust.name;
+      const res = await fetchClient<any>(`/orders?search=${encodeURIComponent(q)}&limit=1`);
+      const payload = res?.data || res;
+      const orders = payload?.orders || payload?.items || payload;
+      const lastOrder = Array.isArray(orders) ? orders[0] : null;
+
+      if (lastOrder && Array.isArray(lastOrder.items) && lastOrder.items.length > 0) {
+        lastOrder.items.forEach((item: any) => {
+          addItem({
+            productId: item.productId || item.id,
+            name: item.productName || item.name || "Bakery Item",
+            price: Number(item.unitPrice || item.price || 0),
+            weight: Number(item.weight) || 0.5,
+            flavor: item.flavour || item.flavor || "Standard",
+            quantity: item.quantity || 1,
+            image: item.image || item.thumbnail || "/images/placeholder.png"
+          });
+        });
+      }
+    } catch (e) {
+      console.warn("Failed to repeat last order", e);
+    } finally {
+      setIsRepeating(false);
+    }
+  };
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ['customers-search', search],
@@ -69,13 +100,14 @@ export function CustomerSelector() {
               )}
             </div>
             
-            {/* Repeat Previous Order Stub */}
+            {/* Repeat Previous Order Button */}
             {selectedCustomer.email !== 'walkin@gopalcakeshop.com' && (
               <button 
-                onClick={() => alert("Repeat Last Order Triggered")}
-                className="w-full font-ui text-[9px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 py-2.5 rounded-xl transition-colors text-center"
+                onClick={() => handleRepeatLastOrder(selectedCustomer)}
+                disabled={isRepeating}
+                className="w-full font-ui text-[9px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 py-2.5 rounded-xl transition-colors text-center disabled:opacity-50"
               >
-                Repeat Last Order
+                {isRepeating ? "Loading Previous Order..." : "Repeat Last Order"}
               </button>
             )}
           </div>

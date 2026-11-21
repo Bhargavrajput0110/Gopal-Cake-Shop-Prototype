@@ -17,6 +17,7 @@ interface MockOrder {
   id: string
   orderNumber: string
   customerName: string
+  customerPhone?: string
   address: string
   branch: string
   distance: number
@@ -172,12 +173,22 @@ export default function AdminDriversPage() {
                       >
                         View History
                       </button>
-                      <button 
-                        className="px-4 py-2 bg-gray-100 text-gray-700 text-xs font-bold uppercase rounded-lg"
-                        onClick={() => alert('Call customer functionality')}
-                      >
-                        Call Customer
-                      </button>
+                      {order.customerPhone && order.customerPhone !== 'N/A' ? (
+                        <a 
+                          href={`tel:${order.customerPhone}`}
+                          className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold uppercase rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                          title={`Call ${order.customerPhone}`}
+                        >
+                          Call Customer
+                        </a>
+                      ) : (
+                        <button 
+                          className="px-4 py-2 bg-gray-100 text-gray-400 text-xs font-bold uppercase rounded-lg cursor-not-allowed"
+                          disabled
+                        >
+                          Call Customer
+                        </button>
+                      )}
                     </div>
 
                     {order.assignedDriver && (

@@ -11,7 +11,7 @@ import { NotificationToast } from '@/components/ui/NotificationToast';
 import CloudinaryUploader from "@/components/ui/CloudinaryUploader";
 import { GalleryAdd, ArrowLeft } from "iconsax-react";
 
-export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake = false, editingCartItem, isPOSMode = false }: { product: any, onClose?: () => void, isCustom?: boolean, isPhotoCake?: boolean, editingCartItem?: any, isPOSMode?: boolean }) {
+export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake = false, editingCartItem, isPOSMode = false, isModal = true }: { product: any, onClose?: () => void, isCustom?: boolean, isPhotoCake?: boolean, editingCartItem?: any, isPOSMode?: boolean, isModal?: boolean }) {
   const { addItem, updateItemConfig, setIsCartOpen } = useCart();
   const flavours = getActiveFlavours();
   
@@ -50,13 +50,14 @@ export function QuickBuyForm({ product, onClose, isCustom = false, isPhotoCake =
   const isCake = !isFlowerOrBouquet && !isHotBake && !isMerchandiseOrAccessory;
 
   useEffect(() => {
-    // Prevent touchpad scroll bleeding to the background webpage
+    if (!isModal) return;
+    // Prevent touchpad scroll bleeding to the background webpage when rendered in modal
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = originalOverflow;
     };
-  }, []);
+  }, [isModal]);
   
   let initialAvailableWeights = isCake 
     ? [...WEIGHT_OPTIONS] 

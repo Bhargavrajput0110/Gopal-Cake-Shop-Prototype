@@ -4,13 +4,13 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import JsBarcode from "jsbarcode";
 import { useSession } from "next-auth/react";
-import { 
-  ScanBarcode, 
-  AddCircle, 
-  Printer, 
-  Box, 
-  Trash, 
-  Shop, 
+import {
+  ScanBarcode,
+  AddCircle,
+  Printer,
+  Box,
+  Trash,
+  Shop,
   SearchNormal1,
   Flash,
   Clock,
@@ -116,7 +116,7 @@ export default function InventoryPage() {
       const raw = (session?.user as any)?.customPermissions;
       if (typeof raw === "string") return JSON.parse(raw);
       if (typeof raw === "object" && raw !== null) return raw;
-    } catch {}
+    } catch { }
     return {};
   }, [session]);
 
@@ -157,7 +157,7 @@ export default function InventoryPage() {
       else if (canRaw) setActiveTab("RAW_INGREDIENTS");
     }
   }, [canViewFinished, canHotBakes, canBrownies, canPrep, canRaw]);
-  
+
   // Day-wise filter states
   const [dateFilter, setDateFilter] = useState<"TODAY" | "YESTERDAY" | "LAST_7_DAYS" | "DEAD_STOCK" | "ALL" | "CUSTOM">("TODAY");
   const [customDate, setCustomDate] = useState<string>("");
@@ -165,11 +165,11 @@ export default function InventoryPage() {
 
   // Finished Goods & Hot Bakes Batches
   const [batches, setBatches] = useState<InventoryBatch[]>([]);
-  const [stats, setStats] = useState({ 
-    totalInStock: 0, 
-    todayStock: 0, 
-    totalSoldToday: 0, 
-    totalExpired: 0, 
+  const [stats, setStats] = useState({
+    totalInStock: 0,
+    todayStock: 0,
+    totalSoldToday: 0,
+    totalExpired: 0,
     totalDamaged: 0,
     totalWastageLoss: 0,
     totalDeadStock: 0,
@@ -223,7 +223,7 @@ export default function InventoryPage() {
   const [reportYear, setReportYear] = useState<number>(new Date().getFullYear());
   const [monthlyReportData, setMonthlyReportData] = useState<any | null>(null);
   const [reportLoading, setReportLoading] = useState<boolean>(false);
-  
+
   // Prep Stocks (Sponges & Creams)
   const [prepItems, setPrepItems] = useState<PrepStockItem[]>([]);
   const [prepStats, setPrepStats] = useState({ totalItemsCount: 0, totalSpongesCount: 0, totalCreamsKg: 0, lowStockAlerts: 0 });
@@ -380,12 +380,12 @@ export default function InventoryPage() {
 
       if (dataInv?.success) {
         setBatches(dataInv.batches || []);
-        setStats(dataInv.stats || { 
-          totalInStock: 0, 
-          todayStock: 0, 
-          totalSoldToday: 0, 
-          totalExpired: 0, 
-          totalDamaged: 0, 
+        setStats(dataInv.stats || {
+          totalInStock: 0,
+          todayStock: 0,
+          totalSoldToday: 0,
+          totalExpired: 0,
+          totalDamaged: 0,
           totalWastageLoss: 0,
           totalDeadStock: 0,
           deadStockLockedCapital: 0
@@ -947,8 +947,8 @@ export default function InventoryPage() {
 
     try {
       setSubmitting(true);
-      const finalReason = selectedDamageReason === "Other" 
-        ? (customDamageNote || "Unspecified damage") 
+      const finalReason = selectedDamageReason === "Other"
+        ? (customDamageNote || "Unspecified damage")
         : selectedDamageReason;
 
       const res = await fetch("/api/v1/admin/inventory", {
@@ -979,7 +979,7 @@ export default function InventoryPage() {
     try {
       setEodSubmitting(true);
       const targetBranch = selectedBranch !== "ALL" ? selectedBranch : (branches[0]?.id || "uma");
-      
+
       const dispositionsArray = Object.entries(eodDispositions).map(([batchId, info]) => ({
         batchId,
         remainingQty: batches.find(b => b.id === batchId)?.closingQty || 0,
@@ -1157,18 +1157,18 @@ export default function InventoryPage() {
     return r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q);
   });
 
-  const hasAnyInventoryAccess = 
-    canViewFinished || 
-    canInward || 
-    canHotBakes || 
-    canBrownies || 
-    canPrep || 
-    canRaw || 
-    canEod || 
-    canReportDamage || 
-    canEditDelete || 
-    canDeadStock || 
-    canFinancials || 
+  const hasAnyInventoryAccess =
+    canViewFinished ||
+    canInward ||
+    canHotBakes ||
+    canBrownies ||
+    canPrep ||
+    canRaw ||
+    canEod ||
+    canReportDamage ||
+    canEditDelete ||
+    canDeadStock ||
+    canFinancials ||
     canCaReport;
 
   if (sessionStatus !== "loading" && !loading && !hasAnyInventoryAccess) {
@@ -1180,7 +1180,7 @@ export default function InventoryPage() {
         <div>
           <h2 className="text-xl font-black text-foreground">Inventory Access Restricted</h2>
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-            Your account does not have active component permissions for Bakery Inventory. 
+            Your account does not have active component permissions for Bakery Inventory.
             Please request <strong>Rishi Bhai</strong> (Store Admin) to grant you specific inventory components in <em>User Management &gt; Edit Access</em>.
           </p>
         </div>
@@ -1383,11 +1383,10 @@ export default function InventoryPage() {
         {canViewFinished && (
           <button
             onClick={() => setActiveTab("FINISHED_GOODS")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all ${
-              activeTab === "FINISHED_GOODS"
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all ${activeTab === "FINISHED_GOODS"
                 ? "bg-[var(--brand-deep-rose)] text-white shadow-sm"
                 : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-            }`}
+              }`}
           >
             <Box size={16} variant="Bold" />
             <span>🎂 Finished Cakes ({stats.totalInStock} in stock)</span>
@@ -1397,11 +1396,10 @@ export default function InventoryPage() {
         {canHotBakes && (
           <button
             onClick={() => setActiveTab("HOT_BAKES")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all ${
-              activeTab === "HOT_BAKES"
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all ${activeTab === "HOT_BAKES"
                 ? "bg-amber-600 text-white shadow-sm"
                 : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-            }`}
+              }`}
           >
             <Flash size={16} variant="Bold" />
             <span>🥐 Hot Bakes (Puffs / Savoury)</span>
@@ -1411,11 +1409,10 @@ export default function InventoryPage() {
         {canBrownies && (
           <button
             onClick={() => setActiveTab("BROWNIE_TRAYS")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all ${
-              activeTab === "BROWNIE_TRAYS"
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all ${activeTab === "BROWNIE_TRAYS"
                 ? "bg-orange-700 text-white shadow-sm"
                 : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-            }`}
+              }`}
           >
             <Coffee size={16} variant="Bold" />
             <span>🍫 Brownie Trays ({brownieStats.totalPiecesAvailable} pcs left)</span>
@@ -1425,11 +1422,10 @@ export default function InventoryPage() {
         {canPrep && (
           <button
             onClick={() => setActiveTab("PREP_STOCKS")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all ${
-              activeTab === "PREP_STOCKS"
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all ${activeTab === "PREP_STOCKS"
                 ? "bg-indigo-600 text-white shadow-sm"
                 : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-            }`}
+              }`}
           >
             <Category size={16} variant="Bold" />
             <span>🥣 Prep Stocks ({prepStats.totalSpongesCount} Sponges)</span>
@@ -1444,11 +1440,10 @@ export default function InventoryPage() {
         {canRaw && (
           <button
             onClick={() => setActiveTab("RAW_INGREDIENTS")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all ${
-              activeTab === "RAW_INGREDIENTS"
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all ${activeTab === "RAW_INGREDIENTS"
                 ? "bg-zinc-800 text-white shadow-sm"
                 : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-            }`}
+              }`}
           >
             <Layer size={16} variant="Bold" />
             <span>📦 Raw Ingredients ({rawStats.totalStockKg} kg)</span>
@@ -1504,11 +1499,10 @@ export default function InventoryPage() {
               setDateFilter("TODAY");
               setCustomDate("");
             }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              dateFilter === "TODAY"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${dateFilter === "TODAY"
                 ? "bg-[var(--brand-deep-rose)] text-white shadow-xs"
                 : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50"
-            }`}
+              }`}
           >
             🟢 Today's Stock
           </button>
@@ -1517,11 +1511,10 @@ export default function InventoryPage() {
               setDateFilter("YESTERDAY");
               setCustomDate("");
             }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              dateFilter === "YESTERDAY"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${dateFilter === "YESTERDAY"
                 ? "bg-[var(--brand-deep-rose)] text-white shadow-xs"
                 : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50"
-            }`}
+              }`}
           >
             Yesterday
           </button>
@@ -1530,11 +1523,10 @@ export default function InventoryPage() {
               setDateFilter("LAST_7_DAYS");
               setCustomDate("");
             }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              dateFilter === "LAST_7_DAYS"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${dateFilter === "LAST_7_DAYS"
                 ? "bg-[var(--brand-deep-rose)] text-white shadow-xs"
                 : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50"
-            }`}
+              }`}
           >
             Last 7 Days
           </button>
@@ -1544,11 +1536,10 @@ export default function InventoryPage() {
                 setDateFilter("DEAD_STOCK");
                 setCustomDate("");
               }}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 flex items-center gap-1.5 ${
-                dateFilter === "DEAD_STOCK"
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 flex items-center gap-1.5 ${dateFilter === "DEAD_STOCK"
                   ? "bg-rose-600 text-white shadow-xs font-black"
                   : "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 border border-rose-500/20"
-              }`}
+                }`}
             >
               <span>⚠️ Dead Stock ({stats.totalDeadStock || 0})</span>
             </button>
@@ -1558,11 +1549,10 @@ export default function InventoryPage() {
               setDateFilter("ALL");
               setCustomDate("");
             }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              dateFilter === "ALL" && !customDate
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${dateFilter === "ALL" && !customDate
                 ? "bg-[var(--brand-deep-rose)] text-white shadow-xs"
                 : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50"
-            }`}
+              }`}
           >
             All Time
           </button>
@@ -1584,11 +1574,10 @@ export default function InventoryPage() {
           {/* Expired Filter Toggle */}
           <button
             onClick={() => setShowExpiredOnly(!showExpiredOnly)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold border whitespace-nowrap transition-all shrink-0 flex items-center gap-1.5 ${
-              showExpiredOnly
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold border whitespace-nowrap transition-all shrink-0 flex items-center gap-1.5 ${showExpiredOnly
                 ? "bg-rose-600 text-white border-rose-600 shadow-xs"
                 : "bg-rose-500/10 text-rose-600 border-rose-200 hover:bg-rose-500/20"
-            }`}
+              }`}
           >
             <Danger size={14} variant="Bold" />
             <span>Show Expired ({stats.totalExpired})</span>
@@ -1786,12 +1775,11 @@ export default function InventoryPage() {
                     </span>
                     <h3 className="font-bold text-sm text-foreground">{batch.title}</h3>
                     <span className="text-xs text-muted-foreground">· {batch.branch.name}</span>
-                    
+
                     {/* Best Before Badge */}
                     {batch.bestBeforeDate && (
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                        isBatchExp ? "bg-rose-500 text-white animate-pulse" : "bg-secondary text-muted-foreground"
-                      }`}>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 ${isBatchExp ? "bg-rose-500 text-white animate-pulse" : "bg-secondary text-muted-foreground"
+                        }`}>
                         <Calendar size={12} />
                         {isBatchExp ? `⛔ EXPIRED on ${formatDateShort(batch.bestBeforeDate)}` : `Best Before: ${formatDateShort(batch.bestBeforeDate)}`}
                       </span>
@@ -1846,27 +1834,25 @@ export default function InventoryPage() {
                     return (
                       <div
                         key={unit.id}
-                        className={`p-3.5 rounded-2xl border text-xs flex flex-col justify-between gap-3 transition-all shadow-xs ${
-                          expired
+                        className={`p-3.5 rounded-2xl border text-xs flex flex-col justify-between gap-3 transition-all shadow-xs ${expired
                             ? "bg-rose-50/70 dark:bg-rose-950/20 border-rose-300 dark:border-rose-900 ring-1 ring-rose-500/30"
-                            : unit.status === "IN_STOCK" 
-                              ? "bg-card border-border/80 hover:border-[var(--brand-deep-rose)]/50 hover:shadow-md" 
+                            : unit.status === "IN_STOCK"
+                              ? "bg-card border-border/80 hover:border-[var(--brand-deep-rose)]/50 hover:shadow-md"
                               : "bg-secondary/30 opacity-75"
-                        }`}
+                          }`}
                       >
                         <div className="space-y-2">
                           {/* Top Row: Item Title + Status Pill */}
                           <div className="flex items-start justify-between gap-2">
                             <span className="font-black text-sm text-foreground leading-snug line-clamp-1">{unit.itemTitle}</span>
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 tracking-wide ${
-                              expired
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 tracking-wide ${expired
                                 ? "bg-rose-600 text-white animate-pulse"
-                                : unit.status === "IN_STOCK" 
-                                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30" 
+                                : unit.status === "IN_STOCK"
+                                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30"
                                   : unit.status === "SOLD"
                                     ? "bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30"
                                     : "bg-secondary text-muted-foreground"
-                            }`}>
+                              }`}>
                               {expired ? "⛔ EXPIRED" : unit.status}
                             </span>
                           </div>
@@ -1915,11 +1901,10 @@ export default function InventoryPage() {
                           ) : null}
 
                           {/* Best Before Date Badge */}
-                          <div className={`p-1.5 rounded-xl border flex items-center justify-between text-[10px] font-bold ${
-                            expired 
+                          <div className={`p-1.5 rounded-xl border flex items-center justify-between text-[10px] font-bold ${expired
                               ? "bg-rose-500/15 border-rose-300 text-rose-700 dark:text-rose-300"
                               : "bg-secondary/40 border-border/60 text-muted-foreground"
-                          }`}>
+                            }`}>
                             <span className="flex items-center gap-1">
                               <span>📅</span>
                               <span>Best Before:</span>
@@ -2019,9 +2004,8 @@ export default function InventoryPage() {
               const remaining = batch.closingQty;
               const expired = isItemExpired(batch.bestBeforeDate);
               return (
-                <div key={batch.id} className={`p-4 rounded-3xl border shadow-xs space-y-3 ${
-                  expired ? "bg-rose-50/60 dark:bg-rose-950/20 border-rose-300" : "bg-card border-border"
-                }`}>
+                <div key={batch.id} className={`p-4 rounded-3xl border shadow-xs space-y-3 ${expired ? "bg-rose-50/60 dark:bg-rose-950/20 border-rose-300" : "bg-card border-border"
+                  }`}>
                   <div className="flex items-start justify-between">
                     <div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-700">
@@ -2033,9 +2017,8 @@ export default function InventoryPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className={`text-xs font-black px-2 py-1 rounded-xl ${
-                        expired ? "bg-rose-600 text-white" : "bg-amber-500/10 text-amber-700"
-                      }`}>
+                      <span className={`text-xs font-black px-2 py-1 rounded-xl ${expired ? "bg-rose-600 text-white" : "bg-amber-500/10 text-amber-700"
+                        }`}>
                         {expired ? "⛔ EXPIRED" : `${remaining} Left`}
                       </span>
                       {canEditDelete && (
@@ -2142,13 +2125,12 @@ export default function InventoryPage() {
               return (
                 <div
                   key={tray.id}
-                  className={`p-4 rounded-3xl border shadow-xs space-y-3 ${
-                    expired 
+                  className={`p-4 rounded-3xl border shadow-xs space-y-3 ${expired
                       ? "bg-rose-50/60 dark:bg-rose-950/20 border-rose-300"
-                      : isDone 
-                        ? "bg-secondary/20 border-border/40 opacity-70" 
+                      : isDone
+                        ? "bg-secondary/20 border-border/40 opacity-70"
                         : "bg-card border-border hover:border-orange-500/40"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -2160,9 +2142,8 @@ export default function InventoryPage() {
                           {tray.trayCode}
                         </span>
                         {tray.bestBeforeDate && (
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                            expired ? "bg-rose-600 text-white" : "bg-secondary text-muted-foreground"
-                          }`}>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${expired ? "bg-rose-600 text-white" : "bg-secondary text-muted-foreground"
+                            }`}>
                             {expired ? "⛔ EXPIRED" : `Best Before: ${formatDateShort(tray.bestBeforeDate)}`}
                           </span>
                         )}
@@ -2282,13 +2263,12 @@ export default function InventoryPage() {
               return (
                 <div
                   key={item.id}
-                  className={`p-4 rounded-3xl border shadow-xs space-y-3 ${
-                    expired
+                  className={`p-4 rounded-3xl border shadow-xs space-y-3 ${expired
                       ? "bg-rose-50/60 dark:bg-rose-950/20 border-rose-300"
-                      : isLow 
-                        ? "bg-rose-500/5 border-rose-200" 
+                      : isLow
+                        ? "bg-rose-500/5 border-rose-200"
                         : "bg-card border-border"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -2302,9 +2282,8 @@ export default function InventoryPage() {
                           </span>
                         )}
                         {item.bestBeforeDate && (
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                            expired ? "bg-rose-600 text-white" : "bg-secondary text-muted-foreground"
-                          }`}>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${expired ? "bg-rose-600 text-white" : "bg-secondary text-muted-foreground"
+                            }`}>
                             {expired ? "⛔ EXPIRED" : `Best Before: ${formatDateShort(item.bestBeforeDate)}`}
                           </span>
                         )}
@@ -2452,13 +2431,12 @@ export default function InventoryPage() {
               return (
                 <div
                   key={item.id}
-                  className={`p-4 rounded-3xl border shadow-xs space-y-3 ${
-                    expired
+                  className={`p-4 rounded-3xl border shadow-xs space-y-3 ${expired
                       ? "bg-rose-50/60 dark:bg-rose-950/20 border-rose-300"
-                      : isLow 
-                        ? "bg-rose-500/5 border-rose-200" 
+                      : isLow
+                        ? "bg-rose-500/5 border-rose-200"
                         : "bg-card border-border"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -2467,9 +2445,8 @@ export default function InventoryPage() {
                           {item.category}
                         </span>
                         {item.bestBeforeDate && (
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                            expired ? "bg-rose-600 text-white" : "bg-secondary text-muted-foreground"
-                          }`}>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${expired ? "bg-rose-600 text-white" : "bg-secondary text-muted-foreground"
+                            }`}>
                             {expired ? "⛔ EXPIRED" : `Best Before: ${formatDateShort(item.bestBeforeDate)}`}
                           </span>
                         )}
@@ -2589,7 +2566,7 @@ export default function InventoryPage() {
 
       {/* MODAL 1: Finished Cakes Inward (Barcodes & Best Before) */}
       {showInwardModal && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setShowInwardModal(false); }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
         >
@@ -2602,8 +2579,8 @@ export default function InventoryPage() {
                   <p className="text-[11px] text-muted-foreground truncate">Make counter items, set best before & print serial barcode stickers</p>
                 </div>
               </div>
-              <button 
-                onClick={() => setShowInwardModal(false)} 
+              <button
+                onClick={() => setShowInwardModal(false)}
                 className="px-3 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-black text-xs flex items-center gap-1.5 border border-border transition-all active:scale-95 shrink-0"
                 title="Close"
               >
@@ -2631,11 +2608,10 @@ export default function InventoryPage() {
                         key={b.id}
                         type="button"
                         onClick={() => setInwardBranch(b.id)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                          inwardBranch === b.id
+                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${inwardBranch === b.id
                             ? "bg-[var(--brand-deep-rose)] text-white border-[var(--brand-deep-rose)] shadow-sm"
                             : "bg-secondary/40 border-border text-muted-foreground"
-                        }`}
+                          }`}
                       >
                         {b.name} ({b.code})
                       </button>
@@ -2665,11 +2641,10 @@ export default function InventoryPage() {
                         key={w}
                         type="button"
                         onClick={() => setWeight(w)}
-                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                          weight === w
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${weight === w
                             ? "bg-[var(--brand-deep-rose)] text-white border-[var(--brand-deep-rose)]"
                             : "bg-secondary/40 border-border text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         {w}
                       </button>
@@ -2713,11 +2688,10 @@ export default function InventoryPage() {
                         setCakeShelfLifeDays(s.days);
                         setCakeBestBefore(getFutureDateStr(s.days));
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                        cakeShelfLifeDays === s.days
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${cakeShelfLifeDays === s.days
                           ? "bg-[var(--brand-deep-rose)] text-white border-[var(--brand-deep-rose)]"
                           : "bg-background border-border text-muted-foreground hover:text-foreground"
-                      }`}
+                        }`}
                     >
                       {s.label}
                     </button>
@@ -2783,7 +2757,7 @@ export default function InventoryPage() {
 
       {/* MODAL 2: Hot Bakes Inward (Puffs - Quantity Only & Best Before) */}
       {showHotBakesModal && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setShowHotBakesModal(false); }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
         >
@@ -2793,8 +2767,8 @@ export default function InventoryPage() {
                 <Flash size={20} className="text-amber-600 shrink-0" variant="Bold" />
                 <h3 className="font-black text-base sm:text-lg text-foreground truncate">Inward Hot Bakes (Puffs)</h3>
               </div>
-              <button 
-                onClick={() => setShowHotBakesModal(false)} 
+              <button
+                onClick={() => setShowHotBakesModal(false)}
                 className="px-3 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-black text-xs flex items-center gap-1.5 border border-border transition-all active:scale-95 shrink-0"
                 title="Close"
               >
@@ -2855,9 +2829,8 @@ export default function InventoryPage() {
                       setHotBakeShelfLifeDays(1);
                       setHotBakeBestBefore(getFutureDateStr(1));
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                      hotBakeShelfLifeDays === 1 ? "bg-amber-600 text-white border-amber-600" : "bg-background border-border text-muted-foreground"
-                    }`}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${hotBakeShelfLifeDays === 1 ? "bg-amber-600 text-white border-amber-600" : "bg-background border-border text-muted-foreground"
+                      }`}
                   >
                     1 Day (Today Fresh)
                   </button>
@@ -2867,9 +2840,8 @@ export default function InventoryPage() {
                       setHotBakeShelfLifeDays(2);
                       setHotBakeBestBefore(getFutureDateStr(2));
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                      hotBakeShelfLifeDays === 2 ? "bg-amber-600 text-white border-amber-600" : "bg-background border-border text-muted-foreground"
-                    }`}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${hotBakeShelfLifeDays === 2 ? "bg-amber-600 text-white border-amber-600" : "bg-background border-border text-muted-foreground"
+                      }`}
                   >
                     2 Days (Tomorrow)
                   </button>
@@ -2933,7 +2905,7 @@ export default function InventoryPage() {
 
       {/* MODAL 3: Brownie Tray Inward Modal */}
       {showBrownieModal && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setShowBrownieModal(false); }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
         >
@@ -2943,8 +2915,8 @@ export default function InventoryPage() {
                 <Coffee size={20} className="text-orange-700 shrink-0" variant="Bold" />
                 <h3 className="font-black text-base sm:text-lg text-foreground truncate">Inward Brownie Tray</h3>
               </div>
-              <button 
-                onClick={() => setShowBrownieModal(false)} 
+              <button
+                onClick={() => setShowBrownieModal(false)}
                 className="px-3 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-black text-xs flex items-center gap-1.5 border border-border transition-all active:scale-95 shrink-0"
                 title="Close"
               >
@@ -3015,9 +2987,8 @@ export default function InventoryPage() {
                       setBrownieShelfLifeDays(4);
                       setBrownieBestBefore(getFutureDateStr(4));
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                      brownieShelfLifeDays === 4 ? "bg-orange-700 text-white border-orange-700" : "bg-background border-border text-muted-foreground"
-                    }`}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${brownieShelfLifeDays === 4 ? "bg-orange-700 text-white border-orange-700" : "bg-background border-border text-muted-foreground"
+                      }`}
                   >
                     4 Days (Fresh)
                   </button>
@@ -3027,9 +2998,8 @@ export default function InventoryPage() {
                       setBrownieShelfLifeDays(7);
                       setBrownieBestBefore(getFutureDateStr(7));
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                      brownieShelfLifeDays === 7 ? "bg-orange-700 text-white border-orange-700" : "bg-background border-border text-muted-foreground"
-                    }`}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${brownieShelfLifeDays === 7 ? "bg-orange-700 text-white border-orange-700" : "bg-background border-border text-muted-foreground"
+                      }`}
                   >
                     7 Days (Sealed)
                   </button>
@@ -3104,7 +3074,7 @@ export default function InventoryPage() {
 
       {/* MODAL 4: Prep Stock Modal (Sponges & Creams & Best Before) */}
       {showPrepModal && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setShowPrepModal(false); }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
         >
@@ -3114,8 +3084,8 @@ export default function InventoryPage() {
                 <Category size={20} className="text-indigo-600 shrink-0" variant="Bold" />
                 <h3 className="font-black text-base sm:text-lg text-foreground truncate">Add Prep Stock (Sponge / Cream)</h3>
               </div>
-              <button 
-                onClick={() => setShowPrepModal(false)} 
+              <button
+                onClick={() => setShowPrepModal(false)}
                 className="px-3 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-black text-xs flex items-center gap-1.5 border border-border transition-all active:scale-95 shrink-0"
                 title="Close"
               >
@@ -3178,9 +3148,8 @@ export default function InventoryPage() {
                       setPrepShelfLifeDays(3);
                       setPrepBestBefore(getFutureDateStr(3));
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                      prepShelfLifeDays === 3 ? "bg-indigo-600 text-white border-indigo-600" : "bg-background border-border text-muted-foreground"
-                    }`}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${prepShelfLifeDays === 3 ? "bg-indigo-600 text-white border-indigo-600" : "bg-background border-border text-muted-foreground"
+                      }`}
                   >
                     3 Days (Sponge)
                   </button>
@@ -3190,9 +3159,8 @@ export default function InventoryPage() {
                       setPrepShelfLifeDays(5);
                       setPrepBestBefore(getFutureDateStr(5));
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                      prepShelfLifeDays === 5 ? "bg-indigo-600 text-white border-indigo-600" : "bg-background border-border text-muted-foreground"
-                    }`}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${prepShelfLifeDays === 5 ? "bg-indigo-600 text-white border-indigo-600" : "bg-background border-border text-muted-foreground"
+                      }`}
                   >
                     5 Days (Syrup)
                   </button>
@@ -3267,7 +3235,7 @@ export default function InventoryPage() {
 
       {/* MODAL 5: Raw Ingredient Modal */}
       {showRawModal && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setShowRawModal(false); }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
         >
@@ -3277,8 +3245,8 @@ export default function InventoryPage() {
                 <Layer size={20} className="text-zinc-800 dark:text-zinc-200 shrink-0" variant="Bold" />
                 <h3 className="font-black text-base sm:text-lg text-foreground truncate">Add Raw Material / Packaging</h3>
               </div>
-              <button 
-                onClick={() => setShowRawModal(false)} 
+              <button
+                onClick={() => setShowRawModal(false)}
                 className="px-3 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-black text-xs flex items-center gap-1.5 border border-border transition-all active:scale-95 shrink-0"
                 title="Close"
               >
@@ -3402,7 +3370,7 @@ export default function InventoryPage() {
 
       {/* MODAL 6: UNIVERSAL EDIT / MODIFY ENTRY MODAL */}
       {editTarget && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setEditTarget(null); }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
         >
@@ -3417,8 +3385,8 @@ export default function InventoryPage() {
                   </p>
                 </div>
               </div>
-              <button 
-                onClick={() => setEditTarget(null)} 
+              <button
+                onClick={() => setEditTarget(null)}
                 className="px-3 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-black text-xs flex items-center gap-1.5 border border-border transition-all active:scale-95 shrink-0"
                 title="Close"
               >
@@ -3536,7 +3504,7 @@ export default function InventoryPage() {
 
       {/* MODAL 7: Thermal Barcode Label Printing Preview Modal */}
       {printUnits && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setPrintUnits(null); }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
         >
@@ -3551,8 +3519,8 @@ export default function InventoryPage() {
                   Ready for direct thermal label rolls (50mm × 25mm stickers). Click Print to send to barcode printer.
                 </p>
               </div>
-              <button 
-                onClick={() => setPrintUnits(null)} 
+              <button
+                onClick={() => setPrintUnits(null)}
                 className="px-3 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-black text-xs flex items-center gap-1.5 border border-border transition-all active:scale-95 shrink-0"
                 title="Close"
               >
@@ -3609,7 +3577,7 @@ export default function InventoryPage() {
 
       {/* MODAL 8: Quick Mark Damaged / Spoilage with Reason Tag */}
       {damageTarget && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setDamageTarget(null); }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
         >
@@ -3624,8 +3592,8 @@ export default function InventoryPage() {
                   <p className="text-[11px] text-muted-foreground font-mono truncate">{damageTarget.barcode}</p>
                 </div>
               </div>
-              <button 
-                onClick={() => setDamageTarget(null)} 
+              <button
+                onClick={() => setDamageTarget(null)}
                 className="px-3 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-black text-xs flex items-center gap-1.5 border border-border transition-all active:scale-95 shrink-0"
                 title="Close"
               >
@@ -3657,11 +3625,10 @@ export default function InventoryPage() {
                       key={r.val}
                       type="button"
                       onClick={() => setSelectedDamageReason(r.val)}
-                      className={`p-2.5 rounded-xl border text-left font-bold transition-all flex items-center justify-between ${
-                        selectedDamageReason === r.val
+                      className={`p-2.5 rounded-xl border text-left font-bold transition-all flex items-center justify-between ${selectedDamageReason === r.val
                           ? "bg-rose-500/10 border-rose-500 text-rose-700 dark:text-rose-400 shadow-xs"
                           : "bg-secondary/20 border-border/60 hover:bg-secondary/40 text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       <span>{r.label}</span>
                       {selectedDamageReason === r.val && <TickCircle size={14} className="text-rose-600" variant="Bold" />}
@@ -3707,7 +3674,7 @@ export default function InventoryPage() {
 
       {/* MODAL 9: Wastage & Spoilage Breakdown Analytics (Feature 4) */}
       {showWastageModal && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setShowWastageModal(false); }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
         >
@@ -3722,8 +3689,8 @@ export default function InventoryPage() {
                   <p className="text-xs text-muted-foreground truncate">Loss root-cause analysis for {dateFilter.replace('_', ' ').toLowerCase()}</p>
                 </div>
               </div>
-              <button 
-                onClick={() => setShowWastageModal(false)} 
+              <button
+                onClick={() => setShowWastageModal(false)}
                 className="px-3 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-black text-xs flex items-center gap-1.5 border border-border transition-all active:scale-95 shrink-0"
                 title="Close"
               >
@@ -3762,7 +3729,7 @@ export default function InventoryPage() {
                     </div>
                     {/* Progress Bar */}
                     <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-rose-500 rounded-full transition-all duration-500"
                         style={{ width: `${wb.percentage}%` }}
                       />
@@ -3790,7 +3757,7 @@ export default function InventoryPage() {
 
       {/* MODAL 10: End-of-Day (EOD) Closing & Store Reconciliation Wizard (Feature 1) */}
       {showEODWizard && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setShowEODWizard(false); }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
         >
@@ -3808,8 +3775,8 @@ export default function InventoryPage() {
                   </p>
                 </div>
               </div>
-              <button 
-                onClick={() => setShowEODWizard(false)} 
+              <button
+                onClick={() => setShowEODWizard(false)}
                 className="w-9 h-9 rounded-full bg-secondary hover:bg-rose-500/20 hover:text-rose-600 text-foreground font-black text-base flex items-center justify-center border border-border transition-all active:scale-95 shadow-xs shrink-0"
                 title="Close Wizard (Esc)"
               >
@@ -3859,33 +3826,30 @@ export default function InventoryPage() {
                   <button
                     type="button"
                     onClick={() => setEodStep(1)}
-                    className={`py-2 px-2 sm:px-3 rounded-xl text-center sm:text-left text-xs font-bold transition-all ${
-                      eodStep === 1
+                    className={`py-2 px-2 sm:px-3 rounded-xl text-center sm:text-left text-xs font-bold transition-all ${eodStep === 1
                         ? "bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30"
                         : "text-muted-foreground"
-                    }`}
+                      }`}
                   >
                     1. Hot Bakes
                   </button>
                   <button
                     type="button"
                     onClick={() => setEodStep(2)}
-                    className={`py-2 px-2 sm:px-3 rounded-xl text-center sm:text-left text-xs font-bold transition-all ${
-                      eodStep === 2
+                    className={`py-2 px-2 sm:px-3 rounded-xl text-center sm:text-left text-xs font-bold transition-all ${eodStep === 2
                         ? "bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30"
                         : "text-muted-foreground"
-                    }`}
+                      }`}
                   >
                     2. Chiller Cakes
                   </button>
                   <button
                     type="button"
                     onClick={() => setEodStep(3)}
-                    className={`py-2 px-2 sm:px-3 rounded-xl text-center sm:text-left text-xs font-bold transition-all ${
-                      eodStep === 3
+                    className={`py-2 px-2 sm:px-3 rounded-xl text-center sm:text-left text-xs font-bold transition-all ${eodStep === 3
                         ? "bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30"
                         : "text-muted-foreground"
-                    }`}
+                      }`}
                   >
                     3. Cash Drawer
                   </button>
@@ -3934,11 +3898,10 @@ export default function InventoryPage() {
                                         reason: opt.action === "STAFF_MEAL" ? "Staff Consumed" : opt.action === "DISCARD" ? "Unsold expired at close" : "Rolled over"
                                       }
                                     })}
-                                    className={`p-2 rounded-xl border text-center transition-all ${
-                                      currentDisp === opt.action
+                                    className={`p-2 rounded-xl border text-center transition-all ${currentDisp === opt.action
                                         ? "bg-amber-600 text-white border-amber-600 font-black shadow-xs"
                                         : "bg-secondary/40 border-border/60 text-muted-foreground hover:bg-secondary/60 font-semibold"
-                                    }`}
+                                      }`}
                                   >
                                     <div className="text-[11px]">{opt.label}</div>
                                     <div className="text-[9px] opacity-80 mt-0.5">{opt.desc}</div>
@@ -4080,11 +4043,10 @@ export default function InventoryPage() {
                     {canFinancials && eodPhysicalCash > 0 && (
                       <div className="p-3 rounded-2xl bg-secondary/30 border border-border flex items-center justify-between">
                         <span className="font-bold text-muted-foreground">Cash Variance (Physical vs System):</span>
-                        <span className={`px-2 py-0.5 rounded font-black text-xs ${
-                          eodPhysicalCash >= (revenueStats?.totalRevenue || 0)
+                        <span className={`px-2 py-0.5 rounded font-black text-xs ${eodPhysicalCash >= (revenueStats?.totalRevenue || 0)
                             ? "bg-emerald-500/10 text-emerald-600"
                             : "bg-rose-500/10 text-rose-600"
-                        }`}>
+                          }`}>
                           {eodPhysicalCash - (revenueStats?.totalRevenue || (stats.totalSoldToday * 450)) >= 0 ? "+" : ""}
                           ₹{eodPhysicalCash - (revenueStats?.totalRevenue || (stats.totalSoldToday * 450))}
                         </span>
@@ -4138,7 +4100,7 @@ export default function InventoryPage() {
       )}
       {/* MODAL 11: Monthly CA Tax & Audit Report Modal (Rishi Bhai / Granted Staff) */}
       {canCaReport && showMonthlyReportModal && (
-        <div 
+        <div
           onClick={(e) => { if (e.target === e.currentTarget) setShowMonthlyReportModal(false); }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
         >
@@ -4158,8 +4120,8 @@ export default function InventoryPage() {
                   </p>
                 </div>
               </div>
-              <button 
-                onClick={() => setShowMonthlyReportModal(false)} 
+              <button
+                onClick={() => setShowMonthlyReportModal(false)}
                 className="px-3 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-black text-xs flex items-center gap-1.5 border border-border transition-all active:scale-95 shrink-0"
                 title="Close Statement"
               >
