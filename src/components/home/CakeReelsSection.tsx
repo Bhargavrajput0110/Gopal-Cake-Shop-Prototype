@@ -15,6 +15,7 @@ import {
   Cake,
 } from "lucide-react";
 import { Instagram } from "iconsax-react";
+import { getOptimizedVideoUrl, getVideoPosterUrl } from "@/lib/media/optimizeMedia";
 
 export interface CakeReelItem {
   id: string;
@@ -29,7 +30,7 @@ export interface CakeReelItem {
   caption: string;
 }
 
-const REELS_DATA: CakeReelItem[] = [
+const RAW_REELS_DATA: CakeReelItem[] = [
   {
     id: "reel-1",
     title: "Grand Celebration Masterpiece",
@@ -73,6 +74,11 @@ const REELS_DATA: CakeReelItem[] = [
       "From structure to gold leaf detailing, witness how unforgettable wedding and milestone centrepieces come to life.",
   },
 ];
+
+const REELS_DATA: CakeReelItem[] = RAW_REELS_DATA.map((r) => ({
+  ...r,
+  videoUrl: getOptimizedVideoUrl(r.videoUrl, { width: 720 }),
+}));
 
 interface ReelCardProps {
   reel: CakeReelItem;
@@ -177,15 +183,16 @@ function ReelCard({ reel, isActiveSound, onToggleSound, isInView }: ReelCardProp
         boxShadow: "0 25px 50px -12px rgba(28, 15, 10, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08)",
       }}
     >
-      {/* ── Background Video ─────────────────────────────────── */}
+      {/* ── Background Video (Optimized with dynamic poster & lazy preload) ── */}
       <video
         ref={videoRef}
         src={reel.videoUrl}
+        poster={getVideoPosterUrl(reel.videoUrl, { width: 480 })}
         playsInline
         loop
         muted={!isActiveSound}
         autoPlay
-        preload="metadata"
+        preload={isInView ? "metadata" : "none"}
         onTimeUpdate={handleTimeUpdate}
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
       />

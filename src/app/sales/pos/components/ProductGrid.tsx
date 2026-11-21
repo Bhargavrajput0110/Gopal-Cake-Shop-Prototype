@@ -3,6 +3,7 @@ import * as React from "react"
 import { SearchNormal1, Flash } from "iconsax-react"
 import { QuickBuyForm } from "@/components/menu/QuickBuyForm"
 import { useCart } from "@/context/CartContext"
+import { getOptimizedImageUrl } from "@/lib/media/optimizeMedia"
 
 type Product = {
   id: string
@@ -361,7 +362,13 @@ export function ProductGrid({ products, categories = [], designs = [], isLoading
                       className="flex flex-col text-left bg-purple-50 border border-purple-100 hover:border-purple-300 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] group shadow-sm"
                     >
                       <div className="h-36 w-full bg-purple-100 flex items-center justify-center overflow-hidden relative">
-                        <img src={design.imageUrl} alt={design.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        <img
+                          src={getOptimizedImageUrl(design.imageUrl, { width: 360 })}
+                          alt={design.name}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
                         <span className="absolute top-2 right-2 bg-purple-600 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow">Design</span>
                       </div>
                       <div className="p-3 w-full bg-white">
@@ -407,7 +414,13 @@ export function ProductGrid({ products, categories = [], designs = [], isLoading
                         {(() => {
                           const img = product.thumbnail || product.mediumImage || product.largeImage || product.imageUrl || product.images?.[0]
                           return img ? (
-                            <img src={img} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                            <img
+                              src={getOptimizedImageUrl(img, { width: 360 })}
+                              alt={product.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            />
                           ) : (
                             <span className="font-ui text-[9px] text-muted-foreground uppercase font-bold tracking-widest">No Image</span>
                           )

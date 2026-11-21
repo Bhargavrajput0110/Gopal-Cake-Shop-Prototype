@@ -2,20 +2,32 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { ArrowRight2 } from "iconsax-react";
+import { getOptimizedVideoUrl, getVideoPosterUrl } from "@/lib/media/optimizeMedia";
 
 const FLOATING_WORDS = ["Artisanal", "Handcrafted", "Eggless", "Premium", "Fresh Daily"];
 
-const HERO_VIDEOS = [
+const RAW_HERO_VIDEOS = [
   "https://res.cloudinary.com/slprqeid/video/upload/v1794636080/AQM68PFgCFMDtFENr9Jg5RC4a0wuMkXGSyACAGWEmHgIFraGMOj0Ohh9uJGR_i3PJEB0hx2hbijSJqgpvkkqDBT8i4XySe3eF0oHFGM.mp4",
   "https://res.cloudinary.com/slprqeid/video/upload/v1794635889/AQPNN56h_Qv3XeTl2TFdXzcCebpuh9Hww-rrYlC7fgILXqZ6sKR2ClwO-5GJoWlEeL9duvJhr1okUKIr7vUaTpHFgyFYv5MTN9-YgQo.mp4",
   "https://res.cloudinary.com/slprqeid/video/upload/v1794635840/AQNF2L_tRssFYWmIr-3qNiVPOM5BDUnl4wMwqW3vZCgFSWrZBpxpFjWAXcB5we7Hxo6AJJgZwWTvs62yZlqHy9EYHSEmWxCssFD4634_1.mp4",
 ];
 
+const HERO_VIDEOS = RAW_HERO_VIDEOS.map((v) => getOptimizedVideoUrl(v, { width: 720 }));
+const HERO_POSTERS = RAW_HERO_VIDEOS.map((v) => getVideoPosterUrl(v, { width: 640 }));
+
 export function Hero() {
   const ref = useRef<HTMLElement>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([null, null, null]);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, []);
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -71,6 +83,7 @@ export function Hero() {
           <video
             ref={(el) => { videoRefs.current[0] = el; }}
             src={HERO_VIDEOS[0]}
+            poster={HERO_POSTERS[0]}
             autoPlay
             loop
             muted
@@ -81,43 +94,49 @@ export function Hero() {
           />
         </div>
 
-        {/* Reel 2 (Center — desktop only) */}
-        <div className="absolute left-[30%] top-0 bottom-0 w-[40%] hidden md:block">
-          <video
-            ref={(el) => { videoRefs.current[1] = el; }}
-            src={HERO_VIDEOS[1]}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="metadata"
-            className="absolute inset-0 w-full h-full object-cover scale-105"
-            style={{
-              willChange: "transform",
-              maskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
-              WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
-            }}
-          />
-        </div>
+        {/* Reel 2 (Center — desktop only, conditionally rendered to save mobile data) */}
+        {isDesktop && (
+          <div className="absolute left-[30%] top-0 bottom-0 w-[40%] hidden md:block">
+            <video
+              ref={(el) => { videoRefs.current[1] = el; }}
+              src={HERO_VIDEOS[1]}
+              poster={HERO_POSTERS[1]}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover scale-105"
+              style={{
+                willChange: "transform",
+                maskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
+                WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
+              }}
+            />
+          </div>
+        )}
 
-        {/* Reel 3 (Right — desktop only) */}
-        <div className="absolute left-[60%] top-0 bottom-0 w-[40%] hidden md:block">
-          <video
-            ref={(el) => { videoRefs.current[2] = el; }}
-            src={HERO_VIDEOS[2]}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="metadata"
-            className="absolute inset-0 w-full h-full object-cover scale-105"
-            style={{
-              willChange: "transform",
-              maskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
-              WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
-            }}
-          />
-        </div>
+        {/* Reel 3 (Right — desktop only, conditionally rendered to save mobile data) */}
+        {isDesktop && (
+          <div className="absolute left-[60%] top-0 bottom-0 w-[40%] hidden md:block">
+            <video
+              ref={(el) => { videoRefs.current[2] = el; }}
+              src={HERO_VIDEOS[2]}
+              poster={HERO_POSTERS[2]}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover scale-105"
+              style={{
+                willChange: "transform",
+                maskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
+                WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 25%, black 100%)",
+              }}
+            />
+          </div>
+        )}
 
         {/* Layer 1: Neutral dark wash */}
         <motion.div
