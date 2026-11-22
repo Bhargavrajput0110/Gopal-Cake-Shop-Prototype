@@ -217,6 +217,16 @@ export default function InventoryPage() {
   const [eodSubmitting, setEodSubmitting] = useState<boolean>(false);
   const [eodSuccessSummary, setEodSuccessSummary] = useState<any | null>(null);
 
+  // Custom Qty Adjust Modal (replaces prompt/confirm on mobile)
+  const [customQtyModal, setCustomQtyModal] = useState<{
+    id: string;
+    name: string;
+    unit: string;
+    type: "PREP" | "RAW";
+    inputVal: string;
+    op: "SUBTRACT" | "ADD";
+  } | null>(null);
+
   // Monthly CA Tax & Audit Report Modal
   const [showMonthlyReportModal, setShowMonthlyReportModal] = useState<boolean>(false);
   const [reportMonth, setReportMonth] = useState<number>(new Date().getMonth() + 1);
@@ -2381,13 +2391,16 @@ export default function InventoryPage() {
                         +10
                       </button>
                       <button
-                        onClick={() => {
-                          const val = prompt(`Enter quantity of ${item.name} used / added (in ${item.unit}):`, "1");
-                          if (val && !isNaN(Number(val)) && Number(val) > 0) {
-                            const isSubtract = confirm(`Product Used / Adjustment for ${item.name}:\n\nClick [OK] to DEDUCT (Used: -${val} ${item.unit})\nClick [Cancel] to ADD (Restocked: +${val} ${item.unit})`);
-                            handleChefLogDeduct(item.id, Number(val), isSubtract ? "SUBTRACT" : "ADD");
-                          }
-                        }}
+                        onClick={() =>
+                          setCustomQtyModal({
+                            id: item.id,
+                            name: item.name,
+                            unit: item.unit,
+                            type: "PREP",
+                            inputVal: "",
+                            op: "SUBTRACT",
+                          })
+                        }
                         className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary hover:text-primary-foreground transition-all active:scale-95 border border-primary/20"
                         title="Log exact custom amount used"
                       >
@@ -2543,13 +2556,16 @@ export default function InventoryPage() {
                         +50
                       </button>
                       <button
-                        onClick={() => {
-                          const val = prompt(`Enter quantity of raw ingredient ${item.name} used / added (in ${item.unit}):`, "5");
-                          if (val && !isNaN(Number(val)) && Number(val) > 0) {
-                            const isSubtract = confirm(`Raw Ingredient Adjustment for ${item.name}:\n\nClick [OK] to DEDUCT (Used: -${val} ${item.unit})\nClick [Cancel] to ADD (Restocked: +${val} ${item.unit})`);
-                            handleQuickAdjustRaw(item.id, Number(val), isSubtract ? "SUBTRACT" : "ADD");
-                          }
-                        }}
+                        onClick={() =>
+                          setCustomQtyModal({
+                            id: item.id,
+                            name: item.name,
+                            unit: item.unit,
+                            type: "RAW",
+                            inputVal: "",
+                            op: "SUBTRACT",
+                          })
+                        }
                         className="px-2 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary hover:text-primary-foreground transition-all active:scale-95 border border-primary/20"
                         title="Adjust custom quantity"
                       >
@@ -4365,6 +4381,99 @@ export default function InventoryPage() {
                 ✕ Close Statement
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ── Custom Qty Modal (mobile-safe, no prompt/confirm) ── */}
+      {customQtyModal && (
+        <div
+          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setCustomQtyModal(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-card rounded-t-3xl sm:rounded-3xl shadow-2xl border border-border/60 p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-black text-sm text-foreground leading-tight">{customQtyModal.name}</p>
+                <p className="text-[11px] text-muted-foreground">Adjust stock in <span className="font-bold">{customQtyModal.unit}</span></p>
+              </div>
+              <button
+                onClick={() => setCustomQtyModal(null)}
+                className="p-1.5 rounded-xl bg-secondary hover:bg-secondary/70 text-muted-foreground font-bold text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Amount input */}
+            <div>
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">
+                Quantity ({customQtyModal.unit})
+              </label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                autoFocus
+                value={customQtyModal.inputVal}
+                onChange={(e) =>
+                  setCustomQtyModal((prev) => prev ? { ...prev, inputVal: e.target.value } : null)
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const qty = parseFloat(customQtyModal.inputVal);
+                    if (!qty || qty <= 0) return;
+                    if (customQtyModal.type === "PREP") handleChefLogDeduct(customQtyModal.id, qty, customQtyModal.op);
+                    else handleQuickAdjustRaw(customQtyModal.id, qty, customQtyModal.op);
+                    setCustomQtyModal(null);
+                  }
+                }}
+                placeholder="e.g. 2.5"
+                className="w-full px-4 py-3 rounded-2xl bg-secondary border border-border text-foreground font-black text-lg text-center focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+              />
+            </div>
+
+            {/* Deduct / Add toggle */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setCustomQtyModal((prev) => prev ? { ...prev, op: "SUBTRACT" } : null)}
+                className={`py-2.5 rounded-2xl font-bold text-sm transition-all active:scale-95 border ${
+                  customQtyModal.op === "SUBTRACT"
+                    ? "bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-500/30"
+                    : "bg-rose-500/10 text-rose-600 border-rose-200 dark:border-rose-900"
+                }`}
+              >
+                − Used / Deduct
+              </button>
+              <button
+                onClick={() => setCustomQtyModal((prev) => prev ? { ...prev, op: "ADD" } : null)}
+                className={`py-2.5 rounded-2xl font-bold text-sm transition-all active:scale-95 border ${
+                  customQtyModal.op === "ADD"
+                    ? "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/30"
+                    : "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-900"
+                }`}
+              >
+                + Restock / Add
+              </button>
+            </div>
+
+            {/* Confirm */}
+            <button
+              onClick={() => {
+                const qty = parseFloat(customQtyModal.inputVal);
+                if (!qty || qty <= 0) return;
+                if (customQtyModal.type === "PREP") handleChefLogDeduct(customQtyModal.id, qty, customQtyModal.op);
+                else handleQuickAdjustRaw(customQtyModal.id, qty, customQtyModal.op);
+                setCustomQtyModal(null);
+              }}
+              disabled={!customQtyModal.inputVal || parseFloat(customQtyModal.inputVal) <= 0}
+              className="w-full py-3 rounded-2xl bg-primary text-primary-foreground font-black text-sm uppercase tracking-wider shadow-lg active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+            >
+              {customQtyModal.op === "SUBTRACT" ? "✓ Confirm Deduction" : "✓ Confirm Restock"}
+            </button>
           </div>
         </div>
       )}
