@@ -351,6 +351,12 @@ export class BranchTransferService {
         }
       });
 
+      // 2b. Cascade Operational Ownership to associated InventoryUnits
+      await tx.inventoryUnit.updateMany({
+        where: { soldOrderId: transfer.orderId },
+        data: { branchId: transfer.toBranchId }
+      });
+
       // 3. Timeline event (which triggers outbox notification)
       await TimelineService.create({
         orderId: transfer.orderId,
@@ -405,6 +411,69 @@ export class BranchTransferService {
         }
       }
       return updated;
+    });
+  }
+
+  /**
+   * Report in-transit discrepancy / damage for items transferred between branches.
+   * Marks units as DAMAGED with transit handling damage reason and adjusts batch quantities.
+   */
+  static async reportDiscrepancy(params: {
+    transferId: string;
+    branchId: string;
+    reportedBy: string;
+    damagedBarcodes: string[];
+    damageReason?: string;
+  }) {
+    return prisma.$transaction(async (tx) => {
+      const transfer = await tx.branchTransfer.findUnique({ where: { id: params.transferId } });
+      if (!transfer) throw new Error('Transfer not found');
+
+      const validUserId = await resolveValidUserId(params.reportedBy, tx);
+      const now = new Date();
+      const updatedUnits: any[] = [];
+
+      for (const barcode of params.damagedBarcodes) {
+        const clean = barcode.trim().toUpperCase();
+        const unit = await tx.inventoryUnit.findUnique({ where: { barcode: clean } });
+        if (unit) {
+          const updated = await tx.inventoryUnit.update({
+            where: { id: unit.id },
+            data: {
+              status: 'DAMAGED',
+              damagedAt: now,
+              damageReason: params.damageReason || 'Transit Handling Damage'
+            }
+          });
+
+          await tx.inventoryBatch.update({
+            where: { id: unit.batchId },
+            data: {
+              damagedQty: { increment: 1 },
+              closingQty: { decrement: 1 }
+            }
+          });
+
+          updatedUnits.push(updated);
+        }
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: validUserId,
+          action: 'DISCREPANCY_REPORTED',
+          tableName: 'BranchTransfer',
+          recordId: params.transferId,
+          oldValue: { damagedCount: 0 },
+          newValue: { damagedCount: updatedUnits.length, barcodes: params.damagedBarcodes }
+        }
+      });
+
+      return {
+        transferId: params.transferId,
+        damagedCount: updatedUnits.length,
+        units: updatedUnits
+      };
     });
   }
 }

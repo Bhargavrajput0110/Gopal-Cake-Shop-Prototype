@@ -580,9 +580,29 @@ export class StorefrontEngine {
         })
       }
 
+      // Pre-validation: Reject duplicate identical barcodes in checkout cart
+      const seenBarcodes = new Set<string>();
+      for (const item of payload.items) {
+        let bc: string | null = (item as any).barcode || (item as any).barcodeText || null;
+        if (!bc && item.productId && item.productId.startsWith('barcode-')) {
+          bc = item.productId.replace('barcode-', '');
+        }
+        if (!bc && item.notes) {
+          const match = item.notes.match(/(?:\[BARCODE:|Barcode:\s*)([A-Z0-9-]+)/i);
+          if (match) bc = match[1];
+        }
+        if (bc) {
+          const clean = bc.trim().toUpperCase();
+          if (seenBarcodes.has(clean)) {
+            throw new Error(`Duplicate barcode in checkout order: ${clean}`);
+          }
+          seenBarcodes.add(clean);
+        }
+      }
+
       // Deduct scanned Inventory Barcode Units and mark as SOLD
       for (const item of payload.items) {
-        let barcodeText: string | null = (item as any).barcode || null;
+        let barcodeText: string | null = (item as any).barcode || (item as any).barcodeText || null;
         if (!barcodeText && item.productId && item.productId.startsWith('barcode-')) {
           barcodeText = item.productId.replace('barcode-', '');
         }
@@ -597,6 +617,11 @@ export class StorefrontEngine {
           });
 
           if (unit) {
+            // Branch Isolation Guard: strictly prevent cross-branch selling
+            if (unit.branchId !== newOrder.branchId) {
+              throw new Error('Forbidden: This item belongs to a different branch.');
+            }
+
             const now = new Date();
             const isExpired = unit.status === 'EXPIRED' || Boolean(unit.bestBeforeDate && new Date(unit.bestBeforeDate) < now);
             if (isExpired) {
@@ -635,13 +660,13 @@ export class StorefrontEngine {
           }
         }
 
-        // 2. Brownie Piece Deduction (from active BrownieTray at this branch)
+        // 2. Brownie Piece Deduction (Multi-tray FIFO across active BrownieTrays at this branch)
         const isBrownie = item.productId === 'brownie-piece' || 
           item.productId.includes('brownie') || 
           (item.notes && item.notes.toLowerCase().includes('brownie'));
 
         if (isBrownie && !barcodeText) {
-          const activeTray = await tx.brownieTray.findFirst({
+          const activeTrays = await tx.brownieTray.findMany({
             where: {
               branchId: newOrder.branchId,
               status: 'CUT_INTO_PIECES',
@@ -649,56 +674,78 @@ export class StorefrontEngine {
             orderBy: { createdAt: 'asc' }
           });
 
-          if (activeTray) {
-            const now = new Date();
+          let neededPieces = item.quantity;
+          const now = new Date();
+
+          for (const activeTray of activeTrays) {
             if (activeTray.bestBeforeDate && new Date(activeTray.bestBeforeDate) < now) {
-              throw new Error(`Cannot sell from expired brownie tray #${activeTray.trayCode}. Best before was ${new Date(activeTray.bestBeforeDate).toLocaleDateString()}.`);
+              continue;
             }
 
-            if (activeTray.soldPieces < activeTray.totalPieces) {
-              const newSold = activeTray.soldPieces + item.quantity;
-              const isCompleted = newSold >= activeTray.totalPieces;
-              await tx.brownieTray.update({
-                where: { id: activeTray.id },
-                data: {
-                  soldPieces: newSold,
-                  status: isCompleted ? 'COMPLETED' : 'CUT_INTO_PIECES',
-                  completedAt: isCompleted ? new Date() : null
-                }
-              });
-              console.log(`[StorefrontEngine] Deducted ${item.quantity} brownie piece(s) from Tray #${activeTray.trayCode}. Remaining: ${Math.max(0, activeTray.totalPieces - newSold)}`);
-            }
+            const avail = Math.max(0, activeTray.totalPieces - activeTray.soldPieces);
+            if (avail <= 0) continue;
+
+            const take = Math.min(neededPieces, avail);
+            const newSold = activeTray.soldPieces + take;
+            const isCompleted = newSold >= activeTray.totalPieces;
+
+            await tx.brownieTray.update({
+              where: { id: activeTray.id },
+              data: {
+                soldPieces: newSold,
+                status: isCompleted ? 'COMPLETED' : 'CUT_INTO_PIECES',
+                completedAt: isCompleted ? new Date() : null
+              }
+            });
+
+            neededPieces -= take;
+            console.log(`[StorefrontEngine] Deducted ${take} brownie piece(s) from Tray #${activeTray.trayCode}. Remaining: ${Math.max(0, activeTray.totalPieces - newSold)}`);
+            if (neededPieces === 0) break;
+          }
+
+          if (neededPieces > 0) {
+            throw new Error(`Insufficient brownie pieces in stock at branch ${newOrder.branchId}. Short by: ${neededPieces}`);
           }
         }
 
-        // 3. Hot Bakes / Puffs Deduction (Quantity-based, no barcodes)
+        // 3. Hot Bakes / Puffs Deduction (Quantity-based multi-batch FIFO)
         const isHotBake = item.productId.startsWith('hot-bake-') ||
           (item.notes && (item.notes.toLowerCase().includes('puff') || item.notes.toLowerCase().includes('pattie')));
 
         if (isHotBake && !barcodeText) {
-          const activeBatch = await tx.inventoryBatch.findFirst({
+          const activeBatches = await tx.inventoryBatch.findMany({
             where: {
               branchId: newOrder.branchId,
               category: 'HOT_BAKES',
+              isClosed: false,
               closingQty: { gt: 0 }
             },
             orderBy: { createdAt: 'asc' }
           });
 
-          if (activeBatch) {
-            const now = new Date();
+          let needed = item.quantity;
+          const now = new Date();
+
+          for (const activeBatch of activeBatches) {
             if (activeBatch.bestBeforeDate && new Date(activeBatch.bestBeforeDate) < now) {
-              throw new Error(`Cannot sell expired hot bakes from batch "${activeBatch.title || activeBatch.id}". Best before was ${new Date(activeBatch.bestBeforeDate).toLocaleDateString()}.`);
+              continue;
             }
 
+            const take = Math.min(needed, activeBatch.closingQty);
             await tx.inventoryBatch.update({
               where: { id: activeBatch.id },
               data: {
-                soldQty: { increment: item.quantity },
-                closingQty: { decrement: item.quantity }
+                soldQty: { increment: take },
+                closingQty: { decrement: take }
               }
             });
-            console.log(`[StorefrontEngine] Deducted ${item.quantity} Hot Bake puff(s) from Batch #${activeBatch.id}`);
+            needed -= take;
+            console.log(`[StorefrontEngine] Deducted ${take} Hot Bake puff(s) from Batch #${activeBatch.id}`);
+            if (needed === 0) break;
+          }
+
+          if (needed > 0) {
+            throw new Error(`Insufficient hot bakes stock at branch ${newOrder.branchId}. Short by: ${needed}`);
           }
         }
       }

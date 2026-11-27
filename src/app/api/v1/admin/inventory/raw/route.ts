@@ -160,12 +160,12 @@ export async function POST(req: NextRequest) {
         where: { id: existing.id },
         data: {
           category: category || existing.category,
-          currentStock: Number(currentStock) !== undefined ? Number(currentStock) : existing.currentStock,
+          currentStock: currentStock !== undefined ? Number(currentStock) : existing.currentStock,
           unit: unit || existing.unit,
           minAlertLevel: minAlertLevel !== undefined ? Number(minAlertLevel) : existing.minAlertLevel,
           costPerUnit: costPerUnit !== undefined ? Number(costPerUnit) : existing.costPerUnit,
           branchId: branchId !== undefined ? branchId : existing.branchId,
-          notes: notes || existing.notes,
+          notes: notes !== undefined ? notes : existing.notes,
           bestBeforeDate: computedBestBefore || existing.bestBeforeDate
         }
       });
@@ -209,7 +209,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, name, category, currentStock, unit, minAlertLevel, costPerUnit, bestBeforeDate } = body;
+    const { id, name, category, currentStock, unit, minAlertLevel, costPerUnit, bestBeforeDate, notes } = body;
 
     if (!id) return NextResponse.json({ success: false, error: 'Ingredient ID required' }, { status: 400 });
 
@@ -220,6 +220,7 @@ export async function PUT(req: NextRequest) {
     if (unit !== undefined) dataToUpdate.unit = unit;
     if (minAlertLevel !== undefined) dataToUpdate.minAlertLevel = Number(minAlertLevel);
     if (costPerUnit !== undefined) dataToUpdate.costPerUnit = Number(costPerUnit);
+    if (notes !== undefined) dataToUpdate.notes = notes;
     if (bestBeforeDate !== undefined) {
       dataToUpdate.bestBeforeDate = bestBeforeDate ? new Date(bestBeforeDate) : null;
     }

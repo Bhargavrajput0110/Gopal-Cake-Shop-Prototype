@@ -1,4 +1,5 @@
 import { prismaTest } from './prisma-test'
+import { assertSafeForTruncation } from '../../src/lib/inventory/isolation-guard'
 
 /**
  * Truncates all application tables in the test database.
@@ -8,6 +9,9 @@ export async function resetDatabase() {
   const connectionString = process.env.DATABASE_URL || '';
   const schemaMatch = connectionString.match(/schema=([^&]+)/);
   const schemaName = schemaMatch ? schemaMatch[1] : 'public';
+
+  // Production Circuit Breaker: Assert schema is safe for destructive TRUNCATE
+  assertSafeForTruncation(schemaName, connectionString);
 
   const tablenames: Array<{ tablename: string }> = await prismaTest.$queryRawUnsafe(`SELECT tablename FROM pg_tables WHERE schemaname='${schemaName}'`);
   console.log('TABLES FOUND FOR SCHEMA:', schemaName, tablenames);

@@ -71,6 +71,7 @@ interface PrepStockItem {
   unit: string;
   minAlertLevel: number;
   costPerUnit: number;
+  notes?: string | null;
   bestBeforeDate?: string | null;
   branch?: { id: string; name: string; code: string } | null;
 }
@@ -99,6 +100,7 @@ interface RawIngredient {
   unit: string;
   minAlertLevel: number;
   costPerUnit: number;
+  notes?: string | null;
   bestBeforeDate?: string | null;
   branch?: { id: string; name: string; code: string } | null;
 }
@@ -246,6 +248,7 @@ export default function InventoryPage() {
   // Raw Ingredients
   const [rawIngredients, setRawIngredients] = useState<RawIngredient[]>([]);
   const [rawStats, setRawStats] = useState({ totalItemsCount: 0, totalStockKg: 0, lowStockAlerts: 0 });
+  const [selectedRawCategory, setSelectedRawCategory] = useState<string>("ALL");
 
   // Branch & Filter Controls
   const [branches, setBranches] = useState<{ id: string; name: string; code: string }[]>([]);
@@ -293,7 +296,7 @@ export default function InventoryPage() {
   // 4. Prep Stock Modal (Sponges & Creams)
   const [showPrepModal, setShowPrepModal] = useState(false);
   const [prepName, setPrepName] = useState("");
-  const [prepCat, setPrepCat] = useState<"SPONGE" | "CREAM" | "FILLING" | "SYRUP">("SPONGE");
+  const [prepCat, setPrepCat] = useState<"SPONGE" | "CREAM" | "FILLING" | "BASE" | "SYRUP">("SPONGE");
   const [prepFlavor, setPrepFlavor] = useState("");
   const [prepStock, setPrepStock] = useState(25);
   const [prepUnit, setPrepUnit] = useState("pcs");
@@ -900,6 +903,7 @@ export default function InventoryPage() {
             currentStock: editTarget.qty,
             unit: editTarget.unit,
             costPerUnit: editTarget.price,
+            notes: editTarget.notes,
             bestBeforeDate: editTarget.bestBeforeDate || null
           })
         });
@@ -1145,6 +1149,24 @@ export default function InventoryPage() {
     );
   });
 
+  const prepCategoryCounts = React.useMemo(() => {
+    const counts: Record<string, number> = { ALL: prepItems.length };
+    for (const p of prepItems) {
+      const cat = p.category || "OTHER";
+      counts[cat] = (counts[cat] || 0) + 1;
+    }
+    return counts;
+  }, [prepItems]);
+
+  const rawCategoryCounts = React.useMemo(() => {
+    const counts: Record<string, number> = { ALL: rawIngredients.length };
+    for (const r of rawIngredients) {
+      const cat = r.category || "Uncategorized";
+      counts[cat] = (counts[cat] || 0) + 1;
+    }
+    return counts;
+  }, [rawIngredients]);
+
   const filteredPrep = prepItems.filter((p) => {
     if (selectedPrepCategory !== "ALL" && p.category !== selectedPrepCategory) return false;
     if (showExpiredOnly && !isItemExpired(p.bestBeforeDate)) return false;
@@ -1161,10 +1183,15 @@ export default function InventoryPage() {
   });
 
   const filteredRaw = rawIngredients.filter((r) => {
+    if (selectedRawCategory !== "ALL" && r.category !== selectedRawCategory) return false;
     if (showExpiredOnly && !isItemExpired(r.bestBeforeDate)) return false;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q);
+    return (
+      r.name.toLowerCase().includes(q) ||
+      r.category.toLowerCase().includes(q) ||
+      (r.notes && r.notes.toLowerCase().includes(q))
+    );
   });
 
   const hasAnyInventoryAccess =
@@ -1456,7 +1483,7 @@ export default function InventoryPage() {
               }`}
           >
             <Layer size={16} variant="Bold" />
-            <span>📦 Raw Ingredients ({rawStats.totalStockKg} kg)</span>
+            <span>📦 Raw &amp; Store Stock ({rawStats.totalItemsCount || rawIngredients.length} items)</span>
           </button>
         )}
       </div>
@@ -2265,6 +2292,23 @@ export default function InventoryPage() {
             </button>
           </div>
 
+          {/* Prep Category Filter Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            {(["ALL", "SPONGE", "BASE", "CREAM", "FILLING", "SYRUP"] as const).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedPrepCategory(cat)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 border ${
+                  selectedPrepCategory === cat
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                    : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-secondary/60"
+                }`}
+              >
+                {cat === "ALL" ? "All Prep" : cat} ({prepCategoryCounts[cat] || 0})
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredPrep.map((item) => {
               const isLow = Number(item.currentStock) <= Number(item.minAlertLevel);
@@ -2415,25 +2459,42 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* 8. Tab 5: Raw Ingredients (Flour, Sugar, Dairy, Boxes) */}
+      {/* 8. Tab 5: Raw Ingredients & Store Stock */}
       {activeTab === "RAW_INGREDIENTS" && (
         <div className="space-y-4">
           <div className="p-4 rounded-3xl bg-zinc-800 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
             <div>
               <h3 className="font-black text-sm flex items-center gap-1.5">
                 <Layer size={18} variant="Bold" />
-                <span>Bulk Raw Ingredients & Packaging Warehouses</span>
+                <span>Raw Materials, Packaging, Ready Bakes &amp; Party Stock</span>
               </h3>
               <p className="text-xs text-zinc-300 mt-0.5">
-                Tracks flour, dairy, chocolates, fondants, and cake packaging boxes with branch associations.
+                Tracks ingredients, fondants, colours, packaging boxes/boards, ready bakes, toppers &amp; party supplies.
               </p>
             </div>
             <button
               onClick={handleOpenRaw}
               className="px-4 py-2 bg-white text-zinc-900 rounded-xl font-bold text-xs uppercase tracking-wider shadow-sm hover:bg-zinc-100 shrink-0"
             >
-              + Add Raw Material
+              + Add Material / Product
             </button>
+          </div>
+
+          {/* Raw & Store Category Filter Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            {Object.entries(rawCategoryCounts).map(([cat, count]) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedRawCategory(cat)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 border ${
+                  selectedRawCategory === cat
+                    ? "bg-zinc-800 text-white border-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                    : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-secondary/60"
+                }`}
+              >
+                {cat === "ALL" ? "All Items" : cat} ({count})
+              </button>
+            ))}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -2457,6 +2518,11 @@ export default function InventoryPage() {
                         <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-zinc-500/10 text-zinc-700 dark:text-zinc-300">
                           {item.category}
                         </span>
+                        {item.notes && (
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                            {item.notes}
+                          </span>
+                        )}
                         {item.bestBeforeDate && (
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${expired ? "bg-rose-600 text-white" : "bg-secondary text-muted-foreground"
                             }`}>
@@ -2481,6 +2547,7 @@ export default function InventoryPage() {
                               qty: Number(item.currentStock),
                               unit: item.unit,
                               price: Number(item.costPerUnit),
+                              notes: item.notes || "",
                               bestBeforeDate: item.bestBeforeDate ? new Date(item.bestBeforeDate).toISOString().split("T")[0] : ""
                             })}
                             className="p-1 hover:text-foreground text-muted-foreground"
@@ -2515,6 +2582,7 @@ export default function InventoryPage() {
                             qty: Number(item.currentStock),
                             unit: item.unit,
                             price: Number(item.costPerUnit),
+                            notes: item.notes || "",
                             bestBeforeDate: item.bestBeforeDate ? new Date(item.bestBeforeDate).toISOString().split("T")[0] : ""
                           })}
                           className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground text-[10px] font-bold transition-all flex items-center gap-1 active:scale-95 border border-primary/20"
@@ -2535,11 +2603,18 @@ export default function InventoryPage() {
                     <span className="text-[10px] text-muted-foreground font-bold">Quick Adjust:</span>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <button
+                        onClick={() => handleQuickAdjustRaw(item.id, 1, "SUBTRACT")}
+                        className="px-2 py-1 rounded-lg bg-secondary text-foreground text-[10px] font-bold hover:bg-rose-500/20 hover:text-rose-600"
+                        title="Deduct 1"
+                      >
+                        -1
+                      </button>
+                      <button
                         onClick={() => handleQuickAdjustRaw(item.id, 5, "SUBTRACT")}
                         className="px-2 py-1 rounded-lg bg-secondary text-foreground text-[10px] font-bold hover:bg-rose-500/20 hover:text-rose-600"
                         title="Deduct 5"
                       >
-                        -5 {item.unit}
+                        -5
                       </button>
                       <button
                         onClick={() => handleQuickAdjustRaw(item.id, 10, "ADD")}
@@ -3132,6 +3207,7 @@ export default function InventoryPage() {
                     className="w-full px-3 py-2 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
                   >
                     <option value="SPONGE">Cake Sponge</option>
+                    <option value="BASE">Bakery Base / Buns</option>
                     <option value="CREAM">Frosting Cream</option>
                     <option value="FILLING">Fruit Filling</option>
                     <option value="SYRUP">Sugar Syrup</option>
@@ -3198,6 +3274,8 @@ export default function InventoryPage() {
                   <label className="font-bold text-foreground mb-1 block">Initial Stock</label>
                   <input
                     type="number"
+                    min="0"
+                    step="any"
                     value={prepStock}
                     onChange={(e) => setPrepStock(Number(e.target.value))}
                     className="w-full px-3 py-2 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
@@ -3220,6 +3298,8 @@ export default function InventoryPage() {
                   <label className="font-bold text-foreground mb-1 block">Min Alert</label>
                   <input
                     type="number"
+                    min="0"
+                    step="any"
                     value={prepMinAlert}
                     onChange={(e) => setPrepMinAlert(Number(e.target.value))}
                     className="w-full px-3 py-2 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
@@ -3292,12 +3372,25 @@ export default function InventoryPage() {
                     onChange={(e) => setRawCategory(e.target.value)}
                     className="w-full px-3 py-2 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
                   >
+                    <option value="Flour">Flour</option>
                     <option value="Dairy">Dairy</option>
-                    <option value="Flour">Flour / Grains</option>
-                    <option value="Chocolate">Chocolate / Cocoa</option>
-                    <option value="Sweetener">Sugar / Sweetener</option>
-                    <option value="Packaging">Boxes / Packaging</option>
-                    <option value="Fondant">Fondant / Colors</option>
+                    <option value="Dairy & Fats">Dairy &amp; Fats</option>
+                    <option value="Premix & Essence">Premix &amp; Essence</option>
+                    <option value="Chocolate">Chocolate &amp; Chips</option>
+                    <option value="Sweetener">Sweetener</option>
+                    <option value="Crushes & Spreads">Crushes &amp; Spreads</option>
+                    <option value="Gels & Flavgel">Gels &amp; Flavgel</option>
+                    <option value="Fondant">Fondant</option>
+                    <option value="Colours">Colours &amp; Phus Phus</option>
+                    <option value="Hardware & Ribbons">Hardware &amp; Ribbons</option>
+                    <option value="Packaging">Packaging &amp; Boxes</option>
+                    <option value="Savouries & Breads">Savouries &amp; Breads</option>
+                    <option value="Cookies & Baked">Cookies &amp; Baked</option>
+                    <option value="Acrylic Toppers">Acrylic Toppers</option>
+                    <option value="Party Supplies">Party Supplies</option>
+                    <option value="Character Toys">Character Toys</option>
+                    <option value="Sashes, Caps & Crowns">Sashes, Caps &amp; Crowns</option>
+                    <option value="Candles">Candles</option>
                   </select>
                 </div>
 
@@ -3309,9 +3402,18 @@ export default function InventoryPage() {
                     className="w-full px-3 py-2 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
                   >
                     <option value="kg">kg</option>
-                    <option value="liters">liters</option>
+                    <option value="litre">litre</option>
+                    <option value="pcs">pcs</option>
+                    <option value="pkt">pkt</option>
+                    <option value="bottle">bottle</option>
+                    <option value="jar">jar</option>
+                    <option value="roll">roll</option>
+                    <option value="can">can</option>
+                    <option value="sheet">sheet</option>
+                    <option value="box">box</option>
                     <option value="boxes">boxes</option>
                     <option value="units">units</option>
+                    <option value="liters">liters</option>
                   </select>
                 </div>
               </div>
@@ -3335,6 +3437,8 @@ export default function InventoryPage() {
                   <label className="font-bold text-foreground mb-1 block">Stock</label>
                   <input
                     type="number"
+                    min="0"
+                    step="any"
                     value={rawStockVal}
                     onChange={(e) => setRawStockVal(Number(e.target.value))}
                     className="w-full px-3 py-2 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
@@ -3345,6 +3449,8 @@ export default function InventoryPage() {
                   <label className="font-bold text-foreground mb-1 block">Min Alert</label>
                   <input
                     type="number"
+                    min="0"
+                    step="any"
                     value={rawMinAlertVal}
                     onChange={(e) => setRawMinAlertVal(Number(e.target.value))}
                     className="w-full px-3 py-2 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
@@ -3355,6 +3461,8 @@ export default function InventoryPage() {
                   <label className="font-bold text-foreground mb-1 block">Cost / Unit (₹)</label>
                   <input
                     type="number"
+                    min="0"
+                    step="any"
                     value={rawCostVal}
                     onChange={(e) => setRawCostVal(Number(e.target.value))}
                     className="w-full px-3 py-2 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
@@ -3430,6 +3538,8 @@ export default function InventoryPage() {
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    step="any"
                     value={editTarget.qty}
                     onChange={(e) => setEditTarget({ ...editTarget, qty: Number(e.target.value) })}
                     className="w-full px-3 py-2 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
@@ -3443,10 +3553,25 @@ export default function InventoryPage() {
                   <label className="font-bold text-foreground mb-1 block">Price / Cost (₹)</label>
                   <input
                     type="number"
+                    min="0"
+                    step="any"
                     value={editTarget.price}
                     onChange={(e) => setEditTarget({ ...editTarget, price: Number(e.target.value) })}
                     className="w-full px-3 py-2 bg-secondary/40 border border-border rounded-xl text-foreground font-bold"
                     required
+                  />
+                </div>
+              )}
+
+              {editTarget.notes !== undefined && (
+                <div>
+                  <label className="font-bold text-foreground mb-1 block">Notes / MRP Info</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. MRP ₹50 each"
+                    value={editTarget.notes || ""}
+                    onChange={(e) => setEditTarget({ ...editTarget, notes: e.target.value })}
+                    className="w-full px-3 py-2 bg-secondary/40 border border-border rounded-xl text-foreground"
                   />
                 </div>
               )}
@@ -4416,7 +4541,7 @@ export default function InventoryPage() {
               <input
                 type="number"
                 min="0.01"
-                step="0.01"
+                step="any"
                 autoFocus
                 value={customQtyModal.inputVal}
                 onChange={(e) =>
